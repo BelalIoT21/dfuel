@@ -6,9 +6,14 @@ import { validationResult } from 'express-validator';
 
 // Generate JWT Token
 const generateToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback-secret', {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
-  });
+  const secret = process.env.JWT_SECRET || 'fallback-secret';
+  return jwt.sign(
+    { id },
+    secret,
+    {
+      expiresIn: process.env.JWT_EXPIRE || '7d',
+    }
+  );
 };
 
 // @desc    Register a new user
