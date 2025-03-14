@@ -33,13 +33,17 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Store admin status in JWT payload for better authorization
+    // Force isAdmin to be a boolean value
     const isAdmin = user.isAdmin === true;
     console.log(`Login successful for user: ${email}, isAdmin: ${isAdmin}`);
 
     // Update last login time
     user.lastLogin = new Date();
     await user.save();
+
+    // Generate token with admin status
+    const token = generateToken(user._id.toString(), isAdmin);
+    console.log(`Generated token with isAdmin=${isAdmin}`);
 
     // Return user data in the format expected by the frontend
     res.json({
@@ -49,8 +53,9 @@ export const loginUser = async (req: Request, res: Response) => {
         email: user.email,
         isAdmin: isAdmin,
         certifications: user.certifications,
+        safetyCoursesCompleted: user.safetyCoursesCompleted || [],
       },
-      token: generateToken(user._id.toString(), isAdmin),
+      token: token,
     });
   } catch (error) {
     console.error('Error in loginUser:', error);
