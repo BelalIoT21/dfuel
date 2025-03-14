@@ -1,4 +1,5 @@
 
+// This is the entry point for the Expo mobile app
 import { registerRootComponent } from 'expo';
 import App from './src/App.native';
 
