@@ -23,6 +23,3 @@ export const PendingActions = () => {
     </Card>
   );
 };
-
-// Also export as default to maintain backward compatibility
-export default PendingActions;

@@ -62,7 +62,8 @@ class UserDatabase {
   }
   
   async getMachineMaintenanceNote(machineId: string) {
-    return databaseService.getMachineMaintenanceNote?.(machineId) || null;
+    // This functionality would be in the API
+    return null;
   }
 }
 

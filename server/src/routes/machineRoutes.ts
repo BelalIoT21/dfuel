@@ -6,8 +6,7 @@ import {
   createMachine, 
   updateMachine, 
   deleteMachine, 
-  updateMachineStatus,
-  getMachineStatus
+  updateMachineStatus 
 } from '../controllers/machineController';
 import { protect, admin } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
@@ -19,9 +18,6 @@ router.get('/', getMachines);
 
 // Get machine by ID
 router.get('/:id', getMachineById);
-
-// Get machine status
-router.get('/:id/status', getMachineStatus);
 
 // Create machine (admin only)
 router.post(

@@ -31,11 +31,6 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   };
 
   const isCertified = userCertifications.includes(machine.id);
-  
-  // Use the machine's imageUrl if available, otherwise use a placeholder
-  const imageSource = machine.imageUrl
-    ? { uri: machine.imageUrl }
-    : { uri: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=500&q=60' };
 
   return (
     <TouchableOpacity
@@ -45,7 +40,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
       })}
     >
       <Card style={styles.card}>
-        <Card.Cover source={imageSource} style={styles.cardImage} />
+        <Card.Cover source={{ uri: machine.image }} style={styles.cardImage} />
         <Card.Content>
           <Title>{machine.name}</Title>
           <Paragraph numberOfLines={2} style={styles.description}>{machine.description}</Paragraph>

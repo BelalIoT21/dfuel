@@ -27,21 +27,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // For safety cabinet, always set status to available without making API calls
-        if (machineId === 'safety-cabinet') {
-          console.log('Setting hardcoded available status for safety cabinet');
-          setMachineStatus('available');
-        } else {
-          // For other machines, fetch status from the database
-          try {
-            const status = await userDatabase.getMachineStatus(machineId);
-            setMachineStatus(status || 'available');
-          } catch (error) {
-            console.error(`Error fetching status for ${machineId}:`, error);
-            setMachineStatus('available'); // Default to available on error
-          }
-        }
-        
+        const status = await userDatabase.getMachineStatus(machineId);
+        setMachineStatus(status || 'available');
         setMachine(machineData);
         
         // Check if user is certified for this machine

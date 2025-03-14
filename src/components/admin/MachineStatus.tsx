@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wrench } from "lucide-react";
 import userDatabase from '../../services/userDatabase';
-import { toast } from '@/components/ui/use-toast';
 
 interface MachineStatusProps {
   machineData: any[];
@@ -24,38 +23,24 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const handleUpdateMachineStatus = (machine: any) => {
     setSelectedMachine(machine);
     setSelectedStatus(machine.status || 'available');
-    setMaintenanceNote(machine.maintenanceNote || '');
+    setMaintenanceNote('');
     setIsMachineStatusDialogOpen(true);
   };
 
-  const saveMachineStatus = async () => {
+  const saveMachineStatus = () => {
     if (!selectedMachine) return;
     
-    try {
-      // Update machine status in the database
-      await userDatabase.updateMachineStatus(selectedMachine.id, selectedStatus, maintenanceNote);
-      
-      // Update local state
-      setMachineData(machineData.map(machine => 
-        machine.id === selectedMachine.id 
-          ? { ...machine, status: selectedStatus, maintenanceNote } 
-          : machine
-      ));
-      
-      toast({
-        title: "Status Updated",
-        description: `${selectedMachine.name} is now ${selectedStatus}`,
-      });
-      
-      setIsMachineStatusDialogOpen(false);
-    } catch (error) {
-      console.error("Error updating machine status:", error);
-      toast({
-        title: "Update Failed",
-        description: "Could not update machine status",
-        variant: "destructive"
-      });
-    }
+    // Update machine status in the database
+    userDatabase.updateMachineStatus(selectedMachine.id, selectedStatus, maintenanceNote);
+    
+    // Update local state
+    setMachineData(machineData.map(machine => 
+      machine.id === selectedMachine.id 
+        ? { ...machine, status: selectedStatus } 
+        : machine
+    ));
+    
+    setIsMachineStatusDialogOpen(false);
   };
 
   return (
@@ -66,11 +51,11 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             <Wrench className="h-5 w-5 text-purple-600" />
             Machine Status
           </CardTitle>
-          <CardDescription>Current status of all machines and equipment</CardDescription>
+          <CardDescription>Current status of all machines</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
           <div className="space-y-3">
-            {machineData && machineData.length > 0 ? (
+            {machineData.length > 0 ? (
               machineData.map((machine) => (
                 <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
                   <div>
@@ -85,17 +70,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                         ? 'bg-green-100 text-green-800' 
                         : machine.status === 'maintenance'
                           ? 'bg-red-100 text-red-800'
-                          : machine.status === 'locked'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                          : 'bg-yellow-100 text-yellow-800'
                     }`}>
                       {machine.status === 'available' 
                         ? 'Available' 
                         : machine.status === 'maintenance'
                           ? 'Maintenance'
-                          : machine.status === 'locked'
-                            ? 'Locked' 
-                            : 'In Use'}
+                          : 'In Use'}
                     </span>
                     <Button 
                       variant="outline" 
@@ -147,7 +128,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   id="maintenance-note"
                   value={maintenanceNote}
                   onChange={(e) => setMaintenanceNote(e.target.value)}
-                  placeholder="Describe the maintenance issue"
+                  placeholder="Optional: Describe the maintenance issue"
                 />
               </div>
             )}

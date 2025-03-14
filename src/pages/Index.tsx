@@ -52,20 +52,12 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    try {
-      await login(email, password);
-    } catch (error) {
-      console.error("Login error:", error);
-    }
+    await login(email, password);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    try {
-      await register(email, password, name);
-    } catch (error) {
-      console.error("Registration error:", error);
-    }
+    await register(email, password, name);
   };
 
   const toggleMode = () => {

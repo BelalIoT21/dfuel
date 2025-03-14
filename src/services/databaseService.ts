@@ -57,10 +57,6 @@ class DatabaseService {
   async getMachineStatus(machineId: string): Promise<string> {
     return machineDatabaseService.getMachineStatus(machineId);
   }
-  
-  async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
-    return machineDatabaseService.getMachineMaintenanceNote?.(machineId);
-  }
 }
 
 // Create a singleton instance
