@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
