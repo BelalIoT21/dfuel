@@ -16,17 +16,28 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.learnit.academy"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.learnit.academy"
     },
     "web": {
       "favicon": "./public/favicon.ico"
     },
-    "entryPoint": "./App.js"
+    "entryPoint": "./App.js",
+    "plugins": [
+      "expo-dev-client"
+    ],
+    "scheme": "learnit-academy",
+    "extra": {
+      "eas": {
+        "projectId": "learnit-academy"
+      }
+    }
   }
 }
