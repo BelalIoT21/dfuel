@@ -7,7 +7,14 @@ export const useProfileNavigation = (navigation) => {
 
   useEffect(() => {
     if (!user) {
-      navigation.replace('Login');
+      // For React Native navigation
+      if (navigation.replace) {
+        navigation.replace('Login');
+      } 
+      // For React Router navigation
+      else if (navigation.navigate) {
+        navigation.navigate('/');
+      }
     }
   }, [user, navigation]);
 
@@ -15,7 +22,15 @@ export const useProfileNavigation = (navigation) => {
     console.log('Navigating back to dashboard. User is admin:', user?.isAdmin);
     // Allow admin users to access the Home screen for booking machines
     // instead of only redirecting to AdminDashboard
-    navigation.navigate('Home');
+    
+    // For React Native navigation
+    if (navigation.navigate) {
+      navigation.navigate('Home');
+    } 
+    // For React Router navigation
+    else {
+      navigation.navigate('/home');
+    }
   };
 
   return {

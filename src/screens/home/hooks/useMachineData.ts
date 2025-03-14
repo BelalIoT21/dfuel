@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { machines } from '../../../utils/data';
-import userDatabase from '../../../services/userDatabase';
+import { machineDatabaseService } from '../../../services/database/machineService';
 
 export const useMachineData = (user, navigation) => {
   const [machineData, setMachineData] = useState(
@@ -46,7 +47,7 @@ export const useMachineData = (user, navigation) => {
         // Try to get extended machines info with status
         const statuses = await Promise.all(machines.map(async (machine) => {
           try {
-            return await userDatabase.getMachineStatus(machine.id) || 'available';
+            return await machineDatabaseService.getMachineStatus(machine.id) || 'available';
           } catch (err) {
             console.error(`Failed to get status for ${machine.id}:`, err);
             return 'available';

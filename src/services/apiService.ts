@@ -1,6 +1,3 @@
 
-// This file is kept for backwards compatibility
-// It reexports the new modular API service
-import { apiService, ApiResponse, BaseApiService } from './api';
-
-export { apiService, ApiResponse, BaseApiService };
+// Re-export everything from the new modular API service
+export * from './api';

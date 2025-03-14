@@ -1,5 +1,5 @@
 
-import { BaseApiService, ApiResponse } from './baseApiService';
+import { BaseApiService } from './baseApiService';
 import { authApiService } from './authApiService';
 import { userApiService } from './userApiService';
 import { machineApiService } from './machineApiService';
@@ -7,6 +7,10 @@ import { bookingApiService } from './bookingApiService';
 import { certificationApiService } from './certificationApiService';
 import { adminApiService } from './adminApiService';
 import { healthApiService } from './healthApiService';
+
+// Re-export the ApiResponse type from the base API service
+export type { ApiResponse } from './baseApiService';
+export { BaseApiService };
 
 // Create and export a consolidated API service with all domains
 class ApiService {
@@ -40,5 +44,3 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type { ApiResponse };
-export { BaseApiService };
