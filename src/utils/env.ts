@@ -25,6 +25,12 @@ export const loadEnv = () => {
   if (!ENV_VARS['ADMIN_PASSWORD']) {
     ENV_VARS['ADMIN_PASSWORD'] = 'admin123';
   }
+  
+  // Add an API base URL for our simulated backend
+  if (!ENV_VARS['API_BASE_URL']) {
+    // In production, this would point to your real backend server
+    ENV_VARS['API_BASE_URL'] = '/api';
+  }
 };
 
 export const getEnv = (key: string): string => {

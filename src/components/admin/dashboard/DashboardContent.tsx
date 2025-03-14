@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import userDatabase from '../../../services/userDatabase';
+import { apiService } from '../../../services/apiService';
 import { machines } from '../../../utils/data';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { StatsOverview } from '@/components/admin/StatsOverview';
@@ -20,16 +18,18 @@ export const DashboardContent = () => {
     // Load users and machine data
     const fetchData = async () => {
       try {
-        // Get all users
-        const users = await userDatabase.getAllUsers();
-        setAllUsers(users);
+        // Get all users using our API service
+        const response = await apiService.request<any[]>('users', 'GET');
+        if (response.data) {
+          setAllUsers(response.data);
+        }
         
         // Get machine statuses
         const machinesWithStatus = await Promise.all(machines.map(async (machine) => {
-          const status = await userDatabase.getMachineStatus(machine.id);
+          const statusResponse = await apiService.request<string>(`machines/${machine.id}/status`, 'GET');
           return {
             ...machine,
-            status: status || 'available'
+            status: statusResponse.data || 'available'
           };
         }));
         setMachineData(machinesWithStatus);
