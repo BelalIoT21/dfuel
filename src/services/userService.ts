@@ -1,4 +1,3 @@
-
 import { User, UserWithoutSensitiveInfo } from '../types/database';
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
@@ -108,6 +107,7 @@ export class UserService {
       if (user?.isAdmin && updates.email) {
         const { adminPassword } = getAdminCredentials();
         // Update the admin email in our environment system
+        // In a real app, this would be an API call to update the .env file on the server
         setAdminCredentials(updates.email, adminPassword);
       }
       
@@ -147,6 +147,7 @@ export class UserService {
     }
     
     // If admin, update admin password in environment system
+    // In a real app, this would be an API call to update the .env file on the server
     if (user.isAdmin) {
       const { adminEmail } = getAdminCredentials();
       setAdminCredentials(adminEmail, newPassword);
@@ -259,4 +260,3 @@ The Learnit Team
 
 // Create a singleton instance
 export const userService = new UserService();
-
