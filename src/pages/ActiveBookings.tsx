@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +28,6 @@ const ActiveBookings = () => {
   const isMobile = useIsMobile();
   
   useEffect(() => {
-    // Redirect if not admin
     if (user && !user.isAdmin) {
       toast({
         title: "Access Denied",
@@ -40,7 +38,6 @@ const ActiveBookings = () => {
     }
   }, [user, navigate]);
 
-  // Fetch bookings data from API
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -64,22 +61,18 @@ const ActiveBookings = () => {
     fetchBookings();
   }, []);
 
-  // Filter bookings based on selected filter
   const filteredBookings = filter === 'all' 
     ? bookings 
     : bookings.filter((booking: any) => booking.status.toLowerCase() === filter);
 
-  // Handle approval or rejection
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     try {
-      // Call API to update the booking status
       const response = await apiService.updateBookingStatus(bookingId, newStatus);
       
       if (response.error) {
         throw new Error(response.error);
       }
       
-      // Update the local state to reflect the change
       setBookings(bookings.map((booking: any) => 
         booking.id === bookingId ? { ...booking, status: newStatus } : booking
       ));
@@ -121,7 +114,6 @@ const ActiveBookings = () => {
     );
   }
 
-  // Render mobile card view for small screens
   const renderMobileView = () => (
     <div className="space-y-4">
       {filteredBookings.length > 0 ? (
@@ -191,7 +183,6 @@ const ActiveBookings = () => {
     </div>
   );
 
-  // Render desktop table view for larger screens
   const renderDesktopView = () => (
     <div className="border rounded-md overflow-hidden">
       <Table>
@@ -223,7 +214,7 @@ const ActiveBookings = () => {
                     {booking.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
+                <TableCell className="text-right">
                   {booking.status === 'Pending' ? (
                     <div className="flex justify-end gap-2">
                       <Button 
@@ -245,7 +236,7 @@ const ActiveBookings = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" className="border-purple-200">
+                    <Button size="sm" variant="outline" className="border-purple-200 whitespace-nowrap">
                       View Details
                     </Button>
                   )}

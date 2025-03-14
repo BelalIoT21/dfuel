@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Activity, Check } from "lucide-react";
 
 interface PlatformOverviewProps {
-  allUsers: any[];
+  allUsers?: any[];
 }
 
-export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
+export const PlatformOverview = ({ allUsers = [] }: PlatformOverviewProps) => {
   return (
     <Card className="lg:col-span-2 border-purple-100">
       <CardHeader className="p-4 md:p-6">
@@ -26,11 +26,11 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
                   <div key={user.id} className="flex justify-between border-b pb-2 last:border-0">
                     <div>
                       <span className="font-medium text-sm">{user.name}</span>
-                      <div className="text-xs text-gray-500">Last login: {new Date(user.lastLogin).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">Last login: {new Date(user.lastLogin || Date.now()).toLocaleString()}</div>
                     </div>
                     <div className="text-xs">
                       <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                        {user.certifications.length} certifications
+                        {user.certifications?.length || 0} certifications
                       </span>
                     </div>
                   </div>
