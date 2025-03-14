@@ -14,6 +14,8 @@ export interface IUser extends mongoose.Document {
     code: string;
     expiry: Date;
   };
+  createdAt: Date;
+  updatedAt: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
