@@ -16,26 +16,19 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.learnit.academy"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7c3aed"
-      },
-      "package": "com.learnit.academy"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.ico"
     },
     "plugins": [
       "expo-dev-client"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id-here"
-      }
-    }
+    ]
   }
 }

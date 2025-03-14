@@ -1,27 +1,6 @@
 
-// This must be the first import
-import 'expo-router/entry';
-import React, { useEffect } from 'react';
-import { Text, View } from 'react-native';
-import { LogBox } from 'react-native';
+import 'expo-dev-client';
+import App from './src/App.native';
 
-// Ignore specific warnings that might appear in development
-LogBox.ignoreLogs([
-  'Overwriting fontFamily style attribute preprocessor',
-  'EventEmitter.removeListener',
-]);
-
-// The App component will never be rendered when using expo-router
-// It must export a default function for compatibility
-export default function App() {
-  useEffect(() => {
-    console.log("App component registered - initializing expo-router");
-  }, []);
-  
-  // This return is not used by expo-router but needed for type checking
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Loading Expo Router...</Text>
-    </View>
-  );
-}
+// This exports the native app component for Expo
+export default App;

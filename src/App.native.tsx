@@ -1,7 +1,4 @@
 
-// This file serves as a redirect to App.native.tsx for web builds
-// but contains the same code to ensure compatibility
-
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

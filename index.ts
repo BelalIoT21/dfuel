@@ -1,9 +1,7 @@
 
+// This is the entry point for the Expo mobile app
 import { registerRootComponent } from 'expo';
-import App from './App';
+import App from './src/App.native';
 
-// Log for debugging
-console.log("Initializing app - registering root component with Expo");
-
-// Register the root component
+// Register the app component as the root component
 registerRootComponent(App);
