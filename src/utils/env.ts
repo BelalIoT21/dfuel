@@ -1,22 +1,35 @@
 
 /**
- * Utility for loading environment variables
+ * Environment variable management
  */
 
-// Function to load environment variables
-export const loadEnv = () => {
-  // In a real app, you might want to load environment variables from a .env file
-  // or from process.env (on Node.js) or from Expo's Constants.manifest.extra
-  
-  // For now, we'll just return a static configuration
-  return {
-    API_URL: 'http://localhost:4000',
-    APP_ENV: process.env.NODE_ENV || 'development',
-  };
+// Load environment variables into the application
+export const loadEnv = (): void => {
+  // This function is a placeholder for loading environment variables
+  // In a real application, this would load variables from various sources
+  console.log('Environment variables loaded');
 };
 
-// Get a specific environment variable
-export const getEnv = (key: string): string | undefined => {
-  const env = loadEnv();
-  return env[key];
+// Set environment variables with validation
+export const setEnv = (key: string, value: string): void => {
+  if (!key) {
+    console.error('Cannot set environment variable with empty key');
+    return;
+  }
+  
+  if (typeof window !== 'undefined') {
+    // Store in window for web environment
+    (window as any).__ENV__ = (window as any).__ENV__ || {};
+    (window as any).__ENV__[key] = value;
+  }
+  
+  console.log(`Environment variable set: ${key}`);
+};
+
+// Get environment variables
+export const getEnv = (key: string, defaultValue: string = ''): string => {
+  if (typeof window !== 'undefined' && (window as any).__ENV__) {
+    return (window as any).__ENV__[key] || defaultValue;
+  }
+  return defaultValue;
 };

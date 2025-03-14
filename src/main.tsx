@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
+import { loadEnv } from './utils/env';
 
 // Add console log for debugging
 console.log("Initializing application");
@@ -11,6 +12,9 @@ console.log("Is native platform:", isPlatformNative());
 
 // For web environment, use the normal React app
 if (isWeb) {
+  // Load environment variables
+  loadEnv();
+  
   // Import the web version of the app
   import('./App.tsx').then(({ default: App }) => {
     const rootElement = document.getElementById("root");
