@@ -1,22 +1,22 @@
 
 // Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
+import { getDefaultConfig } from 'expo/metro-config';
+import { fileURLToPath } from 'url';
 
-// Get the project root directory
-const projectRoot = __dirname;
+// Get the current file path in ES modules
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const config = getDefaultConfig(projectRoot);
+const config = getDefaultConfig(__dirname);
 
-// Add support for non-standard extensions your project uses
+// Add support for any non-standard extensions your project uses
 config.resolver.sourceExts = [
   'jsx', 'js', 'ts', 'tsx', 'json', 
   // Add any custom extensions your project uses
-  'mjs',
 ];
 
 // Fix for ESM compatibility
+config.resolver.sourceExts.push('mjs');
 config.resolver.assetExts = config.resolver.assetExts || [];
 config.transformer.minifierPath = 'metro-minify-terser';
 
-module.exports = config;
+export default config;

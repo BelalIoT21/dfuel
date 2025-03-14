@@ -7,12 +7,14 @@ import { AuthProvider } from './context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text, View, LogBox } from 'react-native';
 
-// Import screens directly from their locations
-import HomeScreen from './screens/home/HomeScreen';
-import LoginScreen from './screens/LoginScreen';
-import ProfileScreen from './screens/profile/ProfileScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen';
-import MachineDetailScreen from './screens/machine/MachineDetailScreen';
+// Import screens using the barrel file
+import { 
+  HomeScreen, 
+  LoginScreen, 
+  ProfileScreen, 
+  AdminDashboardScreen, 
+  MachineDetailScreen 
+} from './screens';
 
 // Ignore specific warnings that might be noise
 LogBox.ignoreLogs([
