@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machines } from '../../../utils/data';
 import userDatabase from '../../../services/userDatabase';
-import { machineApi } from '../../../services/api';
 
 export const useMachineDetails = (machineId, user, navigation) => {
   const [machine, setMachine] = useState(null);
@@ -28,22 +27,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Try to get machine status from API
-        try {
-          const statusResponse = await machineApi.getMachineStatus(machineId);
-          if (statusResponse.data) {
-            setMachineStatus(statusResponse.data.status || 'available');
-          } else {
-            // Fallback to local database
-            const status = await userDatabase.getMachineStatus(machineId);
-            setMachineStatus(status || 'available');
-          }
-        } catch (error) {
-          console.error('Error fetching machine status:', error);
-          // Default to available if there's an error
-          setMachineStatus('available');
-        }
-        
+        const status = await userDatabase.getMachineStatus(machineId);
+        setMachineStatus(status || 'available');
         setMachine(machineData);
         
         // Check if user is certified for this machine
