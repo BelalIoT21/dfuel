@@ -5,29 +5,24 @@ import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Mail } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const BookingsCard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Find the certifications tab trigger element and click it
-    const tabTrigger = document.querySelector('[data-state="inactive"][value="certifications"]');
-    if (tabTrigger && tabTrigger instanceof HTMLElement) {
-      tabTrigger.click();
-    } else {
-      // Fallback method
-      const allTabs = document.querySelectorAll('[role="tab"][value="certifications"]');
-      if (allTabs.length > 0 && allTabs[0] instanceof HTMLElement) {
-        allTabs[0].click();
-      } else {
-        toast({
-          title: "Navigation Error",
-          description: "Could not switch to certifications tab. Please try clicking it manually.",
-          variant: "destructive"
-        });
-      }
+    // Instead of trying to manipulate the DOM directly,
+    // navigate to the profile page with the certifications tab selected via URL
+    navigate('/profile?tab=certifications');
+    
+    // If we're already on the profile page with a different tab, 
+    // force a page refresh to ensure the URL parameter takes effect
+    if (location.pathname === '/profile' && !location.search.includes('tab=certifications')) {
+      window.location.href = '/profile?tab=certifications';
     }
   };
 
