@@ -1,8 +1,7 @@
-
 {
   "expo": {
     "name": "Learnit Academy",
-    "slug": "learnit-academy",
+    "slug": "learnit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -36,8 +35,9 @@
     "scheme": "learnit-academy",
     "extra": {
       "eas": {
-        "projectId": "learnit-academy"
+        "projectId": "6bbb0aae-c795-40ed-8ada-a3f9057e461c"
       }
-    }
+    },
+    "owner": "zainalam1"
   }
 }
