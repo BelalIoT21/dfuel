@@ -41,6 +41,7 @@ const Index = () => {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
+      console.log("User is logged in, redirecting:", user);
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate]);
@@ -81,6 +82,7 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submitted", { email, password, name, isLogin });
     setFormError('');
     
     if (!validateForm()) return;
@@ -88,10 +90,13 @@ const Index = () => {
     try {
       if (isLogin) {
         await login(email, password);
+        console.log("Login successful");
       } else {
         await register(email, password, name);
+        console.log("Registration successful");
       }
     } catch (error) {
+      console.error("Authentication error:", error);
       setFormError('Authentication failed. Please try again.');
     }
   };
@@ -154,6 +159,9 @@ const Index = () => {
       setFormError('');
     }, 300);
   };
+
+  // Debug rendering
+  console.log("Rendering Index component");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">

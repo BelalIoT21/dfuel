@@ -19,18 +19,29 @@ import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { loadEnv } from "./utils/env";
 
-const queryClient = new QueryClient();
+// Create a new query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
   // Load environment variables
   useEffect(() => {
     loadEnv();
+    console.log("Environment variables loaded");
   }, []);
 
   // Set document title
   useEffect(() => {
     document.title = "Learnit - Your Learning Platform";
   }, []);
+
+  console.log("Rendering App component");
 
   return (
     <QueryClientProvider client={queryClient}>
