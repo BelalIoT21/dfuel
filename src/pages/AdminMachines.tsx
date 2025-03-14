@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
+import { BackToAdminButton } from '@/components/BackToAdminButton';
+import userDatabase from '../services/userDatabase';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -16,6 +18,7 @@ const AdminMachines = () => {
   const [isAddingMachine, setIsAddingMachine] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   
   // Form state for new machine
   const [formData, setFormData] = useState({
@@ -23,6 +26,19 @@ const AdminMachines = () => {
     description: '',
     image: '/placeholder.svg',
   });
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await userDatabase.getAllUsers();
+        setAllUsers(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
   
   if (!user?.isAdmin) {
     return (
@@ -99,13 +115,32 @@ const AdminMachines = () => {
     });
   };
 
+  // Calculate real stats for each machine
+  const getUsersCertifiedCount = (machineId: string) => {
+    return allUsers.filter(user => 
+      user.certifications && user.certifications.includes(machineId)
+    ).length;
+  };
+  
+  const getBookingsThisMonth = (machineId: string) => {
+    let count = 0;
+    allUsers.forEach(user => {
+      if (user.bookings) {
+        const machineBookings = user.bookings.filter((booking: any) => 
+          booking.machineId === machineId
+        );
+        count += machineBookings.length;
+      }
+    });
+    
+    return count;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-6xl mx-auto page-transition">
-        <div className="mb-6 flex justify-between items-center">
-          <Link to="/admin" className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to Dashboard
-          </Link>
+        <div className="mb-6">
+          <BackToAdminButton />
         </div>
         
         <h1 className="text-3xl font-bold mb-6">Machine Management</h1>
@@ -249,10 +284,10 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Users Certified: 12
+                          Users Certified: {getUsersCertifiedCount(machine.id)}
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                          Bookings This Month: 34
+                          Bookings: {getBookingsThisMonth(machine.id)}
                         </div>
                       </div>
                       

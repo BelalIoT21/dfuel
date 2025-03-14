@@ -17,7 +17,7 @@ export const BackToAdminButton = ({ isDashboardLink = true }) => {
   return (
     <Button 
       variant="outline" 
-      className="mb-4 border-purple-200 hover:bg-purple-50 text-sm flex items-center gap-2"
+      className="mb-4 border-purple-200 hover:bg-purple-50 text-purple-700 text-sm flex items-center gap-2"
       onClick={() => navigate(redirectPath)}
     >
       <ArrowLeft size={16} />
