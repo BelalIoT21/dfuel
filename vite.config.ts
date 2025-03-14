@@ -32,13 +32,14 @@ export default defineConfig(({ mode }) => ({
   },
   // Explicitly tell Vite to ignore certain imports in browser context
   optimizeDeps: {
-    exclude: ['react-native', 'expo'],
+    exclude: ['react-native', 'expo', 'mongodb'],
   },
   // Define global variables to help with platform detection
   define: {
     __DEV__: mode === 'development',
     Platform: {
       OS: JSON.stringify('web')
-    }
+    },
+    global: 'window', // Help libraries that expect 'global' to be defined
   }
 }));

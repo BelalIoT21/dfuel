@@ -18,6 +18,7 @@ const Index = () => {
   useEffect(() => {
     const checkServer = async () => {
       try {
+        console.log("Checking server health...");
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check:", response.data);
@@ -32,7 +33,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server',
+          description: 'Could not connect to the backend server. Using local storage instead.',
           variant: 'destructive'
         });
       }
@@ -50,10 +51,12 @@ const Index = () => {
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
+    console.log("Attempting login with:", email);
     await login(email, password);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
+    console.log("Attempting registration for:", email);
     await register(email, password, name);
   };
 

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
 import userDatabase from '../services/userDatabase';
+import { toast } from '@/components/ui/use-toast';
 
 interface ExtendedMachine {
   id: string;
@@ -35,15 +36,33 @@ const Home = () => {
         setLoading(true);
         // Get machine statuses from database
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
-          const status = await userDatabase.getMachineStatus(machine.id) as 'available' | 'maintenance' | 'in-use';
-          return {
-            ...machine,
-            status: status || 'available'
-          };
+          try {
+            const status = await userDatabase.getMachineStatus(machine.id);
+            return {
+              ...machine,
+              status: (status as 'available' | 'maintenance' | 'in-use') || 'available'
+            };
+          } catch (error) {
+            console.error(`Error loading status for machine ${machine.id}:`, error);
+            return {
+              ...machine,
+              status: 'available' as const
+            };
+          }
         }));
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load machine data",
+          variant: "destructive"
+        });
+        // Set default machine data
+        setMachineData(machines.map(machine => ({
+          ...machine,
+          status: 'available' as const
+        })));
       } finally {
         setLoading(false);
       }
@@ -67,13 +86,20 @@ const Home = () => {
             <h1 className="text-3xl font-bold text-purple-800">Welcome, {user.name}</h1>
             <p className="text-gray-600 mt-1">Select a machine to get started</p>
           </div>
-          <div>
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               variant="outline" 
               onClick={() => navigate('/profile')} 
-              className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full"
+              className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800"
             >
               My Profile
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={logout} 
+              className="border-red-200 bg-red-100 hover:bg-red-200 text-red-800"
+            >
+              Logout
             </Button>
           </div>
         </div>
@@ -116,7 +142,7 @@ const Home = () => {
                                 ? 'Maintenance'
                                 : 'In Use'}
                           </span>
-                          {user.certifications.includes(machine.id) && (
+                          {user.certifications && user.certifications.includes(machine.id) && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               Certified
                             </span>

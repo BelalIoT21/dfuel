@@ -18,6 +18,7 @@ import AdminMachines from "./pages/AdminMachines";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { loadEnv } from "./utils/env";
+import { toast } from "@/components/ui/use-toast";
 
 // Create a new query client
 const queryClient = new QueryClient({
@@ -39,6 +40,14 @@ const App = () => {
   // Set document title
   useEffect(() => {
     document.title = "Learnit - Your Learning Platform";
+  }, []);
+
+  // Display toast message when app loads
+  useEffect(() => {
+    toast({
+      title: "Welcome to Learnit",
+      description: "Your learning platform is ready to use",
+    });
   }, []);
 
   console.log("Rendering App component");

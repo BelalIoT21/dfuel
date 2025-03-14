@@ -1,9 +1,7 @@
 
 // Facade for all database services
 import { userService } from './userService';
-import { certificationService } from './certificationService';
-import { bookingService } from './bookingService';
-import { machineService } from './machineService';
+import databaseService from './databaseService';
 
 class UserDatabase {
   // User methods
@@ -41,33 +39,34 @@ class UserDatabase {
   
   // Certification methods
   async addCertification(userId: string, machineId: string) {
-    return certificationService.addCertification(userId, machineId);
+    return databaseService.addCertification(userId, machineId);
   }
   
   // Booking methods
   async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return bookingService.addBooking(userId, machineId, date, time);
+    return databaseService.addBooking(userId, machineId, date, time);
   }
   
   async getUserBookings(userId: string) {
-    return bookingService.getUserBookings(userId);
+    const user = await databaseService.findUserById(userId);
+    return user?.bookings || [];
   }
   
   // Machine methods
   async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return machineService.updateMachineStatus(machineId, status, note);
+    return databaseService.updateMachineStatus(machineId, status, note);
   }
   
   async getMachineStatus(machineId: string) {
-    return machineService.getMachineStatus(machineId);
+    return databaseService.getMachineStatus(machineId);
   }
   
   async getMachineMaintenanceNote(machineId: string) {
-    return machineService.getMachineMaintenanceNote(machineId);
+    // This functionality would be in the API
+    return null;
   }
 }
 
 // Create a singleton instance
 const userDatabase = new UserDatabase();
 export default userDatabase;
-
