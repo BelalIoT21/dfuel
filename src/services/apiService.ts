@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 class ApiService {
@@ -77,10 +76,14 @@ class ApiService {
   }
   
   // User endpoints
-  async getUsers() {
+  async getAllUsers() {
     return this.request<any>('/users', {
       method: 'GET'
     });
+  }
+  
+  async getUsers() {
+    return this.getAllUsers(); // Alias for backward compatibility
   }
   
   async updateUser(id: string, userData: any) {

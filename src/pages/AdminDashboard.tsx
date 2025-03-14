@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { AdminHeader } from '../components/admin/AdminHeader';
 import { PlatformOverview } from '../components/admin/PlatformOverview';
-import QuickActions from '../components/admin/QuickActions';
+import { QuickActions } from '../components/admin/QuickActions';
 import { StatsOverview } from '../components/admin/StatsOverview';
 import { PendingActions } from '../components/admin/PendingActions';
 import { DashboardContent } from '../components/admin/dashboard/DashboardContent';
@@ -78,28 +78,8 @@ const AdminDashboard = () => {
     return null; // Redirect handled in useEffect
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6 page-transition">
-        <AdminHeader />
-        <StatsOverview />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <PlatformOverview />
-            <MachineStatus 
-              machineData={machineData} 
-              setMachineData={setMachineData} 
-            />
-          </div>
-          <div className="space-y-6">
-            <QuickActions />
-            <PendingActions />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Instead of rendering our own components, use DashboardContent directly
+  return <DashboardContent />;
 };
 
 export default AdminDashboard;
