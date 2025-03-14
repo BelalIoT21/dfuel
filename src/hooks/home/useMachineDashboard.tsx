@@ -33,8 +33,8 @@ export const useMachineDashboard = () => {
       try {
         setLoading(true);
         
-        // Check if user has completed the safety course (look for safety cabinet certification)
-        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
+        // Check if user has completed the safety course
+        const hasSafetyCert = user?.safetyCoursesCompleted?.includes('safety-course');
         setSafetyCourseCompleted(!!hasSafetyCert);
         
         const extendedMachines = await Promise.all(machines.map(async (machine) => {

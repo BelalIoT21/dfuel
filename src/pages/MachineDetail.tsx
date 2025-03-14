@@ -73,7 +73,7 @@ const MachineDetail = () => {
                           You must complete the safety course before accessing this machine.
                         </p>
                         <Button 
-                          onClick={() => window.location.href = '/machine/safety-cabinet'}
+                          onClick={() => window.location.href = '/course/safety-course'}
                           className="bg-yellow-600 hover:bg-yellow-700 text-white"
                         >
                           Take Safety Course

@@ -79,11 +79,11 @@ export const MachineDetailTabs = ({
               <div className="flex items-start gap-3">
                 <div className="rounded-full w-8 h-8 bg-purple-100 text-purple-700 flex items-center justify-center font-medium">1</div>
                 <div>
-                  <h4 className="font-medium">{isSafetyCabinet ? "Safety Course" : "Machine Training"}</h4>
+                  <h4 className="font-medium">{isSafetyCabinet ? "Machine Training" : "Machine Training"}</h4>
                   <p className="text-gray-500 text-sm mb-2">
                     {courseCompleted 
                       ? "Completed" 
-                      : `Complete the ${isSafetyCabinet ? "safety" : "training"} course to learn how to use this ${isSafetyCabinet ? "equipment safely" : "machine"}.`}
+                      : `Complete the training course to learn how to use this machine.`}
                   </p>
                   
                   <Button 
@@ -107,11 +107,11 @@ export const MachineDetailTabs = ({
               <div className="flex items-start gap-3">
                 <div className={`rounded-full w-8 h-8 ${courseCompleted ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"} flex items-center justify-center font-medium`}>2</div>
                 <div>
-                  <h4 className={`font-medium ${!courseCompleted && "text-gray-400"}`}>{isSafetyCabinet ? "Safety" : "Knowledge"} Quiz</h4>
+                  <h4 className={`font-medium ${!courseCompleted && "text-gray-400"}`}>Knowledge Quiz</h4>
                   <p className={`text-sm mb-2 ${courseCompleted ? "text-gray-500" : "text-gray-400"}`}>
                     {quizPassed 
                       ? "Passed" 
-                      : `Pass the ${isSafetyCabinet ? "safety" : "knowledge"} quiz to demonstrate your understanding.`}
+                      : `Pass the quiz to demonstrate your understanding.`}
                   </p>
                   
                   <Button 

@@ -16,8 +16,21 @@ export class CertificationService {
     
     return localStorageService.addCertification(userId, machineId);
   }
+  
+  // Add completed safety course
+  async addSafetyCourse(userId: string, courseId: string = 'safety-course'): Promise<boolean> {
+    try {
+      // Try to update in MongoDB first (you would need to implement this method)
+      const success = await mongoDbService.updateUserSafetyCourses(userId, courseId);
+      if (success) return true;
+    } catch (error) {
+      console.error("Error adding safety course in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
+    return localStorageService.addSafetyCourse(userId, courseId);
+  }
 }
 
 // Create a singleton instance
 export const certificationService = new CertificationService();
-
