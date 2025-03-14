@@ -1,4 +1,3 @@
-
 // This file contains mock data for development
 
 // Mock machine data
@@ -215,4 +214,69 @@ export const quizzes = {
       }
     ]
   }
+};
+
+// Add the default quiz export that's missing
+export const defaultQuiz = {
+  id: "default-quiz",
+  title: "General Safety Quiz",
+  description: "Test your knowledge of general safety procedures",
+  questions: [
+    {
+      id: "q1",
+      question: "What should you do before operating any machine?",
+      options: [
+        "Start working immediately",
+        "Check if anyone else wants to use it",
+        "Read the manual and check for safety issues",
+        "Turn it on to test if it works"
+      ],
+      correctAnswer: 2
+    },
+    {
+      id: "q2",
+      question: "What personal protective equipment is typically required in a workshop?",
+      options: [
+        "Nothing is required",
+        "Safety glasses only",
+        "Safety glasses and closed-toe shoes",
+        "Safety glasses, closed-toe shoes, and appropriate clothing"
+      ],
+      correctAnswer: 3
+    },
+    {
+      id: "q3",
+      question: "If a machine is making an unusual noise, you should:",
+      options: [
+        "Ignore it and continue working",
+        "Stop immediately and report it",
+        "Try to fix it yourself",
+        "Ask another student what to do"
+      ],
+      correctAnswer: 1
+    },
+    {
+      id: "q4",
+      question: "When is it acceptable to remove machine guards?",
+      options: [
+        "When they get in the way of your work",
+        "When you're in a hurry",
+        "When you're an experienced user",
+        "Never, unless explicitly instructed by qualified personnel during maintenance"
+      ],
+      correctAnswer: 3
+    },
+    {
+      id: "q5",
+      question: "What should you do in case of an emergency in the workshop?",
+      options: [
+        "Run out of the building immediately",
+        "Call for help and follow emergency procedures",
+        "Try to fix the problem yourself",
+        "Continue working if it doesn't affect you"
+      ],
+      correctAnswer: 1
+    }
+  ],
+  passingScore: 80
 };

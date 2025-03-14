@@ -26,18 +26,28 @@ export const useMachineDashboard = () => {
   const [allSafetyRequirementsMet, setAllSafetyRequirementsMet] = useState(false);
 
   useEffect(() => {
+    console.log("useMachineDashboard useEffect running");
+    console.log("User in hook:", user);
+    
     if (user?.isAdmin) {
+      console.log("User is admin, navigating to AdminDashboard");
       navigate('/admin');
       return;
     }
     
     async function loadMachineData() {
       try {
+        console.log("Loading machine data...");
         setLoading(true);
         
         // Check if user has completed both safety requirements
         const hasSafetyCabinetCert = user?.certifications?.includes('safety-cabinet');
         const hasSafetyCourseCert = user?.certifications?.includes('safety-course');
+        
+        console.log("Safety certifications:", {
+          cabinet: hasSafetyCabinetCert,
+          course: hasSafetyCourseCert
+        });
         
         setSafetyCabinetCompleted(!!hasSafetyCabinetCert);
         setSafetyCourseCompleted(!!hasSafetyCourseCert);
@@ -46,8 +56,16 @@ export const useMachineDashboard = () => {
         const allRequirementsMet = !!hasSafetyCabinetCert && !!hasSafetyCourseCert;
         setAllSafetyRequirementsMet(allRequirementsMet);
         
+        if (!machines || machines.length === 0) {
+          console.error("No machines data available");
+          setMachineData([]);
+          setLoading(false);
+          return;
+        }
+        
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
+            console.log("Processing machine:", machine.id);
             const status = await userDatabase.getMachineStatus(machine.id);
             
             // If both safety requirements are not met and it's not one of the safety items itself, mark as locked
@@ -74,6 +92,8 @@ export const useMachineDashboard = () => {
             };
           }
         }));
+        
+        console.log("Extended machines data:", extendedMachines);
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);

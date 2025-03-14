@@ -57,14 +57,16 @@ const SafetyAlert = ({
               </div>
               
               <div className="flex items-center justify-between">
-                {safetyCourseCompleted ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                ) : (
-                  <div className="h-5 w-5 rounded-full border-2 border-yellow-500" />
-                )}
-                <span className={safetyCourseCompleted ? "text-green-700" : "text-yellow-700"}>
-                  General Safety Course
-                </span>
+                <div className="flex items-center gap-2">
+                  {safetyCourseCompleted ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <div className="h-5 w-5 rounded-full border-2 border-yellow-500" />
+                  )}
+                  <span className={safetyCourseCompleted ? "text-green-700" : "text-yellow-700"}>
+                    General Safety Course
+                  </span>
+                </div>
                 {!safetyCourseCompleted && (
                   <Button 
                     size="sm"

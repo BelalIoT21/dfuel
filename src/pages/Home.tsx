@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMachineDashboard } from '../hooks/home/useMachineDashboard';
 
@@ -20,7 +20,18 @@ const Home = () => {
     allSafetyRequirementsMet 
   } = useMachineDashboard();
 
+  useEffect(() => {
+    console.log("Home component mounted");
+    console.log("User:", user);
+    console.log("Machine data:", machineData);
+    
+    return () => {
+      console.log("Home component unmounted");
+    };
+  }, [user, machineData]);
+
   if (!user) {
+    console.log("No user found, redirecting to login");
     navigate('/');
     return null;
   }
@@ -41,7 +52,7 @@ const Home = () => {
         ) : (
           <MachineGrid 
             machines={machineData} 
-            userCertifications={user.certifications}
+            userCertifications={user.certifications || []}
           />
         )}
       </div>
