@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -90,6 +91,16 @@ class ApiService {
       'auth/login', 
       'POST', 
       { email, password },
+      false
+    );
+  }
+  
+  async googleAuth(userData: { name: string, email: string, googleId: string, picture?: string }) {
+    console.log('Attempting Google auth via API for:', userData.email);
+    return this.request<{ token: string, user: any }>(
+      'auth/google', 
+      'POST', 
+      userData,
       false
     );
   }

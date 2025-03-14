@@ -14,11 +14,22 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, googleId } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
+      // If googleId is provided and user exists, it means user is trying to login via Google
+      if (googleId && userExists.googleId) {
+        return res.status(200).json({
+          _id: userExists._id,
+          name: userExists.name,
+          email: userExists.email,
+          isAdmin: userExists.isAdmin,
+          certifications: userExists.certifications,
+          token: generateToken(userExists._id),
+        });
+      }
       return res.status(400).json({ message: 'User already exists' });
     }
 
@@ -26,7 +37,8 @@ export const registerUser = async (req: Request, res: Response) => {
     const user = await User.create({
       name,
       email,
-      password,
+      password: password || Math.random().toString(36).slice(-8), // Generate random password for Google users
+      googleId: googleId || undefined,
     });
 
     if (user) {
