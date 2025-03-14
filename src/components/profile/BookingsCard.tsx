@@ -12,10 +12,22 @@ const BookingsCard = () => {
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Using DOM methods to activate the certifications tab
-    const certTab = document.querySelector('[value="certifications"]') as HTMLElement;
-    if (certTab) {
-      certTab.click();
+    // Find the certifications tab trigger element and click it
+    const tabTrigger = document.querySelector('[data-state="inactive"][value="certifications"]');
+    if (tabTrigger && tabTrigger instanceof HTMLElement) {
+      tabTrigger.click();
+    } else {
+      // Fallback method
+      const allTabs = document.querySelectorAll('[role="tab"][value="certifications"]');
+      if (allTabs.length > 0 && allTabs[0] instanceof HTMLElement) {
+        allTabs[0].click();
+      } else {
+        toast({
+          title: "Navigation Error",
+          description: "Could not switch to certifications tab. Please try clicking it manually.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
