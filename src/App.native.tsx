@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
@@ -32,13 +32,26 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   console.log("Starting Learnit Mobile App");
 
+  // Add more detailed logging
+  useEffect(() => {
+    console.log("App component mounted");
+    // Log all available screen components
+    console.log("Available screens:", {
+      HomeScreen: !!HomeScreen,
+      LoginScreen: !!LoginScreen,
+      ProfileScreen: !!ProfileScreen,
+      AdminDashboardScreen: !!AdminDashboardScreen,
+      MachineDetailScreen: !!MachineDetailScreen
+    });
+  }, []);
+
   return (
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
         <AuthProvider>
           <NavigationContainer>
             <Stack.Navigator 
-              initialRouteName="Login"
+              initialRouteName="Home" // Change initial route to Home instead of Login
               screenOptions={{
                 headerStyle: {
                   backgroundColor: '#7c3aed', // purple-600
