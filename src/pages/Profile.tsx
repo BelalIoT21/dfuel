@@ -10,13 +10,22 @@ import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   
-  // Mock bookings for the current user
+  // Get user certifications
+  const userCertifications = machines
+    .filter(machine => user?.certifications.includes(machine.id))
+    .map(machine => ({
+      id: machine.id,
+      name: machine.name,
+      date: new Date().toLocaleDateString() // In a real app, this would come from the database
+    }));
+
+  // Mock bookings for the current user (in a real app, these would be fetched from the backend)
   const userBookings = [
     {
       id: '1',
@@ -27,31 +36,16 @@ const Profile = () => {
     },
     {
       id: '2',
-      machineId: '3d-printer',
+      machineId: 'ultimaker',
       date: '2023-10-25',
       time: '10:00 AM - 11:00 AM',
       status: 'Pending'
     }
   ];
 
-  // Mock completed certifications
-  const completedCertifications = machines
-    .filter(machine => machine.courseCompleted && machine.quizPassed)
-    .map(machine => ({
-      id: machine.id,
-      name: machine.name,
-      date: '2023-09-30'
-    }));
-
   const handleSaveProfile = () => {
-    // Simulate API call to update profile
-    setTimeout(() => {
-      setIsEditing(false);
-      toast({
-        title: "Profile Updated",
-        description: "Your profile information has been updated successfully."
-      });
-    }, 1000);
+    updateProfile({ name, email });
+    setIsEditing(false);
   };
 
   return (
@@ -174,9 +168,9 @@ const Profile = () => {
                   <CardDescription>Machines you are certified to use</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {completedCertifications.length > 0 ? (
+                  {userCertifications.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {completedCertifications.map((cert) => (
+                      {userCertifications.map((cert) => (
                         <div key={cert.id} className="border rounded-lg p-4">
                           <div className="font-medium">{cert.name}</div>
                           <div className="text-sm text-gray-500">Certified on: {cert.date}</div>

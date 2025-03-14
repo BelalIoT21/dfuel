@@ -1,29 +1,29 @@
 
 import { useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { machines } from '../utils/data';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const MachineDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, addCertification } = useAuth();
+  const { toast } = useToast();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  
   const machine = machines.find(m => m.id === id);
   
-  const [isCourseCompleted, setIsCourseCompleted] = useState(() => {
-    // For development, let's check localStorage for course completion status
-    const completedCourses = JSON.parse(localStorage.getItem('completedCourses') || '[]');
-    return completedCourses.includes(id);
-  });
-  
-  const [isQuizPassed, setIsQuizPassed] = useState(() => {
-    // For development, let's check localStorage for quiz completion status
-    const passedQuizzes = JSON.parse(localStorage.getItem('passedQuizzes') || '[]');
-    return passedQuizzes.includes(id);
-  });
+  // Check if user is certified for this machine
+  const isCertified = user?.certifications.includes(id || '');
   
   if (!machine) {
     return (
@@ -37,204 +37,270 @@ const MachineDetail = () => {
       </div>
     );
   }
-  
-  // Listen for course completion event (for development purposes)
-  if (!isCourseCompleted) {
-    window.addEventListener('coursecomplete', (e: CustomEvent) => {
-      if (e.detail.machineId === id) {
-        setIsCourseCompleted(true);
-        const completedCourses = JSON.parse(localStorage.getItem('completedCourses') || '[]');
-        if (!completedCourses.includes(id)) {
-          completedCourses.push(id);
-          localStorage.setItem('completedCourses', JSON.stringify(completedCourses));
-        }
-      }
+
+  const handleStartCourse = () => {
+    navigate(`/course/${id}`);
+  };
+
+  const handleTakeQuiz = () => {
+    navigate(`/quiz/${id}`);
+  };
+
+  const handleCompleteCertification = () => {
+    // Mark course as completed and quiz as passed
+    if (id) {
+      addCertification(id);
+    }
+  };
+
+  const handleBooking = () => {
+    if (!selectedDate || !selectedTime) {
+      toast({
+        title: "Booking Failed",
+        description: "Please select both a date and time.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Format date as YYYY-MM-DD
+    const formattedDate = selectedDate.toISOString().split('T')[0];
+    
+    // In a real app, this would call an API to create the booking
+    toast({
+      title: "Booking Requested",
+      description: `Your booking for ${formattedDate} at ${selectedTime} has been requested and is pending approval.`
     });
-  }
-  
-  // Listen for quiz pass event (for development purposes)
-  if (!isQuizPassed) {
-    window.addEventListener('quizpass', (e: CustomEvent) => {
-      if (e.detail.machineId === id) {
-        setIsQuizPassed(true);
-        const passedQuizzes = JSON.parse(localStorage.getItem('passedQuizzes') || '[]');
-        if (!passedQuizzes.includes(id)) {
-          passedQuizzes.push(id);
-          localStorage.setItem('passedQuizzes', JSON.stringify(passedQuizzes));
-        }
-      }
-    });
-  }
+    
+    // Navigate to the bookings page or stay on the same page
+    navigate(`/booking/${id}?date=${formattedDate}&time=${selectedTime}`);
+  };
+
+  // Available time slots (in a real app, this would be fetched from an API)
+  const availableTimeSlots = [
+    '9:00 AM - 10:00 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '1:00 PM - 2:00 PM',
+    '2:00 PM - 3:00 PM',
+    '3:00 PM - 4:00 PM',
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-4xl mx-auto page-transition">
+      <div className="max-w-5xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
           <Link to="/home" className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to Home
+            &larr; Back to Machines
           </Link>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <div className="md:w-1/3">
-            <div className="bg-white rounded-lg overflow-hidden shadow-md border">
-              <img 
-                src={machine.image} 
-                alt={machine.name} 
-                className="w-full h-48 object-cover object-center"
-              />
-            </div>
-          </div>
           
-          <div className="md:w-2/3">
-            <h1 className="text-3xl font-bold mb-2">{machine.name}</h1>
-            <p className="text-gray-600 mb-4">{machine.description}</p>
+          <div className="flex items-center gap-2">
+            <Badge variant={machine.status === 'available' ? 'default' : 'destructive'}>
+              {machine.status === 'available' ? 'Available' : 'Maintenance'}
+            </Badge>
             
-            <div className="flex flex-wrap gap-2 mb-4">
-              {isCourseCompleted ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  Course Completed
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  Course Required
-                </Badge>
-              )}
-              
-              {isQuizPassed ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  Safety Quiz Passed
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  Safety Quiz Required
-                </Badge>
-              )}
-              
-              {isQuizPassed ? (
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  Ready for Booking
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                  Not Available for Booking
-                </Badge>
-              )}
-            </div>
+            {isCertified && (
+              <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                Certified
+              </Badge>
+            )}
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Safety Course</CardTitle>
-              <CardDescription>
-                Learn how to safely operate the {machine.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">
-                Before you can use the {machine.name}, you must complete the safety course and pass the safety quiz.
-              </p>
-              
-              {isCourseCompleted ? (
-                <div className="flex items-center text-green-600 mb-4">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Course completed successfully!</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="md:col-span-1">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>{machine.name}</CardTitle>
+                <CardDescription>Machine Specifications</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="aspect-square bg-gray-100 rounded-md flex items-center justify-center mb-4">
+                  <img 
+                    src={machine.image} 
+                    alt={machine.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
                 </div>
-              ) : (
-                <p className="text-yellow-600 mb-4">
-                  You haven't completed this course yet.
-                </p>
-              )}
-              
-              <Button 
-                onClick={() => navigate(`/course/${id}`)}
-                className="w-full"
-              >
-                {isCourseCompleted ? "Review Course Material" : "Start Safety Course"}
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Safety Quiz</CardTitle>
-              <CardDescription>
-                Demonstrate your knowledge of {machine.name} safety
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">
-                After completing the safety course, take this quiz to verify your understanding of safe operation procedures.
-              </p>
-              
-              {isQuizPassed ? (
-                <div className="flex items-center text-green-600 mb-4">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <span>Quiz passed successfully!</span>
-                </div>
-              ) : (
-                <p className={`${isCourseCompleted ? 'text-blue-600' : 'text-gray-500'} mb-4`}>
-                  {isCourseCompleted 
-                    ? "You're ready to take the safety quiz!" 
-                    : "Complete the safety course first to unlock the quiz."}
-                </p>
-              )}
-              
-              <Button 
-                onClick={() => navigate(`/quiz/${id}`)}
-                className="w-full"
-                disabled={!isCourseCompleted && !isQuizPassed}
-              >
-                {isQuizPassed ? "Review Quiz Questions" : "Take Safety Quiz"}
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Book {machine.name}</CardTitle>
-              <CardDescription>
-                Reserve time to use the {machine.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isQuizPassed ? (
+                
                 <div>
-                  <p className="mb-4">
-                    Congratulations! You've completed all the requirements to use the {machine.name}. 
-                    You can now book time slots to use this equipment.
-                  </p>
-                  <Button 
-                    onClick={() => navigate(`/booking/${id}`)}
-                    className="w-full"
-                  >
-                    Book Now
-                  </Button>
+                  <h3 className="font-medium text-sm text-gray-500">Description</h3>
+                  <p>{machine.description}</p>
                 </div>
-              ) : (
+                
+                <div className="space-y-2">
+                  <h3 className="font-medium text-sm text-gray-500">Specifications</h3>
+                  <ul className="text-sm space-y-1">
+                    {Object.entries(machine.specs).map(([key, value]) => (
+                      <li key={key} className="flex justify-between">
+                        <span className="capitalize">{key}:</span>
+                        <span className="font-medium">
+                          {Array.isArray(value) ? value.join(', ') : value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
                 <div>
-                  <p className="mb-4">
-                    To book time on the {machine.name}, you must first complete the safety course and pass the safety quiz.
-                  </p>
-                  <Button 
-                    disabled
-                    className="w-full opacity-70"
-                  >
-                    Booking Unavailable
-                  </Button>
-                  <p className="text-sm text-gray-500 mt-2 text-center">
-                    Complete the requirements to unlock booking.
-                  </p>
+                  <h3 className="font-medium text-sm text-gray-500">Maintenance</h3>
+                  <p className="text-sm">Last maintenance: {machine.maintenanceDate}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="md:col-span-2">
+            <Tabs defaultValue={isCertified ? "booking" : "certification"} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="certification">Certification</TabsTrigger>
+                <TabsTrigger value="booking" disabled={!isCertified}>Booking</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="certification" className="border rounded-md p-6 mt-6">
+                {isCertified ? (
+                  <div className="text-center py-6">
+                    <div className="text-5xl mb-4 text-green-500">✓</div>
+                    <h2 className="text-2xl font-bold mb-2">You are certified!</h2>
+                    <p className="text-gray-600 mb-6">
+                      You have completed the safety course and passed the quiz for this machine. 
+                      You can now book time to use it.
+                    </p>
+                    <Button onClick={() => document.querySelector('[data-value="booking"]')?.click()}>
+                      Book Now
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-xl font-bold mb-2">Safety Certification Required</h2>
+                      <p className="text-gray-600 mb-4">
+                        To use this machine, you must complete the safety course and pass the quiz.
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Step 1: Safety Course</CardTitle>
+                          <CardDescription>Learn how to safely operate this machine</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-4 text-sm">
+                            The safety course takes approximately 30 minutes to complete.
+                            You'll learn about the machine's operation, safety procedures, and maintenance.
+                          </p>
+                          <Button onClick={handleStartCourse} className="w-full">
+                            Start Safety Course
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Step 2: Safety Quiz</CardTitle>
+                          <CardDescription>Test your knowledge</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-4 text-sm">
+                            After completing the safety course, take the quiz to demonstrate your understanding.
+                            You must score at least 70% to pass.
+                          </p>
+                          <Button onClick={handleTakeQuiz} className="w-full">
+                            Take Safety Quiz
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    {/* For demonstration purposes, add a button to complete certification immediately */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mt-8 border-t pt-4">
+                        <p className="text-sm text-gray-500 mb-2">Development Mode: Quick Certification</p>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleCompleteCertification}
+                          className="w-full"
+                        >
+                          Complete Certification Immediately
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="booking" className="border rounded-md p-6 mt-6">
+                {machine.status !== 'available' ? (
+                  <div className="text-center py-6">
+                    <div className="text-5xl mb-4 text-amber-500">⚠️</div>
+                    <h2 className="text-2xl font-bold mb-2">Machine Unavailable</h2>
+                    <p className="text-gray-600 mb-6">
+                      This machine is currently undergoing maintenance and is not available for booking.
+                      Please check back later or contact an administrator for more information.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-xl font-bold mb-2">Book Machine Time</h2>
+                      <p className="text-gray-600 mb-4">
+                        Select a date and time to book this machine. Bookings are subject to approval.
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label className="mb-2 block">Select Date</Label>
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          disabled={(date) => 
+                            date < new Date(new Date().setHours(0,0,0,0)) || // Disable past dates
+                            date > new Date(new Date().setDate(new Date().getDate() + 14)) // Only allow 2 weeks in advance
+                          }
+                          className="border rounded-md"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="mb-2 block">Select Time Slot</Label>
+                        <Select
+                          value={selectedTime}
+                          onValueChange={setSelectedTime}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a time slot" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTimeSlots.map((slot) => (
+                              <SelectItem key={slot} value={slot}>
+                                {slot}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <div className="mt-8">
+                          <Button 
+                            onClick={handleBooking} 
+                            className="w-full"
+                            disabled={!selectedDate || !selectedTime}
+                          >
+                            Request Booking
+                          </Button>
+                          <p className="text-xs text-gray-500 mt-2">
+                            All bookings require approval from an administrator. You will receive a notification when your booking is approved.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>

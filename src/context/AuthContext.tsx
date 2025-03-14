@@ -2,12 +2,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import userDatabase from '../services/userDatabase';
 
 interface User {
   id: string;
   email: string;
   isAdmin: boolean;
   name: string;
+  certifications: string[];
+  lastLogin: string;
 }
 
 interface AuthContextType {
@@ -16,13 +19,11 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  addCertification: (machineId: string) => void;
+  updateProfile: (updates: {name?: string, email?: string}) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Admin credentials
-const ADMIN_EMAIL = "admin@machinemaster.com";
-const ADMIN_PASSWORD = "admin123";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -30,9 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Simulated authentication - Replace with real auth later
+  // Check for stored user on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -42,36 +43,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Check for admin login
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        const adminUser = {
-          id: '1',
-          email: ADMIN_EMAIL,
-          isAdmin: true,
-          name: 'Administrator',
-        };
-        setUser(adminUser);
-        localStorage.setItem('user', JSON.stringify(adminUser));
-        navigate('/admin');
+      // Input validation
+      if (!email || !password) {
         toast({
-          title: "Welcome Administrator",
-          description: "You have successfully logged in as an administrator."
+          title: "Login Failed",
+          description: "Please provide both email and password.",
+          variant: "destructive"
         });
-      } else if (email && password && password.length >= 6) {
-        // Basic validation for regular users
-        const user = {
-          id: Math.random().toString(),
-          email,
-          isAdmin: false,
-          name: email.split('@')[0],
-        };
-        setUser(user);
-        localStorage.setItem('user', JSON.stringify(user));
-        navigate('/home');
-        toast({
-          title: "Login Successful",
-          description: "Welcome back to Machine Master!"
-        });
+        return;
+      }
+
+      // Authenticate with user database
+      const authenticatedUser = userDatabase.authenticate(email, password);
+      
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(authenticatedUser));
+        
+        if (authenticatedUser.isAdmin) {
+          navigate('/admin');
+          toast({
+            title: "Welcome Administrator",
+            description: "You have successfully logged in as an administrator."
+          });
+        } else {
+          navigate('/home');
+          toast({
+            title: "Login Successful",
+            description: "Welcome back to Machine Master!"
+          });
+        }
       } else {
         // Login failed
         toast({
@@ -88,40 +89,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Basic validation
-      if (!email || !password || password.length < 6 || !name) {
+      // Input validation
+      if (!email || !password || !name) {
         toast({
           title: "Registration Failed",
-          description: "Please provide a valid email, name, and password (min 6 characters).",
+          description: "Please provide a valid email, name, and password.",
           variant: "destructive"
         });
         return;
       }
 
-      // Check if trying to register as admin
-      if (email === ADMIN_EMAIL) {
+      if (password.length < 6) {
         toast({
           title: "Registration Failed",
-          description: "This email is already in use. Please use a different email.",
+          description: "Password must be at least 6 characters long.",
           variant: "destructive"
         });
         return;
       }
 
-      // Simulating successful registration
-      const user = {
-        id: Math.random().toString(),
-        email,
-        isAdmin: false,
-        name,
-      };
-      setUser(user);
-      localStorage.setItem('user', JSON.stringify(user));
-      navigate('/home');
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to Machine Master!"
-      });
+      // Check for admin email
+      if (email.toLowerCase() === 'admin@machinemaster.com') {
+        toast({
+          title: "Registration Failed",
+          description: "This email is reserved. Please use a different email.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Register with user database
+      const newUser = userDatabase.registerUser(email, password, name);
+      
+      if (newUser) {
+        setUser(newUser);
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+        navigate('/home');
+        toast({
+          title: "Registration Successful",
+          description: "Welcome to Machine Master!"
+        });
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: "This email is already in use. Please use a different email or login.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem('currentUser');
     navigate('/');
     toast({
       title: "Logged Out",
@@ -137,8 +151,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const addCertification = (machineId: string) => {
+    if (!user) return;
+    
+    const success = userDatabase.addCertification(user.id, machineId);
+    
+    if (success) {
+      // Update the local user state with the new certification
+      const updatedUser = {
+        ...user,
+        certifications: [...user.certifications, machineId]
+      };
+      setUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Certification Added",
+        description: "You are now certified to use this machine."
+      });
+    }
+  };
+
+  const updateProfile = (updates: {name?: string, email?: string}) => {
+    if (!user) return;
+    
+    const success = userDatabase.updateUserProfile(user.id, updates);
+    
+    if (success) {
+      // Update the local user state with the changes
+      const updatedUser = {
+        ...user,
+        ...(updates.name && { name: updates.name }),
+        ...(updates.email && { email: updates.email })
+      };
+      setUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been updated successfully."
+      });
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register, 
+      logout, 
+      isLoading,
+      addCertification,
+      updateProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { courses, machines } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,10 +12,10 @@ const Course = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [progress, setProgress] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
   
   const machine = machines.find(m => m.id === id);
-  const course = courses[id || ''];
+  const course = courses[id as keyof typeof courses];
   
   if (!machine || !course) {
     return (
@@ -29,22 +30,28 @@ const Course = () => {
     );
   }
 
+  const totalSlides = course.slides.length;
+  const progress = Math.round(((currentSlide + 1) / totalSlides) * 100);
+
+  const handleNext = () => {
+    if (currentSlide < totalSlides - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+  };
+
   const handleComplete = () => {
     // In a real app, this would call an API to mark the course as completed
     toast({
       title: "Course completed",
       description: "You can now take the safety quiz."
     });
-    navigate(`/machine/${id}`);
-  };
-
-  // Simulate progress update when scrolling
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const element = e.currentTarget;
-    const scrollPosition = element.scrollTop;
-    const maxScroll = element.scrollHeight - element.clientHeight;
-    const calculatedProgress = Math.min(Math.round((scrollPosition / maxScroll) * 100), 100);
-    setProgress(calculatedProgress);
+    navigate(`/quiz/${id}`);
   };
 
   return (
@@ -54,59 +61,69 @@ const Course = () => {
           <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
             &larr; Back to {machine.name}
           </Link>
-          <div className="text-sm text-gray-500">Progress: {progress}%</div>
+          <div className="text-sm text-gray-500">Slide {currentSlide + 1} of {totalSlides}</div>
         </div>
         
         <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
+        <p className="text-gray-600 mb-6">Duration: {course.duration}</p>
         <Progress value={progress} className="mb-8" />
         
-        <Card>
-          <CardContent className="p-6">
-            <div 
-              className="prose max-w-none h-[50vh] overflow-y-auto mb-6" 
-              onScroll={handleScroll}
-            >
-              <h2>Introduction</h2>
-              <p>Welcome to the safety course for the {machine.name}. This course will teach you how to safely operate this machine.</p>
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="relative">
+              {/* Slide Content */}
+              <div className="aspect-video bg-gray-100 flex items-center justify-center">
+                <img 
+                  src={course.slides[currentSlide].image} 
+                  alt={course.slides[currentSlide].title}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
               
-              <h2>Safety Precautions</h2>
-              <p>Always wear appropriate safety gear when operating this machine. This includes safety glasses, gloves, and closed-toe shoes.</p>
+              {/* Navigation Arrows */}
+              {currentSlide > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full"
+                  onClick={handlePrevious}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
               
-              <h2>Step-by-Step Instructions</h2>
-              <p>Follow these steps to safely operate the {machine.name}:</p>
-              <ol>
-                <li>Ensure the workspace is clean and free of obstructions.</li>
-                <li>Put on appropriate safety gear.</li>
-                <li>Check that the machine is properly connected and in working order.</li>
-                <li>Turn on the machine and wait for it to initialize.</li>
-                <li>Follow the specific operation procedures for your project.</li>
-                <li>When finished, shut down the machine properly.</li>
-                <li>Clean the workspace and return any tools to their proper location.</li>
-              </ol>
-              
-              <h2>Maintenance</h2>
-              <p>Regular maintenance is essential for the safe operation of the {machine.name}. Report any issues to the administrator immediately.</p>
-              
-              <h2>Troubleshooting</h2>
-              <p>If you encounter any issues with the {machine.name}, follow these troubleshooting steps:</p>
-              <ul>
-                <li>Check that the machine is properly powered and connected.</li>
-                <li>Look for any error messages on the display.</li>
-                <li>Restart the machine if necessary.</li>
-                <li>If the issue persists, contact an administrator for assistance.</li>
-              </ul>
-              
-              <h2>Conclusion</h2>
-              <p>Congratulations on completing the safety course for the {machine.name}. You are now ready to take the safety quiz and, upon passing, book time to use the machine.</p>
+              {currentSlide < totalSlides - 1 && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full"
+                  onClick={handleNext}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             
-            <Button 
-              onClick={handleComplete} 
-              className="w-full"
-              disabled={progress < 100}
-            >
-              {progress < 100 ? "Please complete the course" : "Mark as Completed"}
-            </Button>
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">{course.slides[currentSlide].title}</h2>
+              <p className="text-gray-700 mb-8">{course.slides[currentSlide].content}</p>
+              
+              <div className="flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={handlePrevious}
+                  disabled={currentSlide === 0}
+                >
+                  Previous
+                </Button>
+                
+                {currentSlide < totalSlides - 1 ? (
+                  <Button onClick={handleNext}>Next</Button>
+                ) : (
+                  <Button onClick={handleComplete}>Complete Course</Button>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

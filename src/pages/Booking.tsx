@@ -1,46 +1,35 @@
 
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { machines } from '../utils/data';
-import { format, addDays, isSameDay } from 'date-fns';
-
-// Mock available time slots
-const timeSlots = [
-  '9:00 AM - 10:00 AM',
-  '10:00 AM - 11:00 AM',
-  '11:00 AM - 12:00 PM',
-  '1:00 PM - 2:00 PM',
-  '2:00 PM - 3:00 PM',
-  '3:00 PM - 4:00 PM',
-  '4:00 PM - 5:00 PM',
-];
-
-// Mock bookings data (some slots already booked)
-const bookedSlots = {
-  '2023-10-15': [0, 3, 6], // Indexes of timeSlots that are booked
-  '2023-10-16': [1, 2],
-  '2023-10-20': [3, 4, 5],
-};
+import { useAuth } from '../context/AuthContext';
 
 const Booking = () => {
   const { id } = useParams<{ id: string }>();
-  const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const [isBooking, setIsBooking] = useState(false);
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed'>('pending');
   
+  const date = searchParams.get('date');
+  const time = searchParams.get('time');
   const machine = machines.find(m => m.id === id);
   
-  if (!machine) {
+  // Simulate booking confirmation after a delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBookingStatus('confirmed');
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (!machine || !date || !time) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
+          <h1 className="text-2xl font-bold mb-4">Invalid Booking Information</h1>
           <Link to="/home">
             <Button>Return to Home</Button>
           </Link>
@@ -49,135 +38,94 @@ const Booking = () => {
     );
   }
 
-  // Get booked slots for the selected date
-  const getBookedSlotsForDate = (date: Date) => {
-    const dateKey = format(date, 'yyyy-MM-dd');
-    return bookedSlots[dateKey as keyof typeof bookedSlots] || [];
-  };
-
-  const handleBooking = () => {
-    if (selectedSlot === null) {
-      toast({
-        title: "Error",
-        description: "Please select a time slot first.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsBooking(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsBooking(false);
-      toast({
-        title: "Booking Confirmed",
-        description: `You have booked the ${machine.name} for ${format(selectedDate, 'MMMM d, yyyy')} at ${timeSlots[selectedSlot]}.`
-      });
-    }, 1500);
-  };
-
-  const bookedSlotsForSelectedDate = getBookedSlotsForDate(selectedDate);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-4xl mx-auto page-transition">
-        <div className="mb-6 flex justify-between items-center">
+      <div className="max-w-3xl mx-auto page-transition">
+        <div className="mb-6 flex justify-start">
           <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
             &larr; Back to {machine.name}
           </Link>
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">Book {machine.name}</h1>
+        <h1 className="text-3xl font-bold mb-6">Booking Confirmation</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Select Date</h2>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                className="rounded-md border"
-                disabled={{ before: addDays(new Date(), 1) }}
-              />
-              <p className="text-sm text-gray-500 mt-4">
-                You can book up to 30 days in advance. Bookings require admin approval.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Select Time Slot</h2>
-              <p className="text-gray-600 mb-4">
-                Time slots for {format(selectedDate, 'MMMM d, yyyy')}:
-              </p>
-              
-              <div className="space-y-3">
-                {timeSlots.map((slot, index) => {
-                  const isBooked = bookedSlotsForSelectedDate.includes(index);
-                  return (
-                    <div 
-                      key={index} 
-                      className={`
-                        p-3 border rounded-md cursor-pointer transition
-                        ${isBooked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'hover:border-primary'}
-                        ${selectedSlot === index && !isBooked ? 'border-primary bg-primary/5' : ''}
-                      `}
-                      onClick={() => !isBooked && setSelectedSlot(index)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <Label className="cursor-pointer">{slot}</Label>
-                        {isBooked ? (
-                          <span className="text-xs bg-gray-200 text-gray-700 py-1 px-2 rounded">Booked</span>
-                        ) : (
-                          <span className="text-xs bg-green-100 text-green-800 py-1 px-2 rounded">Available</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <Button 
-                className="w-full mt-6" 
-                onClick={handleBooking}
-                disabled={selectedSlot === null || isBooking}
-              >
-                {isBooking ? 'Processing...' : 'Confirm Booking'}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Card className="mt-6">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>Your Booking Details</CardTitle>
+            <CardDescription>Review your machine booking information</CardDescription>
+          </CardHeader>
           <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Booking Information</h2>
-            <div className="space-y-4">
-              <div>
-                <Label>Selected Machine</Label>
-                <p className="font-medium">{machine.name}</p>
-              </div>
-              
-              <div>
-                <Label>Date</Label>
-                <p className="font-medium">{format(selectedDate, 'MMMM d, yyyy')}</p>
-              </div>
-              
-              <div>
-                <Label>Time</Label>
-                <p className="font-medium">
-                  {selectedSlot !== null ? timeSlots[selectedSlot] : 'No time slot selected'}
+            {bookingStatus === 'pending' ? (
+              <div className="text-center py-8">
+                <div className="inline-block h-8 w-8 rounded-full border-4 border-t-blue-500 border-opacity-25 animate-spin mb-4"></div>
+                <h2 className="text-xl font-bold mb-2">Processing Your Booking</h2>
+                <p className="text-gray-600">
+                  Please wait while we confirm your booking request...
                 </p>
               </div>
-              
-              <div className="text-sm text-gray-500 border-t pt-4 mt-4">
-                <p>Payment will be collected on-site before your session.</p>
-                <p>Please arrive 10 minutes before your scheduled time.</p>
-                <p>If you need to cancel, please do so at least 24 hours in advance.</p>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center pb-6">
+                  <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-green-100 text-green-600 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold mb-2 text-green-600">Booking Confirmed!</h2>
+                  <p className="text-gray-600">
+                    Your booking request has been received and is pending approval.
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 p-6 rounded-lg space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Machine</h3>
+                      <p className="text-lg font-medium">{machine.name}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">User</h3>
+                      <p className="text-lg font-medium">{user?.name}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Date</h3>
+                      <p className="text-lg font-medium">{date}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Time</h3>
+                      <p className="text-lg font-medium">{time}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Status</h3>
+                      <p className="text-lg font-medium">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Pending Approval
+                        </span>
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Booking ID</h3>
+                      <p className="text-lg font-medium">{`BK-${Date.now().toString().slice(-6)}`}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t pt-6">
+                  <h3 className="font-medium mb-2">What happens next?</h3>
+                  <p className="text-gray-600 mb-4">
+                    An administrator will review your booking request and approve it. You will be notified once your booking is approved. You can view the status of your bookings on your profile page.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button asChild>
+                      <Link to="/profile">View All Bookings</Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to="/home">Return to Home</Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
