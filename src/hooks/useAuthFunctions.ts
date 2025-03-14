@@ -22,7 +22,16 @@ export const useAuthFunctions = (
       
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
+        let userData = apiResponse.data.user;
+        
+        // Ensure the user object has the correct structure
+        if (userData._id && !userData.id) {
+          userData.id = userData._id;
+        }
+        
+        // Make sure isAdmin is properly set
+        console.log("User admin status:", userData.isAdmin);
+        
         // Save the token for future API requests
         if (apiResponse.data.token) {
           localStorage.setItem('token', apiResponse.data.token);
@@ -80,7 +89,12 @@ export const useAuthFunctions = (
       
       if (apiResponse.data) {
         console.log("API registration successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
+        let userData = apiResponse.data.user;
+        
+        // Ensure the user object has the correct structure
+        if (userData._id && !userData.id) {
+          userData.id = userData._id;
+        }
         
         // Save the token for future API requests
         if (apiResponse.data.token) {

@@ -70,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setUser(null);
     await storage.removeItem('learnit_user');
+    localStorage.removeItem('token'); // Make sure to remove the token
   };
 
   // Add certification
@@ -99,14 +100,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update profile
-  const updateProfile = async (name: string, email: string) => {
+  const updateProfile = async (details: { name?: string; email?: string }) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.updateUserProfile(user.id, { name, email });
+      const success = await userDatabase.updateUserProfile(user.id, details);
       
       if (success) {
-        const updatedUser = { ...user, name, email };
+        const updatedUser = { ...user, ...details };
         setUser(updatedUser);
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
