@@ -26,15 +26,6 @@ export const useMachineData = (user, navigation) => {
           console.log("Loading status for machine:", machine.id);
           let status = 'available'; // Default status
           
-          // Safety cabinet is always available and is treated as equipment
-          if (machine.id === 'safety-cabinet') {
-            return {
-              ...machine,
-              status: 'available',
-              isEquipment: true
-            };
-          }
-          
           try {
             status = await userDatabase.getMachineStatus(machine.id);
             console.log("Status for machine", machine.id, ":", status);
@@ -45,16 +36,14 @@ export const useMachineData = (user, navigation) => {
           
           return {
             ...machine,
-            status: status || 'available',
-            isEquipment: false
+            status: status || 'available'
           };
         } catch (error) {
           console.error(`Error processing machine ${machine.id}:`, error);
           // Always default to available if there's an error
           return {
             ...machine,
-            status: 'available',
-            isEquipment: machine.id === 'safety-cabinet'
+            status: 'available'
           };
         }
       }));
@@ -66,8 +55,7 @@ export const useMachineData = (user, navigation) => {
       console.log("Using fallback machine data");
       setMachineData(machines.map(machine => ({
         ...machine,
-        status: 'available',
-        isEquipment: machine.id === 'safety-cabinet'
+        status: 'available'
       })));
     } finally {
       setLoading(false);

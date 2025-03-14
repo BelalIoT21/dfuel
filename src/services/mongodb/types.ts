@@ -25,5 +25,4 @@ export interface MongoMachineStatus {
   machineId: string;
   status: string;
   note?: string;
-  isEquipment?: boolean;
 }

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -54,17 +53,17 @@ const Booking = () => {
   });
 
   useEffect(() => {
-    // Immediately redirect if we don't have a machine
+    // Immediately redirect if we don't have a machine or it's a Safety Cabinet
     if (!machine) {
       navigate('/home');
       return;
     }
     
-    // Check if this is a Safety Cabinet - redirect if it is (equipment, not bookable)
-    if (machine.id === 'safety-cabinet' || machine.type === 'Safety Cabinet') {
+    // Check if this is a Safety Cabinet - redirect if it is
+    if (machine.type === 'Safety Cabinet') {
       toast({
         title: "Not Bookable",
-        description: "Safety Cabinet is training equipment and cannot be booked.",
+        description: "Safety Cabinet is not a bookable resource.",
         variant: "destructive"
       });
       navigate(`/machine/${id}`);
