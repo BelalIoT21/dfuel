@@ -48,4 +48,3 @@ export const storage = {
     }
   }
 };
-</lov-add-dependency>@react-native-async-storage/async-storage</lov-add-dependency>
