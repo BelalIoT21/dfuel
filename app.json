@@ -16,13 +16,15 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.learnit.academy"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7c3aed"
-      }
+      },
+      "package": "com.learnit.academy"
     },
     "web": {
       "favicon": "./assets/favicon.ico"
