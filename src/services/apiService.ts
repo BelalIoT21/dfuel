@@ -152,19 +152,11 @@ class ApiService {
     );
   }
   
-  async addSafetyCourse(userId: string, courseId: string) {
-    return this.request<{ success: boolean }>(
-      `certifications/safety-course`, 
-      'POST', 
-      { userId, courseId }
-    );
-  }
-  
   async addBooking(userId: string, machineId: string, date: string, time: string) {
     return this.request<{ success: boolean }>(
       `bookings`, 
       'POST', 
-      { machineId, date, time }
+      { userId, machineId, date, time }
     );
   }
   

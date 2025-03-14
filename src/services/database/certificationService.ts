@@ -40,33 +40,6 @@ export class CertificationDatabaseService extends BaseService {
       return true; // Already certified
     }
   }
-  
-  async addSafetyCourse(userId: string, courseId: string): Promise<boolean> {
-    try {
-      // Handle safety course via API
-      console.log(`Adding safety course ${courseId} for user ${userId}`);
-      const response = await apiService.addSafetyCourse(userId, courseId);
-      return response.data?.success || false;
-    } catch (error) {
-      console.error("API error, falling back to localStorage safety course:", error);
-      
-      // Fallback to localStorage
-      const user = localStorageService.findUserById(userId);
-      if (!user) return false;
-      
-      // Initialize safetyCoursesCompleted if it doesn't exist
-      if (!user.safetyCoursesCompleted) {
-        user.safetyCoursesCompleted = [];
-      }
-      
-      if (!user.safetyCoursesCompleted.includes(courseId)) {
-        user.safetyCoursesCompleted.push(courseId);
-        return localStorageService.updateUser(userId, { safetyCoursesCompleted: user.safetyCoursesCompleted });
-      }
-      
-      return true; // Already completed
-    }
-  }
 }
 
 // Create a singleton instance
