@@ -3,63 +3,111 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { machines } from '../utils/data';
 import { useAuth } from '../context/AuthContext';
 import { bookingDatabaseService } from '../services/database/bookingService';
 import { toast } from '../components/ui/use-toast';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+
+// Define available time slots
+const TIME_SLOTS = [
+  '09:00-10:00',
+  '10:00-11:00',
+  '11:00-12:00',
+  '13:00-14:00',
+  '14:00-15:00',
+  '15:00-16:00',
+  '16:00-17:00'
+];
+
+// Define validation schema for booking form
+const formSchema = z.object({
+  date: z.date({
+    required_error: "Please select a date",
+  }),
+  time: z.string({
+    required_error: "Please select a time slot",
+  }),
+});
 
 const Booking = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed'>('pending');
+  const [bookingStatus, setBookingStatus] = useState<'pending' | 'form' | 'confirmed'>('form');
   const navigate = useNavigate();
   
-  const date = searchParams.get('date');
-  const time = searchParams.get('time');
+  const paramDate = searchParams.get('date');
+  const paramTime = searchParams.get('time');
   const machine = machines.find(m => m.id === id);
   
-  // Process booking
+  // Initialize form
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: paramDate ? new Date(paramDate) : undefined,
+      time: paramTime || '',
+    },
+  });
+
+  // Check if we have all needed params for immediate booking
   useEffect(() => {
-    if (!machine || !date || !time || !user) return;
+    if (!machine || !user) return;
     
-    const createBooking = async () => {
-      try {
-        // Add booking to database
-        const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
-        
-        if (success) {
-          setBookingStatus('confirmed');
-          toast({
-            title: "Booking Confirmed",
-            description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
-          });
-        } else {
-          toast({
-            title: "Booking Failed",
-            description: "There was an error creating your booking",
-            variant: "destructive"
-          });
-        }
-      } catch (error) {
-        console.error("Error creating booking:", error);
+    // If date and time are provided as URL parameters, process booking immediately
+    if (paramDate && paramTime) {
+      setBookingStatus('pending');
+      processBooking(paramDate, paramTime);
+    } else {
+      setBookingStatus('form');
+    }
+  }, [id, paramDate, paramTime, user, machine]);
+  
+  const processBooking = async (date: string, time: string) => {
+    if (!machine || !user) return;
+    
+    try {
+      // Add booking to database
+      const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
+      
+      if (success) {
+        setBookingStatus('confirmed');
         toast({
-          title: "Booking Error",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
+          title: "Booking Confirmed",
+          description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
+        });
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: "There was an error creating your booking",
           variant: "destructive"
         });
+        setBookingStatus('form');
       }
-    };
-    
-    // Simulate booking process with a short delay
-    const timer = setTimeout(() => {
-      createBooking();
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, [id, date, time, user, machine]);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      toast({
+        title: "Booking Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+      setBookingStatus('form');
+    }
+  };
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const formattedDate = format(values.date, 'yyyy-MM-dd');
+    setBookingStatus('pending');
+    processBooking(formattedDate, values.time);
+  };
   
-  if (!machine || !date || !time) {
+  if (!machine) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -83,12 +131,12 @@ const Booking = () => {
           </Link>
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">Booking Confirmation</h1>
+        <h1 className="text-3xl font-bold mb-6">Book {machine.name}</h1>
         
         <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>Your Booking Details</CardTitle>
-            <CardDescription>Review your machine booking information</CardDescription>
+            <CardTitle>Booking {machine.name}</CardTitle>
+            <CardDescription>Please select your preferred date and time</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             {bookingStatus === 'pending' ? (
@@ -99,6 +147,63 @@ const Booking = () => {
                   Please wait while we confirm your booking request...
                 </p>
               </div>
+            ) : bookingStatus === 'form' ? (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => 
+                              date < new Date() || // Can't book in the past
+                              date.getDay() === 0 || // No Sundays
+                              date.getDay() === 6    // No Saturdays
+                            }
+                            className="rounded-md border"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Time Slot</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a time slot" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {TIME_SLOTS.map((slot) => (
+                              <SelectItem key={slot} value={slot}>
+                                {slot}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full">
+                    Book Now
+                  </Button>
+                </form>
+              </Form>
             ) : (
               <div className="space-y-6">
                 <div className="text-center pb-6">
@@ -127,11 +232,11 @@ const Booking = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Date</h3>
-                      <p className="text-lg font-medium">{date}</p>
+                      <p className="text-lg font-medium">{form.getValues().date ? format(form.getValues().date, 'yyyy-MM-dd') : ''}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Time</h3>
-                      <p className="text-lg font-medium">{time}</p>
+                      <p className="text-lg font-medium">{form.getValues().time}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">Status</h3>

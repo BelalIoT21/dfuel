@@ -39,7 +39,7 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{cert.name}</div>
                 <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
                 <Button variant="outline" size="sm" className="mt-2 border-purple-200 hover:bg-purple-100" asChild>
-                  <Link to={`/machine/${cert.id}`}>Book Now</Link>
+                  <Link to={`/booking/${cert.id}`}>Book Now</Link>
                 </Button>
               </div>
             ))}
