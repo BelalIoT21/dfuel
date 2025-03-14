@@ -117,7 +117,6 @@ const AdminMachines = () => {
     });
   };
 
-  // Calculate real stats for each machine
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
       user.certifications && user.certifications.includes(machineId)

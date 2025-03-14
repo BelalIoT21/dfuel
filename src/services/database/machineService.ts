@@ -7,6 +7,11 @@ import { BaseService } from './baseService';
  */
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
+    // Safety cabinet is always available and not a machine
+    if (machineId === 'safety-cabinet') {
+      return 'available';
+    }
+    
     try {
       console.log(`Getting machine status for: ${machineId}`);
       
@@ -23,6 +28,11 @@ export class MachineDatabaseService extends BaseService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
+    // Cannot update safety cabinet status as it's not a machine
+    if (machineId === 'safety-cabinet') {
+      return true; // Pretend success
+    }
+    
     try {
       const response = await apiService.updateMachineStatus(machineId, status, note);
       return response.data?.success || false;

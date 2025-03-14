@@ -20,7 +20,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [selectedStatus, setSelectedStatus] = useState('available');
   const [maintenanceNote, setMaintenanceNote] = useState('');
 
-  // Filter out safety cabinet completely
+  // Filter out safety cabinet completely - it's equipment, not a machine
   const actualMachines = machineData.filter(machine => machine.id !== 'safety-cabinet');
 
   const handleUpdateMachineStatus = (machine: any) => {

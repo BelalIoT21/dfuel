@@ -25,7 +25,8 @@ const MachineActions = ({
   isAdmin = false
 }: MachineActionsProps) => {
   // Check if this machine type is bookable
-  const isBookable = machineType !== 'Safety Cabinet';
+  const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
+  const isSafetyCourse = machineType === 'Safety Course';
 
   return (
     <View style={styles.actionContainer}>
@@ -35,7 +36,7 @@ const MachineActions = ({
         style={styles.actionButton}
         onPress={onTakeCourse}
       >
-        Take Safety Course
+        Take {isSafetyCourse ? 'Course' : 'Safety Course'}
       </Button>
       
       <Button 
@@ -47,7 +48,7 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {!isCertified && (
+      {!isCertified && !isSafetyCourse && (
         <Button 
           mode="contained" 
           icon="certificate" 
@@ -55,6 +56,17 @@ const MachineActions = ({
           onPress={onGetCertified}
         >
           Get Certified
+        </Button>
+      )}
+      
+      {isSafetyCourse && !isCertified && (
+        <Button 
+          mode="contained" 
+          icon="check-circle" 
+          style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
+          onPress={onGetCertified}
+        >
+          Complete Safety Course
         </Button>
       )}
       

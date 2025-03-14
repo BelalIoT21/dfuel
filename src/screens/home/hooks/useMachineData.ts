@@ -21,7 +21,7 @@ export const useMachineData = (user, navigation) => {
         return;
       }
       
-      // Filter out safety cabinet completely
+      // Filter out safety cabinet completely - it's equipment, not a machine
       const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
       
       const extendedMachines = await Promise.all(actualMachines.map(async (machine) => {
