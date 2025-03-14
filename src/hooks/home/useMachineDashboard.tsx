@@ -14,6 +14,7 @@ interface ExtendedMachine {
   courseCompleted: boolean;
   quizPassed: boolean;
   status: 'available' | 'maintenance' | 'in-use' | 'locked';
+  maintenanceNote?: string;
 }
 
 export const useMachineDashboard = () => {
@@ -21,46 +22,81 @@ export const useMachineDashboard = () => {
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [safetyCabinetCompleted, setSafetyCabinetCompleted] = useState(false);
   const [safetyCourseCompleted, setSafetyCourseCompleted] = useState(false);
+  const [allSafetyRequirementsMet, setAllSafetyRequirementsMet] = useState(false);
 
   useEffect(() => {
+    console.log("useMachineDashboard useEffect running");
+    console.log("User in hook:", user);
+    
     if (user?.isAdmin) {
+      console.log("User is admin, navigating to AdminDashboard");
       navigate('/admin');
       return;
     }
     
     async function loadMachineData() {
       try {
+        console.log("Loading machine data...");
         setLoading(true);
         
-        // Check if user has completed the safety course (look for safety cabinet certification)
-        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
-        setSafetyCourseCompleted(!!hasSafetyCert);
+        // Check if user has completed both safety requirements
+        const hasSafetyCabinetCert = user?.certifications?.includes('safety-cabinet');
+        const hasSafetyCourseCert = user?.certifications?.includes('safety-course');
+        
+        console.log("Safety certifications:", {
+          cabinet: hasSafetyCabinetCert,
+          course: hasSafetyCourseCert
+        });
+        
+        setSafetyCabinetCompleted(!!hasSafetyCabinetCert);
+        setSafetyCourseCompleted(!!hasSafetyCourseCert);
+        
+        // Both requirements need to be met
+        const allRequirementsMet = !!hasSafetyCabinetCert && !!hasSafetyCourseCert;
+        setAllSafetyRequirementsMet(allRequirementsMet);
+        
+        if (!machines || machines.length === 0) {
+          console.error("No machines data available");
+          setMachineData([]);
+          setLoading(false);
+          return;
+        }
         
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
+            console.log("Processing machine:", machine.id);
             const status = await userDatabase.getMachineStatus(machine.id);
+            const maintenanceNote = await userDatabase.getMachineMaintenanceNote(machine.id);
             
-            // If safety course is not completed and it's not the safety cabinet itself, mark as locked
+            // If both safety requirements are not met and it's not one of the safety items itself, mark as locked
             let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
               (status as 'available' | 'maintenance' | 'in-use') || 'available';
             
-            if (!hasSafetyCert && machine.id !== 'safety-cabinet') {
+            if (!allRequirementsMet && 
+                machine.id !== 'safety-cabinet' && 
+                machine.id !== 'safety-course') {
               machineStatus = 'locked';
             }
             
             return {
               ...machine,
-              status: machineStatus
+              status: machineStatus,
+              maintenanceNote
             };
           } catch (error) {
             console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: !hasSafetyCert && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+              status: !allRequirementsMet && 
+                      machine.id !== 'safety-cabinet' && 
+                      machine.id !== 'safety-course' ? 'locked' : 'available'
             };
           }
         }));
+        
+        console.log("Extended machines data:", extendedMachines);
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
@@ -71,7 +107,9 @@ export const useMachineDashboard = () => {
         });
         setMachineData(machines.map(machine => ({
           ...machine,
-          status: !safetyCourseCompleted && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+          status: !allSafetyRequirementsMet && 
+                  machine.id !== 'safety-cabinet' && 
+                  machine.id !== 'safety-course' ? 'locked' : 'available'
         })));
       } finally {
         setLoading(false);
@@ -81,12 +119,14 @@ export const useMachineDashboard = () => {
     if (user) {
       loadMachineData();
     }
-  }, [user, navigate, safetyCourseCompleted]);
+  }, [user, navigate, allSafetyRequirementsMet]);
 
   return {
     user,
     machineData,
     loading,
-    safetyCourseCompleted
+    safetyCabinetCompleted,
+    safetyCourseCompleted,
+    allSafetyRequirementsMet
   };
 };

@@ -24,19 +24,25 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-
+      
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
       
+      // Check if user exists in the database
+      if (!req.user) {
+        res.status(401);
+        throw new Error('Not authorized, user not found');
+      }
+      
       next();
     } catch (error) {
-      console.error('Token verification failed:', error);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      console.error('Token verification error:', error);
+      res.status(401);
+      return res.json({ message: 'Not authorized, token failed' });
     }
-  }
-
-  if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+  } else {
+    res.status(401);
+    return res.json({ message: 'Not authorized, no token' });
   }
 };
 
@@ -45,6 +51,8 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    return res.status(403).json({ message: 'Not authorized as an admin' });
+    console.error('Admin access denied for user:', req.user ? req.user._id : 'unknown');
+    res.status(403);
+    return res.json({ message: 'Not authorized as an admin' });
   }
 };

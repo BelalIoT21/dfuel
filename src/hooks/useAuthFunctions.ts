@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import userDatabase from '@/services/userDatabase';
@@ -17,46 +16,44 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // First try API login
+      // Try API login
       const apiResponse = await apiService.login(email, password);
       
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
+        let userData = apiResponse.data.user;
+        
+        // Ensure the user object has the correct structure
+        if (userData._id && !userData.id) {
+          userData.id = userData._id;
+        }
+        
+        // Make sure isAdmin is properly set
+        console.log("User admin status:", userData.isAdmin);
+        
         // Save the token for future API requests
         if (apiResponse.data.token) {
+          console.log("Saving token:", apiResponse.data.token.substring(0, 20) + "...");
           localStorage.setItem('token', apiResponse.data.token);
+        } else {
+          console.error("No token received from server");
         }
         
         setUser(userData as User);
         localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
-          description: `Welcome back, ${userData.name}!`
+          description: `Welcome back, ${userData.name}!${userData.isAdmin ? ' Admin access granted.' : ''}`
         });
         return true;
       }
       
-      // Fallback to local storage if API fails
-      console.log("API login failed, trying localStorage");
-      const userData = await userDatabase.authenticate(email, password);
-      
-      if (userData) {
-        setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${userData.name}!`
-        });
-        return true;
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid credentials.",
-          variant: "destructive"
-        });
-        return false;
-      }
+      toast({
+        title: "Login failed",
+        description: "Invalid credentials.",
+        variant: "destructive"
+      });
+      return false;
     } catch (error) {
       console.error("Error during login:", error);
       toast({
@@ -80,7 +77,12 @@ export const useAuthFunctions = (
       
       if (apiResponse.data) {
         console.log("API registration successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
+        let userData = apiResponse.data.user;
+        
+        // Ensure the user object has the correct structure
+        if (userData._id && !userData.id) {
+          userData.id = userData._id;
+        }
         
         // Save the token for future API requests
         if (apiResponse.data.token) {

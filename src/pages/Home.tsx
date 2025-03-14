@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMachineDashboard } from '../hooks/home/useMachineDashboard';
 
@@ -11,9 +11,27 @@ import LoadingIndicator from '../components/home/LoadingIndicator';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { user, machineData, loading, safetyCourseCompleted } = useMachineDashboard();
+  const { 
+    user, 
+    machineData, 
+    loading, 
+    safetyCabinetCompleted, 
+    safetyCourseCompleted,
+    allSafetyRequirementsMet 
+  } = useMachineDashboard();
+
+  useEffect(() => {
+    console.log("Home component mounted");
+    console.log("User:", user);
+    console.log("Machine data:", machineData);
+    
+    return () => {
+      console.log("Home component unmounted");
+    };
+  }, [user, machineData]);
 
   if (!user) {
+    console.log("No user found, redirecting to login");
     navigate('/');
     return null;
   }
@@ -23,14 +41,18 @@ const Home = () => {
       <div className="max-w-7xl mx-auto">
         <PageHeader />
         
-        <SafetyAlert safetyCourseCompleted={safetyCourseCompleted} />
+        <SafetyAlert 
+          safetyCabinetCompleted={safetyCabinetCompleted}
+          safetyCourseCompleted={safetyCourseCompleted}
+          allSafetyRequirementsMet={allSafetyRequirementsMet}
+        />
 
         {loading ? (
           <LoadingIndicator />
         ) : (
           <MachineGrid 
             machines={machineData} 
-            userCertifications={user.certifications}
+            userCertifications={user.certifications || []}
           />
         )}
       </div>
