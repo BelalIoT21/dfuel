@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Mail } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const BookingsCard = () => {
   const { user } = useAuth();
@@ -15,6 +16,20 @@ const BookingsCard = () => {
   const handleBookMachine = () => {
     // Navigate to the profile page with certifications tab selected
     navigate('/profile?tab=certifications');
+  };
+
+  const handleButtonClick = (booking: any) => {
+    if (booking.status === 'Approved') {
+      toast({
+        title: "Cancel Booking",
+        description: "Booking cancellation functionality will be implemented soon.",
+      });
+    } else {
+      toast({
+        title: "View Booking",
+        description: "Detailed booking view will be implemented soon.",
+      });
+    }
   };
 
   return (
@@ -51,7 +66,7 @@ const BookingsCard = () => {
                       variant="outline" 
                       size="sm" 
                       className="border-purple-200 hover:bg-purple-50"
-                      onClick={() => booking.status === 'Approved' ? null : null}
+                      onClick={() => handleButtonClick(booking)}
                     >
                       {booking.status === 'Approved' ? 'Cancel' : 'View'}
                     </Button>

@@ -36,14 +36,14 @@ const CertificationsCard = () => {
         {userCertifications.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {userCertifications.map((cert) => {
-              // Check if this is a safety cabinet or another non-bookable item
-              const isNonBookable = cert.type === 'Safety Cabinet';
+              // Check if this is a safety cabinet
+              const isSafetyCabinet = cert.type === 'Safety Cabinet';
               
               return (
                 <div key={cert.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
                   <div className="font-medium text-purple-800">{cert.name}</div>
                   <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
-                  {!isNonBookable && (
+                  {!isSafetyCabinet && (
                     <Button variant="outline" size="sm" className="mt-2 border-purple-200 hover:bg-purple-100" asChild>
                       <Link to={`/booking/${cert.id}`}>Book Now</Link>
                     </Button>
