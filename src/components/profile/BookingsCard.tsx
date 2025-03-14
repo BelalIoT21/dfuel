@@ -15,9 +15,8 @@ const BookingsCard = () => {
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Simply update the URL to include the tab parameter
-    const newUrl = '/profile?tab=certifications';
-    navigate(newUrl);
+    // Navigate to the profile page with certifications tab selected
+    navigate('/profile?tab=certifications', { replace: true });
   };
 
   const handleButtonClick = (booking: any) => {

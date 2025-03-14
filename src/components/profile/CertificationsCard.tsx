@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   if (!user) return null;
 
@@ -21,7 +23,10 @@ const CertificationsCard = () => {
       type: machine.type
     }));
 
-  const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
+  const handleTakeSafetyCourse = () => {
+    const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
+    navigate(redirectPath, { replace: true });
+  };
 
   return (
     <Card className="border-purple-100">
@@ -55,8 +60,11 @@ const CertificationsCard = () => {
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p>You haven't completed any certifications yet.</p>
-            <Button className="mt-2 bg-purple-600 hover:bg-purple-700" asChild>
-              <Link to={redirectPath}>Take a Safety Course</Link>
+            <Button 
+              className="mt-2 bg-purple-600 hover:bg-purple-700" 
+              onClick={handleTakeSafetyCourse}
+            >
+              Take a Safety Course
             </Button>
           </div>
         )}
