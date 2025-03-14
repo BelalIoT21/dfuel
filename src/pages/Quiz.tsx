@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ const Quiz = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   
   const machine = machines.find(m => m.id === id);
-  const quiz = quizzes[id as keyof typeof quizzes] || defaultQuiz;
+  const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
   
   if (!machine) {
     return (
@@ -58,7 +57,6 @@ const Quiz = () => {
   };
 
   const handleSubmit = () => {
-    // Check if all questions are answered
     if (selectedAnswers.length !== quiz.length) {
       toast({
         title: "Incomplete",
@@ -67,7 +65,6 @@ const Quiz = () => {
       return;
     }
 
-    // Calculate score
     let correct = 0;
     selectedAnswers.forEach((answer, index) => {
       if (answer === quiz[index].correctAnswer) {
@@ -76,14 +73,13 @@ const Quiz = () => {
     });
     setCorrectAnswers(correct);
 
-    const passThreshold = Math.ceil(quiz.length * 0.7); // 70% passing threshold
+    const passThreshold = Math.ceil(quiz.length * 0.7);
     const passed = correct >= passThreshold;
     
     setQuizSubmitted(true);
     setShowResults(true);
 
     if (passed) {
-      // Mark the user as certified for this machine
       if (id) {
         addCertification(id);
       }
@@ -125,7 +121,6 @@ const Quiz = () => {
     navigate(`/machine/${id}`);
   };
 
-  // Calculate progress percentage
   const progress = Math.round(((currentQuestion + 1) / quiz.length) * 100);
 
   return (
@@ -214,7 +209,6 @@ const Quiz = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* Display result summary */}
                 <div className="text-center py-4">
                   {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
                     <div className="mb-4">
@@ -239,7 +233,6 @@ const Quiz = () => {
                   )}
                 </div>
                 
-                {/* Review questions and answers */}
                 <div className="space-y-4">
                   <h3 className="font-bold text-lg">Review Your Answers</h3>
                   {quiz.map((question, index) => (
@@ -266,7 +259,6 @@ const Quiz = () => {
                   ))}
                 </div>
                 
-                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
                   {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
                     <Button onClick={handleReturnToMachine}>

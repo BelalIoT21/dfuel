@@ -1,3 +1,4 @@
+
 export interface Machine {
   id: string;
   name: string;
@@ -15,6 +16,14 @@ export interface CourseContent {
   machineId: string;
   title: string;
   content: string;
+  slides: CourseSlide[];
+  duration: string;
+}
+
+export interface CourseSlide {
+  title: string;
+  content: string;
+  image: string;
 }
 
 export interface Quiz {
@@ -38,6 +47,43 @@ export interface Booking {
   timeSlot: string;
   status: 'pending' | 'confirmed' | 'cancelled';
 }
+
+// Default quiz for fallback
+export const defaultQuiz: QuizQuestion[] = [
+  {
+    id: 'default-1',
+    question: 'Which safety precaution is most important when using equipment?',
+    options: [
+      'Always read the manual first',
+      'Wear appropriate personal protective equipment',
+      'Have someone else present',
+      'Take your time and don\'t rush'
+    ],
+    correctAnswer: 1
+  },
+  {
+    id: 'default-2',
+    question: 'What should you do before operating any machine?',
+    options: [
+      'Take a photo',
+      'Complete the required training',
+      'Oil all moving parts',
+      'Run a test cycle'
+    ],
+    correctAnswer: 1
+  },
+  {
+    id: 'default-3',
+    question: 'What should you do if equipment malfunctions?',
+    options: [
+      'Try to fix it yourself',
+      'Keep using it but be careful',
+      'Report it immediately and stop using it',
+      'Restart the machine'
+    ],
+    correctAnswer: 2
+  }
+];
 
 // Sample data
 export const machines: Machine[] = [
@@ -133,6 +179,7 @@ export const machines: Machine[] = [
   },
 ];
 
+// Modify the courses to include the slides and duration properties
 export const courses: Record<string, CourseContent> = {
   '1': {
     id: '1',
@@ -149,6 +196,29 @@ export const courses: Record<string, CourseContent> = {
         <li>Maintenance</li>
       </ul>
     `,
+    duration: '45 minutes',
+    slides: [
+      {
+        title: 'Introduction to Laser Cutting',
+        content: 'Laser cutting is a technology that uses a laser to cut materials. It is typically used for industrial manufacturing applications, but is also starting to be used by schools, small businesses, and hobbyists.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safety Precautions',
+        content: 'Never leave the laser cutter unattended while it is operating. Always use the ventilation system. Never attempt to cut materials not approved for laser cutting such as PVC or vinyl.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Operating Procedures',
+        content: 'Prepare your file in the appropriate software. Position your material on the bed. Focus the laser. Set the appropriate power and speed settings.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Maintenance',
+        content: 'Clean the cutting bed after each use. Check the lens regularly for debris. Clean the exhaust system filters according to the maintenance schedule.',
+        image: '/placeholder.svg'
+      }
+    ]
   },
   '2': {
     id: '2',
@@ -165,6 +235,29 @@ export const courses: Record<string, CourseContent> = {
         <li>Maintenance</li>
       </ul>
     `,
+    duration: '60 minutes',
+    slides: [
+      {
+        title: 'Introduction to 3D Printing',
+        content: '3D printing is an additive manufacturing process that creates three-dimensional objects by depositing materials layer by layer according to a digital model.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safety Precautions',
+        content: 'The nozzle can reach temperatures of 280°C. Never touch it during or immediately after printing. The build plate can also get very hot.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Operating Procedures',
+        content: 'Prepare your 3D model in CAD software. Export as an STL file. Import into slicing software. Configure settings and start the print.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Maintenance',
+        content: 'Clean the build plate regularly. Check belts for tension. Keep filament dry. Lubricate moving parts according to the schedule.',
+        image: '/placeholder.svg'
+      }
+    ]
   },
   '3': {
     id: '3',
@@ -181,6 +274,29 @@ export const courses: Record<string, CourseContent> = {
         <li>Maintenance</li>
       </ul>
     `,
+    duration: '30 minutes',
+    slides: [
+      {
+        title: 'Introduction to Safety Cabinets',
+        content: 'Safety cabinets are designed to store hazardous materials safely and prevent accidents in the workplace.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Types of Cabinets',
+        content: 'There are different types of safety cabinets for different materials: flammable liquids, corrosives, pesticides, etc.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Proper Storage Practices',
+        content: 'Always keep incompatible materials separate. Store heavier items on lower shelves. Keep containers tightly closed.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Maintenance',
+        content: 'Inspect cabinets regularly for damage. Clean spills immediately. Check self-closing mechanisms are working properly.',
+        image: '/placeholder.svg'
+      }
+    ]
   },
   '4': {
     id: '4',
@@ -197,6 +313,29 @@ export const courses: Record<string, CourseContent> = {
         <li>Maintenance</li>
       </ul>
     `,
+    duration: '75 minutes',
+    slides: [
+      {
+        title: 'Introduction to Carbon Fiber Printing',
+        content: 'Carbon fiber 3D printing creates exceptionally strong and lightweight parts for functional prototypes and end-use parts.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safety Precautions',
+        content: 'Always wear nitrile gloves when handling carbon fiber filaments. Use proper ventilation to avoid inhaling particles.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Material Properties',
+        content: 'Carbon fiber reinforced filaments offer superior strength-to-weight ratio and stiffness compared to standard materials.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Maintenance',
+        content: 'Carbon fiber materials are abrasive and will wear out standard brass nozzles quickly. Use hardened steel nozzles and replace them regularly.',
+        image: '/placeholder.svg'
+      }
+    ]
   },
   '5': {
     id: '5',
@@ -213,6 +352,29 @@ export const courses: Record<string, CourseContent> = {
         <li>Maintenance</li>
       </ul>
     `,
+    duration: '50 minutes',
+    slides: [
+      {
+        title: 'Introduction to the Bambu Lab X1 E',
+        content: 'The Bambu Lab X1 E is a high-speed Core XY 3D printer with advanced features like auto bed leveling and AI monitoring.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Core Features',
+        content: 'This printer offers multi-material printing capabilities, high printing speeds up to 500 mm/s, and a built-in camera for monitoring.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Filament Compatibility',
+        content: 'The X1 E can print with PLA, PETG, TPU, ABS, PA, and more. It includes a filament runout sensor for continuous printing.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Maintenance',
+        content: 'Clean the build plate before each print. Check and clean the nozzle regularly. Update firmware when prompted.',
+        image: '/placeholder.svg'
+      }
+    ]
   },
 };
 
