@@ -7,7 +7,6 @@ export interface MongoUser {
   name: string;
   isAdmin: boolean;
   certifications: string[];
-  safetyCoursesCompleted: string[]; // Add safety courses tracking
   bookings: {
     id: string;
     machineId: string;

@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Check, X } from 'lucide-react';
-import { machines, quizzes, safetyQuizzes, defaultQuiz } from '../utils/data';
+import { machines, quizzes, defaultQuiz } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,7 +15,7 @@ const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { addCertification, addSafetyCourse } = useAuth();
+  const { addCertification } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
@@ -25,26 +25,18 @@ const Quiz = () => {
   const [certificationAdded, setCertificationAdded] = useState(false);
   
   const machine = machines.find(m => m.id === id);
-  
-  // Determine if this is a safety quiz or machine quiz
-  const isSafetyQuiz = id === 'safety-course';
-  const quizTitle = isSafetyQuiz ? 'Safety Course Quiz' : `${machine?.name} Safety Quiz`;
-  
-  // Get the appropriate quiz questions
-  const quiz = isSafetyQuiz 
-    ? safetyQuizzes.questions 
-    : (id && quizzes[id] ? quizzes[id].questions : defaultQuiz);
+  const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
   
   // Initialize answers with undefined values to avoid auto-selection
   useEffect(() => {
     setSelectedAnswers(new Array(quiz.length).fill(undefined));
   }, [quiz.length]);
   
-  if (!machine && !isSafetyQuiz) {
+  if (!machine) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Quiz not found</h1>
+          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
           <Link to="/home">
             <Button>Return to Home</Button>
           </Link>
@@ -107,22 +99,13 @@ const Quiz = () => {
 
     if (passed && !certificationAdded && id) {
       try {
-        let success = false;
-        
-        if (isSafetyQuiz) {
-          // Add completion of safety course
-          success = await addSafetyCourse();
-        } else {
-          // Add machine certification
-          success = await addCertification(id);
-        }
-        
+        const success = await addCertification(id);
         setCertificationAdded(success);
         
         if (success) {
           toast({
             title: "Quiz Passed!",
-            description: `You got ${correct} out of ${quiz.length} correct. You are now ${isSafetyQuiz ? "safety certified" : "certified to use this machine"}.`
+            description: `You got ${correct} out of ${quiz.length} correct. You are now certified to use this machine.`
           });
         } else {
           toast({
@@ -165,11 +148,11 @@ const Quiz = () => {
   };
 
   const handleReturnToCourse = () => {
-    navigate(isSafetyQuiz ? '/course/safety-course' : `/course/${id}`);
+    navigate(`/course/${id}`);
   };
 
   const handleReturnToMachine = () => {
-    navigate(isSafetyQuiz ? '/home' : `/machine/${id}`);
+    navigate(`/machine/${id}`);
   };
 
   const progress = Math.round(((currentQuestion + 1) / quiz.length) * 100);
@@ -178,20 +161,20 @@ const Quiz = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
-          <Link to={isSafetyQuiz ? "/home" : `/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to {isSafetyQuiz ? "Home" : machine?.name}
+          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+            &larr; Back to {machine.name}
           </Link>
           <div className="text-sm text-gray-500">Attempt {attempts} of 2</div>
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">{quizTitle}</h1>
+        <h1 className="text-3xl font-bold mb-6">{machine.name} Safety Quiz</h1>
         
         {!showResults ? (
           <Card>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center mb-2">
                 <CardTitle>Question {currentQuestion + 1} of {quiz.length}</CardTitle>
-                <CardDescription>{isSafetyQuiz ? "General Safety" : `${machine?.name}`} Certification</CardDescription>
+                <CardDescription>{machine.name} Safety Certification</CardDescription>
               </div>
               <Progress value={progress} className="h-2" />
             </CardHeader>
@@ -234,7 +217,7 @@ const Quiz = () => {
                     ) : (
                       <Button 
                         onClick={handleSubmit}
-                        disabled={selectedAnswers.some(answer => answer === undefined)}
+                        disabled={selectedAnswers.length !== quiz.length}
                       >
                         Submit Quiz
                       </Button>
@@ -268,7 +251,7 @@ const Quiz = () => {
                       </div>
                       <h3 className="text-2xl font-bold text-green-600">Congratulations!</h3>
                       <p className="text-gray-600">
-                        You have passed the quiz and are now {isSafetyQuiz ? "safety certified" : `certified to use the ${machine?.name}`}.
+                        You have passed the quiz and are now certified to use the {machine.name}.
                       </p>
                     </div>
                   ) : (
@@ -313,7 +296,7 @@ const Quiz = () => {
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
                   {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
                     <Button onClick={handleReturnToMachine}>
-                      Return to {isSafetyQuiz ? "Home" : "Machine Page"}
+                      Return to Machine Page
                     </Button>
                   ) : attempts < 2 ? (
                     <>

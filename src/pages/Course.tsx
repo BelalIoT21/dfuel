@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { courses, machines, safetyCourse } from '../utils/data';
+import { courses, machines } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
 
 const Course = () => {
@@ -14,15 +14,10 @@ const Course = () => {
   const { toast } = useToast();
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  const isSafetyCourse = id === 'safety-course';
+  const machine = machines.find(m => m.id === id);
+  const course = courses[id as keyof typeof courses];
   
-  // Get the course content based on the id
-  const machine = !isSafetyCourse ? machines.find(m => m.id === id) : null;
-  const courseContent = isSafetyCourse 
-    ? safetyCourse
-    : (id && courses[id as keyof typeof courses] ? courses[id as keyof typeof courses] : null);
-  
-  if (!courseContent) {
+  if (!machine || !course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -35,7 +30,7 @@ const Course = () => {
     );
   }
 
-  const totalSlides = courseContent.slides.length;
+  const totalSlides = course.slides.length;
   const progress = Math.round(((currentSlide + 1) / totalSlides) * 100);
 
   const handleNext = () => {
@@ -51,25 +46,26 @@ const Course = () => {
   };
 
   const handleComplete = () => {
+    // In a real app, this would call an API to mark the course as completed
     toast({
       title: "Course completed",
-      description: "You can now take the quiz."
+      description: "You can now take the safety quiz."
     });
-    navigate(isSafetyCourse ? '/quiz/safety-course' : `/quiz/${id}`);
+    navigate(`/quiz/${id}`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-4xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
-          <Link to={isSafetyCourse ? "/home" : `/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to {isSafetyCourse ? "Home" : machine?.name}
+          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+            &larr; Back to {machine.name}
           </Link>
           <div className="text-sm text-gray-500">Slide {currentSlide + 1} of {totalSlides}</div>
         </div>
         
-        <h1 className="text-3xl font-bold mb-4">{courseContent.title}</h1>
-        <p className="text-gray-600 mb-6">Duration: {courseContent.duration}</p>
+        <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
+        <p className="text-gray-600 mb-6">Duration: {course.duration}</p>
         <Progress value={progress} className="mb-8" />
         
         <Card className="overflow-hidden">
@@ -78,8 +74,8 @@ const Course = () => {
               {/* Slide Content */}
               <div className="aspect-video bg-gray-100 flex items-center justify-center">
                 <img 
-                  src={courseContent.slides[currentSlide].image} 
-                  alt={courseContent.slides[currentSlide].title}
+                  src={course.slides[currentSlide].image} 
+                  alt={course.slides[currentSlide].title}
                   className="max-w-full max-h-full object-contain"
                 />
               </div>
@@ -109,8 +105,8 @@ const Course = () => {
             </div>
             
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">{courseContent.slides[currentSlide].title}</h2>
-              <p className="text-gray-700 mb-8">{courseContent.slides[currentSlide].content}</p>
+              <h2 className="text-2xl font-bold mb-4">{course.slides[currentSlide].title}</h2>
+              <p className="text-gray-700 mb-8">{course.slides[currentSlide].content}</p>
               
               <div className="flex justify-between">
                 <Button 

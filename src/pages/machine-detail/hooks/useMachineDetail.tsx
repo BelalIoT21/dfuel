@@ -23,14 +23,14 @@ export const useMachineDetail = (id: string | undefined) => {
     // Load certification status
     if (user && id) {
       // Check if user is certified for this machine
-      if (user.certifications?.includes(id)) {
+      if (user.certifications.includes(id)) {
         setCourseCompleted(true);
         setQuizPassed(true);
         setProgress(100);
       }
       
       // Check if user has completed safety course
-      setSafetyCertified(user.safetyCoursesCompleted?.includes('safety-course') || false);
+      setSafetyCertified(user.certifications.includes('safety-cabinet'));
     }
 
     // Load machine status
@@ -60,14 +60,14 @@ export const useMachineDetail = (id: string | undefined) => {
   
   const handleStartCourse = () => {
     // If it's not the safety cabinet and user hasn't completed safety course,
-    // redirect to safety course
+    // redirect to safety cabinet
     if (id !== 'safety-cabinet' && !safetyCertified) {
       toast({
         title: "Safety Course Required",
         description: "You must complete the safety course first.",
         variant: "destructive"
       });
-      navigate(`/course/safety-course`);
+      navigate(`/machine/safety-cabinet`);
       return;
     }
     
@@ -76,14 +76,14 @@ export const useMachineDetail = (id: string | undefined) => {
   
   const handleStartQuiz = () => {
     // If it's not the safety cabinet and user hasn't completed safety course,
-    // redirect to safety course
+    // redirect to safety cabinet
     if (id !== 'safety-cabinet' && !safetyCertified) {
       toast({
         title: "Safety Course Required",
         description: "You must complete the safety course first.",
         variant: "destructive"
       });
-      navigate(`/course/safety-course`);
+      navigate(`/machine/safety-cabinet`);
       return;
     }
     
@@ -108,7 +108,7 @@ export const useMachineDetail = (id: string | undefined) => {
         description: "You must complete the safety course before booking machines.",
         variant: "destructive"
       });
-      navigate(`/course/safety-course`);
+      navigate(`/machine/safety-cabinet`);
       return;
     }
     
