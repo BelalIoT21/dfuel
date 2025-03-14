@@ -21,6 +21,9 @@ interface AuthContextType {
   isLoading: boolean;
   addCertification: (machineId: string) => void;
   updateProfile: (updates: {name?: string, email?: string}) => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  requestPasswordReset: (email: string) => Promise<boolean>;
+  resetPassword: (email: string, resetCode: string, newPassword: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           navigate('/home');
           toast({
             title: `Welcome ${authenticatedUser.name}`,
-            description: "You have successfully logged in to Machine Master!"
+            description: "You have successfully logged in to Learnit!"
           });
         }
       } else {
@@ -109,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Check for admin email
-      if (email.toLowerCase() === 'admin@machinemaster.com') {
+      if (email.toLowerCase() === 'admin@learnit.com') {
         toast({
           title: "Registration Failed",
           description: "This email is reserved. Please use a different email.",
@@ -194,6 +197,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    const success = userDatabase.changePassword(user.id, currentPassword, newPassword);
+    
+    if (success) {
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully."
+      });
+      return true;
+    } else {
+      toast({
+        title: "Password Update Failed",
+        description: "Current password is incorrect or new password doesn't meet requirements.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const requestPasswordReset = async (email: string): Promise<boolean> => {
+    const success = userDatabase.requestPasswordReset(email);
+    
+    if (success) {
+      toast({
+        title: "Password Reset Requested",
+        description: "If an account with this email exists, a reset code has been sent. Please check your email."
+      });
+      return true;
+    } else {
+      toast({
+        title: "Password Reset Failed",
+        description: "Unable to process your request. Please try again later.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const resetPassword = async (email: string, resetCode: string, newPassword: string): Promise<boolean> => {
+    const success = userDatabase.resetPassword(email, resetCode, newPassword);
+    
+    if (success) {
+      toast({
+        title: "Password Reset Successful",
+        description: "Your password has been reset. You can now log in with your new password."
+      });
+      return true;
+    } else {
+      toast({
+        title: "Password Reset Failed",
+        description: "Invalid or expired reset code. Please try again or request a new code.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -202,7 +264,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout, 
       isLoading,
       addCertification,
-      updateProfile
+      updateProfile,
+      changePassword,
+      requestPasswordReset,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>

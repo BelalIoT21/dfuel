@@ -7,7 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from '../context/AuthContext';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger 
+} from "@/components/ui/dialog";
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,7 +27,14 @@ const Index = () => {
   const [passwordError, setPasswordError] = useState('');
   const [nameError, setNameError] = useState('');
   const [formError, setFormError] = useState('');
-  const { user, login, register } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetStage, setResetStage] = useState<'request' | 'reset'>('request');
+  
+  const { user, login, register, requestPasswordReset, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if user is already logged in
@@ -91,17 +107,64 @@ const Index = () => {
     clearErrors();
   };
 
+  const handleRequestPasswordReset = async () => {
+    const emailError = validateEmail(resetEmail);
+    if (emailError) {
+      setFormError(emailError);
+      return;
+    }
+    
+    const success = await requestPasswordReset(resetEmail);
+    if (success) {
+      setResetStage('reset');
+      setFormError('');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetCode) {
+      setFormError('Reset code is required');
+      return;
+    }
+    
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setFormError(passwordError);
+      return;
+    }
+    
+    const success = await resetPassword(resetEmail, resetCode, newPassword);
+    if (success) {
+      setIsForgotPasswordOpen(false);
+      setResetStage('request');
+      setResetEmail('');
+      setResetCode('');
+      setNewPassword('');
+    }
+  };
+
+  const handleCloseForgotPassword = () => {
+    setIsForgotPasswordOpen(false);
+    setTimeout(() => {
+      setResetStage('request');
+      setResetEmail('');
+      setResetCode('');
+      setNewPassword('');
+      setFormError('');
+    }, 300);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Machine Master</h1>
+          <h1 className="text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
         </div>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg border-purple-100">
           <CardHeader>
             <CardTitle>{isLogin ? 'Sign In' : 'Register'}</CardTitle>
             <CardDescription>
@@ -148,18 +211,114 @@ const Index = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full ${passwordError ? 'border-red-500' : ''}`}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                  />
+                  <button 
+                    type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
                 {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
               </div>
               
-              <Button type="submit" className="w-full">
+              {isLogin && (
+                <div className="text-right">
+                  <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+                    <DialogTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-sm text-purple-600 hover:underline"
+                      >
+                        Forgot your password?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Reset your password</DialogTitle>
+                        <DialogDescription>
+                          {resetStage === 'request' 
+                            ? 'Enter your email to receive a password reset code.' 
+                            : 'Enter the code sent to your email and your new password.'}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {formError && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{formError}</AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {resetStage === 'request' ? (
+                          <div className="space-y-2">
+                            <Label htmlFor="reset-email">Email</Label>
+                            <Input
+                              id="reset-email"
+                              type="email"
+                              value={resetEmail}
+                              onChange={(e) => setResetEmail(e.target.value)}
+                              placeholder="Enter your email"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="reset-code">Reset Code</Label>
+                              <Input
+                                id="reset-code"
+                                value={resetCode}
+                                onChange={(e) => setResetCode(e.target.value)}
+                                placeholder="Enter the 6-digit code"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="new-password">New Password</Label>
+                              <div className="relative">
+                                <Input
+                                  id="new-password"
+                                  type={showPassword ? "text" : "password"}
+                                  value={newPassword}
+                                  onChange={(e) => setNewPassword(e.target.value)}
+                                  placeholder="New password (min 6 characters)"
+                                />
+                                <button 
+                                  type="button"
+                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                >
+                                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={handleCloseForgotPassword}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={resetStage === 'request' ? handleRequestPasswordReset : handleResetPassword}
+                        >
+                          {resetStage === 'request' ? 'Send Reset Code' : 'Reset Password'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+              
+              <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
                 {isLogin ? 'Sign In' : 'Create Account'}
               </Button>
             </form>
@@ -167,7 +326,7 @@ const Index = () => {
             <div className="mt-4 text-center">
               <button
                 onClick={toggleMode}
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-purple-600 hover:underline"
                 type="button"
               >
                 {isLogin
@@ -175,14 +334,6 @@ const Index = () => {
                   : 'Already have an account? Sign In'}
               </button>
             </div>
-            
-            {isLogin && (
-              <div className="mt-6 border-t pt-4">
-                <p className="text-xs text-center text-gray-500 mb-2">Admin demo credentials:</p>
-                <div className="text-xs text-center text-gray-600">Email: admin@machinemaster.com</div>
-                <div className="text-xs text-center text-gray-600">Password: admin123</div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
