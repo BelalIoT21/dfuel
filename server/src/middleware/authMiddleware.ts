@@ -25,6 +25,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
       
+      // Log the decoded token to see what's in it
+      console.log('Decoded token:', decoded);
+      
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
       
@@ -34,8 +37,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
         throw new Error('Not authorized, user not found');
       }
       
-      // Always use the isAdmin value from the JWT token payload for authorization checks
+      // CRITICAL: Always use the isAdmin value from the JWT token payload
       // This ensures we're using the value that was set during login
+      // Force it to be a boolean with triple equals comparison
       req.user.isAdmin = (decoded as any).isAdmin === true;
       
       console.log(`User authenticated: ${req.user.email}, isAdmin: ${req.user.isAdmin}`);
@@ -54,6 +58,13 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
 // Admin middleware - check if user is admin
 export const admin = (req: Request, res: Response, next: NextFunction) => {
+  // Log the user data to debug
+  console.log('Admin check for user:', req.user ? {
+    id: req.user._id,
+    email: req.user.email,
+    isAdmin: req.user.isAdmin
+  } : 'No user');
+  
   if (req.user && req.user.isAdmin === true) {
     console.log(`Admin access granted for user: ${req.user.email}`);
     next();

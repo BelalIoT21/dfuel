@@ -33,7 +33,7 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Force isAdmin to be a boolean value
+    // Force isAdmin to be a boolean value with triple equals
     const isAdmin = user.isAdmin === true;
     console.log(`Login successful for user: ${email}, isAdmin: ${isAdmin}`);
 
@@ -41,7 +41,7 @@ export const loginUser = async (req: Request, res: Response) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token with admin status
+    // Generate token with admin status and log it to verify
     const token = generateToken(user._id.toString(), isAdmin);
     console.log(`Generated token with isAdmin=${isAdmin}`);
 
