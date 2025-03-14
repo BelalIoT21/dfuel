@@ -17,7 +17,7 @@ export const useMachineDetail = (id: string | undefined) => {
   const course = courses[id || ''];
   
   useEffect(() => {
-    if (user && user.certifications.includes(id || '')) {
+    if (user && id && user.certifications.includes(id)) {
       setCourseCompleted(true);
       setQuizPassed(true);
       setProgress(100);
@@ -46,16 +46,38 @@ export const useMachineDetail = (id: string | undefined) => {
     navigate(`/booking/${id}`);
   };
   
-  const handlePassQuiz = () => {
-    setQuizPassed(true);
-    setProgress(100);
-    
-    if (user && id) {
-      addCertification(id);
-      
+  const handlePassQuiz = async () => {
+    try {
+      if (user && id) {
+        const success = await addCertification(id);
+        if (success) {
+          setQuizPassed(true);
+          setProgress(100);
+          
+          toast({
+            title: "Certification Earned!",
+            description: `You are now certified to use the ${machine?.name}.`,
+          });
+        } else {
+          toast({
+            title: "Certification Failed",
+            description: "There was an issue adding your certification. Please try again.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to get certified.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error adding certification:", error);
       toast({
-        title: "Certification Earned!",
-        description: `You are now certified to use the ${machine?.name}.`,
+        title: "Error",
+        description: "An unexpected error occurred while processing your certification.",
+        variant: "destructive"
       });
     }
   };

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ const Quiz = () => {
   const [showResults, setShowResults] = useState(false);
   const [attempts, setAttempts] = useState(1);
   const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [certificationAdded, setCertificationAdded] = useState(false);
   
   const machine = machines.find(m => m.id === id);
   const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
@@ -56,7 +58,7 @@ const Quiz = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (selectedAnswers.length !== quiz.length) {
       toast({
         title: "Incomplete",
@@ -79,16 +81,32 @@ const Quiz = () => {
     setQuizSubmitted(true);
     setShowResults(true);
 
-    if (passed) {
-      if (id) {
-        addCertification(id);
+    if (passed && !certificationAdded && id) {
+      try {
+        const success = await addCertification(id);
+        setCertificationAdded(success);
+        
+        if (success) {
+          toast({
+            title: "Quiz Passed!",
+            description: `You got ${correct} out of ${quiz.length} correct. You are now certified to use this machine.`
+          });
+        } else {
+          toast({
+            title: "Quiz Passed!",
+            description: `You got ${correct} out of ${quiz.length} correct, but there was an issue adding your certification.`,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error adding certification:", error);
+        toast({
+          title: "Quiz Passed!",
+          description: `You got ${correct} out of ${quiz.length} correct, but there was an error processing your certification.`,
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Quiz Passed!",
-        description: `You got ${correct} out of ${quiz.length} correct. You are now certified to use this machine.`
-      });
-    } else {
+    } else if (!passed) {
       if (attempts < 2) {
         toast({
           title: "Quiz Failed",
