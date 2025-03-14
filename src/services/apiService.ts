@@ -1,8 +1,7 @@
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-// Define the base URL for the API, with a fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+const BASE_URL = '/api'; // This will be proxied to our backend server
 
 interface ApiResponse<T> {
   data: T | null;
@@ -18,7 +17,7 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${API_BASE_URL}/${endpoint}`;
+      const url = `${BASE_URL}/${endpoint}`;
       const token = localStorage.getItem('token');
       
       const headers: HeadersInit = {
