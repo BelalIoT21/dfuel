@@ -37,10 +37,11 @@ export const useMachineDetail = (id: string | undefined) => {
     const loadMachineStatus = async () => {
       if (id) {
         try {
+          console.log(`Loading status for machine: ${id}`);
           const status = await userDatabase.getMachineStatus(id);
           setMachineStatus(status || 'available');
         } catch (error) {
-          console.error("Error loading machine status:", error);
+          console.error(`Error loading machine status for ${id}:`, error);
           setMachineStatus('available');
         }
       }

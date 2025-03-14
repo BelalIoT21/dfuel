@@ -32,6 +32,7 @@ export const useMachineData = (user, navigation) => {
           };
         } catch (error) {
           console.error(`Error loading status for machine ${machine.id}:`, error);
+          // Always default to available if there's an error
           return {
             ...machine,
             status: 'available'

@@ -8,12 +8,19 @@ import { BaseService } from './baseService';
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
     try {
+      console.log(`Getting machine status for: ${machineId}`);
       const response = await apiService.getMachineStatus(machineId);
       if (response.data) {
         return response.data.status;
       }
     } catch (error) {
-      console.error("API error, using default machine status:", error);
+      console.error(`Error getting status for machine ${machineId}:`, error);
+      // For the safety-cabinet machine which might not exist in the database yet,
+      // we want to return 'available' to prevent UI issues
+      if (machineId === 'safety-cabinet') {
+        console.log('Using default available status for safety cabinet');
+        return 'available';
+      }
     }
     
     // Default to available if API fails
@@ -25,7 +32,7 @@ export class MachineDatabaseService extends BaseService {
       const response = await apiService.updateMachineStatus(machineId, status, note);
       return response.data?.success || false;
     } catch (error) {
-      console.error("API error, could not update machine status:", error);
+      console.error(`API error, could not update machine status for ${machineId}:`, error);
       return false;
     }
   }
