@@ -3,5 +3,5 @@ import { registerRootComponent } from 'expo';
 import App from './App';
 
 // Log for debugging
-console.log("Initializing Expo app - registering root component");
+console.log("Initializing app - registering root component");
 registerRootComponent(App);
