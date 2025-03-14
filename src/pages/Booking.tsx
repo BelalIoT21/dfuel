@@ -1,29 +1,38 @@
 
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { machines } from '../utils/data';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { format, addDays } from 'date-fns';
+import { machines } from '../utils/data';
+import { format, addDays, isSameDay } from 'date-fns';
 
+// Mock available time slots
 const timeSlots = [
-  '09:00 - 10:00',
-  '10:00 - 11:00',
-  '11:00 - 12:00',
-  '13:00 - 14:00',
-  '14:00 - 15:00',
-  '15:00 - 16:00',
-  '16:00 - 17:00',
+  '9:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '1:00 PM - 2:00 PM',
+  '2:00 PM - 3:00 PM',
+  '3:00 PM - 4:00 PM',
+  '4:00 PM - 5:00 PM',
 ];
+
+// Mock bookings data (some slots already booked)
+const bookedSlots = {
+  '2023-10-15': [0, 3, 6], // Indexes of timeSlots that are booked
+  '2023-10-16': [1, 2],
+  '2023-10-20': [3, 4, 5],
+};
 
 const Booking = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [isBooking, setIsBooking] = useState(false);
   
   const machine = machines.find(m => m.id === id);
   
@@ -40,41 +49,40 @@ const Booking = () => {
     );
   }
 
-  if (!machine.quizPassed) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-        <div className="max-w-xl mx-auto text-center page-transition">
-          <h1 className="text-2xl font-bold mb-4">Quiz Required</h1>
-          <p className="mb-6">You need to pass the safety quiz before booking this machine.</p>
-          <div className="flex gap-4 justify-center">
-            <Link to={`/quiz/${id}`}>
-              <Button>Take Quiz</Button>
-            </Link>
-            <Link to={`/machine/${id}`}>
-              <Button variant="outline">Back to Machine</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Get booked slots for the selected date
+  const getBookedSlotsForDate = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    return bookedSlots[dateKey as keyof typeof bookedSlots] || [];
+  };
 
   const handleBooking = () => {
-    if (!selectedDate || !selectedTimeSlot) return;
-    
-    // In a real app, this would call an API to create a booking
-    toast({
-      title: "Booking Confirmed",
-      description: `Your booking for ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTimeSlot} has been confirmed.`,
-    });
-    
-    navigate('/home');
+    if (selectedSlot === null) {
+      toast({
+        title: "Error",
+        description: "Please select a time slot first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsBooking(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setIsBooking(false);
+      toast({
+        title: "Booking Confirmed",
+        description: `You have booked the ${machine.name} for ${format(selectedDate, 'MMMM d, yyyy')} at ${timeSlots[selectedSlot]}.`
+      });
+    }, 1500);
   };
+
+  const bookedSlotsForSelectedDate = getBookedSlotsForDate(selectedDate);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-4xl mx-auto page-transition">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
             &larr; Back to {machine.name}
           </Link>
@@ -82,83 +90,96 @@ const Booking = () => {
         
         <h1 className="text-3xl font-bold mb-6">Book {machine.name}</h1>
         
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Select Date</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Select Date</h2>
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
-                fromDate={new Date()}
-                toDate={addDays(new Date(), 30)}
-                disabled={(date) => date.getDay() === 0 || date.getDay() === 6}
-                className="rounded-md border mx-auto"
+                onSelect={(date) => date && setSelectedDate(date)}
+                className="rounded-md border"
+                disabled={{ before: addDays(new Date(), 1) }}
               />
+              <p className="text-sm text-gray-500 mt-4">
+                You can book up to 30 days in advance. Bookings require admin approval.
+              </p>
             </CardContent>
           </Card>
           
-          <div>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Select Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {timeSlots.map((slot) => (
-                    <Button
-                      key={slot}
-                      variant={selectedTimeSlot === slot ? "default" : "outline"}
-                      onClick={() => setSelectedTimeSlot(slot)}
-                      disabled={!selectedDate}
-                      className="justify-start"
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Select Time Slot</h2>
+              <p className="text-gray-600 mb-4">
+                Time slots for {format(selectedDate, 'MMMM d, yyyy')}:
+              </p>
+              
+              <div className="space-y-3">
+                {timeSlots.map((slot, index) => {
+                  const isBooked = bookedSlotsForSelectedDate.includes(index);
+                  return (
+                    <div 
+                      key={index} 
+                      className={`
+                        p-3 border rounded-md cursor-pointer transition
+                        ${isBooked ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'hover:border-primary'}
+                        ${selectedSlot === index && !isBooked ? 'border-primary bg-primary/5' : ''}
+                      `}
+                      onClick={() => !isBooked && setSelectedSlot(index)}
                     >
-                      {slot}
-                    </Button>
-                  ))}
-                </div>
-                {!selectedDate && (
-                  <p className="text-sm text-gray-500 mt-4">Please select a date first</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Booking Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium">Machine</h3>
-                    <p>{machine.name}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Date</h3>
-                    <p>{selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Not selected'}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Time</h3>
-                    <p>{selectedTimeSlot || 'Not selected'}</p>
-                  </div>
-                  
-                  <Button 
-                    onClick={handleBooking}
-                    disabled={!selectedDate || !selectedTimeSlot}
-                    className="w-full mt-4"
-                  >
-                    Confirm Booking
-                  </Button>
-                  <p className="text-sm text-gray-500 text-center">
-                    Payment will be collected on-site
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="cursor-pointer">{slot}</Label>
+                        {isBooked ? (
+                          <span className="text-xs bg-gray-200 text-gray-700 py-1 px-2 rounded">Booked</span>
+                        ) : (
+                          <span className="text-xs bg-green-100 text-green-800 py-1 px-2 rounded">Available</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <Button 
+                className="w-full mt-6" 
+                onClick={handleBooking}
+                disabled={selectedSlot === null || isBooking}
+              >
+                {isBooking ? 'Processing...' : 'Confirm Booking'}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
+        
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Booking Information</h2>
+            <div className="space-y-4">
+              <div>
+                <Label>Selected Machine</Label>
+                <p className="font-medium">{machine.name}</p>
+              </div>
+              
+              <div>
+                <Label>Date</Label>
+                <p className="font-medium">{format(selectedDate, 'MMMM d, yyyy')}</p>
+              </div>
+              
+              <div>
+                <Label>Time</Label>
+                <p className="font-medium">
+                  {selectedSlot !== null ? timeSlots[selectedSlot] : 'No time slot selected'}
+                </p>
+              </div>
+              
+              <div className="text-sm text-gray-500 border-t pt-4 mt-4">
+                <p>Payment will be collected on-site before your session.</p>
+                <p>Please arrive 10 minutes before your scheduled time.</p>
+                <p>If you need to cancel, please do so at least 24 hours in advance.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

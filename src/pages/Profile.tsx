@@ -1,189 +1,204 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { machines } from '../utils/data';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   
-  // Dummy booking data
-  const bookings = [
-    { id: 1, machine: 'Laser Cutter', date: 'June 15, 2023', time: '10:00 - 11:00', status: 'confirmed' },
-    { id: 2, machine: 'Ultimaker', date: 'June 20, 2023', time: '14:00 - 15:00', status: 'pending' },
-  ];
-  
-  // Dummy certification data
-  const certifications = [
-    { id: 1, machine: 'Laser Cutter', completed: true },
-    { id: 2, machine: 'Ultimaker', completed: true },
-    { id: 3, machine: 'Safety Cabinet', completed: false },
+  // Mock bookings for the current user
+  const userBookings = [
+    {
+      id: '1',
+      machineId: 'laser-cutter',
+      date: '2023-10-18',
+      time: '2:00 PM - 3:00 PM',
+      status: 'Approved'
+    },
+    {
+      id: '2',
+      machineId: '3d-printer',
+      date: '2023-10-25',
+      time: '10:00 AM - 11:00 AM',
+      status: 'Pending'
+    }
   ];
 
-  const handleUpdateProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, this would call an API to update the user profile
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been updated successfully.",
-    });
-  };
+  // Mock completed certifications
+  const completedCertifications = machines
+    .filter(machine => machine.courseCompleted && machine.quizPassed)
+    .map(machine => ({
+      id: machine.id,
+      name: machine.name,
+      date: '2023-09-30'
+    }));
 
-  const handleCancelBooking = (id: number) => {
-    // In a real app, this would call an API to cancel the booking
-    toast({
-      title: "Booking cancelled",
-      description: "Your booking has been cancelled successfully.",
-    });
+  const handleSaveProfile = () => {
+    // Simulate API call to update profile
+    setTimeout(() => {
+      setIsEditing(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been updated successfully."
+      });
+    }, 1000);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-5xl mx-auto page-transition">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Your Profile</h1>
-          <div className="flex gap-4">
-            <Link to="/home">
-              <Button variant="outline">Home</Button>
-            </Link>
-            <Button variant="outline" onClick={logout}>Logout</Button>
-          </div>
+      <div className="max-w-4xl mx-auto page-transition">
+        <div className="mb-6 flex justify-between items-center">
+          <Link to="/home" className="text-blue-600 hover:underline flex items-center gap-1">
+            &larr; Back to Home
+          </Link>
+          <Button variant="outline" onClick={logout}>
+            Logout
+          </Button>
         </div>
         
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="certifications">Certifications</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile" className="mt-6">
+        <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
+                <CardTitle>Account Information</CardTitle>
+                <CardDescription>Your personal details</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleUpdateProfile} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {isEditing ? (
+                  <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                      <Input 
+                        id="name" 
+                        value={name} 
+                        onChange={(e) => setName(e.target.value)} 
                       />
                     </div>
-                    
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
                       />
                     </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button onClick={handleSaveProfile}>Save</Button>
+                      <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                    </div>
                   </div>
-                  
-                  <Button type="submit">Update Profile</Button>
-                </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-gray-500 text-sm">Full Name</Label>
+                      <p className="font-medium">{user?.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Email</Label>
+                      <p className="font-medium">{user?.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 text-sm">Account Type</Label>
+                      <p className="font-medium">{user?.isAdmin ? 'Administrator' : 'User'}</p>
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={() => setIsEditing(true)}>
+                      Edit Profile
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
           
-          <TabsContent value="bookings" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Bookings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {bookings.length > 0 ? (
-                  <div className="space-y-4">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="flex flex-col md:flex-row justify-between border rounded-lg p-4">
-                        <div>
-                          <h3 className="font-medium">{booking.machine}</h3>
-                          <p className="text-sm text-gray-500">{booking.date} • {booking.time}</p>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
-                            booking.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {booking.status === 'confirmed' ? 'Confirmed' : 'Pending'}
-                          </span>
-                        </div>
-                        <div className="mt-4 md:mt-0">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleCancelBooking(booking.id)}
-                          >
-                            Cancel Booking
+          <div className="md:col-span-2">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Bookings</CardTitle>
+                  <CardDescription>Recent and upcoming bookings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {userBookings.length > 0 ? (
+                    <div className="space-y-4">
+                      {userBookings.map((booking) => {
+                        const machine = machines.find(m => m.id === booking.machineId);
+                        return (
+                          <div key={booking.id} className="flex items-center justify-between border-b pb-4 last:border-0">
+                            <div>
+                              <p className="font-medium">{machine?.name}</p>
+                              <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                booking.status === 'Approved' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {booking.status}
+                              </span>
+                              <Button variant="outline" size="sm">
+                                {booking.status === 'Approved' ? 'Cancel' : 'View'}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>You don't have any bookings yet.</p>
+                      <Button className="mt-2" asChild>
+                        <Link to="/home">Book a Machine</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Certifications</CardTitle>
+                  <CardDescription>Machines you are certified to use</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {completedCertifications.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {completedCertifications.map((cert) => (
+                        <div key={cert.id} className="border rounded-lg p-4">
+                          <div className="font-medium">{cert.name}</div>
+                          <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
+                          <Button variant="outline" size="sm" className="mt-2" asChild>
+                            <Link to={`/machine/${cert.id}`}>Book Now</Link>
                           </Button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">You don't have any bookings yet.</p>
-                    <Link to="/home">
-                      <Button>Book a Machine</Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="certifications" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Certifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {certifications.length > 0 ? (
-                  <div className="space-y-4">
-                    {certifications.map((cert) => (
-                      <div key={cert.id} className="flex justify-between items-center border rounded-lg p-4">
-                        <div>
-                          <h3 className="font-medium">{cert.machine}</h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2 ${
-                            cert.completed 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {cert.completed ? 'Certified' : 'Not Certified'}
-                          </span>
-                        </div>
-                        {!cert.completed && (
-                          <Link to="/home">
-                            <Button size="sm">Get Certified</Button>
-                          </Link>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">You don't have any certifications yet.</p>
-                    <Link to="/home">
-                      <Button>Get Certified</Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>You haven't completed any certifications yet.</p>
+                      <Button className="mt-2" asChild>
+                        <Link to="/home">Take a Safety Course</Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
