@@ -7,7 +7,7 @@ import { BaseService } from './baseService';
  */
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
-    // Safety cabinet is always available and not a machine
+    // Safety cabinet is equipment, not a machine - always return available
     if (machineId === 'safety-cabinet') {
       return 'available';
     }
@@ -28,7 +28,7 @@ export class MachineDatabaseService extends BaseService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Cannot update safety cabinet status as it's not a machine
+    // Cannot update safety cabinet status as it's equipment, not a machine
     if (machineId === 'safety-cabinet') {
       return true; // Pretend success
     }
