@@ -53,7 +53,7 @@ const MachineActions = ({
         </Button>
       )}
       
-      {/* Allow admin to book machines regardless of status */}
+      {/* Always show booking button for admins, or for certified users with available machines */}
       {(machineStatus === 'available' && isCertified) || isAdmin ? (
         <Button 
           mode="contained" 

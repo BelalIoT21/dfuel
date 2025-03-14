@@ -1,29 +1,63 @@
 
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { machines } from '../utils/data';
 import { useAuth } from '../context/AuthContext';
+import { bookingDatabaseService } from '../services/database/bookingService';
+import { toast } from '../components/ui/use-toast';
 
 const Booking = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed'>('pending');
+  const navigate = useNavigate();
   
   const date = searchParams.get('date');
   const time = searchParams.get('time');
   const machine = machines.find(m => m.id === id);
   
-  // Simulate booking confirmation after a delay
+  // Process booking
   useEffect(() => {
+    if (!machine || !date || !time || !user) return;
+    
+    const createBooking = async () => {
+      try {
+        // Add booking to database
+        const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
+        
+        if (success) {
+          setBookingStatus('confirmed');
+          toast({
+            title: "Booking Confirmed",
+            description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
+          });
+        } else {
+          toast({
+            title: "Booking Failed",
+            description: "There was an error creating your booking",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error creating booking:", error);
+        toast({
+          title: "Booking Error",
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    // Simulate booking process with a short delay
     const timer = setTimeout(() => {
-      setBookingStatus('confirmed');
-    }, 3000);
+      createBooking();
+    }, 1500);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [id, date, time, user, machine]);
   
   if (!machine || !date || !time) {
     return (

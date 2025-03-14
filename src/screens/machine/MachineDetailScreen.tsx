@@ -28,7 +28,9 @@ const MachineDetailScreen = ({ route, navigation }) => {
   };
 
   const handleBookMachine = () => {
+    // Ensure we're navigating to the Booking screen with the correct machineId parameter
     navigation.navigate('Booking', { machineId });
+    console.log('Navigating to booking for machine:', machineId);
   };
 
   const handleGetCertified = async () => {
