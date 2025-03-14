@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +7,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { PasswordResetDialog } from './PasswordResetDialog';
+import { motion } from 'framer-motion';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
 }
+
+const formAnimation = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
 
 export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [email, setEmail] = useState('');
@@ -77,8 +92,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </Alert>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <motion.form 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+          variants={formAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -89,9 +110,9 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               className={`w-full ${emailError ? 'border-red-500' : ''}`}
             />
             {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-          </div>
+          </motion.div>
           
-          <div className="space-y-2">
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Input
@@ -112,9 +133,9 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               </button>
             </div>
             {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
-          </div>
+          </motion.div>
           
-          <div className="text-right">
+          <motion.div className="text-right" variants={itemAnimation}>
             <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
               <DialogTrigger asChild>
                 <button
@@ -129,14 +150,21 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                 onOpenChange={setIsForgotPasswordOpen}
               />
             </Dialog>
-          </div>
+          </motion.div>
           
-          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
-            Sign In
-          </Button>
-        </form>
+          <motion.div variants={itemAnimation}>
+            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+              Sign In
+            </Button>
+          </motion.div>
+        </motion.form>
 
-        <div className="mt-4 text-center">
+        <motion.div 
+          className="mt-4 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
           <button
             onClick={onToggleMode}
             className="text-sm text-purple-600 hover:underline"
@@ -144,7 +172,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           >
             Don't have an account? Register
           </button>
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   );

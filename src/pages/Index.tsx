@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,17 +44,35 @@ const Index = () => {
           </p>
         </div>
 
-        {isLogin ? (
-          <LoginForm 
-            onLogin={handleLogin} 
-            onToggleMode={toggleMode} 
-          />
-        ) : (
-          <RegisterForm 
-            onRegister={handleRegister} 
-            onToggleMode={toggleMode} 
-          />
-        )}
+        <AnimatePresence mode="wait">
+          {isLogin ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LoginForm 
+                onLogin={handleLogin} 
+                onToggleMode={toggleMode} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="register"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <RegisterForm 
+                onRegister={handleRegister} 
+                onToggleMode={toggleMode} 
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
