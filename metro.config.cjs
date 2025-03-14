@@ -15,8 +15,13 @@ config.resolver.sourceExts = [
   'mjs',
 ];
 
+// Support for symlinks
+config.resolver.disableHierarchicalLookup = true;
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, 'node_modules')];
+
 // Fix for ESM compatibility
 config.resolver.assetExts = config.resolver.assetExts || [];
 config.transformer.minifierPath = 'metro-minify-terser';
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 
 module.exports = config;

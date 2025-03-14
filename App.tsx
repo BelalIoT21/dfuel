@@ -1,6 +1,6 @@
 
-import 'expo-dev-client';
-import App from './src/App';  // Import from App.tsx
+import 'expo-router/entry';
 
-// This exports the app component for Expo
-export default App;
+export default function App() {
+  return null; // Expo Router handles the rendering
+}
