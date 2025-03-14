@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../services/apiService';
@@ -19,14 +20,14 @@ export const DashboardContent = () => {
     const fetchData = async () => {
       try {
         // Get all users using our API service
-        const response = await apiService.request<any[]>('users', 'GET');
+        const response = await apiService.getAllUsers();
         if (response.data) {
           setAllUsers(response.data);
         }
         
         // Get machine statuses
         const machinesWithStatus = await Promise.all(machines.map(async (machine) => {
-          const statusResponse = await apiService.request<string>(`machines/${machine.id}/status`, 'GET');
+          const statusResponse = await apiService.getMachineStatus(machine.id);
           return {
             ...machine,
             status: statusResponse.data || 'available'

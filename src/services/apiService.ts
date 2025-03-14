@@ -128,6 +128,15 @@ class ApiService {
     );
   }
   
+  // New endpoints for DashboardContent
+  async getAllUsers() {
+    return this.request<any[]>('users', 'GET');
+  }
+  
+  async getMachineStatus(machineId: string) {
+    return this.request<string>(`machines/${machineId}/status`, 'GET');
+  }
+  
   // Other endpoints as needed
 }
 
