@@ -1,3 +1,4 @@
+
 // This file contains mock data for development
 
 // Mock machine data
@@ -41,9 +42,18 @@ export const machines = [
   {
     id: 'safety-cabinet',
     name: 'Safety Cabinet',
-    type: 'Safety Cabinet',
-    description: 'Complete the safety course to get access to all machines',
+    type: 'Safety Equipment',
+    description: 'Get certified to use the safety cabinet equipment',
     image: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
+    courseCompleted: false,
+    quizPassed: false
+  },
+  {
+    id: 'safety-course',
+    name: 'Safety Course',
+    type: 'Training',
+    description: 'Complete the general safety course to access all machines',
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false
   }
@@ -92,13 +102,23 @@ export const courses = {
     ]
   },
   'safety-cabinet': {
-    title: 'General Safety Course',
-    description: 'Learn general safety guidelines for the workshop.',
+    title: 'Safety Cabinet Training',
+    description: 'Learn how to properly use the safety cabinet equipment.',
     modules: [
-      'Emergency Procedures',
+      'Safety Cabinet Introduction',
+      'Proper Storage Techniques',
+      'Handling Hazardous Materials',
+      'Emergency Procedures'
+    ]
+  },
+  'safety-course': {
+    title: 'General Safety Course',
+    description: 'Learn essential workshop safety principles and protocols.',
+    modules: [
+      'Workshop Safety Fundamentals',
       'First Aid Basics',
       'Fire Safety',
-      'Tool Safety'
+      'Emergency Response Procedures'
     ]
   }
 };
@@ -166,6 +186,21 @@ export const quizzes = {
     ]
   },
   'safety-cabinet': {
+    title: 'Safety Cabinet Quiz',
+    questions: [
+      {
+        question: 'What is the primary purpose of a safety cabinet?',
+        options: ['Store tools', 'Store hazardous materials', 'Lock away valuable equipment', 'Display safety posters'],
+        correctAnswer: 'Store hazardous materials'
+      },
+      {
+        question: 'How should chemicals be organized in a safety cabinet?',
+        options: ['Alphabetically', 'By purchase date', 'By compatibility', 'By color'],
+        correctAnswer: 'By compatibility'
+      }
+    ]
+  },
+  'safety-course': {
     title: 'General Safety Quiz',
     questions: [
       {

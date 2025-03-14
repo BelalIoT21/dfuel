@@ -6,7 +6,7 @@ import { useMachineDetail } from './machine-detail/hooks/useMachineDetail';
 import { NotFoundView } from './machine-detail/components/NotFoundView';
 import { MachineImage } from './machine-detail/components/MachineImage';
 import { MachineDetailTabs } from './machine-detail/components/MachineDetailTabs';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const MachineDetail = () => {
   const { id } = useParams();
@@ -20,7 +20,9 @@ const MachineDetail = () => {
     isBookable,
     machineStatus,
     isAccessible,
-    safetyCertified,
+    safetyCabinetCompleted,
+    safetyCourseCompleted,
+    allSafetyRequirementsMet,
     handleStartCourse,
     handleStartQuiz,
     handleBookMachine,
@@ -33,6 +35,8 @@ const MachineDetail = () => {
   
   const isCertified = user?.certifications.includes(machine.id) || false;
   const isSafetyCabinet = machine.id === 'safety-cabinet';
+  const isSafetyCourse = machine.id === 'safety-course';
+  const isSafetyRelated = isSafetyCabinet || isSafetyCourse;
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
@@ -63,21 +67,55 @@ const MachineDetail = () => {
               </CardHeader>
               
               <CardContent>
-                {!isAccessible && !isSafetyCabinet ? (
+                {!isAccessible && !isSafetyRelated ? (
                   <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mb-4">
                     <div className="flex gap-3">
                       <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
                       <div>
-                        <h3 className="font-medium text-yellow-800 mb-1">Safety Course Required</h3>
+                        <h3 className="font-medium text-yellow-800 mb-1">Safety Requirements Needed</h3>
                         <p className="text-yellow-700 mb-3">
-                          You must complete the safety course before accessing this machine.
+                          You must complete both safety requirements before accessing this machine.
                         </p>
-                        <Button 
-                          onClick={() => window.location.href = '/machine/safety-cabinet'}
-                          className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                        >
-                          Take Safety Course
-                        </Button>
+                        
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            {safetyCourseCompleted ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border border-yellow-500" />
+                            )}
+                            <span className={`text-sm ${safetyCourseCompleted ? "text-green-700" : "text-yellow-700"}`}>
+                              Safety Course {safetyCourseCompleted ? "Completed" : "Required"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {safetyCabinetCompleted ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border border-yellow-500" />
+                            )}
+                            <span className={`text-sm ${safetyCabinetCompleted ? "text-green-700" : "text-yellow-700"}`}>
+                              Safety Cabinet Certification {safetyCabinetCompleted ? "Completed" : "Required"}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {!safetyCourseCompleted ? (
+                          <Button 
+                            onClick={() => window.location.href = '/machine/safety-course'}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white mr-2"
+                          >
+                            Take Safety Course
+                          </Button>
+                        ) : !safetyCabinetCompleted ? (
+                          <Button 
+                            onClick={() => window.location.href = '/machine/safety-cabinet'}
+                            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                          >
+                            Complete Safety Cabinet Certification
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -94,6 +132,7 @@ const MachineDetail = () => {
                     onPassQuiz={handlePassQuiz}
                     isCertified={isCertified}
                     isSafetyCabinet={isSafetyCabinet}
+                    isSafetyCourse={isSafetyCourse}
                   />
                 )}
               </CardContent>

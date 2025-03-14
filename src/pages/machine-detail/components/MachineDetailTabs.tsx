@@ -17,6 +17,7 @@ interface MachineDetailTabsProps {
   onPassQuiz: () => void;
   isCertified: boolean;
   isSafetyCabinet?: boolean;
+  isSafetyCourse?: boolean;
 }
 
 export const MachineDetailTabs = ({
@@ -30,8 +31,23 @@ export const MachineDetailTabs = ({
   onBookMachine,
   onPassQuiz,
   isCertified,
-  isSafetyCabinet = false
+  isSafetyCabinet = false,
+  isSafetyCourse = false
 }: MachineDetailTabsProps) => {
+  const isSafetyRelated = isSafetyCabinet || isSafetyCourse;
+  
+  const getTitle = () => {
+    if (isSafetyCabinet) return "Safety Cabinet Training";
+    if (isSafetyCourse) return "General Safety Course";
+    return "Machine Training";
+  };
+  
+  const getDescription = () => {
+    if (isSafetyCabinet) return "safety cabinet";
+    if (isSafetyCourse) return "workshop safety";
+    return "this machine";
+  };
+  
   return (
     <Tabs defaultValue="overview">
       <TabsList className="mb-4">
@@ -67,23 +83,29 @@ export const MachineDetailTabs = ({
               <Medal className="h-6 w-6 text-green-600" />
               <div>
                 <h3 className="font-medium text-green-800">Certification Completed</h3>
-                <p className="text-green-700">You are certified to use this machine.</p>
+                <p className="text-green-700">
+                  {isSafetyCabinet 
+                    ? "You have completed the Safety Cabinet certification."
+                    : isSafetyCourse 
+                      ? "You have completed the General Safety Course."
+                      : `You are certified to use this machine.`}
+                </p>
               </div>
             </div>
           </div>
         ) : (
           <div className="border rounded-md p-4">
-            <h3 className="text-lg font-medium mb-4">Certification Process</h3>
+            <h3 className="text-lg font-medium mb-4">{getTitle()}</h3>
             
             <div className="flex flex-col space-y-4">
               <div className="flex items-start gap-3">
                 <div className="rounded-full w-8 h-8 bg-purple-100 text-purple-700 flex items-center justify-center font-medium">1</div>
                 <div>
-                  <h4 className="font-medium">{isSafetyCabinet ? "Safety Course" : "Machine Training"}</h4>
+                  <h4 className="font-medium">{isSafetyRelated ? (isSafetyCabinet ? "Cabinet Safety" : "Workshop Safety") : "Machine Training"}</h4>
                   <p className="text-gray-500 text-sm mb-2">
                     {courseCompleted 
                       ? "Completed" 
-                      : `Complete the ${isSafetyCabinet ? "safety" : "training"} course to learn how to use this ${isSafetyCabinet ? "equipment safely" : "machine"}.`}
+                      : `Complete the ${isSafetyRelated ? (isSafetyCabinet ? "safety cabinet" : "safety course") : "training"} to learn how to use ${getDescription()}.`}
                   </p>
                   
                   <Button 
@@ -107,11 +129,13 @@ export const MachineDetailTabs = ({
               <div className="flex items-start gap-3">
                 <div className={`rounded-full w-8 h-8 ${courseCompleted ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"} flex items-center justify-center font-medium`}>2</div>
                 <div>
-                  <h4 className={`font-medium ${!courseCompleted && "text-gray-400"}`}>{isSafetyCabinet ? "Safety" : "Knowledge"} Quiz</h4>
+                  <h4 className={`font-medium ${!courseCompleted && "text-gray-400"}`}>
+                    {isSafetyCabinet ? "Safety Cabinet" : isSafetyCourse ? "Safety" : "Knowledge"} Quiz
+                  </h4>
                   <p className={`text-sm mb-2 ${courseCompleted ? "text-gray-500" : "text-gray-400"}`}>
                     {quizPassed 
                       ? "Passed" 
-                      : `Pass the ${isSafetyCabinet ? "safety" : "knowledge"} quiz to demonstrate your understanding.`}
+                      : `Pass the ${isSafetyCabinet ? "safety cabinet" : isSafetyCourse ? "safety" : "knowledge"} quiz to demonstrate your understanding.`}
                   </p>
                   
                   <Button 

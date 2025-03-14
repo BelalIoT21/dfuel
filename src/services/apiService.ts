@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 class ApiService {
@@ -97,27 +98,43 @@ class ApiService {
   
   // Machine endpoints
   async getMachines() {
-    // Special case - For client-side machine listing, add safety cabinet if needed
+    // Special case - For client-side machine listing, add safety cabinet and safety course if needed
     const response = await this.request<any>('/machines', {
       method: 'GET'
     });
     
-    // Check if safety cabinet is already included
+    // Check if safety cabinet and safety course are already included
     if (response.data && Array.isArray(response.data)) {
       const hasSafetyCabinet = response.data.some(m => m.id === 'safety-cabinet' || m._id === 'safety-cabinet');
+      const hasSafetyCourse = response.data.some(m => m.id === 'safety-course' || m._id === 'safety-course');
       
+      // Add the safety cabinet as a special machine if not present
       if (!hasSafetyCabinet) {
-        // Add the safety cabinet as a special machine
         response.data.push({
           _id: 'safety-cabinet',
           id: 'safety-cabinet',
           name: 'Safety Cabinet',
-          type: 'Safety Cabinet',
-          description: 'Complete the safety course to get access to all machines',
+          type: 'Safety Equipment',
+          description: 'Get certified to use the safety cabinet equipment',
           status: 'Available',
           requiresCertification: true,
           difficulty: 'Beginner',
           imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
+        });
+      }
+      
+      // Add the safety course as a special type if not present
+      if (!hasSafetyCourse) {
+        response.data.push({
+          _id: 'safety-course',
+          id: 'safety-course',
+          name: 'Safety Course',
+          type: 'Training',
+          description: 'Complete the general safety course to access all machines',
+          status: 'Available',
+          requiresCertification: true,
+          difficulty: 'Beginner',
+          imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
         });
       }
     }
@@ -133,12 +150,29 @@ class ApiService {
           _id: 'safety-cabinet',
           id: 'safety-cabinet',
           name: 'Safety Cabinet',
-          type: 'Safety Cabinet',
-          description: 'Complete the safety course to get access to all machines',
+          type: 'Safety Equipment',
+          description: 'Get certified to use the safety cabinet equipment',
           status: 'Available',
           requiresCertification: true,
           difficulty: 'Beginner',
           imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
+        }
+      };
+    }
+    
+    // Special case for safety course
+    if (id === 'safety-course') {
+      return {
+        data: {
+          _id: 'safety-course',
+          id: 'safety-course',
+          name: 'Safety Course',
+          type: 'Training',
+          description: 'Complete the general safety course to access all machines',
+          status: 'Available',
+          requiresCertification: true,
+          difficulty: 'Beginner',
+          imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
         }
       };
     }

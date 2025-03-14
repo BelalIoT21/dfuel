@@ -21,7 +21,9 @@ export const useMachineDashboard = () => {
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [safetyCabinetCompleted, setSafetyCabinetCompleted] = useState(false);
   const [safetyCourseCompleted, setSafetyCourseCompleted] = useState(false);
+  const [allSafetyRequirementsMet, setAllSafetyRequirementsMet] = useState(false);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -33,19 +35,28 @@ export const useMachineDashboard = () => {
       try {
         setLoading(true);
         
-        // Check if user has completed the safety course (look for safety cabinet certification)
-        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
-        setSafetyCourseCompleted(!!hasSafetyCert);
+        // Check if user has completed both safety requirements
+        const hasSafetyCabinetCert = user?.certifications?.includes('safety-cabinet');
+        const hasSafetyCourseCert = user?.certifications?.includes('safety-course');
+        
+        setSafetyCabinetCompleted(!!hasSafetyCabinetCert);
+        setSafetyCourseCompleted(!!hasSafetyCourseCert);
+        
+        // Both requirements need to be met
+        const allRequirementsMet = !!hasSafetyCabinetCert && !!hasSafetyCourseCert;
+        setAllSafetyRequirementsMet(allRequirementsMet);
         
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
             
-            // If safety course is not completed and it's not the safety cabinet itself, mark as locked
+            // If both safety requirements are not met and it's not one of the safety items itself, mark as locked
             let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
               (status as 'available' | 'maintenance' | 'in-use') || 'available';
             
-            if (!hasSafetyCert && machine.id !== 'safety-cabinet') {
+            if (!allRequirementsMet && 
+                machine.id !== 'safety-cabinet' && 
+                machine.id !== 'safety-course') {
               machineStatus = 'locked';
             }
             
@@ -57,7 +68,9 @@ export const useMachineDashboard = () => {
             console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: !hasSafetyCert && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+              status: !allRequirementsMet && 
+                      machine.id !== 'safety-cabinet' && 
+                      machine.id !== 'safety-course' ? 'locked' : 'available'
             };
           }
         }));
@@ -71,7 +84,9 @@ export const useMachineDashboard = () => {
         });
         setMachineData(machines.map(machine => ({
           ...machine,
-          status: !safetyCourseCompleted && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+          status: !allSafetyRequirementsMet && 
+                  machine.id !== 'safety-cabinet' && 
+                  machine.id !== 'safety-course' ? 'locked' : 'available'
         })));
       } finally {
         setLoading(false);
@@ -81,12 +96,14 @@ export const useMachineDashboard = () => {
     if (user) {
       loadMachineData();
     }
-  }, [user, navigate, safetyCourseCompleted]);
+  }, [user, navigate, allSafetyRequirementsMet]);
 
   return {
     user,
     machineData,
     loading,
-    safetyCourseCompleted
+    safetyCabinetCompleted,
+    safetyCourseCompleted,
+    allSafetyRequirementsMet
   };
 };

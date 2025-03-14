@@ -11,7 +11,14 @@ import LoadingIndicator from '../components/home/LoadingIndicator';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { user, machineData, loading, safetyCourseCompleted } = useMachineDashboard();
+  const { 
+    user, 
+    machineData, 
+    loading, 
+    safetyCabinetCompleted, 
+    safetyCourseCompleted,
+    allSafetyRequirementsMet 
+  } = useMachineDashboard();
 
   if (!user) {
     navigate('/');
@@ -23,7 +30,11 @@ const Home = () => {
       <div className="max-w-7xl mx-auto">
         <PageHeader />
         
-        <SafetyAlert safetyCourseCompleted={safetyCourseCompleted} />
+        <SafetyAlert 
+          safetyCabinetCompleted={safetyCabinetCompleted}
+          safetyCourseCompleted={safetyCourseCompleted}
+          allSafetyRequirementsMet={allSafetyRequirementsMet}
+        />
 
         {loading ? (
           <LoadingIndicator />
