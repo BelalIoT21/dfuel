@@ -48,7 +48,7 @@ export const loginUser = async (req: Request, res: Response) => {
         isAdmin: user.isAdmin,
         certifications: user.certifications,
       },
-      token: generateToken(user._id.toString()),
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error('Error in loginUser:', error);

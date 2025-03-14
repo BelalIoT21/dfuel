@@ -5,17 +5,6 @@ import { localStorageService } from './localStorageService';
 export class MachineService {
   // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Special cases - safety cabinet and safety course are separate entities
-    if (machineId === 'safety-cabinet') {
-      console.log(`Safety cabinet status update requested - automatically available`);
-      return true; // Always available for safety cabinet
-    }
-    
-    if (machineId === 'safety-course') {
-      console.log(`Safety course status update requested - automatically available`);
-      return true; // Always available for safety course
-    }
-    
     try {
       // Try to update in MongoDB first
       const success = await mongoDbService.updateMachineStatus(machineId, status, note);
@@ -30,17 +19,6 @@ export class MachineService {
 
   // Get machine status
   async getMachineStatus(machineId: string): Promise<string> {
-    // Special cases - safety cabinet and safety course are separate entities
-    if (machineId === 'safety-cabinet') {
-      console.log(`Safety cabinet requested - returning hardcoded available status`);
-      return 'available'; // Always return available for safety cabinet
-    }
-    
-    if (machineId === 'safety-course') {
-      console.log(`Safety course requested - returning hardcoded available status`);
-      return 'available'; // Always return available for safety course
-    }
-    
     try {
       // Try to get from MongoDB first
       const status = await mongoDbService.getMachineStatus(machineId);
@@ -57,11 +35,6 @@ export class MachineService {
   
   // Get machine maintenance note
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
-    // Special cases - safety cabinet and safety course are separate entities
-    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
-      return undefined; // No maintenance notes for training entities
-    }
-    
     try {
       // Try to get from MongoDB first
       const status = await mongoDbService.getMachineStatus(machineId);
@@ -79,3 +52,4 @@ export class MachineService {
 
 // Create a singleton instance
 export const machineService = new MachineService();
+

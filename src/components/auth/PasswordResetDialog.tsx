@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Alert, AlertDescription } from "../ui/alert";
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { 
   DialogContent, 
@@ -10,8 +10,8 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogFooter
-} from "../ui/dialog";
-import { useAuth } from '../../context/AuthContext';
+} from "@/components/ui/dialog";
+import { useAuth } from '@/context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface PasswordResetDialogProps {

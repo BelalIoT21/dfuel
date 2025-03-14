@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../services/apiService';
 import { machines } from '../../../utils/data';
-import { AdminHeader } from '../AdminHeader';
-import { StatsOverview } from '../StatsOverview';
-import { PlatformOverview } from '../PlatformOverview';
-import { QuickActions } from '../QuickActions';
-import { PendingActions } from '../PendingActions';
-import { MachineStatus } from '../MachineStatus';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { StatsOverview } from '@/components/admin/StatsOverview';
+import { PlatformOverview } from '@/components/admin/PlatformOverview';
+import { QuickActions } from '@/components/admin/QuickActions';
+import { PendingActions } from '@/components/admin/PendingActions';
+import { MachineStatus } from '@/components/admin/MachineStatus';
 
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -24,39 +24,20 @@ export const DashboardContent = () => {
           setAllUsers(response.data);
         }
         
-        // First get regular machines
+        // Filter out safety cabinet and safety course - they're not real machines
         const regularMachines = machines.filter(
-          machine => machine.id !== 'safety-cabinet'
+          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
         );
-        
-        // Get safety items
-        const safetyItems = machines.filter(
-          machine => machine.id === 'safety-cabinet'
-        ).map(machine => ({
-          ...machine,
-          status: 'available' // Always available
-        }));
         
         // Get machine statuses
         const machinesWithStatus = await Promise.all(regularMachines.map(async (machine) => {
-          try {
-            const statusResponse = await apiService.getMachineStatus(machine.id);
-            return {
-              ...machine,
-              status: statusResponse.data?.status || 'available',
-              maintenanceNote: statusResponse.data?.note || ''
-            };
-          } catch (error) {
-            console.error(`Error loading status for machine ${machine.id}:`, error);
-            return {
-              ...machine,
-              status: 'available'
-            };
-          }
+          const statusResponse = await apiService.getMachineStatus(machine.id);
+          return {
+            ...machine,
+            status: statusResponse.data || 'available'
+          };
         }));
-        
-        // Combine regular machines and safety items
-        setMachineData([...machinesWithStatus, ...safetyItems]);
+        setMachineData(machinesWithStatus);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       }

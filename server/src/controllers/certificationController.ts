@@ -58,11 +58,6 @@ export const completeSafetyCourse = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Initialize safetyCoursesCompleted if it doesn't exist
-    if (!user.safetyCoursesCompleted) {
-      user.safetyCoursesCompleted = [];
-    }
-
     // Check if safety course already completed
     if (user.safetyCoursesCompleted.includes(courseId)) {
       return res.status(400).json({ message: 'User already completed this safety course' });
@@ -135,11 +130,6 @@ export const getUserCertifications = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Initialize safetyCoursesCompleted if it doesn't exist
-    if (!user.safetyCoursesCompleted) {
-      user.safetyCoursesCompleted = [];
-    }
-
     res.json({ 
       certifications: user.certifications,
       safetyCoursesCompleted: user.safetyCoursesCompleted
@@ -199,11 +189,6 @@ export const checkSafetyCourse = async (req: Request, res: Response) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Initialize safetyCoursesCompleted if it doesn't exist
-    if (!user.safetyCoursesCompleted) {
-      user.safetyCoursesCompleted = [];
     }
 
     const hasCompletedCourse = user.safetyCoursesCompleted.includes(courseId as string);
