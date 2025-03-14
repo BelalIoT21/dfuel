@@ -1,13 +1,10 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Alert, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
-
-// Add AsyncStorage dependency
-<lov-add-dependency>@react-native-async-storage/async-storage@1.22.5</lov-add-dependency>
+import { storage } from '@/utils/storage';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -19,7 +16,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const storedUser = await AsyncStorage.getItem('learnit_user');
+        const storedUser = await storage.getItem('learnit_user');
         if (storedUser) {
           setUser(JSON.parse(storedUser));
         }
@@ -40,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (authenticatedUser) {
         setUser(authenticatedUser);
-        await AsyncStorage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
         return true;
       } else {
         throw new Error('Invalid credentials');
@@ -58,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (newUser) {
         setUser(newUser);
-        await AsyncStorage.setItem('learnit_user', JSON.stringify(newUser));
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
         return true;
       } else {
         throw new Error('Registration failed');
@@ -72,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = async () => {
     setUser(null);
-    await AsyncStorage.removeItem('learnit_user');
+    await storage.removeItem('learnit_user');
   };
 
   // Add certification
@@ -90,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
-        await AsyncStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
@@ -111,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
-        await AsyncStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
