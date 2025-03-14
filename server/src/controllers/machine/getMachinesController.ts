@@ -7,7 +7,13 @@ import { Machine } from '../../models/Machine';
 // @access  Public
 export const getMachines = async (req: Request, res: Response) => {
   try {
-    const machines = await Machine.find({});
+    // Get all machines except for safety cabinet
+    const machines = await Machine.find({ 
+      $or: [
+        { machineId: { $ne: 'safety-cabinet' } },
+        { _id: { $ne: 'safety-cabinet' } }
+      ]
+    });
     res.json(machines);
   } catch (error) {
     console.error('Error in getMachines:', error);

@@ -51,6 +51,7 @@ const MachineDetail = () => {
               status={machineStatus}
               maintenanceDate={machine.maintenanceDate}
               progress={progress}
+              isEquipment={isSafetyCabinet}
             />
           </div>
           
@@ -58,7 +59,9 @@ const MachineDetail = () => {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="text-2xl">{machine.name}</CardTitle>
-                <CardDescription>{machine.description}</CardDescription>
+                <CardDescription>
+                  {isSafetyCabinet ? "Safety training equipment" : machine.description}
+                </CardDescription>
               </CardHeader>
               
               <CardContent>
@@ -84,7 +87,7 @@ const MachineDetail = () => {
                   <MachineDetailTabs
                     description={machine.description}
                     specs={machine.specs || {}}
-                    isBookable={isBookable}
+                    isBookable={isBookable && !isSafetyCabinet}
                     courseCompleted={courseCompleted}
                     quizPassed={quizPassed}
                     onStartCourse={handleStartCourse}

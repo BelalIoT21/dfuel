@@ -13,7 +13,8 @@ export const getMachineStatus = async (req: Request, res: Response) => {
       console.log('Returning hardcoded available status for safety cabinet');
       return res.json({ 
         status: 'available',
-        note: ''
+        note: '',
+        isEquipment: true
       });
     }
     
@@ -31,7 +32,8 @@ export const getMachineStatus = async (req: Request, res: Response) => {
     if (machine) {
       res.json({ 
         status: machine.status || 'Available',
-        note: machine.maintenanceNote || ''
+        note: machine.maintenanceNote || '',
+        isEquipment: false
       });
     } else {
       // For demo/development purposes, return a default status for non-existent machine IDs
@@ -39,7 +41,8 @@ export const getMachineStatus = async (req: Request, res: Response) => {
       if (!isValidObjectId && !isNaN(parseInt(req.params.id))) {
         return res.json({
           status: 'Available',
-          note: ''
+          note: '',
+          isEquipment: false
         });
       }
       res.status(404).json({ message: 'Machine not found' });

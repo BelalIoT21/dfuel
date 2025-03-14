@@ -24,8 +24,9 @@ const MachineActions = ({
   onBookMachine,
   isAdmin = false
 }: MachineActionsProps) => {
-  // Check if this machine type is bookable
-  const isBookable = machineType !== 'Safety Cabinet';
+  // Safety cabinet is equipment, not a bookable machine
+  const isSafetyCabinet = machineType === 'Safety Cabinet';
+  const isBookable = !isSafetyCabinet;
 
   return (
     <View style={styles.actionContainer}>
@@ -58,7 +59,7 @@ const MachineActions = ({
         </Button>
       )}
       
-      {/* Only show booking buttons for bookable machines */}
+      {/* Only show booking buttons for bookable machines, not equipment */}
       {isBookable && (
         <>
           {/* Always show booking button for admins regardless of machine status or certification */}
