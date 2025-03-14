@@ -10,7 +10,6 @@ import mongoose from 'mongoose';
 // @access  Private
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    console.log('Booking request received:', req.body);
     const { machineId, date, time } = req.body;
     
     // Validate input
@@ -19,14 +18,8 @@ export const createBooking = async (req: Request, res: Response) => {
     }
     
     // Check if machine exists
-    console.log(`Looking for machine with ID: ${machineId}`);
-    const machine = await Machine.findById(machineId).catch(err => {
-      console.error('Error finding machine:', err);
-      return null;
-    });
-    
+    const machine = await Machine.findById(machineId);
     if (!machine) {
-      console.log(`Machine not found with ID: ${machineId}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
@@ -74,7 +67,6 @@ export const createBooking = async (req: Request, res: Response) => {
     }
     
     // Create booking
-    console.log('Creating new booking');
     const booking = new Booking({
       user: req.user._id,
       machine: machineId,
@@ -85,7 +77,6 @@ export const createBooking = async (req: Request, res: Response) => {
     });
     
     const createdBooking = await booking.save();
-    console.log('Booking created successfully:', createdBooking);
     
     // Add booking to user's bookings array
     await User.findByIdAndUpdate(
@@ -93,10 +84,7 @@ export const createBooking = async (req: Request, res: Response) => {
       { $push: { bookings: createdBooking._id } }
     );
     
-    res.status(201).json({
-      success: true,
-      booking: createdBooking
-    });
+    res.status(201).json(createdBooking);
   } catch (error) {
     console.error('Error in createBooking:', error);
     res.status(500).json({ 

@@ -111,30 +111,6 @@ class MongoUserService {
     }
   }
   
-  async updateUserSafetyCourses(userId: string, courseId: string): Promise<boolean> {
-    await this.initCollection();
-    if (!this.usersCollection) return false;
-    
-    try {
-      const user = await this.getUserById(userId);
-      if (!user) return false;
-      
-      if (!user.safetyCoursesCompleted?.includes(courseId)) {
-        const result = await this.usersCollection.updateOne(
-          { id: userId },
-          { $push: { safetyCoursesCompleted: courseId } }
-        );
-        
-        return result.modifiedCount > 0;
-      }
-      
-      return true; // Safety course already completed
-    } catch (error) {
-      console.error("Error updating user safety courses in MongoDB:", error);
-      return false;
-    }
-  }
-  
   async addUserBooking(userId: string, booking: any): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
