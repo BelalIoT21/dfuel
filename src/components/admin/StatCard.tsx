@@ -1,7 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
   title: string;
@@ -17,7 +16,7 @@ export const StatCard = ({ title, value, icon, change, link }: StatCardProps) =>
       <CardContent className="p-3 md:p-6">
         <div className="flex justify-between items-start">
           <div>
-            <div className="text-lg md:text-2xl font-bold text-purple-800">{value}</div>
+            <div className="text-sm md:text-2xl font-bold text-purple-800">{value}</div>
             <div className="text-xs md:text-sm text-gray-600">{title}</div>
           </div>
           <div className="p-2 bg-purple-50 rounded-full">

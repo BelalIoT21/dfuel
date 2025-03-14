@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Card, Title, Paragraph, Button, List } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,7 +31,7 @@ const AdminDashboardScreen = ({ navigation }) => {
         <Card style={styles.statCard}>
           <Card.Content>
             <Text style={styles.statValue}>24</Text>
-            <Text style={styles.statLabel}>Total Users</Text>
+            <Text style={styles.statLabel}>Users</Text>
           </Card.Content>
         </Card>
         
@@ -39,6 +39,15 @@ const AdminDashboardScreen = ({ navigation }) => {
           <Card.Content>
             <Text style={styles.statValue}>5</Text>
             <Text style={styles.statLabel}>Machines</Text>
+          </Card.Content>
+        </Card>
+      </View>
+      
+      <View style={styles.statsContainer}>
+        <Card style={styles.statCard}>
+          <Card.Content>
+            <Text style={styles.statValue}>30</Text>
+            <Text style={styles.statLabel}>Certs</Text>
           </Card.Content>
         </Card>
         

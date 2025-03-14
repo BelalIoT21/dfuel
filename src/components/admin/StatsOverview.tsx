@@ -42,7 +42,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}

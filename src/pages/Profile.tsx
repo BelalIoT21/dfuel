@@ -28,10 +28,10 @@ const Profile = () => {
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="w-full mb-2 flex flex-wrap">
-            <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
-            <TabsTrigger value="certifications" className="flex-1">Certifications</TabsTrigger>
-            <TabsTrigger value="bookings" className="flex-1">Bookings</TabsTrigger>
+          <TabsList className="w-full mb-2 grid grid-cols-3">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="certifications">Certifications</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile">
