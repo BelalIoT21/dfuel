@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -8,8 +8,14 @@ import { Mail } from 'lucide-react';
 
 const BookingsCard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   if (!user) return null;
+
+  const handleBookMachine = () => {
+    // Navigate to the profile page with certifications tab selected
+    navigate('/profile?tab=certifications');
+  };
 
   return (
     <Card className="border-purple-100">
@@ -35,11 +41,18 @@ const BookingsCard = () => {
                     <span className={`text-xs px-2 py-1 rounded ${
                       booking.status === 'Approved' 
                         ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                        : booking.status === 'Canceled'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                     }`}>
                       {booking.status}
                     </span>
-                    <Button variant="outline" size="sm" className="border-purple-200 hover:bg-purple-50">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-purple-200 hover:bg-purple-50"
+                      onClick={() => booking.status === 'Approved' ? null : null}
+                    >
                       {booking.status === 'Approved' ? 'Cancel' : 'View'}
                     </Button>
                   </div>
@@ -50,8 +63,11 @@ const BookingsCard = () => {
         ) : (
           <div className="text-center py-8 text-gray-500">
             <p>You don't have any bookings yet.</p>
-            <Button className="mt-2 bg-purple-600 hover:bg-purple-700" asChild>
-              <Link to="/profile?tab=certifications">Book a Machine</Link>
+            <Button 
+              className="mt-2 bg-purple-600 hover:bg-purple-700" 
+              onClick={handleBookMachine}
+            >
+              Book a Machine
             </Button>
           </div>
         )}
