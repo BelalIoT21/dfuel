@@ -35,8 +35,9 @@ app.use(cors({
     'http://localhost:3000', 
     'http://127.0.0.1:8080', 
     'http://127.0.0.1:3000',
-    // Allow the Lovable Project domain as well
-    'https://65989570-cd1d-40f5-b27e-214d8336aca9.lovableproject.com'
+    // Allow the Lovable Project domain and any preview subdomains
+    'https://65989570-cd1d-40f5-b27e-214d8336aca9.lovableproject.com',
+    /https:\/\/.*\.lovableproject\.com$/
   ],
   credentials: true
 }));
