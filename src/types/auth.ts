@@ -15,3 +15,10 @@ export interface AuthContextType {
   requestPasswordReset: (email: string) => Promise<boolean>;
   resetPassword: (email: string, resetCode: string, newPassword: string) => Promise<boolean>;
 }
+
+export interface GoogleLoginData {
+  email: string;
+  name: string;
+  sub: string; // Google's user ID
+  picture?: string;
+}

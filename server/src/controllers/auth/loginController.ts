@@ -39,6 +39,7 @@ export const loginUser = async (req: Request, res: Response) => {
           email: user.email,
           isAdmin: user.isAdmin,
           certifications: user.certifications,
+          googleId: user.googleId
         },
         token: generateToken(user._id),
       });
@@ -73,6 +74,7 @@ export const loginUser = async (req: Request, res: Response) => {
         email: user.email,
         isAdmin: user.isAdmin,
         certifications: user.certifications,
+        googleId: user.googleId
       },
       token: generateToken(user._id),
     });
