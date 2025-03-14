@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminMachines from "./pages/AdminMachines";
+import ActiveBookings from "./pages/ActiveBookings";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { loadEnv } from "./utils/env";
@@ -70,6 +71,7 @@ const App = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/machines" element={<AdminMachines />} />
+              <Route path="/admin/bookings" element={<ActiveBookings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

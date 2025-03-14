@@ -53,7 +53,7 @@ const BookingsCard = () => {
           <div className="text-center py-8 text-gray-500">
             <p>You don't have any bookings yet.</p>
             <Button className="mt-2 bg-purple-600 hover:bg-purple-700" asChild>
-              <Link to={redirectPath}>Book a Machine</Link>
+              <Link to="/profile?tab=certifications">Book a Machine</Link>
             </Button>
           </div>
         )}
