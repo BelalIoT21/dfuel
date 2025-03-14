@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 
@@ -32,6 +31,30 @@ export const getMachineById = async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('Error in getMachineById:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Get machine status
+// @route   GET /api/machines/:id/status
+// @access  Public
+export const getMachineStatus = async (req: Request, res: Response) => {
+  try {
+    const machine = await Machine.findById(req.params.id);
+    
+    if (machine) {
+      res.json({ 
+        status: machine.status || 'Available',
+        note: machine.maintenanceNote || ''
+      });
+    } else {
+      res.status(404).json({ message: 'Machine not found' });
+    }
+  } catch (error) {
+    console.error('Error in getMachineStatus:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 

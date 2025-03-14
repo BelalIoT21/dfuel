@@ -30,7 +30,14 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080', 'http://127.0.0.1:3000'], // Allow these origins to connect
+  origin: [
+    'http://localhost:8080', 
+    'http://localhost:3000', 
+    'http://127.0.0.1:8080', 
+    'http://127.0.0.1:3000',
+    // Allow the Lovable Project domain as well
+    'https://65989570-cd1d-40f5-b27e-214d8336aca9.lovableproject.com'
+  ],
   credentials: true
 }));
 app.use(helmet());
