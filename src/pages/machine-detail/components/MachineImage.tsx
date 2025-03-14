@@ -4,7 +4,8 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface MachineImageProps {
-  image: string;
+  image?: string;
+  imageUrl?: string;
   name: string;
   status: string;
   maintenanceDate: string;
@@ -13,16 +14,20 @@ interface MachineImageProps {
 
 export const MachineImage = ({ 
   image, 
+  imageUrl,
   name, 
   status, 
   maintenanceDate, 
   progress 
 }: MachineImageProps) => {
+  // Use imageUrl first, then fall back to image property, then to placeholder
+  const imageSource = imageUrl || image || '/placeholder.svg';
+  
   return (
     <Card className="overflow-hidden h-full">
       <div className="aspect-square bg-gray-100 flex items-center justify-center">
         <img 
-          src={image} 
+          src={imageSource} 
           alt={name} 
           className="w-full h-full object-cover"
         />
