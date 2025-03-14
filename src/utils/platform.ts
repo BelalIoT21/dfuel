@@ -1,26 +1,36 @@
 
 /**
- * Utility functions for platform detection
+ * Utility to check the current platform
  */
 
-// Determine if the code is running in a web browser or React Native environment
+// Check if we're in a web environment
 export const isWeb = typeof document !== 'undefined';
-export const isNative = !isWeb;
 
-// More reliable platform detection for React Native
+// Check if we're on a native platform
 export const isPlatformNative = () => {
+  return !isWeb;
+};
+
+// Helper to determine if we're on iOS
+export const isIOS = () => {
+  if (!isPlatformNative()) return false;
   try {
-    // This will throw an error in web environments
-    require('react-native');
-    return true;
+    // @ts-ignore - Platform is only available in React Native
+    const { Platform } = require('react-native');
+    return Platform.OS === 'ios';
   } catch (e) {
     return false;
   }
 };
 
-// Helper function to run different code based on platform
-export const platformSelect = <T>(options: { web?: T; native?: T; default?: T }): T | undefined => {
-  if (isWeb && options.web !== undefined) return options.web;
-  if (isNative && options.native !== undefined) return options.native;
-  return options.default;
+// Helper to determine if we're on Android
+export const isAndroid = () => {
+  if (!isPlatformNative()) return false;
+  try {
+    // @ts-ignore - Platform is only available in React Native
+    const { Platform } = require('react-native');
+    return Platform.OS === 'android';
+  } catch (e) {
+    return false;
+  }
 };
