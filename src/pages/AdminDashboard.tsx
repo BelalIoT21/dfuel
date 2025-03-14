@@ -8,7 +8,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   
   if (!user?.isAdmin) {
-    navigate('/home');
+    navigate('/dashboard');
     return null;
   }
 

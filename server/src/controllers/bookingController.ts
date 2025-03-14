@@ -31,7 +31,8 @@ export const createBooking = async (req: Request, res: Response) => {
     }
     
     // Check if user has required certification (if applicable)
-    if (machine.requiresCertification) {
+    // Skip certification check for admins
+    if (machine.requiresCertification && !req.user.isAdmin) {
       const user = await User.findById(req.user._id);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
