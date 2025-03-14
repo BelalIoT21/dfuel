@@ -1,4 +1,3 @@
-
 export const machines = [
   {
     id: 'laser-cutter',
@@ -245,7 +244,6 @@ export const courses = {
   }
 };
 
-// Create more detailed quizzes for each machine
 export const quizzes = {
   'laser-cutter': [
     {
@@ -519,7 +517,6 @@ export const quizzes = {
   ]
 };
 
-// Default quiz for any machine not specifically defined
 export const defaultQuiz = [
   {
     question: 'What is the first step before operating any machine?',

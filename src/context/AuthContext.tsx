@@ -63,14 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (authenticatedUser.isAdmin) {
           navigate('/admin');
           toast({
-            title: "Welcome Administrator",
+            title: `Welcome ${authenticatedUser.name}`,
             description: "You have successfully logged in as an administrator."
           });
         } else {
           navigate('/home');
           toast({
-            title: "Login Successful",
-            description: "Welcome back to Machine Master!"
+            title: `Welcome ${authenticatedUser.name}`,
+            description: "You have successfully logged in to Machine Master!"
           });
         }
       } else {
@@ -126,8 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('currentUser', JSON.stringify(newUser));
         navigate('/home');
         toast({
-          title: "Registration Successful",
-          description: "Welcome to Machine Master!"
+          title: `Welcome ${newUser.name}`,
+          description: "Your account has been created successfully!"
         });
       } else {
         toast({
