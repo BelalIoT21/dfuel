@@ -46,7 +46,7 @@ const CertificationsCard = () => {
         {userCertifications.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {userCertifications.map((cert) => {
-              // Check if this is a safety cabinet - explicitly comparing with string
+              // Check if this is a safety cabinet
               const isSafetyCabinet = cert.type === 'Safety Cabinet';
               
               return (
