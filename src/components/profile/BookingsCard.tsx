@@ -55,7 +55,7 @@ const BookingsCard = () => {
                     <p className="font-medium text-purple-800">{machine?.name}</p>
                     <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 mt-2 sm:mt-0">
                     <span className={`text-xs px-2 py-1 rounded ${
                       booking.status === 'Approved' 
                         ? 'bg-green-100 text-green-800' 

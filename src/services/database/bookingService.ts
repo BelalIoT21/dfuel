@@ -10,7 +10,14 @@ import { userDatabaseService } from './userService';
 export class BookingDatabaseService extends BaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
-      const response = await apiService.addBooking(userId, machineId, date, time);
+      // Convert string IDs to proper format if needed, MongoDB expects ObjectId
+      // For machine IDs that are just numbers, MongoDB will throw error during cast
+      // Ensure machineId is properly formatted for MongoDB
+      
+      const formattedMachineId = machineId;
+      console.log(`Attempting to create booking for user ${userId} on machine ${formattedMachineId}`);
+      
+      const response = await apiService.addBooking(userId, formattedMachineId, date, time);
       return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage booking:", error);

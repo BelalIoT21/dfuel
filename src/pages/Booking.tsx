@@ -61,10 +61,10 @@ const Booking = () => {
     }
     
     // Check if this is a Safety Cabinet - redirect if it is
-    if (machine.type === 'Safety Cabinet') {
+    if (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course') {
       toast({
         title: "Not Bookable",
-        description: "Safety Cabinet is not a bookable resource.",
+        description: `${machine.type} is not a bookable resource.`,
         variant: "destructive"
       });
       navigate(`/machine/${id}`);
@@ -126,6 +126,16 @@ const Booking = () => {
     processBooking(formattedDate, values.time);
   };
   
+  const handleBackClick = () => {
+    // Always go back to the appropriate dashboard, not to the machine page
+    if (user?.isAdmin) {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/home');
+    }
+    return;
+  };
+  
   if (!machine) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -145,9 +155,13 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-start">
-          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
-            &larr; Back to {machine.name}
-          </Link>
+          <Button 
+            variant="ghost" 
+            onClick={handleBackClick} 
+            className="text-purple-600 hover:bg-purple-50 flex items-center gap-1"
+          >
+            &larr; Back to Dashboard
+          </Button>
         </div>
         
         <h1 className="text-3xl font-bold mb-6">Book {machine.name}</h1>

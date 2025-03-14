@@ -33,6 +33,11 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
         throw new Error('Not authorized, user not found');
       }
       
+      // Set isAdmin from token payload for more reliable admin checks
+      if ((decoded as any).isAdmin !== undefined) {
+        req.user.isAdmin = (decoded as any).isAdmin;
+      }
+      
       next();
     } catch (error) {
       console.error('Token verification error:', error);
@@ -48,6 +53,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 // Admin middleware - check if user is admin
 export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
+    console.log(`Admin access granted for user: ${req.user.email}`);
     next();
   } else {
     console.error('Admin access denied for user:', req.user ? req.user.email : 'unknown');

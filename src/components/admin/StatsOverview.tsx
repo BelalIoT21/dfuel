@@ -14,7 +14,9 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   const actualMachines = machines.filter(machine => 
     machine.id !== 'safety-cabinet' && 
     machine.id !== 'safety-course' && 
-    machine.id !== '3'
+    machine.id !== '3' &&
+    machine.type !== 'Safety Cabinet' &&
+    machine.type !== 'Safety Course'
   );
   
   // Basic statistics for the admin dashboard

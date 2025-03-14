@@ -25,7 +25,18 @@ const MachineActions = ({
   isAdmin = false
 }: MachineActionsProps) => {
   // Check if this machine type is bookable
-  const isBookable = machineType !== 'Safety Cabinet';
+  const isSafety = machineType === 'Safety Cabinet' || machineType === 'Safety Course';
+  const isBookable = !isSafety;
+
+  const getButtonLabel = (action: string) => {
+    if (machineType === 'Safety Cabinet') {
+      return action === 'course' ? 'Take Safety Training' : 'Complete Safety Quiz';
+    } else if (machineType === 'Safety Course') {
+      return action === 'course' ? 'Start Safety Course' : 'Take Safety Test';
+    } else {
+      return action === 'course' ? 'Take Training Course' : 'Take Quiz';
+    }
+  };
 
   return (
     <View style={styles.actionContainer}>
@@ -35,7 +46,7 @@ const MachineActions = ({
         style={styles.actionButton}
         onPress={onTakeCourse}
       >
-        Take Safety Course
+        {getButtonLabel('course')}
       </Button>
       
       <Button 
@@ -44,7 +55,7 @@ const MachineActions = ({
         style={styles.actionButton}
         onPress={onTakeQuiz}
       >
-        Take Quiz
+        {getButtonLabel('quiz')}
       </Button>
       
       {!isCertified && (

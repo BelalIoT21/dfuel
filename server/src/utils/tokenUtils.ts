@@ -1,17 +1,11 @@
 
 import jwt from 'jsonwebtoken';
-import { SignOptions } from 'jsonwebtoken';
 
-// Generate JWT Token
-export const generateToken = (id: string) => {
-  const secret = process.env.JWT_SECRET || 'fallback-secret';
-  
-  // Create a properly typed options object with correct type handling
-  const options: SignOptions = {
-    // The expiresIn property expects a number (in seconds) or a string with a time unit
-    // In jsonwebtoken, expiresIn can be a number (seconds) or a string like '7d', '10h', etc.
-    expiresIn: (process.env.JWT_EXPIRE || '7d') as any,
-  };
-  
-  return jwt.sign({ id }, secret, options);
+// Generate JWT token
+export const generateToken = (id: string, isAdmin: boolean = false) => {
+  return jwt.sign(
+    { id, isAdmin }, 
+    process.env.JWT_SECRET || 'fallback-secret', 
+    { expiresIn: '7d' }
+  );
 };

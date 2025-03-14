@@ -33,7 +33,9 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    console.log(`Login successful for user: ${email}, isAdmin: ${user.isAdmin}`);
+    // Store admin status in JWT payload for better authorization
+    const isAdmin = !!user.isAdmin;
+    console.log(`Login successful for user: ${email}, isAdmin: ${isAdmin}`);
 
     // Update last login time
     user.lastLogin = new Date();
@@ -45,10 +47,10 @@ export const loginUser = async (req: Request, res: Response) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        isAdmin: user.isAdmin,
+        isAdmin: isAdmin,
         certifications: user.certifications,
       },
-      token: generateToken(user._id.toString()),
+      token: generateToken(user._id.toString(), isAdmin),
     });
   } catch (error) {
     console.error('Error in loginUser:', error);
