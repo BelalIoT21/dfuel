@@ -6,6 +6,7 @@ export interface MongoUser {
   password: string;
   name: string;
   isAdmin: boolean;
+  googleId?: string; // Add googleId as optional property
   certifications: string[];
   bookings: {
     id: string;

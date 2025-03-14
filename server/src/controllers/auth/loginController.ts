@@ -14,11 +14,38 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { email, password, googleToken } = req.body;
 
     console.log(`Login attempt for email: ${email}`);
 
-    // Find user by email
+    // Check if this is a Google authentication attempt
+    if (googleToken) {
+      // For Google login, find user by email (no password check)
+      const user = await User.findOne({ email });
+      
+      if (!user) {
+        // User doesn't exist, this should go to registration instead
+        return res.status(404).json({ message: 'User not found. Please register first.' });
+      }
+      
+      // Update last login time
+      user.lastLogin = new Date();
+      await user.save();
+      
+      return res.json({
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          certifications: user.certifications,
+          googleId: user.googleId
+        },
+        token: generateToken(user._id),
+      });
+    }
+
+    // Regular email/password login
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -47,6 +74,7 @@ export const loginUser = async (req: Request, res: Response) => {
         email: user.email,
         isAdmin: user.isAdmin,
         certifications: user.certifications,
+        googleId: user.googleId
       },
       token: generateToken(user._id),
     });
