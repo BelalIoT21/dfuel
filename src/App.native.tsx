@@ -1,41 +1,83 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { AuthProvider } from './context/AuthContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// This is the entry point for the React Native version of our app
+// Screens
+import HomeScreen from './screens/HomeScreen';
+import LoginScreen from './screens/LoginScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import AdminDashboardScreen from './screens/AdminDashboardScreen';
+import MachineDetailScreen from './screens/MachineDetailScreen';
+
+// Theme
+const theme = {
+  colors: {
+    primary: '#7c3aed', // purple-600
+    accent: '#a78bfa',  // purple-400
+    background: '#ffffff',
+    text: '#1f2937',    // gray-800
+    error: '#ef4444',   // red-500
+  }
+};
+
+// Stack navigator
+const Stack = createNativeStackNavigator();
+
 export default function App() {
-  console.log("Rendering Native App component");
+  console.log("Starting Learnit Mobile App");
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.content}>
-        <Text style={styles.title}>Learnit Mobile</Text>
-        <Text style={styles.subtitle}>Your learning platform on mobile</Text>
-      </View>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <AuthProvider>
+          <NavigationContainer>
+            <Stack.Navigator 
+              initialRouteName="Login"
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: '#7c3aed', // purple-600
+                },
+                headerTintColor: '#fff',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+              }}
+            >
+              <Stack.Screen 
+                name="Login" 
+                component={LoginScreen} 
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="Home" 
+                component={HomeScreen} 
+                options={{ title: 'Dashboard' }}
+              />
+              <Stack.Screen 
+                name="Profile" 
+                component={ProfileScreen} 
+                options={{ title: 'My Profile' }}
+              />
+              <Stack.Screen 
+                name="AdminDashboard" 
+                component={AdminDashboardScreen} 
+                options={{ title: 'Admin Dashboard' }}
+              />
+              <Stack.Screen 
+                name="MachineDetail" 
+                component={MachineDetailScreen} 
+                options={({ route }) => ({ 
+                  title: route.params?.name || 'Machine Details' 
+                })}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AuthProvider>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#7c3aed', // Purple color matching web version
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-});
