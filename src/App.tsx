@@ -17,10 +17,16 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminMachines from "./pages/AdminMachines";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
+import { loadEnv } from "./utils/env";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  // Load environment variables
+  useEffect(() => {
+    loadEnv();
+  }, []);
+
   // Set document title
   useEffect(() => {
     document.title = "Learnit - Your Learning Platform";

@@ -32,6 +32,7 @@ const Index = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [resetStage, setResetStage] = useState<'request' | 'reset'>('request');
   
   const { user, login, register, requestPasswordReset, resetPassword } = useAuth();
@@ -156,16 +157,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-up">
+      <div className="w-full max-w-md space-y-6 animate-fade-up">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
+          <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
         </div>
 
         <Card className="shadow-lg border-purple-100">
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle>{isLogin ? 'Sign In' : 'Register'}</CardTitle>
             <CardDescription>
               {isLogin
@@ -224,6 +225,7 @@ const Index = () => {
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -286,17 +288,19 @@ const Index = () => {
                               <div className="relative">
                                 <Input
                                   id="new-password"
-                                  type={showPassword ? "text" : "password"}
+                                  type={showNewPassword ? "text" : "password"}
                                   value={newPassword}
                                   onChange={(e) => setNewPassword(e.target.value)}
                                   placeholder="New password (min 6 characters)"
+                                  className="pr-10"
                                 />
                                 <button 
                                   type="button"
                                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                                  onClick={() => setShowPassword(!showPassword)}
+                                  onClick={() => setShowNewPassword(!showNewPassword)}
+                                  aria-label={showNewPassword ? "Hide password" : "Show password"}
                                 >
-                                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                               </div>
                             </div>
@@ -309,6 +313,7 @@ const Index = () => {
                         </Button>
                         <Button 
                           onClick={resetStage === 'request' ? handleRequestPasswordReset : handleResetPassword}
+                          className="bg-purple-600 hover:bg-purple-700"
                         >
                           {resetStage === 'request' ? 'Send Reset Code' : 'Reset Password'}
                         </Button>

@@ -21,12 +21,30 @@ interface User {
   };
 }
 
+// Get admin credentials from environment
+const getAdminCredentials = () => {
+  // In a real app, this would come from process.env
+  // Using localStorage to simulate .env for this demo
+  const adminEmail = localStorage.getItem('ADMIN_EMAIL') || 'admin@learnit.com';
+  const adminPassword = localStorage.getItem('ADMIN_PASSWORD') || 'admin123';
+  
+  return { adminEmail, adminPassword };
+};
+
+// Set admin credentials
+const setAdminCredentials = (email: string, password: string) => {
+  localStorage.setItem('ADMIN_EMAIL', email);
+  localStorage.setItem('ADMIN_PASSWORD', password);
+};
+
 // Initial users including the admin
+const { adminEmail, adminPassword } = getAdminCredentials();
+
 const initialUsers: User[] = [
   {
     id: 'admin-1',
-    email: 'admin@learnit.com',
-    password: 'admin123', // In a real app, this would be hashed
+    email: adminEmail,
+    password: adminPassword, // In a real app, this would be hashed
     name: 'Administrator',
     isAdmin: true,
     certifications: ['1', '2', '3', '4', '5'],
@@ -38,9 +56,12 @@ const initialUsers: User[] = [
 // In a real app, this would be a database. Here we use localStorage.
 class UserDatabase {
   private users: User[];
+  private machineStatuses: {[key: string]: {status: string, note?: string}} = {};
   
   constructor() {
     this.loadUsers();
+    this.loadMachineStatuses();
+    
     // Initialize with default admin if no users exist
     if (this.users.length === 0) {
       this.users = [...initialUsers];
@@ -55,6 +76,15 @@ class UserDatabase {
   
   private saveUsers(): void {
     localStorage.setItem('learnit_users', JSON.stringify(this.users));
+  }
+  
+  private loadMachineStatuses(): void {
+    const statuses = localStorage.getItem('learnit_machine_statuses');
+    this.machineStatuses = statuses ? JSON.parse(statuses) : {};
+  }
+  
+  private saveMachineStatuses(): void {
+    localStorage.setItem('learnit_machine_statuses', JSON.stringify(this.machineStatuses));
   }
   
   // Get all users (for admin)
@@ -148,7 +178,16 @@ class UserDatabase {
     if (userIndex === -1) return false;
     
     if (updates.name) this.users[userIndex].name = updates.name;
-    if (updates.email) this.users[userIndex].email = updates.email;
+    
+    if (updates.email) {
+      // Check if user is admin and update admin email in "environment"
+      if (this.users[userIndex].isAdmin) {
+        const { adminPassword } = getAdminCredentials();
+        setAdminCredentials(updates.email, adminPassword);
+      }
+      
+      this.users[userIndex].email = updates.email;
+    }
     
     this.saveUsers();
     return true;
@@ -167,22 +206,32 @@ class UserDatabase {
     
     // Update password
     this.users[userIndex].password = newPassword;
+    
+    // If admin, update admin password in "environment"
+    if (this.users[userIndex].isAdmin) {
+      const { adminEmail } = getAdminCredentials();
+      setAdminCredentials(adminEmail, newPassword);
+    }
+    
     this.saveUsers();
     return true;
   }
 
   // Update machine status
-  updateMachineStatus(machineId: string, status: string): boolean {
-    // In a real app, this would update a machines table
-    // For now, we'll simulate it for the UI
-    localStorage.setItem(`machine_${machineId}_status`, status);
+  updateMachineStatus(machineId: string, status: string, note?: string): boolean {
+    this.machineStatuses[machineId] = { status, note };
+    this.saveMachineStatuses();
     return true;
   }
 
   // Get machine status
   getMachineStatus(machineId: string): string {
-    // In a real app, this would read from a machines table
-    return localStorage.getItem(`machine_${machineId}_status`) || 'available';
+    return this.machineStatuses[machineId]?.status || 'available';
+  }
+  
+  // Get machine maintenance note
+  getMachineMaintenanceNote(machineId: string): string | undefined {
+    return this.machineStatuses[machineId]?.note;
   }
 
   // Request password reset
@@ -203,7 +252,26 @@ class UserDatabase {
     this.saveUsers();
     
     // In a real app, this would send an email
-    console.log(`Reset code for ${email}: ${resetCode}`);
+    console.log(`
+==== Password Reset Email ====
+To: ${email}
+Subject: Learnit Password Reset
+
+Dear ${this.users[userIndex].name},
+
+We received a request to reset your password for your Learnit account.
+
+Your password reset code is: ${resetCode}
+
+This code will expire in 1 hour.
+
+If you did not request a password reset, please ignore this email or contact our support team if you have any concerns.
+
+Thank you,
+The Learnit Team
+==========================
+    `);
+    
     return true;
   }
 
@@ -228,6 +296,12 @@ class UserDatabase {
     // Update password and clear reset code
     user.password = newPassword;
     user.resetCode = undefined;
+    
+    // If admin, update admin password in "environment"
+    if (user.isAdmin) {
+      const { adminEmail } = getAdminCredentials();
+      setAdminCredentials(adminEmail, newPassword);
+    }
     
     this.saveUsers();
     return true;
