@@ -28,6 +28,12 @@ const MachineDetailScreen = ({ route, navigation }) => {
   };
 
   const handleBookMachine = () => {
+    // Check if this is a non-bookable machine like Safety Cabinet
+    if (machine?.type === 'Safety Cabinet') {
+      Alert.alert('Not Bookable', 'Safety Cabinet is not a bookable resource.');
+      return;
+    }
+    
     // For admin users, create a direct booking
     if (user?.isAdmin) {
       console.log('Admin booking for machine:', machineId);
@@ -85,6 +91,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
         <MachineActions 
           isCertified={isCertified}
           machineStatus={machineStatus}
+          machineType={machine.type || ''}
           onTakeCourse={handleTakeCourse}
           onTakeQuiz={handleTakeQuiz}
           onGetCertified={handleGetCertified}

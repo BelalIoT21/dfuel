@@ -6,6 +6,7 @@ import { Button } from 'react-native-paper';
 interface MachineActionsProps {
   isCertified: boolean;
   machineStatus: string;
+  machineType: string;
   onTakeCourse: () => void;
   onTakeQuiz: () => void;
   onGetCertified: () => void;
@@ -16,12 +17,16 @@ interface MachineActionsProps {
 const MachineActions = ({ 
   isCertified, 
   machineStatus, 
+  machineType,
   onTakeCourse, 
   onTakeQuiz, 
   onGetCertified, 
   onBookMachine,
   isAdmin = false
 }: MachineActionsProps) => {
+  // Check if this machine type is bookable
+  const isBookable = machineType !== 'Safety Cabinet';
+
   return (
     <View style={styles.actionContainer}>
       <Button 
@@ -53,26 +58,31 @@ const MachineActions = ({
         </Button>
       )}
       
-      {/* Always show booking button for admins regardless of machine status or certification */}
-      {isAdmin ? (
-        <Button 
-          mode="contained" 
-          icon="calendar-plus" 
-          style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
-          onPress={onBookMachine}
-        >
-          Book Machine (Admin)
-        </Button>
-      ) : (machineStatus === 'available' && isCertified) ? (
-        <Button 
-          mode="contained" 
-          icon="calendar-plus" 
-          style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
-          onPress={onBookMachine}
-        >
-          Book Machine
-        </Button>
-      ) : null}
+      {/* Only show booking buttons for bookable machines */}
+      {isBookable && (
+        <>
+          {/* Always show booking button for admins regardless of machine status or certification */}
+          {isAdmin ? (
+            <Button 
+              mode="contained" 
+              icon="calendar-plus" 
+              style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
+              onPress={onBookMachine}
+            >
+              Book Machine (Admin)
+            </Button>
+          ) : (machineStatus === 'available' && isCertified) ? (
+            <Button 
+              mode="contained" 
+              icon="calendar-plus" 
+              style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
+              onPress={onBookMachine}
+            >
+              Book Machine
+            </Button>
+          ) : null}
+        </>
+      )}
     </View>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,6 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 
-// Define available time slots
 const TIME_SLOTS = [
   '09:00-10:00',
   '10:00-11:00',
@@ -26,7 +24,6 @@ const TIME_SLOTS = [
   '16:00-17:00'
 ];
 
-// Define validation schema for booking form
 const formSchema = z.object({
   date: z.date({
     required_error: "Please select a date",
@@ -47,7 +44,6 @@ const Booking = () => {
   const paramTime = searchParams.get('time');
   const machine = machines.find(m => m.id === id);
   
-  // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,24 +52,33 @@ const Booking = () => {
     },
   });
 
-  // Check if we have all needed params for immediate booking
   useEffect(() => {
-    if (!machine || !user) return;
+    if (!machine) {
+      return;
+    }
     
-    // If date and time are provided as URL parameters, process booking immediately
-    if (paramDate && paramTime) {
+    if (machine.type === 'Safety Cabinet') {
+      toast({
+        title: "Not Bookable",
+        description: "Safety Cabinet is not a bookable resource.",
+        variant: "destructive"
+      });
+      navigate(`/machine/${id}`);
+      return;
+    }
+    
+    if (paramDate && paramTime && user) {
       setBookingStatus('pending');
       processBooking(paramDate, paramTime);
     } else {
       setBookingStatus('form');
     }
-  }, [id, paramDate, paramTime, user, machine]);
+  }, [id, paramDate, paramTime, user, machine, navigate]);
   
   const processBooking = async (date: string, time: string) => {
     if (!machine || !user) return;
     
     try {
-      // Add booking to database
       const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
       
       if (success) {

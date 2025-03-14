@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,6 @@ const MachineDetail = () => {
     setQuizPassed(true);
     setProgress(100);
     
-    // Add certification to user profile
     if (user && id) {
       addCertification(id);
       
@@ -79,6 +77,8 @@ const MachineDetail = () => {
       </div>
     );
   }
+  
+  const isBookable = machine.type !== 'Safety Cabinet';
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
@@ -150,21 +150,23 @@ const MachineDetail = () => {
                       <ul className="list-disc pl-5 text-gray-600 space-y-1">
                         <li>Complete the safety training course</li>
                         <li>Pass the certification quiz</li>
-                        <li>Book machine time in advance</li>
+                        {isBookable && <li>Book machine time in advance</li>}
                         <li>Follow all safety protocols</li>
                         <li>Report any issues immediately</li>
                       </ul>
                     </div>
                     
-                    <Button 
-                      onClick={handleBookMachine} 
-                      disabled={!user?.certifications.includes(machine.id)}
-                      className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
-                    >
-                      {user?.certifications.includes(machine.id) 
-                        ? "Book Machine" 
-                        : "Get Certified to Book"}
-                    </Button>
+                    {isBookable && (
+                      <Button 
+                        onClick={handleBookMachine} 
+                        disabled={!user?.certifications.includes(machine.id)}
+                        className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
+                      >
+                        {user?.certifications.includes(machine.id) 
+                          ? "Book Machine" 
+                          : "Get Certified to Book"}
+                      </Button>
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="specs">
@@ -202,7 +204,6 @@ const MachineDetail = () => {
                           {courseCompleted ? "Review Course" : "Start Course"}
                         </Button>
                         
-                        {/* For demo purposes only - in a real app this would happen after course completion */}
                         {!courseCompleted && (
                           <Button 
                             variant="outline"
@@ -231,7 +232,6 @@ const MachineDetail = () => {
                           {quizPassed ? "Review Quiz" : "Start Quiz"}
                         </Button>
                         
-                        {/* For demo purposes only - in a real app this would happen after quiz completion */}
                         {courseCompleted && !quizPassed && (
                           <Button 
                             variant="outline"
