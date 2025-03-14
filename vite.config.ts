@@ -30,7 +30,11 @@ export default defineConfig(({ mode }) => ({
       "react-native": "react-native-web"
     },
     // Add extensions to properly resolve .native files
-    extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js']
+    extensions: [
+      '.web.tsx', '.web.ts', '.web.jsx', '.web.js', 
+      '.tsx', '.ts', '.jsx', '.js',
+      '.native.tsx', '.native.ts', '.native.jsx', '.native.js'
+    ]
   },
   // Explicitly tell Vite to ignore certain imports in browser context
   optimizeDeps: {

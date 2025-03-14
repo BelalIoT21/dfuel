@@ -2,10 +2,12 @@
 import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react';
 import './index.css'
-import { isWeb } from './utils/platform';
+import { isWeb, isPlatformNative } from './utils/platform';
 
 // Add console log for debugging
 console.log("Initializing application");
+console.log("Is web environment:", isWeb);
+console.log("Is native platform:", isPlatformNative());
 
 // For web environment, use the normal React app
 if (isWeb) {

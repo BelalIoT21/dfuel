@@ -26,6 +26,7 @@
     },
     "web": {
       "favicon": "./public/favicon.ico"
-    }
+    },
+    "entryPoint": "./App.js"
   }
 }

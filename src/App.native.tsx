@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 
 // This is the entry point for the React Native version of our app
 export default function App() {
+  console.log("Rendering Native App component");
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
