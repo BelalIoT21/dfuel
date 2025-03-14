@@ -19,7 +19,7 @@ export class MachineDatabaseService extends BaseService {
           }
         } catch (error) {
           console.log('Safety cabinet not found in API, using default available status');
-          return 'available';
+          return 'available'; // Default status for safety cabinet
         }
       } else {
         // For other machines, proceed normally

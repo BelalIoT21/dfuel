@@ -80,10 +80,11 @@ export const getMachineById = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineStatus = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet
+    // Special case for safety-cabinet - ALWAYS return available status
     if (req.params.id === 'safety-cabinet') {
+      console.log('Returning default available status for safety cabinet');
       return res.json({ 
-        status: 'Available',
+        status: 'available',
         note: ''
       });
     }

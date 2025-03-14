@@ -27,7 +27,22 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        const status = await userDatabase.getMachineStatus(machineId);
+        // Special handling for safety-cabinet which might not exist in the database
+        let status = 'available';
+        try {
+          if (machineId === 'safety-cabinet') {
+            console.log('Loading safety cabinet status with special handling');
+            // For safety cabinet, default to available even if not found in DB
+            status = await userDatabase.getMachineStatus(machineId) || 'available';
+          } else {
+            status = await userDatabase.getMachineStatus(machineId);
+          }
+        } catch (error) {
+          console.error(`Error fetching status for ${machineId}:`, error);
+          // Default to available if there's an error, especially for safety-cabinet
+          status = 'available';
+        }
+        
         setMachineStatus(status || 'available');
         setMachine(machineData);
         
