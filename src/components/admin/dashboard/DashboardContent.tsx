@@ -9,7 +9,6 @@ import { PlatformOverview } from '@/components/admin/PlatformOverview';
 import { QuickActions } from '@/components/admin/QuickActions';
 import { PendingActions } from '@/components/admin/PendingActions';
 import { MachineStatus } from '@/components/admin/MachineStatus';
-import { BackToAdminButton } from '@/components/BackToAdminButton';
 
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -44,7 +43,6 @@ export const DashboardContent = () => {
 
   return (
     <div className="max-w-7xl mx-auto page-transition">
-      <BackToAdminButton />
       <AdminHeader />
       <StatsOverview allUsers={allUsers} machines={machines} />
       

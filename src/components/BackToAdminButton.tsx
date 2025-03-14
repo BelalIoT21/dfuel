@@ -13,7 +13,7 @@ export const BackToAdminButton = ({ isDashboardLink = true }) => {
       onClick={() => navigate(isDashboardLink ? '/admin' : '/dashboard')}
     >
       <ArrowLeft size={16} />
-      Back to Dashboard
+      Back to {isDashboardLink ? 'Admin' : 'Dashboard'}
     </Button>
   );
 };
