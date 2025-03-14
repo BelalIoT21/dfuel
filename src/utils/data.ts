@@ -3,46 +3,41 @@
 // Mock machine data
 export const machines = [
   {
-    id: '1',
+    id: '3d-printer',
     name: '3D Printer',
-    type: '3D Printer',
-    description: 'FDM 3D printer for creating plastic parts and prototypes',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
+    description: 'Create three-dimensional objects by laying down successive layers of material.',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80',
     courseCompleted: false,
     quizPassed: false
   },
   {
-    id: '2',
+    id: 'laser-cutter',
     name: 'Laser Cutter',
-    type: 'Laser Cutter',
-    description: 'CO2 laser for cutting and engraving various materials',
-    image: 'https://images.unsplash.com/photo-1565696392944-b1a54b3102dd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
+    description: 'Precision cutting using a high-powered laser beam to cut or engrave materials.',
+    image: 'https://images.unsplash.com/photo-1569861165161-e08157a99a30?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1770&q=80',
     courseCompleted: false,
     quizPassed: false
   },
   {
-    id: '3',
+    id: 'cnc-router',
     name: 'CNC Router',
-    type: 'CNC Router',
-    description: 'Computer-controlled cutting machine for wood, plastic, and soft metals',
-    image: 'https://images.unsplash.com/photo-1613922979078-66bf966417de?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
+    description: 'Computer-controlled cutting machine for wood, plastic, and light metals.',
+    image: 'https://images.unsplash.com/photo-1550490754-8a750fe8853c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1632&q=80',
     courseCompleted: false,
     quizPassed: false
   },
   {
-    id: '4',
-    name: 'Electronics Workbench',
-    type: 'Electronics',
-    description: 'Fully equipped workstation for electronics projects with soldering tools',
-    image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
+    id: 'vinyl-cutter',
+    name: 'Vinyl Cutter',
+    description: 'Computer-controlled machine that cuts vinyl sheets into custom shapes and designs.',
+    image: 'https://images.unsplash.com/photo-1575995872537-3793d29d9c44?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1632&q=80',
     courseCompleted: false,
     quizPassed: false
   },
   {
     id: 'safety-cabinet',
     name: 'Safety Cabinet',
-    type: 'Safety Equipment',
-    description: 'Get certified to use the safety cabinet equipment',
+    description: 'Learn how to use the safety equipment and protocols.',
     image: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false
@@ -50,8 +45,7 @@ export const machines = [
   {
     id: 'safety-course',
     name: 'Safety Course',
-    type: 'Training',
-    description: 'Complete the general safety course to access all machines',
+    description: 'Complete the general workshop safety course.',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false
