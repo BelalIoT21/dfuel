@@ -23,6 +23,12 @@ const Home = () => {
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
 
   useEffect(() => {
+    // Redirect admin users to admin dashboard
+    if (user?.isAdmin) {
+      navigate('/admin');
+      return;
+    }
+    
     // Get machine statuses from database
     const extendedMachines = machines.map(machine => {
       const status = userDatabase.getMachineStatus(machine.id) as 'available' | 'maintenance' | 'in-use';
@@ -32,7 +38,7 @@ const Home = () => {
       };
     });
     setMachineData(extendedMachines);
-  }, []);
+  }, [user, navigate]);
 
   if (!user) {
     navigate('/');
@@ -42,17 +48,18 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-purple-800">Welcome, {user.name}</h1>
             <p className="text-gray-600 mt-1">Select a machine to get started</p>
           </div>
-          <div className="flex gap-4">
-            <Button variant="outline" onClick={() => navigate('/profile')} className="border-purple-200 hover:bg-purple-50">
+          <div>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/profile')} 
+              className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full"
+            >
               My Profile
-            </Button>
-            <Button variant="outline" onClick={logout} className="border-purple-200 hover:bg-purple-50">
-              Logout
             </Button>
           </div>
         </div>
@@ -73,7 +80,7 @@ const Home = () => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col space-y-3">
                     <div className="space-y-1">
                       <p className="text-sm text-gray-500">Status</p>
                       <div className="flex gap-2">
@@ -97,7 +104,11 @@ const Home = () => {
                         )}
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="border-purple-200 hover:bg-purple-50">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full"
+                    >
                       Learn More
                     </Button>
                   </div>

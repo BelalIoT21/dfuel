@@ -57,14 +57,14 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           <div className="space-y-3">
             {machineData.length > 0 ? (
               machineData.map((machine) => (
-                <div key={machine.id} className="flex justify-between items-center border-b pb-3 last:border-0">
+                <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
                   <div>
                     <div className="font-medium text-sm">{machine.name}</div>
                     <div className="text-xs text-gray-500">
                       {machine.maintenanceNote ? `Note: ${machine.maintenanceNote}` : 'No maintenance notes'}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded ${
                       machine.status === 'available' 
                         ? 'bg-green-100 text-green-800' 
@@ -81,7 +81,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="border-purple-200 hover:bg-purple-50 text-xs"
+                      className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
                       onClick={() => handleUpdateMachineStatus(machine)}
                     >
                       Update
@@ -99,7 +99,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       </Card>
 
       <Dialog open={isMachineStatusDialogOpen} onOpenChange={setIsMachineStatusDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>Update Machine Status</DialogTitle>
             <DialogDescription>
@@ -110,10 +110,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             <div className="space-y-2">
               <Label htmlFor="machine-status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger id="machine-status">
+                <SelectTrigger id="machine-status" className="bg-white">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="maintenance">Maintenance</SelectItem>
                   <SelectItem value="in-use">In Use</SelectItem>
@@ -134,7 +134,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsMachineStatusDialogOpen(false)} className="border-purple-200">
+            <Button variant="outline" onClick={() => setIsMachineStatusDialogOpen(false)} className="border-purple-200 bg-purple-50 hover:bg-purple-100">
               Cancel
             </Button>
             <Button onClick={saveMachineStatus} className="bg-purple-600 hover:bg-purple-700">
