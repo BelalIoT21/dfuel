@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,16 @@ const MachineDetail = () => {
   };
   
   const handleBookMachine = () => {
+    // Make sure it's a bookable machine type
+    if (machine && machine.type === 'Safety Cabinet') {
+      toast({
+        title: "Not Bookable",
+        description: "Safety Cabinet is not a bookable resource.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     navigate(`/booking/${id}`);
   };
   
