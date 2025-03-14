@@ -1,7 +1,8 @@
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import { Link } from "react-router-dom";
 
 export const QuickActions = () => {

@@ -5,10 +5,15 @@ import { localStorageService } from './localStorageService';
 export class MachineService {
   // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
-    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
-      console.log(`${machineId} status update requested - not a real machine, returning mock success`);
-      return true; // Always return success for special training entities
+    // Special cases - safety cabinet and safety course are separate entities
+    if (machineId === 'safety-cabinet') {
+      console.log(`Safety cabinet status update requested - automatically available`);
+      return true; // Always available for safety cabinet
+    }
+    
+    if (machineId === 'safety-course') {
+      console.log(`Safety course status update requested - automatically available`);
+      return true; // Always available for safety course
     }
     
     try {
@@ -25,10 +30,15 @@ export class MachineService {
 
   // Get machine status
   async getMachineStatus(machineId: string): Promise<string> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
-    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
-      console.log(`${machineId} requested - not a real machine, returning hardcoded available status`);
-      return 'available'; // Always return available for special training entities
+    // Special cases - safety cabinet and safety course are separate entities
+    if (machineId === 'safety-cabinet') {
+      console.log(`Safety cabinet requested - returning hardcoded available status`);
+      return 'available'; // Always return available for safety cabinet
+    }
+    
+    if (machineId === 'safety-course') {
+      console.log(`Safety course requested - returning hardcoded available status`);
+      return 'available'; // Always return available for safety course
     }
     
     try {
@@ -47,9 +57,9 @@ export class MachineService {
   
   // Get machine maintenance note
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
+    // Special cases - safety cabinet and safety course are separate entities
     if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
-      return undefined; // No maintenance notes for special training entities
+      return undefined; // No maintenance notes for training entities
     }
     
     try {

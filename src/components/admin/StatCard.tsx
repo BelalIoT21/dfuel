@@ -1,5 +1,6 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Card, CardContent } from "../ui/card";
 import { Link } from "react-router-dom";
 
 interface StatCardProps {

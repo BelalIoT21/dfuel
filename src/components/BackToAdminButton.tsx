@@ -1,8 +1,9 @@
 
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from './../context/AuthContext';
 
 export const BackToAdminButton = ({ isDashboardLink = true }) => {
   const navigate = useNavigate();

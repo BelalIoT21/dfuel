@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Users, Settings, CalendarClock, UserCheck } from "lucide-react";
 import { StatCard } from "./StatCard";
 
@@ -8,6 +9,11 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
+  // Filter out safety cabinet and safety course from machine count
+  const actualMachines = machines.filter(machine => 
+    machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+  );
+  
   // Basic statistics for the admin dashboard
   const stats = [
     { 
@@ -19,7 +25,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     },
     { 
       title: 'Total Machines', 
-      value: machines.length, 
+      value: actualMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '0%',
       link: '/admin/machines'

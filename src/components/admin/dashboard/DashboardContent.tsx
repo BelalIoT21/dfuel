@@ -1,95 +1,69 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../services/apiService';
 import { machines } from '../../../utils/data';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { StatsOverview } from '@/components/admin/StatsOverview';
-import { PlatformOverview } from '@/components/admin/PlatformOverview';
-import { QuickActions } from '@/components/admin/QuickActions';
-import { PendingActions } from '@/components/admin/PendingActions';
-import { MachineStatus } from '@/components/admin/MachineStatus';
-import { useToast } from '@/hooks/use-toast';
-import userDatabase from '../../../services/userDatabase';
+import { AdminHeader } from '../AdminHeader';
+import { StatsOverview } from '../StatsOverview';
+import { PlatformOverview } from '../PlatformOverview';
+import { QuickActions } from '../QuickActions';
+import { PendingActions } from '../PendingActions';
+import { MachineStatus } from '../MachineStatus';
 
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [machineData, setMachineData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
   
   useEffect(() => {
     // Load users and machine data
     const fetchData = async () => {
-      setIsLoading(true);
       try {
-        // Try to get users from API first
+        // Get all users using our API service
         const response = await apiService.getAllUsers();
-        
         if (response.data) {
           setAllUsers(response.data);
-        } else {
-          // Fallback to local storage if API fails
-          console.log("API failed, using local storage for users");
-          const localUsers = await userDatabase.getAllUsers();
-          setAllUsers(localUsers);
         }
         
-        // Filter out safety cabinet and safety course - they're not real machines
+        // First get regular machines
         const regularMachines = machines.filter(
-          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+          machine => machine.id !== 'safety-cabinet'
         );
         
-        // Get machine statuses with fallback to 'available' if API fails
+        // Get safety items
+        const safetyItems = machines.filter(
+          machine => machine.id === 'safety-cabinet'
+        ).map(machine => ({
+          ...machine,
+          status: 'available' // Always available
+        }));
+        
+        // Get machine statuses
         const machinesWithStatus = await Promise.all(regularMachines.map(async (machine) => {
           try {
             const statusResponse = await apiService.getMachineStatus(machine.id);
             return {
               ...machine,
               status: statusResponse.data?.status || 'available',
-              note: statusResponse.data?.note || ''
+              maintenanceNote: statusResponse.data?.note || ''
             };
           } catch (error) {
-            console.log(`Failed to get status for ${machine.name}, using default`);
+            console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: 'available',
-              note: ''
+              status: 'available'
             };
           }
         }));
         
-        setMachineData(machinesWithStatus);
+        // Combine regular machines and safety items
+        setMachineData([...machinesWithStatus, ...safetyItems]);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
-        
-        // Fallback for users
-        const localUsers = await userDatabase.getAllUsers();
-        setAllUsers(localUsers);
-        
-        // Fallback for machines
-        const regularMachines = machines.filter(
-          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
-        );
-        const fallbackMachines = regularMachines.map(machine => ({
-          ...machine,
-          status: 'available',
-          note: ''
-        }));
-        setMachineData(fallbackMachines);
-        
-        toast({
-          title: "Connection Error",
-          description: "Could not connect to API server. Using local data instead.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
       }
     };
     
     fetchData();
-  }, [toast]);
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto page-transition">
