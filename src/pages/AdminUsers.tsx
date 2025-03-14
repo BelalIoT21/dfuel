@@ -5,7 +5,6 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import userDatabase from '../services/userDatabase';
-import { BackToAdminButton } from '../components/BackToAdminButton';
 import { UserSearch } from '../components/admin/users/UserSearch';
 import { UsersTable } from '../components/admin/users/UsersTable';
 import { AdminAccessRequired } from '../components/admin/users/AdminAccessRequired';
