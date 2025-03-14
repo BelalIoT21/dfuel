@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -17,11 +17,16 @@ import { CheckCircle, XCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
+import { apiService } from '@/services/apiService';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ActiveBookings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   
   // Redirect if not admin
   if (!user?.isAdmin) {
@@ -29,66 +34,214 @@ const ActiveBookings = () => {
     return null;
   }
 
-  // Example bookings data - would come from API in production
-  const bookings = [
-    { 
-      id: "1", 
-      machineId: "1", 
-      machineName: "3D Printer", 
-      userId: "2", 
-      userName: "Jane Smith", 
-      date: "2023-06-15", 
-      time: "10:00 AM", 
-      status: "Approved" 
-    },
-    { 
-      id: "2", 
-      machineId: "3", 
-      machineName: "CNC Router", 
-      userId: "3", 
-      userName: "Michael Johnson", 
-      date: "2023-06-16", 
-      time: "2:00 PM", 
-      status: "Pending" 
-    },
-    { 
-      id: "3", 
-      machineId: "2", 
-      machineName: "Laser Cutter", 
-      userId: "4", 
-      userName: "Emily Davis", 
-      date: "2023-06-17", 
-      time: "9:30 AM", 
-      status: "Approved" 
-    },
-    { 
-      id: "4", 
-      machineId: "5", 
-      machineName: "Wood Planer", 
-      userId: "5", 
-      userName: "Robert Wilson", 
-      date: "2023-06-18", 
-      time: "1:00 PM", 
-      status: "Pending" 
-    },
-  ];
+  // Fetch bookings data from API
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getAllBookings();
+        if (response.data) {
+          setBookings(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load bookings data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   // Filter bookings based on selected filter
   const filteredBookings = filter === 'all' 
     ? bookings 
-    : bookings.filter(booking => booking.status.toLowerCase() === filter);
+    : bookings.filter((booking: any) => booking.status.toLowerCase() === filter);
 
   // Handle approval or rejection
-  const handleStatusChange = (bookingId: string, newStatus: string) => {
-    // In a real app, call API to update the booking status
-    console.log(`Booking ${bookingId} changed to ${newStatus}`);
-    
-    toast({
-      title: `Booking ${newStatus}`,
-      description: `You have ${newStatus.toLowerCase()} booking #${bookingId}`,
-      variant: newStatus === 'Approved' ? 'default' : 'destructive',
-    });
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
+    try {
+      // Call API to update the booking status
+      const response = await apiService.updateBookingStatus(bookingId, newStatus);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Update the local state to reflect the change
+      setBookings(bookings.map((booking: any) => 
+        booking.id === bookingId ? { ...booking, status: newStatus } : booking
+      ));
+      
+      toast({
+        title: `Booking ${newStatus}`,
+        description: `You have ${newStatus.toLowerCase()} booking #${bookingId}`,
+        variant: newStatus === 'Approved' ? 'default' : 'destructive',
+      });
+    } catch (error) {
+      console.error(`Error updating booking status:`, error);
+      toast({
+        title: "Error",
+        description: "Failed to update booking status",
+        variant: "destructive",
+      });
+    }
   };
+
+  // Render mobile card view for small screens
+  const renderMobileView = () => (
+    <div className="space-y-4">
+      {filteredBookings.length > 0 ? (
+        filteredBookings.map((booking: any) => (
+          <Card key={booking.id} className="overflow-hidden">
+            <CardHeader className="p-4 pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">{booking.machineName}</CardTitle>
+                <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
+                      className={`
+                        ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
+                        ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
+                        ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                      `}>
+                  {booking.status}
+                </Badge>
+              </div>
+              <CardDescription>
+                <span className="font-medium">User:</span> {booking.userName}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <p className="text-sm mb-3">
+                <span className="font-medium">Date & Time:</span> {booking.date} at {booking.time}
+              </p>
+              
+              {booking.status === 'Pending' ? (
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    size="sm" 
+                    className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-1 w-full"
+                    onClick={() => handleStatusChange(booking.id, 'Approved')}
+                  >
+                    <CheckCircle size={16} />
+                    Approve
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    className="flex items-center justify-center gap-1 w-full"
+                    onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                  >
+                    <XCircle size={16} />
+                    Reject
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="border-purple-200 w-full">
+                  View Details
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <div className="text-center py-10 text-gray-500">
+          <p className="mb-2">No bookings found matching the selected filter.</p>
+          <Button 
+            variant="outline" 
+            className="mt-2"
+            onClick={() => setFilter('all')}
+          >
+            View All Bookings
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  // Render desktop table view for larger screens
+  const renderDesktopView = () => (
+    <div className="border rounded-md overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Machine</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>Date & Time</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredBookings.length > 0 ? (
+            filteredBookings.map((booking: any) => (
+              <TableRow key={booking.id}>
+                <TableCell className="font-medium">{booking.machineName}</TableCell>
+                <TableCell>{booking.userName}</TableCell>
+                <TableCell>
+                  {booking.date} at {booking.time}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
+                        className={`
+                          ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
+                          ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
+                          ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                        `}>
+                    {booking.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {booking.status === 'Pending' ? (
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                        onClick={() => handleStatusChange(booking.id, 'Approved')}
+                      >
+                        <CheckCircle size={16} />
+                        Approve
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        className="flex items-center gap-1"
+                        onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                      >
+                        <XCircle size={16} />
+                        Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" className="border-purple-200">
+                      View Details
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-10 text-gray-500">
+                <p className="mb-2">No bookings found matching the selected filter.</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => setFilter('all')}
+                >
+                  View All Bookings
+                </Button>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4 md:p-6">
@@ -116,79 +269,12 @@ const ActiveBookings = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredBookings.length > 0 ? (
-              <div className="border rounded-md overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Machine</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Date & Time</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell className="font-medium">{booking.machineName}</TableCell>
-                        <TableCell>{booking.userName}</TableCell>
-                        <TableCell>
-                          {booking.date} at {booking.time}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
-                                className={`
-                                  ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
-                                  ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
-                                  ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
-                                `}>
-                            {booking.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {booking.status === 'Pending' ? (
-                            <div className="flex justify-end gap-2">
-                              <Button 
-                                size="sm" 
-                                className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
-                                onClick={() => handleStatusChange(booking.id, 'Approved')}
-                              >
-                                <CheckCircle size={16} />
-                                Approve
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                className="flex items-center gap-1"
-                                onClick={() => handleStatusChange(booking.id, 'Rejected')}
-                              >
-                                <XCircle size={16} />
-                                Reject
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button size="sm" variant="outline" className="border-purple-200">
-                              View Details
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            {loading ? (
+              <div className="text-center py-10">
+                <p className="text-gray-500">Loading bookings...</p>
               </div>
             ) : (
-              <div className="text-center py-10 text-gray-500">
-                <p className="mb-2">No bookings found matching the selected filter.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => setFilter('all')}
-                >
-                  View All Bookings
-                </Button>
-              </div>
+              isMobile ? renderMobileView() : renderDesktopView()
             )}
           </CardContent>
         </Card>

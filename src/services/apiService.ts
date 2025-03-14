@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -166,6 +165,23 @@ class ApiService {
       'PUT', 
       { status, note }
     );
+  }
+  
+  // Booking endpoints
+  async getAllBookings() {
+    return this.request<any[]>('bookings/all', 'GET');
+  }
+  
+  async updateBookingStatus(bookingId: string, status: string) {
+    return this.request<any>(
+      `bookings/${bookingId}/status`, 
+      'PUT', 
+      { status }
+    );
+  }
+  
+  async cancelBooking(bookingId: string) {
+    return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
   }
   
   // Admin endpoints
