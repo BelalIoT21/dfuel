@@ -1,5 +1,5 @@
 
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
 import { API_URL } from '@/utils/env';
 
 class ApiService {
@@ -16,7 +16,7 @@ class ApiService {
   }
   
   // Generic request method
-  async request<T>(endpoint: string, options: AxiosRequestConfig = {}): Promise<AxiosResponse<T>> {
+  async request<T>(endpoint: string, options: any = {}): Promise<any> {
     try {
       const url = `${this.baseURL}${endpoint}`;
       
