@@ -19,6 +19,7 @@ export default function(api) {
           '.jsx',
           '.ts',
           '.tsx',
+          '.mjs',
         ],
         alias: {
           // This helps resolve platform-specific files

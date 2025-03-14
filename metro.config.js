@@ -14,9 +14,9 @@ config.resolver.sourceExts = [
   // Add any custom extensions your project uses
 ];
 
-// Enable the following 3 lines if you use Reanimated library
-// config.resolver.assetExts = [...(config.resolver.assetExts || []), 'lottie'];
-// config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
-// config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
+// Fix for ESM compatibility
+config.resolver.sourceExts.push('mjs');
+config.resolver.assetExts = config.resolver.assetExts || [];
+config.transformer.minifierPath = 'metro-minify-terser';
 
 export default config;
