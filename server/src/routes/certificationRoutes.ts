@@ -10,8 +10,8 @@ import { protect, admin } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Add certification (admin only)
-router.post('/', protect, admin, addCertification);
+// Add certification - allow both regular users and admins
+router.post('/', protect, addCertification);
 
 // Remove certification (admin only)
 router.delete('/', protect, admin, removeCertification);
