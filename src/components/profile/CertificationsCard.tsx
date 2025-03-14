@@ -28,9 +28,9 @@ const CertificationsCard = () => {
     navigate(redirectPath, { replace: true });
   };
 
-  const handleBookNow = () => {
-    // Direct update of search params for better tab switching
-    setSearchParams({ tab: 'bookings' });
+  const handleBookNow = (machineId) => {
+    // Navigate directly to the booking page with the machine ID
+    navigate(`/booking/${machineId}`);
   };
 
   return (
@@ -46,7 +46,7 @@ const CertificationsCard = () => {
         {userCertifications.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {userCertifications.map((cert) => {
-              // Check if this is a safety cabinet
+              // Check if this is a safety cabinet - explicitly comparing with string
               const isSafetyCabinet = cert.type === 'Safety Cabinet';
               
               return (
@@ -58,7 +58,7 @@ const CertificationsCard = () => {
                       variant="outline" 
                       size="sm" 
                       className="mt-2 border-purple-200 hover:bg-purple-100"
-                      onClick={handleBookNow}
+                      onClick={() => handleBookNow(cert.id)}
                     >
                       Book Now
                     </Button>
