@@ -2,17 +2,13 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
-interface AdminHeaderProps {
-  pageTitle?: string;
-}
-
-export const AdminHeader = ({ pageTitle = "Admin Dashboard" }: AdminHeaderProps) => {
+export const AdminHeader = () => {
   const navigate = useNavigate();
   
   return (
     <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-purple-800">{pageTitle}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-purple-800">Admin Dashboard</h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">Learnit Platform Management</p>
       </div>
       <div className="flex flex-col md:flex-row gap-2">

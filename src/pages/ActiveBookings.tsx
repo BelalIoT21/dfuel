@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,17 +28,13 @@ const ActiveBookings = () => {
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
   
-  useEffect(() => {
-    if (user && !user.isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You do not have admin privileges",
-        variant: "destructive"
-      });
-      navigate('/home');
-    }
-  }, [user, navigate]);
+  // Redirect if not admin
+  if (!user?.isAdmin) {
+    navigate('/');
+    return null;
+  }
 
+  // Fetch bookings data from API
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -61,18 +58,22 @@ const ActiveBookings = () => {
     fetchBookings();
   }, []);
 
+  // Filter bookings based on selected filter
   const filteredBookings = filter === 'all' 
     ? bookings 
     : bookings.filter((booking: any) => booking.status.toLowerCase() === filter);
 
+  // Handle approval or rejection
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     try {
+      // Call API to update the booking status
       const response = await apiService.updateBookingStatus(bookingId, newStatus);
       
       if (response.error) {
         throw new Error(response.error);
       }
       
+      // Update the local state to reflect the change
       setBookings(bookings.map((booking: any) => 
         booking.id === bookingId ? { ...booking, status: newStatus } : booking
       ));
@@ -92,28 +93,7 @@ const ActiveBookings = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!user.isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-          <p className="mb-4">You don't have permission to access this page.</p>
-          <Button onClick={() => navigate('/home')}>Return to Home</Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Render mobile card view for small screens
   const renderMobileView = () => (
     <div className="space-y-4">
       {filteredBookings.length > 0 ? (
@@ -183,6 +163,7 @@ const ActiveBookings = () => {
     </div>
   );
 
+  // Render desktop table view for larger screens
   const renderDesktopView = () => (
     <div className="border rounded-md overflow-hidden">
       <Table>
@@ -236,7 +217,7 @@ const ActiveBookings = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" className="border-purple-200 whitespace-nowrap">
+                    <Button size="sm" variant="outline" className="border-purple-200">
                       View Details
                     </Button>
                   )}

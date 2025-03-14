@@ -1,92 +1,83 @@
 
 import { useState, useEffect } from 'react';
-import { StatsOverview } from '../StatsOverview';
-import { PendingActions } from '../PendingActions';
-import { MachineStatus } from '../MachineStatus';
-import { QuickActions } from '../QuickActions';
-import { PlatformOverview } from '../PlatformOverview';
-import { useAuth } from '@/context/AuthContext';
-import { machines } from '@/utils/data';
-import { useToast } from '@/hooks/use-toast';
-import { apiService } from '@/services/apiService';
+import { useAuth } from '../../../context/AuthContext';
+import { apiService } from '../../../services/apiService';
+import { machines } from '../../../utils/data';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { StatsOverview } from '@/components/admin/StatsOverview';
+import { PlatformOverview } from '@/components/admin/PlatformOverview';
+import { QuickActions } from '@/components/admin/QuickActions';
+import { PendingActions } from '@/components/admin/PendingActions';
+import { MachineStatus } from '@/components/admin/MachineStatus';
 
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
-  // Filter out safety cabinet and safety course
-  const actualMachines = machines.filter(
-    machine => machine.id !== 'safety-cabinet' && machine.id !== '3' && machine.id !== 'safety-course'
-  );
+  const [machineData, setMachineData] = useState<any[]>([]);
   
   useEffect(() => {
+    // Load users and machine data
     const fetchData = async () => {
-      if (!user || !user.isAdmin) {
-        setError('You must be an admin to view this page');
-        setLoading(false);
-        return;
-      }
-      
       try {
-        setLoading(true);
+        // Get all users using our API service
+        const response = await apiService.getAllUsers();
+        if (response.data) {
+          setAllUsers(response.data);
+        }
         
-        // Get users from local database since API might not be available
-        const users = await fetch('/api/users')
-          .then(res => res.json())
-          .catch(() => []);
+        // First get regular machines
+        const regularMachines = machines.filter(
+          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+        );
         
-        setAllUsers(users || []);
+        // Get safety items
+        const safetyItems = machines.filter(
+          machine => machine.id === 'safety-cabinet' || machine.id === 'safety-course'
+        ).map(machine => ({
+          ...machine,
+          status: 'available' // Always available
+        }));
+        
+        // Get machine statuses
+        const machinesWithStatus = await Promise.all(regularMachines.map(async (machine) => {
+          try {
+            const statusResponse = await apiService.getMachineStatus(machine.id);
+            return {
+              ...machine,
+              status: statusResponse.data?.status || 'available',
+              maintenanceNote: statusResponse.data?.note || ''
+            };
+          } catch (error) {
+            console.error(`Error loading status for machine ${machine.id}:`, error);
+            return {
+              ...machine,
+              status: 'available'
+            };
+          }
+        }));
+        
+        // Combine regular machines and safety items
+        setMachineData([...machinesWithStatus, ...safetyItems]);
       } catch (error) {
-        console.error('API request failed:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        console.error("Error loading dashboard data:", error);
       }
     };
     
     fetchData();
-  }, [user, toast]);
-  
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="text-center py-12">
-          <p className="text-lg">Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="text-center py-12">
-          <p className="text-lg text-red-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
-  
+  }, []);
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <StatsOverview allUsers={allUsers} machines={actualMachines} />
+    <div className="max-w-7xl mx-auto page-transition">
+      <AdminHeader />
+      <StatsOverview allUsers={allUsers} machines={machines} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <MachineStatus machines={actualMachines} />
-          <PlatformOverview />
-        </div>
-        <div className="space-y-6">
-          <QuickActions />
-          <PendingActions />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <PlatformOverview allUsers={allUsers} />
+        <QuickActions />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <PendingActions />
+        <MachineStatus machineData={machineData} setMachineData={setMachineData} />
       </div>
     </div>
   );
