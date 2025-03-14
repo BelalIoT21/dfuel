@@ -1,125 +1,70 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
-import { AnimatePresence, motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
-import { toast } from '@/components/ui/use-toast';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Index = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const { user, login, register } = useAuth();
+  console.log("Rendering Index page");
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>('login');
 
-  // Check server connection
   useEffect(() => {
-    const checkServer = async () => {
-      try {
-        console.log("Checking server health...");
-        const response = await apiService.checkHealth();
-        if (response.data) {
-          console.log("Server health check:", response.data);
-          setServerStatus('connected');
-          toast({
-            title: 'Server Connected',
-            description: 'Successfully connected to the backend server',
-          });
-        }
-      } catch (error) {
-        console.error("Server connection error:", error);
-        setServerStatus('disconnected');
-        toast({
-          title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Using local storage instead.',
-          variant: 'destructive'
-        });
-      }
-    };
+    console.log("Index page useEffect running", { user: user?.name || "null", loading });
     
-    checkServer();
-  }, []);
-
-  // Redirect if user is already logged in
-  useEffect(() => {
-    if (user) {
-      console.log("User is logged in, redirecting:", user);
-      navigate(user.isAdmin ? '/admin' : '/home');
+    if (user && !loading) {
+      console.log("User is authenticated, redirecting to appropriate dashboard");
+      if (user.isAdmin) {
+        console.log("Redirecting admin to /admin");
+        navigate('/admin');
+      } else {
+        console.log("Redirecting user to /home");
+        navigate('/home');
+      }
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
-  const handleLogin = async (email: string, password: string) => {
-    console.log("Attempting login with:", email);
-    await login(email, password);
-  };
-
-  const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email);
-    await register(email, password, name);
-  };
-  
-  const handleGoogleLogin = async (googleData: any) => {
-    console.log("Attempting Google login for:", googleData.email);
-    if (useAuth().googleLogin) {
-      await useAuth().googleLogin(googleData);
-    }
-  };
-
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-  };
-
-  // Debug rendering
-  console.log("Rendering Index component");
+  // Debug div to see if anything is rendering at all
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-purple-800 mb-4">Loading...</h2>
+          <p className="text-gray-600">Please wait while we set up your experience.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
-      <div className="w-full max-w-md space-y-6 animate-fade-up">
-        <div className="text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
-          <p className="mt-2 text-md md:text-lg text-gray-600">
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </p>
-          {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              Server status: {serverStatus}
-            </div>
-          )}
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-purple-800 mb-2">Learnit Academy</h1>
+          <p className="text-gray-600">Access machine learning resources safely</p>
         </div>
 
-        <AnimatePresence mode="wait">
-          {isLogin ? (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LoginForm 
-                onLogin={handleLogin}
-                onGoogleLogin={handleGoogleLogin}
-                onToggleMode={toggleMode} 
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <RegisterForm 
-                onRegister={handleRegister}
-                onGoogleLogin={handleGoogleLogin}
-                onToggleMode={toggleMode} 
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login">
+                <LoginForm onRegisterClick={() => setActiveTab('register')} />
+              </TabsContent>
+              <TabsContent value="register">
+                <RegisterForm onLoginClick={() => setActiveTab('login')} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

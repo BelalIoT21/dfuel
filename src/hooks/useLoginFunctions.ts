@@ -11,11 +11,13 @@ export const useLoginFunctions = (
   const { toast } = useToast();
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log("Login attempt:", email);
     try {
       setLoading(true);
       const user = await userDatabase.authenticate(email, password);
       
       if (user) {
+        console.log("Login successful:", user.name);
         setUser(user);
         localStorage.setItem('learnit_user', JSON.stringify(user));
         toast({
@@ -24,6 +26,7 @@ export const useLoginFunctions = (
         });
         return true;
       } else {
+        console.log("Login failed: Invalid credentials");
         toast({
           title: "Login failed",
           description: "Invalid email or password",
@@ -45,11 +48,13 @@ export const useLoginFunctions = (
   };
 
   const googleLogin = async (googleData: GoogleLoginData): Promise<boolean> => {
+    console.log("Google login attempt");
     try {
       setLoading(true);
       
       // Validate required data from Google
       if (!googleData.email || !googleData.name || !googleData.sub) {
+        console.log("Google login failed: Incomplete data", googleData);
         toast({
           title: "Login failed",
           description: "Incomplete information from Google",
@@ -63,6 +68,7 @@ export const useLoginFunctions = (
       let user = await userDatabase.findUserByEmail(googleData.email);
       
       if (!user) {
+        console.log("User not found, auto-registering from Google data");
         // Auto-register user from Google data
         user = await userDatabase.registerUser(
           googleData.email,
@@ -71,6 +77,7 @@ export const useLoginFunctions = (
         );
         
         if (!user) {
+          console.log("Failed to auto-register Google user");
           toast({
             title: "Registration failed",
             description: "Failed to create account with Google",
@@ -80,6 +87,7 @@ export const useLoginFunctions = (
         }
       }
       
+      console.log("Google login successful:", user.name);
       setUser(user);
       localStorage.setItem('learnit_user', JSON.stringify(user));
       toast({

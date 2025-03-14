@@ -14,21 +14,32 @@ export const useAuthFunctions = () => {
   // Load user from localStorage on initial render
   useEffect(() => {
     const loadUser = () => {
+      console.log("Loading user from localStorage");
       const storedUser = localStorage.getItem('learnit_user');
+      console.log("Stored user:", storedUser ? "Found" : "Not found");
+      
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
+          console.log("Successfully parsed user:", parsedUser.name);
           setUser(parsedUser);
         } catch (error) {
           console.error('Error parsing stored user:', error);
           localStorage.removeItem('learnit_user');
         }
+      } else {
+        console.log("No user found in localStorage");
       }
       setLoading(false);
     };
     
     loadUser();
   }, []);
+
+  // Log user state changes
+  useEffect(() => {
+    console.log("Auth state updated:", { user: user?.name || "null", loading });
+  }, [user, loading]);
 
   // Compose specialized hooks
   const { login, googleLogin } = useLoginFunctions(setUser, setLoading);
