@@ -7,6 +7,7 @@ export interface User {
   password: string;
   name: string;
   isAdmin: boolean;
+  googleId?: string; // Add googleId as optional property
   certifications: string[];
   bookings: Booking[];
   lastLogin: string;
@@ -28,7 +29,6 @@ export interface MachineStatus {
   machineId: string;
   status: string;
   note?: string;
-  imageUrl?: string;
 }
 
 export type UserWithoutSensitiveInfo = Omit<User, 'password' | 'resetCode'>;

@@ -70,6 +70,76 @@ export const useAuthFunctions = (
     }
   };
 
+  const googleLogin = async (googleData: any): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      console.log("Google login attempt with token:", googleData);
+      
+      // Try API login with Google token
+      const apiResponse = await apiService.googleAuth({
+        name: googleData.name,
+        email: googleData.email,
+        googleId: googleData.sub,
+        picture: googleData.picture
+      });
+      
+      if (apiResponse.data) {
+        console.log("Google API login successful:", apiResponse.data);
+        const userData = apiResponse.data.user;
+        
+        // Save the token for future API requests
+        if (apiResponse.data.token) {
+          localStorage.setItem('token', apiResponse.data.token);
+        }
+        
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        toast({
+          title: "Login successful",
+          description: `Welcome, ${userData.name}!`
+        });
+        return true;
+      }
+      
+      // Fallback to local storage if API fails
+      console.log("API Google login failed, trying localStorage");
+      // For local storage we'll just create a new user or find existing one
+      const userData = await userDatabase.findUserByEmail(googleData.email) || 
+                      await userDatabase.registerUser(
+                        googleData.email, 
+                        "google-" + Math.random().toString(36).substring(2), 
+                        googleData.name
+                      );
+      
+      if (userData) {
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        toast({
+          title: "Login successful",
+          description: `Welcome, ${userData.name}!`
+        });
+        return true;
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Could not authenticate with Google.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error during Google login:", error);
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred.",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       setIsLoading(true);
@@ -140,6 +210,7 @@ export const useAuthFunctions = (
 
   return {
     login,
+    googleLogin,
     register,
     logout,
     isLoading

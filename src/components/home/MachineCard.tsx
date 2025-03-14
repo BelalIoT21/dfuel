@@ -8,8 +8,7 @@ interface ExtendedMachine {
   id: string;
   name: string;
   description: string;
-  image?: string;
-  imageUrl?: string;
+  image: string;
   courseCompleted: boolean;
   quizPassed: boolean;
   status: 'available' | 'maintenance' | 'in-use' | 'locked';
@@ -22,9 +21,6 @@ interface MachineCardProps {
 
 const MachineCard = ({ machine, userCertifications = [] }: MachineCardProps) => {
   const isCertified = userCertifications.includes(machine.id);
-  
-  // Use imageUrl first, then fall back to image property, then to placeholder
-  const imageSource = machine.imageUrl || machine.image || '/placeholder.svg';
 
   return (
     <Link to={`/machine/${machine.id}`} key={machine.id}>
@@ -36,7 +32,7 @@ const MachineCard = ({ machine, userCertifications = [] }: MachineCardProps) => 
         <CardContent>
           <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
             <img
-              src={imageSource}
+              src={machine.image}
               alt={machine.name}
               className="w-full h-full object-cover"
             />

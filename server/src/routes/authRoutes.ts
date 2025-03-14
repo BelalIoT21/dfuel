@@ -12,7 +12,21 @@ router.post(
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+    // No password validation when registering with Google
+    body('password')
+      .if(body('googleId').not().exists())
+      .isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  ],
+  registerUser
+);
+
+// Google register/sign-in
+router.post(
+  '/google',
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    body('googleId').notEmpty().withMessage('Google ID is required')
   ],
   registerUser
 );
@@ -22,7 +36,10 @@ router.post(
   '/login',
   [
     body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password').notEmpty().withMessage('Password is required')
+    // Skip password validation if googleToken is provided
+    body('password')
+      .if(body('googleToken').not().exists())
+      .notEmpty().withMessage('Password is required')
   ],
   loginUser
 );
