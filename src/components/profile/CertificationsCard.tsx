@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   if (!user) return null;
 
@@ -26,6 +27,11 @@ const CertificationsCard = () => {
   const handleTakeSafetyCourse = () => {
     const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
     navigate(redirectPath, { replace: true });
+  };
+
+  const handleBookNow = () => {
+    // Direct update of search params for better tab switching
+    setSearchParams({ tab: 'bookings' });
   };
 
   return (
@@ -49,8 +55,13 @@ const CertificationsCard = () => {
                   <div className="font-medium text-purple-800">{cert.name}</div>
                   <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
                   {!isSafetyCabinet && (
-                    <Button variant="outline" size="sm" className="mt-2 border-purple-200 hover:bg-purple-100" asChild>
-                      <Link to={`/booking/${cert.id}`}>Book Now</Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2 border-purple-200 hover:bg-purple-100"
+                      onClick={handleBookNow}
+                    >
+                      Book Now
                     </Button>
                   )}
                 </div>

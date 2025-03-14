@@ -14,21 +14,17 @@ const Profile = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam || 'profile';
+  
+  // Set default tab based on URL parameter
+  const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
+    ? tabParam 
+    : 'profile';
   
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
 
-  // When URL params change, make sure the UI reflects it
-  useEffect(() => {
-    if (tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam)) {
-      // We don't need to do anything here as the Tabs component will handle this
-      // through the defaultValue prop
-    }
-  }, [tabParam]);
-  
   // Redirect if user is not logged in
   if (!user) {
     navigate('/');
@@ -42,7 +38,7 @@ const Profile = () => {
         
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
-        <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs value={defaultTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="w-full mb-2 grid grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="certifications">Certifications</TabsTrigger>

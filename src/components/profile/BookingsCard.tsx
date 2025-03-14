@@ -5,18 +5,19 @@ import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Mail } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 const BookingsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Navigate to the profile page with certifications tab selected
-    navigate('/profile?tab=certifications', { replace: true });
+    // Direct update of search params for better tab switching
+    setSearchParams({ tab: 'certifications' });
   };
 
   const handleButtonClick = (booking: any) => {
