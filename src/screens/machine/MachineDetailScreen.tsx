@@ -28,9 +28,22 @@ const MachineDetailScreen = ({ route, navigation }) => {
   };
 
   const handleBookMachine = () => {
-    // Ensure we're navigating to the Booking screen with the correct machineId parameter
-    navigation.navigate('Booking', { machineId });
-    console.log('Navigating to booking for machine:', machineId);
+    // For admin users, create a direct booking
+    if (user?.isAdmin) {
+      console.log('Admin booking for machine:', machineId);
+      // Navigate to the booking screen with more parameters for immediate booking
+      navigation.navigate('Booking', { 
+        machineId, 
+        adminBooking: true,
+        // Add default date and time for admin bookings
+        date: new Date().toISOString().split('T')[0],
+        time: '09:00-10:00'
+      });
+    } else {
+      // For regular users, just navigate to the booking screen
+      console.log('User attempting to book machine:', machineId);
+      navigation.navigate('Booking', { machineId });
+    }
   };
 
   const handleGetCertified = async () => {

@@ -53,8 +53,17 @@ const MachineActions = ({
         </Button>
       )}
       
-      {/* Always show booking button for admins, or for certified users with available machines */}
-      {(machineStatus === 'available' && isCertified) || isAdmin ? (
+      {/* Always show booking button for admins regardless of machine status or certification */}
+      {isAdmin ? (
+        <Button 
+          mode="contained" 
+          icon="calendar-plus" 
+          style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
+          onPress={onBookMachine}
+        >
+          Book Machine (Admin)
+        </Button>
+      ) : (machineStatus === 'available' && isCertified) ? (
         <Button 
           mode="contained" 
           icon="calendar-plus" 
