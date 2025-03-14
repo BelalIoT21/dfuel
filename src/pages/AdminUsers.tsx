@@ -25,9 +25,22 @@ const AdminUsers = () => {
   
   useEffect(() => {
     // Get all users from the database
-    const allUsers = userDatabase.getAllUsers();
-    setUsers(allUsers);
-  }, []);
+    const fetchUsers = async () => {
+      try {
+        const allUsers = await userDatabase.getAllUsers();
+        setUsers(allUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load users",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    fetchUsers();
+  }, [toast]);
 
   if (!user?.isAdmin) {
     return (

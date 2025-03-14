@@ -22,18 +22,27 @@ const AdminDashboard = () => {
   
   useEffect(() => {
     // Load users and machine data
-    const users = userDatabase.getAllUsers();
-    setAllUsers(users);
+    const fetchData = async () => {
+      try {
+        // Get all users
+        const users = await userDatabase.getAllUsers();
+        setAllUsers(users);
+        
+        // Get machine statuses
+        const machinesWithStatus = await Promise.all(machines.map(async (machine) => {
+          const status = await userDatabase.getMachineStatus(machine.id);
+          return {
+            ...machine,
+            status: status || 'available'
+          };
+        }));
+        setMachineData(machinesWithStatus);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      }
+    };
     
-    // Get machine statuses
-    const machinesWithStatus = machines.map(machine => {
-      const status = userDatabase.getMachineStatus(machine.id);
-      return {
-        ...machine,
-        status: status || 'available'
-      };
-    });
-    setMachineData(machinesWithStatus);
+    fetchData();
   }, []);
   
   if (!user?.isAdmin) {
