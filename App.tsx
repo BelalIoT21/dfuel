@@ -8,7 +8,7 @@ import { Text, View } from 'react-native';
 // It must export a default function for compatibility
 export default function App() {
   useEffect(() => {
-    console.log("App component registered");
+    console.log("App component registered - initializing expo-router");
   }, []);
   
   // This return is not used by expo-router but needed for type checking

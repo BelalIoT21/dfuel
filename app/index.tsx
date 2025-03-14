@@ -1,5 +1,5 @@
 
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { Link } from "expo-router";
 import React, { useEffect } from "react";
 
@@ -9,17 +9,23 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Learnit</Text>
-      <Text style={styles.description}>Welcome to your learning platform</Text>
-      <Link href="/login" style={styles.link}>
-        <Text style={styles.linkText}>Login</Text>
-      </Link>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Learnit</Text>
+        <Text style={styles.description}>Welcome to your learning platform</Text>
+        <Link href="/login" style={styles.link}>
+          <Text style={styles.linkText}>Login</Text>
+        </Link>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f3ff",
+  },
   container: {
     flex: 1,
     alignItems: "center",
