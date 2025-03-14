@@ -1,10 +1,13 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { CalendarDays, ChevronRight, Medal, FileText } from "lucide-react";
 
 interface MachineDetailTabsProps {
   description: string;
-  specs: Record<string, any>;
+  specs: Record<string, string>;
   isBookable: boolean;
   courseCompleted: boolean;
   quizPassed: boolean;
@@ -13,6 +16,7 @@ interface MachineDetailTabsProps {
   onBookMachine: () => void;
   onPassQuiz: () => void;
   isCertified: boolean;
+  isSafetyCabinet?: boolean;
 }
 
 export const MachineDetailTabs = ({
@@ -25,126 +29,150 @@ export const MachineDetailTabs = ({
   onStartQuiz,
   onBookMachine,
   onPassQuiz,
-  isCertified
+  isCertified,
+  isSafetyCabinet = false
 }: MachineDetailTabsProps) => {
   return (
-    <Tabs defaultValue="details">
+    <Tabs defaultValue="overview">
       <TabsList className="mb-4">
-        <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="specs">Specifications</TabsTrigger>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="certification">Certification</TabsTrigger>
+        {isBookable && (
+          <TabsTrigger value="booking">Booking</TabsTrigger>
+        )}
       </TabsList>
       
-      <TabsContent value="details" className="space-y-4">
-        <div>
-          <h3 className="font-medium mb-2">About this Machine</h3>
-          <p className="text-gray-600">
-            {description} This specialized equipment requires proper training 
-            before use to ensure safety and optimal results.
-          </p>
-        </div>
+      {/* Overview Tab */}
+      <TabsContent value="overview" className="space-y-4">
+        <p className="text-gray-700">{description}</p>
         
-        <div>
-          <h3 className="font-medium mb-2">Usage Requirements</h3>
-          <ul className="list-disc pl-5 text-gray-600 space-y-1">
-            <li>Complete the safety training course</li>
-            <li>Pass the certification quiz</li>
-            {isBookable && <li>Book machine time in advance</li>}
-            <li>Follow all safety protocols</li>
-            <li>Report any issues immediately</li>
-          </ul>
-        </div>
-        
-        {isBookable && (
-          <Button 
-            onClick={onBookMachine} 
-            disabled={!isCertified}
-            className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
-          >
-            {isCertified ? "Book Machine" : "Get Certified to Book"}
-          </Button>
-        )}
-      </TabsContent>
-      
-      <TabsContent value="specs">
-        <div className="space-y-4">
-          <h3 className="font-medium">Technical Specifications</h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Object.entries(specs || {}).map(([key, value]) => (
-              <div key={key} className="border rounded-lg p-3">
-                <div className="text-sm text-gray-500 capitalize">{key}</div>
-                <div className="font-medium">
-                  {Array.isArray(value) 
-                    ? value.join(', ') 
-                    : value.toString()}
-                </div>
+        <div className="mt-4">
+          <h3 className="text-lg font-medium mb-2">Specifications</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
+            {Object.entries(specs).map(([key, value]) => (
+              <div key={key} className="flex items-start gap-2">
+                <span className="text-gray-500 font-medium min-w-32">{key}:</span>
+                <span className="text-gray-900">{value}</span>
               </div>
             ))}
           </div>
         </div>
       </TabsContent>
       
+      {/* Certification Tab */}
       <TabsContent value="certification" className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="font-medium">Safety Course</h3>
-          <p className="text-gray-600">
-            Learn how to safely operate the machine through our comprehensive course.
-          </p>
-          
-          <div className="flex items-center gap-2 mt-2">
-            <Button 
-              onClick={onStartCourse}
-              variant={courseCompleted ? "outline" : "default"}
-              className={courseCompleted ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
-            >
-              {courseCompleted ? "Review Course" : "Start Course"}
-            </Button>
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="font-medium">Certification Quiz</h3>
-          <p className="text-gray-600">
-            Demonstrate your knowledge by passing the certification quiz.
-          </p>
-          
-          <div className="flex items-center gap-2 mt-2">
-            <Button 
-              onClick={onStartQuiz}
-              variant={quizPassed ? "outline" : "default"}
-              disabled={!courseCompleted}
-              className={quizPassed ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
-            >
-              {quizPassed ? "Review Quiz" : "Start Quiz"}
-            </Button>
-          </div>
-        </div>
-        
-        {quizPassed && (
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
-            <div className="bg-green-500 text-white p-1 rounded-full">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M20 6L9 17l-5-5"></path>
-              </svg>
+        {isCertified ? (
+          <div className="bg-green-50 p-4 rounded-md border border-green-200">
+            <div className="flex items-center gap-3">
+              <Medal className="h-6 w-6 text-green-600" />
+              <div>
+                <h3 className="font-medium text-green-800">Certification Completed</h3>
+                <p className="text-green-700">You are certified to use this machine.</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">Certification Complete!</p>
-              <p className="text-sm text-gray-600">You are now certified to use this machine.</p>
+          </div>
+        ) : (
+          <div className="border rounded-md p-4">
+            <h3 className="text-lg font-medium mb-4">Certification Process</h3>
+            
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full w-8 h-8 bg-purple-100 text-purple-700 flex items-center justify-center font-medium">1</div>
+                <div>
+                  <h4 className="font-medium">{isSafetyCabinet ? "Safety Course" : "Machine Training"}</h4>
+                  <p className="text-gray-500 text-sm mb-2">
+                    {courseCompleted 
+                      ? "Completed" 
+                      : `Complete the ${isSafetyCabinet ? "safety" : "training"} course to learn how to use this ${isSafetyCabinet ? "equipment safely" : "machine"}.`}
+                  </p>
+                  
+                  <Button 
+                    variant={courseCompleted ? "outline" : "default"}
+                    className={courseCompleted ? "border-green-300 text-green-700" : ""}
+                    onClick={onStartCourse}
+                  >
+                    {courseCompleted ? (
+                      <>
+                        <span className="mr-2">✓</span> Course Completed
+                      </>
+                    ) : (
+                      <>Start Course</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="flex items-start gap-3">
+                <div className={`rounded-full w-8 h-8 ${courseCompleted ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-400"} flex items-center justify-center font-medium`}>2</div>
+                <div>
+                  <h4 className={`font-medium ${!courseCompleted && "text-gray-400"}`}>{isSafetyCabinet ? "Safety" : "Knowledge"} Quiz</h4>
+                  <p className={`text-sm mb-2 ${courseCompleted ? "text-gray-500" : "text-gray-400"}`}>
+                    {quizPassed 
+                      ? "Passed" 
+                      : `Pass the ${isSafetyCabinet ? "safety" : "knowledge"} quiz to demonstrate your understanding.`}
+                  </p>
+                  
+                  <Button 
+                    variant={quizPassed ? "outline" : "default"}
+                    disabled={!courseCompleted}
+                    className={quizPassed ? "border-green-300 text-green-700" : !courseCompleted ? "opacity-50 cursor-not-allowed" : ""}
+                    onClick={onStartQuiz}
+                  >
+                    {quizPassed ? (
+                      <>
+                        <span className="mr-2">✓</span> Quiz Passed
+                      </>
+                    ) : (
+                      <>Start Quiz</>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </TabsContent>
+      
+      {/* Booking Tab */}
+      {isBookable && (
+        <TabsContent value="booking" className="space-y-4">
+          {quizPassed ? (
+            <div className="border rounded-md p-5">
+              <div className="flex items-start gap-4">
+                <CalendarDays className="h-8 w-8 text-purple-600" />
+                <div>
+                  <h3 className="text-lg font-medium mb-1">Book this machine</h3>
+                  <p className="text-gray-500 mb-4">Reserve time slots to use this machine.</p>
+                  
+                  <Button onClick={onBookMachine} className="mt-2">
+                    Book Now <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="border rounded-md p-5 bg-gray-50">
+              <div className="flex items-start gap-4">
+                <FileText className="h-8 w-8 text-gray-400" />
+                <div>
+                  <h3 className="text-lg font-medium mb-1">Certification Required</h3>
+                  <p className="text-gray-500 mb-3">You need to complete the certification process before booking this machine.</p>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => document.querySelector('[data-value="certification"]')?.click()}
+                    className="text-purple-600 border-purple-200"
+                  >
+                    Go to Certification
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      )}
     </Tabs>
   );
 };

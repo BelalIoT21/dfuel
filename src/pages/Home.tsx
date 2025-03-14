@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
 import userDatabase from '../services/userDatabase';
 import { toast } from '@/components/ui/use-toast';
+import { AlertCircle } from 'lucide-react';
 
 interface ExtendedMachine {
   id: string;
@@ -15,7 +16,7 @@ interface ExtendedMachine {
   image: string;
   courseCompleted: boolean;
   quizPassed: boolean;
-  status: 'available' | 'maintenance' | 'in-use';
+  status: 'available' | 'maintenance' | 'in-use' | 'locked';
 }
 
 const Home = () => {
@@ -23,6 +24,7 @@ const Home = () => {
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [safetyCourseCompleted, setSafetyCourseCompleted] = useState(false);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -33,18 +35,32 @@ const Home = () => {
     async function loadMachineData() {
       try {
         setLoading(true);
+        
+        // Check if user has completed the safety course (look for safety cabinet certification)
+        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
+        setSafetyCourseCompleted(!!hasSafetyCert);
+        
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
+            
+            // If safety course is not completed and it's not the safety cabinet itself, mark as locked
+            let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
+              (status as 'available' | 'maintenance' | 'in-use') || 'available';
+            
+            if (!hasSafetyCert && machine.id !== 'safety-cabinet') {
+              machineStatus = 'locked';
+            }
+            
             return {
               ...machine,
-              status: (status as 'available' | 'maintenance' | 'in-use') || 'available'
+              status: machineStatus
             };
           } catch (error) {
             console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: 'available' as const
+              status: !hasSafetyCert && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
             };
           }
         }));
@@ -58,7 +74,7 @@ const Home = () => {
         });
         setMachineData(machines.map(machine => ({
           ...machine,
-          status: 'available' as const
+          status: !safetyCourseCompleted && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
         })));
       } finally {
         setLoading(false);
@@ -68,7 +84,7 @@ const Home = () => {
     if (user) {
       loadMachineData();
     }
-  }, [user, navigate]);
+  }, [user, navigate, safetyCourseCompleted]);
 
   if (!user) {
     navigate('/');
@@ -93,6 +109,28 @@ const Home = () => {
             </Button>
           </div>
         </div>
+
+        {!safetyCourseCompleted && (
+          <Card className="mb-6 border-yellow-200 bg-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <AlertCircle className="h-6 w-6 text-yellow-600 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-yellow-800 mb-1">Safety Course Required</h3>
+                  <p className="text-yellow-700 mb-4">
+                    All machines are locked until you complete the required safety course.
+                  </p>
+                  <Button 
+                    onClick={() => navigate('/machine/safety-cabinet')}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    Take Safety Course
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -124,13 +162,17 @@ const Home = () => {
                               ? 'bg-green-100 text-green-800' 
                               : machine.status === 'maintenance'
                                 ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
+                                : machine.status === 'locked'
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {machine.status === 'available' 
                               ? 'Available' 
                               : machine.status === 'maintenance'
                                 ? 'Maintenance'
-                                : 'In Use'}
+                                : machine.status === 'locked'
+                                  ? 'Locked'
+                                  : 'In Use'}
                           </span>
                           {user.certifications && user.certifications.includes(machine.id) && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -144,7 +186,7 @@ const Home = () => {
                         size="sm" 
                         className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full mt-auto"
                       >
-                        Learn More
+                        {machine.status === 'locked' ? 'Unlock' : 'Learn More'}
                       </Button>
                     </div>
                   </CardContent>

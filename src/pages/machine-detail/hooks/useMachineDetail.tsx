@@ -14,16 +14,23 @@ export const useMachineDetail = (id: string | undefined) => {
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [machineStatus, setMachineStatus] = useState('available');
+  const [safetyCertified, setSafetyCertified] = useState(false);
   
   const machine = machines.find(m => m.id === id);
   const course = courses[id || ''];
   
   useEffect(() => {
     // Load certification status
-    if (user && id && user.certifications.includes(id)) {
-      setCourseCompleted(true);
-      setQuizPassed(true);
-      setProgress(100);
+    if (user && id) {
+      // Check if user is certified for this machine
+      if (user.certifications.includes(id)) {
+        setCourseCompleted(true);
+        setQuizPassed(true);
+        setProgress(100);
+      }
+      
+      // Check if user has completed safety course
+      setSafetyCertified(user.certifications.includes('safety-cabinet'));
     }
 
     // Load machine status
@@ -43,10 +50,34 @@ export const useMachineDetail = (id: string | undefined) => {
   }, [user, id]);
   
   const handleStartCourse = () => {
+    // If it's not the safety cabinet and user hasn't completed safety course,
+    // redirect to safety cabinet
+    if (id !== 'safety-cabinet' && !safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course first.",
+        variant: "destructive"
+      });
+      navigate(`/machine/safety-cabinet`);
+      return;
+    }
+    
     navigate(`/course/${id}`);
   };
   
   const handleStartQuiz = () => {
+    // If it's not the safety cabinet and user hasn't completed safety course,
+    // redirect to safety cabinet
+    if (id !== 'safety-cabinet' && !safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course first.",
+        variant: "destructive"
+      });
+      navigate(`/machine/safety-cabinet`);
+      return;
+    }
+    
     navigate(`/quiz/${id}`);
   };
   
@@ -58,6 +89,17 @@ export const useMachineDetail = (id: string | undefined) => {
         description: "Safety Cabinet is not a bookable resource.",
         variant: "destructive"
       });
+      return;
+    }
+    
+    // Check if user has completed safety course
+    if (!safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course before booking machines.",
+        variant: "destructive"
+      });
+      navigate(`/machine/safety-cabinet`);
       return;
     }
     
@@ -100,7 +142,13 @@ export const useMachineDetail = (id: string | undefined) => {
     }
   };
   
-  const isBookable = machine ? machine.type !== 'Safety Cabinet' : false;
+  // Determine if machine is bookable
+  const isBookable = machine ? 
+    (machine.type !== 'Safety Cabinet' && safetyCertified) : 
+    false;
+  
+  // If it's not the safety cabinet itself, block access until safety course is completed
+  const isAccessible = id === 'safety-cabinet' || safetyCertified;
   
   return {
     machine,
@@ -111,6 +159,8 @@ export const useMachineDetail = (id: string | undefined) => {
     quizPassed,
     isBookable,
     machineStatus,
+    isAccessible,
+    safetyCertified,
     handleStartCourse,
     handleStartQuiz,
     handleBookMachine,

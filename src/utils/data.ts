@@ -1,4 +1,3 @@
-
 export interface Machine {
   id: string;
   name: string;
@@ -685,3 +684,106 @@ export const quizzes: Record<string, Quiz> = {
     ],
   },
 };
+
+// Ensure the safety cabinet machine exists in the machines array
+// Note: If this already exists in your data, you don't need to add it again
+// Look for a machine with id 'safety-cabinet'
+const safetyCabinetIndex = machines.findIndex(m => m.id === 'safety-cabinet');
+
+if (safetyCabinetIndex === -1) {
+  // Only add if it doesn't exist
+  machines.push({
+    id: 'safety-cabinet',
+    name: 'Safety Cabinet',
+    type: 'Safety Cabinet',
+    description: 'Required safety training for all workshop equipment.',
+    image: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OXx8c2FmZXR5fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60',
+    maintenanceDate: '2023-04-01',
+    specs: {
+      Type: 'Course',
+      Duration: '30 minutes',
+      Requirement: 'Mandatory for all users',
+      Coverage: 'All workshop safety procedures'
+    },
+    status: 'available'
+  });
+
+  // Add safety course
+  if (!courses['safety-cabinet']) {
+    courses['safety-cabinet'] = {
+      title: 'Workshop Safety Training',
+      duration: '30 minutes',
+      slides: [
+        {
+          title: 'Introduction to Workshop Safety',
+          content: 'This course will teach you the basics of workshop safety. All users must complete this training before using any equipment.',
+          image: 'https://images.unsplash.com/photo-1579697096985-41fe1430e32d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8fHNhZmV0eSUyMGdvZ2dsZXN8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60'
+        },
+        {
+          title: 'Personal Protective Equipment (PPE)',
+          content: 'Always wear appropriate PPE including safety glasses, gloves, and closed-toe shoes when working with machinery.',
+          image: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTF8fHNhZmV0eSUyMGdvZ2dsZXN8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60'
+        },
+        {
+          title: 'Emergency Procedures',
+          content: 'Know the location of emergency exits, fire extinguishers, and first aid kits. In case of an accident, notify a supervisor immediately.',
+          image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8ZW1lcmdlbmN5fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60'
+        },
+        {
+          title: 'Machine Safety Guidelines',
+          content: 'Never operate machinery without proper training. Always check equipment before use and report any damage or malfunction.',
+          image: 'https://images.unsplash.com/photo-1565696392944-b1a54b3102dd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bWFjaGluZXJ5fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60'
+        }
+      ]
+    };
+  }
+
+  // Add safety quiz
+  if (!quizzes['safety-cabinet']) {
+    quizzes['safety-cabinet'] = {
+      title: 'Safety Knowledge Check',
+      questions: [
+        {
+          question: 'What should you always wear when operating machinery?',
+          options: [
+            'Casual clothes',
+            'Appropriate PPE (safety glasses, gloves, etc.)',
+            'Jewelry and loose clothing',
+            'Sandals for comfort'
+          ],
+          correctAnswer: 1
+        },
+        {
+          question: 'What should you do before using any machine?',
+          options: [
+            'Use it immediately',
+            'Modify its safety features',
+            'Check it for damage and proper operation',
+            'Turn off all safety features'
+          ],
+          correctAnswer: 2
+        },
+        {
+          question: 'What should you do if you notice a machine malfunctioning?',
+          options: [
+            'Try to fix it yourself',
+            'Ignore it and continue working',
+            'Report it to a supervisor immediately',
+            'Let someone else deal with it later'
+          ],
+          correctAnswer: 2
+        },
+        {
+          question: 'In case of an emergency, you should:',
+          options: [
+            'Panic and run',
+            'Call your friend',
+            'Continue working',
+            'Follow emergency procedures and notify a supervisor'
+          ],
+          correctAnswer: 3
+        }
+      ]
+    };
+  }
+}
