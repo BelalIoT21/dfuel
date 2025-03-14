@@ -6,7 +6,7 @@ import { SignOptions } from 'jsonwebtoken';
 export const generateToken = (id: string) => {
   const secret = process.env.JWT_SECRET || 'fallback-secret';
   const options: SignOptions = {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
+    expiresIn: process.env.JWT_EXPIRE || '7d' as jwt.SignOptions['expiresIn'],
   };
   
   return jwt.sign(
