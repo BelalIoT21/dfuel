@@ -24,7 +24,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-
+      
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
       
@@ -38,6 +38,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
         req.user.isAdmin = (decoded as any).isAdmin;
       }
       
+      console.log(`User authenticated: ${req.user.email}, isAdmin: ${req.user.isAdmin}`);
       next();
     } catch (error) {
       console.error('Token verification error:', error);
@@ -52,11 +53,12 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
 // Admin middleware - check if user is admin
 export const admin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user && req.user.isAdmin) {
+  // Using isAdmin property that was set from the token in the protect middleware
+  if (req.user && req.user.isAdmin === true) {
     console.log(`Admin access granted for user: ${req.user.email}`);
     next();
   } else {
-    console.error('Admin access denied for user:', req.user ? req.user.email : 'unknown');
+    console.error('Admin access denied for user:', req.user ? req.user.email : 'unknown', 'isAdmin:', req.user ? req.user.isAdmin : false);
     res.status(403);
     throw new Error('Not authorized as an admin');
   }

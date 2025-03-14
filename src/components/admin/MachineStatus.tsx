@@ -24,14 +24,14 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   // Sort machines: regular machines first, then training items
   useEffect(() => {
     if (machineData.length > 0) {
-      // Separate real machines from training items
+      // Only show real machines and safety course, exclude safety cabinet
       const regularMachines = machineData.filter(machine => 
         machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
       );
       
-      // Training items at the end
+      // Only include safety course in the special items
       const trainingItems = machineData.filter(machine => 
-        machine.id === 'safety-cabinet' || machine.id === 'safety-course'
+        machine.id === 'safety-course'
       );
       
       setSortedMachineData([...regularMachines, ...trainingItems]);
@@ -41,8 +41,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   }, [machineData]);
 
   const handleUpdateMachineStatus = (machine: any) => {
-    // Don't allow updating safety cabinet or safety course
-    if (machine.id === 'safety-cabinet' || machine.id === 'safety-course') {
+    // Don't allow updating safety course
+    if (machine.id === 'safety-course') {
       return;
     }
     
@@ -70,7 +70,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
 
   // Helper function to determine machine type label
   const getMachineTypeLabel = (machineId: string) => {
-    if (machineId === 'safety-cabinet') return 'Safety Equipment';
     if (machineId === 'safety-course') return 'Training Course';
     return 'Machine';
   };
@@ -93,8 +92,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   <div>
                     <div className="font-medium text-sm">{machine.name}</div>
                     <div className="text-xs text-gray-500">
-                      {machine.id === 'safety-cabinet' || machine.id === 'safety-course'
-                        ? `${getMachineTypeLabel(machine.id)} - always available` 
+                      {machine.id === 'safety-course'
+                        ? `Training Course - always available` 
                         : machine.maintenanceNote 
                           ? `Note: ${machine.maintenanceNote}` 
                           : 'No maintenance notes'}
@@ -102,27 +101,23 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   </div>
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded ${
-                      machine.id === 'safety-cabinet'
-                        ? 'bg-blue-100 text-blue-800'
-                        : machine.id === 'safety-course'
-                          ? 'bg-purple-100 text-purple-800'
-                          : machine.status === 'available' 
-                            ? 'bg-green-100 text-green-800' 
-                            : machine.status === 'maintenance'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                      machine.id === 'safety-course'
+                        ? 'bg-purple-100 text-purple-800'
+                        : machine.status === 'available' 
+                          ? 'bg-green-100 text-green-800' 
+                          : machine.status === 'maintenance'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {machine.id === 'safety-cabinet'
-                        ? 'Equipment'
-                        : machine.id === 'safety-course'
-                          ? 'Course'
-                          : machine.status === 'available' 
-                            ? 'Available' 
-                            : machine.status === 'maintenance'
-                              ? 'Maintenance'
-                              : 'In Use'}
+                      {machine.id === 'safety-course'
+                        ? 'Course'
+                        : machine.status === 'available' 
+                          ? 'Available' 
+                          : machine.status === 'maintenance'
+                            ? 'Maintenance'
+                            : 'In Use'}
                     </span>
-                    {(machine.id !== 'safety-cabinet' && machine.id !== 'safety-course') && (
+                    {machine.id !== 'safety-course' && (
                       <Button 
                         variant="outline" 
                         size="sm" 

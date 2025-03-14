@@ -34,7 +34,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     // Store admin status in JWT payload for better authorization
-    const isAdmin = !!user.isAdmin;
+    const isAdmin = user.isAdmin === true;
     console.log(`Login successful for user: ${email}, isAdmin: ${isAdmin}`);
 
     // Update last login time
