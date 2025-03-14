@@ -1,36 +1,35 @@
 
 /**
- * Utility to check the current platform
+ * This file provides platform detection utilities
+ * to help with conditional rendering and functionality
  */
 
-// Check if we're in a web environment
-export const isWeb = typeof document !== 'undefined';
+export const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
 
-// Check if we're on a native platform
-export const isPlatformNative = () => {
-  return !isWeb;
+export const isPlatformNative = (): boolean => {
+  if (typeof navigator !== 'undefined') {
+    return navigator.product === 'ReactNative';
+  }
+  return false;
 };
 
-// Helper to determine if we're on iOS
-export const isIOS = () => {
-  if (!isPlatformNative()) return false;
-  try {
-    // @ts-ignore - Platform is only available in React Native
-    const { Platform } = require('react-native');
-    return Platform.OS === 'ios';
-  } catch (e) {
+export const isIOS = (): boolean => {
+  if (!isWeb) {
     return false;
   }
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 };
 
-// Helper to determine if we're on Android
-export const isAndroid = () => {
-  if (!isPlatformNative()) return false;
-  try {
-    // @ts-ignore - Platform is only available in React Native
-    const { Platform } = require('react-native');
-    return Platform.OS === 'android';
-  } catch (e) {
+export const isAndroid = (): boolean => {
+  if (!isWeb) {
     return false;
   }
+  return /Android/.test(navigator.userAgent);
+};
+
+export const isMobile = (): boolean => {
+  if (!isWeb) {
+    return true; // If not web, assume mobile
+  }
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
