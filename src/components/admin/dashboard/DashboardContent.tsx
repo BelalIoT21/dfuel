@@ -24,8 +24,13 @@ export const DashboardContent = () => {
           setAllUsers(response.data);
         }
         
+        // Filter out safety cabinet and safety course - they're not real machines
+        const regularMachines = machines.filter(
+          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+        );
+        
         // Get machine statuses
-        const machinesWithStatus = await Promise.all(machines.map(async (machine) => {
+        const machinesWithStatus = await Promise.all(regularMachines.map(async (machine) => {
           const statusResponse = await apiService.getMachineStatus(machine.id);
           return {
             ...machine,
