@@ -1,5 +1,4 @@
 
-import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -9,13 +8,15 @@ import { toast } from '@/components/ui/use-toast';
 
 const BookingsCard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Navigate to the profile page with certifications tab selected
-    navigate('/profile?tab=certifications');
+    // Using DOM methods to activate the certifications tab
+    const certTab = document.querySelector('[value="certifications"]') as HTMLElement;
+    if (certTab) {
+      certTab.click();
+    }
   };
 
   const handleButtonClick = (booking: any) => {
