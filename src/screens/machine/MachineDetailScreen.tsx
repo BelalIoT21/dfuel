@@ -16,11 +16,15 @@ const MachineDetailScreen = ({ route, navigation }) => {
   const { machine, machineStatus, loading, isCertified, setIsCertified } = useMachineDetails(machineId, user, navigation);
 
   const handleTakeCourse = () => {
+    // Make sure we're passing the correct parameter name (machineId)
     navigation.navigate('Course', { machineId });
+    console.log('Navigating to safety course for machine:', machineId);
   };
 
   const handleTakeQuiz = () => {
+    // Make sure we're passing the correct parameter name (machineId)
     navigation.navigate('Quiz', { machineId });
+    console.log('Navigating to quiz for machine:', machineId);
   };
 
   const handleBookMachine = () => {
@@ -37,7 +41,8 @@ const MachineDetailScreen = ({ route, navigation }) => {
         Alert.alert('Error', 'Failed to get certified');
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'Something went wrong');
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong';
+      Alert.alert('Error', errorMessage);
     }
   };
 
