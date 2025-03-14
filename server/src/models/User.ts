@@ -7,7 +7,6 @@ export interface IUser extends mongoose.Document {
   email: string;
   password: string;
   isAdmin: boolean;
-  googleId?: string; // Add googleId as an optional property
   certifications: string[];
   bookings: mongoose.Types.ObjectId[];
   lastLogin: Date;
@@ -42,10 +41,6 @@ const userSchema = new mongoose.Schema<IUser>(
       type: Boolean,
       required: true,
       default: false,
-    },
-    googleId: { // Add googleId field to schema
-      type: String,
-      sparse: true, // Allow multiple null values (for non-Google users)
     },
     certifications: [{
       type: String,
