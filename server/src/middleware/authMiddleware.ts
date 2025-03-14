@@ -38,11 +38,11 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     } catch (error) {
       console.error('Token verification error:', error);
       res.status(401);
-      throw new Error('Not authorized, token failed');
+      return res.json({ message: 'Not authorized, token failed' });
     }
   } else {
     res.status(401);
-    throw new Error('Not authorized, no token');
+    return res.json({ message: 'Not authorized, no token' });
   }
 };
 
@@ -53,6 +53,6 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
   } else {
     console.error('Admin access denied for user:', req.user ? req.user._id : 'unknown');
     res.status(403);
-    throw new Error('Not authorized as an admin');
+    return res.json({ message: 'Not authorized as an admin' });
   }
 };

@@ -33,6 +33,7 @@ class ApiService {
         url
       };
       
+      console.log('API request:', endpoint, 'with token:', localStorage.getItem('token') ? 'yes' : 'no');
       return await axios(config);
     } catch (error) {
       console.error('API request failed:', error);
