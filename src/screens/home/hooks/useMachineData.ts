@@ -8,9 +8,11 @@ export const useMachineData = (user, navigation) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadMachineData = async () => {
+  const loadMachineData = useCallback(async () => {
     console.log("Loading machine data...");
     try {
+      if (refreshing) return; // Prevent multiple simultaneous refreshes
+      
       setLoading(true);
       console.log("Original machines data:", machines.length, "items");
       
@@ -26,18 +28,29 @@ export const useMachineData = (user, navigation) => {
           console.log("Loading status for machine:", machine.id);
           const status = await userDatabase.getMachineStatus(machine.id);
           console.log("Status for machine", machine.id, ":", status);
+          
+          // Determine if machine is locked (safety course not completed)
+          const isLocked = machine.id !== 'safety-cabinet' && 
+                          user?.certifications && 
+                          !user.certifications.includes('safety-cabinet');
+          
           return {
             ...machine,
-            status: status || 'available'
+            status: status || 'available',
+            isLocked: isLocked
           };
         } catch (error) {
           console.error(`Error loading status for machine ${machine.id}:`, error);
           return {
             ...machine,
-            status: 'available'
+            status: 'available',
+            isLocked: machine.id !== 'safety-cabinet' && 
+                      user?.certifications && 
+                      !user.certifications.includes('safety-cabinet')
           };
         }
       }));
+      
       console.log("Extended machines data:", extendedMachines.length, "items");
       setMachineData(extendedMachines);
     } catch (error) {
@@ -46,18 +59,21 @@ export const useMachineData = (user, navigation) => {
       console.log("Using fallback machine data");
       setMachineData(machines.map(machine => ({
         ...machine,
-        status: 'available'
+        status: 'available',
+        isLocked: machine.id !== 'safety-cabinet' && 
+                  user?.certifications && 
+                  !user.certifications.includes('safety-cabinet')
       })));
     } finally {
       setLoading(false);
       setRefreshing(false);
       console.log("Machine data loading complete");
     }
-  };
+  }, [user, refreshing]);
 
   useEffect(() => {
     console.log("useMachineData hook effect running");
-    console.log("User in hook:", user);
+    console.log("User in hook:", user?.name || "No user");
     
     if (user?.isAdmin) {
       console.log("User is admin, navigating to AdminDashboard");
@@ -72,13 +88,13 @@ export const useMachineData = (user, navigation) => {
       console.log("No user found, skipping data load");
       setLoading(false);
     }
-  }, [user, navigation]);
+  }, [user, navigation, loadMachineData]);
 
   const onRefresh = useCallback(() => {
     console.log("Refresh triggered");
     setRefreshing(true);
     loadMachineData();
-  }, []);
+  }, [loadMachineData]);
 
   return {
     machineData,
