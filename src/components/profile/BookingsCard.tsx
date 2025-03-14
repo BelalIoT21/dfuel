@@ -1,10 +1,11 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/AuthContext';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Button } from '../ui/button';
+import { useAuth } from '../../context/AuthContext';
 import { machines } from '../../utils/data';
 import { Mail } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '../ui/use-toast';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 const BookingsCard = () => {

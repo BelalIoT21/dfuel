@@ -1,14 +1,14 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../services/apiService';
 import { machines } from '../../../utils/data';
-import { AdminHeader } from '@/components/admin/AdminHeader';
-import { StatsOverview } from '@/components/admin/StatsOverview';
-import { PlatformOverview } from '@/components/admin/PlatformOverview';
-import { QuickActions } from '@/components/admin/QuickActions';
-import { PendingActions } from '@/components/admin/PendingActions';
-import { MachineStatus } from '@/components/admin/MachineStatus';
+import { AdminHeader } from '../AdminHeader';
+import { StatsOverview } from '../StatsOverview';
+import { PlatformOverview } from '../PlatformOverview';
+import { QuickActions } from '../QuickActions';
+import { PendingActions } from '../PendingActions';
+import { MachineStatus } from '../MachineStatus';
 
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -26,12 +26,12 @@ export const DashboardContent = () => {
         
         // First get regular machines
         const regularMachines = machines.filter(
-          machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+          machine => machine.id !== 'safety-cabinet'
         );
         
         // Get safety items
         const safetyItems = machines.filter(
-          machine => machine.id === 'safety-cabinet' || machine.id === 'safety-course'
+          machine => machine.id === 'safety-cabinet'
         ).map(machine => ({
           ...machine,
           status: 'available' // Always available

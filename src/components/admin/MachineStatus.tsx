@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Wrench } from "lucide-react";
 import userDatabase from '../../services/userDatabase';
 
@@ -29,12 +29,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         machine.id !== 'safety-cabinet' && machine.id !== 'safety-course' && machine.id !== '3'
       );
       
-      // Get safety items if they exist
-      const safetyItems = machineData.filter(machine => 
-        machine.id === 'safety-cabinet' || machine.id === 'safety-course' || machine.id === '3'
-      );
-      
-      setSortedMachineData([...regularMachines, ...safetyItems]);
+      setSortedMachineData(regularMachines);
     } else {
       setSortedMachineData([]);
     }

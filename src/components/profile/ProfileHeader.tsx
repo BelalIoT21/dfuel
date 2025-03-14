@@ -1,7 +1,8 @@
 
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Button } from '../ui/button';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ProfileHeader = () => {
   const { user, logout } = useAuth();

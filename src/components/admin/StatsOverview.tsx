@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Users, Settings, CalendarClock, UserCheck } from "lucide-react";
 import { StatCard } from "./StatCard";
 

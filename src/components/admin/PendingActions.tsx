@@ -1,5 +1,6 @@
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { AlertTriangle } from "lucide-react";
 
 export const PendingActions = () => {
