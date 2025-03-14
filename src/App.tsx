@@ -1,82 +1,93 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import Index from "./pages/Index";
-import Home from "./pages/Home";
-import MachineDetail from "./pages/MachineDetail";
-import Course from "./pages/Course";
-import Quiz from "./pages/Quiz";
-import Booking from "./pages/Booking";
-import Profile from "./pages/Profile";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import AdminMachines from "./pages/AdminMachines";
-import NotFound from "./pages/NotFound";
-import { useEffect } from "react";
-import { loadEnv } from "./utils/env";
-import { toast } from "@/components/ui/use-toast";
+// This file serves as a redirect to App.native.tsx for web builds
+// but contains the same code to ensure compatibility
 
-// Create a new query client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Provider as PaperProvider } from 'react-native-paper';
+import { AuthProvider } from './context/AuthContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text, View, LogBox } from 'react-native';
 
-const App = () => {
-  // Load environment variables
-  useEffect(() => {
-    loadEnv();
-    console.log("Environment variables loaded");
-  }, []);
+// Import screens from screens directory
+import {
+  HomeScreen,
+  LoginScreen,
+  ProfileScreen,
+  MachineDetailScreen
+} from './screens';
 
-  // Set document title
-  useEffect(() => {
-    document.title = "Learnit - Your Learning Platform";
-  }, []);
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  'ReactNativeFiberHostComponent: Calling getNode() on the ref of an Animated component',
+  'Non-serializable values were found in the navigation state',
+]);
 
-  // Display toast message when app loads
-  useEffect(() => {
-    toast({
-      title: "Welcome to Learnit",
-      description: "Your learning platform is ready to use",
-    });
-  }, []);
-
-  console.log("Rendering App component");
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/machine/:id" element={<MachineDetail />} />
-              <Route path="/course/:id" element={<Course />} />
-              <Route path="/quiz/:id" element={<Quiz />} />
-              <Route path="/booking/:id" element={<Booking />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/users" element={<AdminUsers />} />
-              <Route path="/admin/machines" element={<AdminMachines />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+// Theme
+const theme = {
+  colors: {
+    primary: '#7c3aed', // purple-600
+    accent: '#a78bfa',  // purple-400
+    background: '#ffffff',
+    text: '#1f2937',    // gray-800
+    error: '#ef4444',   // red-500
+  }
 };
 
-export default App;
+// Stack navigator
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+  console.log("Starting Learnit Mobile App");
+
+  useEffect(() => {
+    console.log("App component mounted");
+  }, []);
+
+  return (
+    <SafeAreaProvider>
+      <PaperProvider theme={theme}>
+        <AuthProvider>
+          <NavigationContainer>
+            <Stack.Navigator 
+              initialRouteName="Login"
+              screenOptions={{
+                headerStyle: {
+                  backgroundColor: '#7c3aed', // purple-600
+                },
+                headerTintColor: '#fff',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+              }}
+            >
+              <Stack.Screen 
+                name="Login" 
+                component={LoginScreen} 
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="Home" 
+                component={HomeScreen} 
+                options={{ title: 'Dashboard' }}
+              />
+              <Stack.Screen 
+                name="Profile" 
+                component={ProfileScreen} 
+                options={{ title: 'My Profile' }}
+              />
+              <Stack.Screen 
+                name="MachineDetail" 
+                component={MachineDetailScreen} 
+                options={({ route }) => ({ 
+                  title: route.params?.name || 'Machine Details' 
+                })}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AuthProvider>
+      </PaperProvider>
+    </SafeAreaProvider>
+  );
+}
