@@ -42,11 +42,6 @@ class UserDatabase {
     return databaseService.addCertification(userId, machineId);
   }
   
-  // Safety course methods
-  async addSafetyCourse(userId: string, courseId: string) {
-    return databaseService.addSafetyCourse(userId, courseId);
-  }
-  
   // Booking methods
   async addBooking(userId: string, machineId: string, date: string, time: string) {
     return databaseService.addBooking(userId, machineId, date, time);

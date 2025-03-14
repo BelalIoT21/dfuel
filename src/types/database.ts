@@ -8,7 +8,7 @@ export interface User {
   name: string;
   isAdmin: boolean;
   certifications: string[];
-  safetyCoursesCompleted: string[]; // Add safety courses tracking
+  safetyCoursesCompleted: string[]; // Track completed safety courses
   bookings: Booking[];
   lastLogin: string;
   resetCode?: {
