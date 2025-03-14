@@ -15,7 +15,7 @@ const NotFound = () => {
       if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
-        setRedirectPath('/home');
+        setRedirectPath('/dashboard');  // Changed from '/home' to '/dashboard'
       }
     } else {
       setRedirectPath('/');
