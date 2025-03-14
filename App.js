@@ -1,5 +1,5 @@
 
-// This is the entry point for Expo
 import App from './src/App.native';
 
+// This exports the native app component for Expo
 export default App;

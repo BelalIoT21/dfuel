@@ -26,6 +26,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Better platform-specific file resolution
+      "react-native": "react-native-web"
     },
     // Add extensions to properly resolve .native files
     extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js']
@@ -37,6 +39,7 @@ export default defineConfig(({ mode }) => ({
   // Define global variables to help with platform detection
   define: {
     __DEV__: mode === 'development',
+    'process.env.PLATFORM': JSON.stringify('web'),
     Platform: {
       OS: JSON.stringify('web')
     },
