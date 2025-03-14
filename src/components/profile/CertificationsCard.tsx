@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
@@ -28,11 +28,6 @@ const CertificationsCard = () => {
     navigate(redirectPath, { replace: true });
   };
 
-  const handleBookNow = () => {
-    // Direct update of search params for better tab switching
-    setSearchParams({ tab: 'bookings' });
-  };
-
   return (
     <Card className="border-purple-100">
       <CardHeader>
@@ -45,27 +40,12 @@ const CertificationsCard = () => {
       <CardContent className="overflow-x-auto">
         {userCertifications.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {userCertifications.map((cert) => {
-              // Check if this is a safety cabinet
-              const isSafetyCabinet = cert.type === 'Safety Cabinet';
-              
-              return (
-                <div key={cert.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
-                  <div className="font-medium text-purple-800">{cert.name}</div>
-                  <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
-                  {!isSafetyCabinet && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 border-purple-200 hover:bg-purple-100"
-                      onClick={handleBookNow}
-                    >
-                      Book Now
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
+            {userCertifications.map((cert) => (
+              <div key={cert.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
+                <div className="font-medium text-purple-800">{cert.name}</div>
+                <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
