@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { machines } from '../utils/data';
 import { Eye, EyeOff, User, Key, Mail } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { BackToAdminButton } from '@/components/BackToAdminButton';
 
 const Profile = () => {
   const { user, logout, updateProfile, changePassword } = useAuth();
@@ -83,10 +83,10 @@ const Profile = () => {
     }
   };
 
-  const redirectPath = user.isAdmin ? '/admin' : '/home';
+  const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-6">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4 md:p-6">
       <div className="max-w-4xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
           <Link to={redirectPath} className="text-purple-600 hover:underline flex items-center gap-1">
@@ -101,7 +101,7 @@ const Profile = () => {
         
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="w-full mb-2 flex flex-wrap">
-            <TabsTrigger value="profile" className="flex-1">Profile Information</TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
             <TabsTrigger value="certifications" className="flex-1">Certifications</TabsTrigger>
             <TabsTrigger value="bookings" className="flex-1">Bookings</TabsTrigger>
           </TabsList>
@@ -142,7 +142,7 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-gray-500 text-sm">Full Name</Label>
                         <p className="font-medium">{user.name}</p>
@@ -153,7 +153,7 @@ const Profile = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-gray-500 text-sm">Account Type</Label>
                         <p className="font-medium">{user.isAdmin ? 'Administrator' : 'User'}</p>
@@ -267,7 +267,7 @@ const Profile = () => {
                 </CardTitle>
                 <CardDescription>Machines you are certified to use</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 {userCertifications.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {userCertifications.map((cert) => (
@@ -301,7 +301,7 @@ const Profile = () => {
                 </CardTitle>
                 <CardDescription>Recent and upcoming bookings</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-x-auto">
                 {user.bookings && user.bookings.length > 0 ? (
                   <div className="space-y-4">
                     {user.bookings.map((booking: any) => {

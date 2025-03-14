@@ -10,7 +10,7 @@ export const BackToAdminButton = ({ isDashboardLink = true }) => {
     <Button 
       variant="outline" 
       className="mb-4 border-purple-200 hover:bg-purple-50 text-sm flex items-center gap-2"
-      onClick={() => navigate(isDashboardLink ? '/admin' : '/home')}
+      onClick={() => navigate(isDashboardLink ? '/admin' : '/dashboard')}
     >
       <ArrowLeft size={16} />
       Back to Dashboard
