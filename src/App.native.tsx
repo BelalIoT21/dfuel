@@ -6,12 +6,14 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// Screens
-import HomeScreen from './screens/HomeScreen';
-import LoginScreen from './screens/LoginScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen';
-import MachineDetailScreen from './screens/MachineDetailScreen';
+// Import screens using the barrel file
+import { 
+  HomeScreen, 
+  LoginScreen, 
+  ProfileScreen, 
+  AdminDashboardScreen, 
+  MachineDetailScreen 
+} from './screens';
 
 // Theme
 const theme = {

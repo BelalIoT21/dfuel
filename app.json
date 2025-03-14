@@ -1,7 +1,7 @@
 
 {
   "expo": {
-    "name": "Learnit Academy",
+    "name": "Learnit",
     "slug": "learnit",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,36 +10,34 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#7c3aed"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.learnit.academy"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.learnit.academy"
+        "backgroundColor": "#7c3aed"
+      }
     },
     "web": {
-      "favicon": "./public/favicon.ico",
-      "bundler": "webpack"
+      "favicon": "./assets/favicon.ico"
     },
-    "entryPoint": "./App.js",
     "plugins": [
       "expo-dev-client"
     ],
-    "scheme": "learnit-academy",
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/your-project-id"
+    },
     "extra": {
       "eas": {
-        "projectId": "6bbb0aae-c795-40ed-8ada-a3f9057e461c"
+        "projectId": "your-project-id"
       }
-    },
-    "owner": "zainalam1"
+    }
   }
 }
