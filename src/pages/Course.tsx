@@ -1,131 +1,161 @@
 
-import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { courses, machines } from '../utils/data';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import { SafetyAlert } from '@/components/home/SafetyAlert';
+import { PageHeader } from '@/components/home/PageHeader';
+import LoadingIndicator from '@/components/home/LoadingIndicator';
+import { toast } from '@/components/ui/use-toast';
+
+const CourseContent = ({ onComplete }: { onComplete: () => void }) => {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Machine Safety Fundamentals</CardTitle>
+          <CardDescription>Learn the basics of machine safety</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <h3 className="text-lg font-semibold">Introduction to Safety</h3>
+          <p>
+            Machine safety is paramount in any workshop environment. Understanding proper
+            procedures and protocols before operating machinery can prevent accidents and
+            injuries.
+          </p>
+          
+          <h3 className="text-lg font-semibold">General Safety Guidelines</h3>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Always wear appropriate personal protective equipment (PPE)</li>
+            <li>Never operate machinery while under the influence of drugs or alcohol</li>
+            <li>Ensure your work area is clean and free of hazards</li>
+            <li>Know the location of emergency stops and first aid kits</li>
+            <li>Report any equipment malfunctions immediately</li>
+          </ul>
+          
+          <h3 className="text-lg font-semibold">Preparation Checklist</h3>
+          <p>
+            Before operating any workshop machinery, ensure you have:
+          </p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li>Received proper training for the specific machine</li>
+            <li>Read and understood the user manual</li>
+            <li>Inspected the machine for any visible damage</li>
+            <li>Secured loose clothing, jewelry, and long hair</li>
+            <li>Set up proper ventilation if required</li>
+          </ul>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={onComplete} className="w-full">
+            Complete Course & Take Quiz
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+};
 
 const Course = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [currentSlide, setCurrentSlide] = useState(0);
-  
-  const machine = machines.find(m => m.id === id);
-  const course = courses[id as keyof typeof courses];
-  
-  if (!machine || !course) {
+  const { user, addSafetyCourse } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Simulate loading course data
+    const timer = setTimeout(() => {
+      if (!id) {
+        setError("Course ID is missing");
+      }
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  const handleCourseComplete = async () => {
+    try {
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to complete the course",
+          variant: "destructive"
+        });
+        navigate("/");
+        return;
+      }
+
+      if (!id) {
+        toast({
+          title: "Error",
+          description: "Course ID is missing",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const success = await addSafetyCourse(id);
+      
+      if (success) {
+        toast({
+          title: "Course completed",
+          description: "You have successfully completed the safety course"
+        });
+        
+        // Navigate to the quiz page
+        navigate(`/quiz/${id}`);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to register course completion",
+          variant: "destructive"
+        });
+      }
+    } catch (err) {
+      console.error("Course completion error:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Course not found</h1>
-          <Link to="/home">
-            <Button>Return to Home</Button>
-          </Link>
-        </div>
+      <div className="container mx-auto py-8">
+        <LoadingIndicator />
       </div>
     );
   }
 
-  const totalSlides = course.slides.length;
-  const progress = Math.round(((currentSlide + 1) / totalSlides) * 100);
-
-  const handleNext = () => {
-    if (currentSlide < totalSlides - 1) {
-      setCurrentSlide(currentSlide + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
-
-  const handleComplete = () => {
-    // In a real app, this would call an API to mark the course as completed
-    toast({
-      title: "Course completed",
-      description: "You can now take the safety quiz."
-    });
-    navigate(`/quiz/${id}`);
-  };
+  if (error) {
+    return (
+      <div className="container mx-auto py-8">
+        <SafetyAlert 
+          title="Error Loading Course" 
+          description={error} 
+          action={{
+            label: "Go Home",
+            onClick: () => navigate("/home")
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-4xl mx-auto page-transition">
-        <div className="mb-6 flex justify-between items-center">
-          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to {machine.name}
-          </Link>
-          <div className="text-sm text-gray-500">Slide {currentSlide + 1} of {totalSlides}</div>
-        </div>
-        
-        <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
-        <p className="text-gray-600 mb-6">Duration: {course.duration}</p>
-        <Progress value={progress} className="mb-8" />
-        
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div className="relative">
-              {/* Slide Content */}
-              <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                <img 
-                  src={course.slides[currentSlide].image} 
-                  alt={course.slides[currentSlide].title}
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-              
-              {/* Navigation Arrows */}
-              {currentSlide > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full"
-                  onClick={handlePrevious}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {currentSlide < totalSlides - 1 && (
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full"
-                  onClick={handleNext}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">{course.slides[currentSlide].title}</h2>
-              <p className="text-gray-700 mb-8">{course.slides[currentSlide].content}</p>
-              
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrevious}
-                  disabled={currentSlide === 0}
-                >
-                  Previous
-                </Button>
-                
-                {currentSlide < totalSlides - 1 ? (
-                  <Button onClick={handleNext}>Next</Button>
-                ) : (
-                  <Button onClick={handleComplete}>Complete Course</Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="container mx-auto py-8">
+      <PageHeader 
+        title="Safety Course" 
+        description="Complete this course to gain access to the workshop machinery"
+        backHref="/home"
+      />
+      
+      <div className="mt-8">
+        <CourseContent onComplete={handleCourseComplete} />
       </div>
     </div>
   );
