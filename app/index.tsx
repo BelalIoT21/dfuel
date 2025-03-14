@@ -5,7 +5,7 @@ import React, { useEffect } from "react";
 
 export default function HomeScreen() {
   useEffect(() => {
-    console.log("Home screen mounted - index route loaded");
+    console.log("Home screen mounted - index route loaded successfully");
   }, []);
 
   return (

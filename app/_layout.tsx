@@ -8,14 +8,13 @@ import { View, Text } from "react-native";
 export default function Layout() {
   // Log on initialization to verify the app is loading
   useEffect(() => {
-    console.log("Layout component mounted - app is initializing");
+    console.log("Layout component mounted - expo-router is initializing");
   }, []);
 
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <Stack 
-        initialRouteName="index"
         screenOptions={{
           headerStyle: {
             backgroundColor: '#7c3aed', // purple-600

@@ -12,7 +12,7 @@ const config = getDefaultConfig(projectRoot);
 config.resolver.sourceExts = [
   'jsx', 'js', 'ts', 'tsx', 'json', 
   // Add any custom extensions your project uses
-  'mjs',
+  'mjs', 'cjs',
 ];
 
 // Support for symlinks
@@ -23,5 +23,10 @@ config.resolver.nodeModulesPaths = [path.resolve(projectRoot, 'node_modules')];
 config.resolver.assetExts = config.resolver.assetExts || [];
 config.transformer.minifierPath = 'metro-minify-terser';
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+
+// Explicitly include web extensions (for handling web-specific assets)
+if (config.resolver.assetExts) {
+  config.resolver.assetExts.push('svg', 'webp', 'ttf', 'otf');
+}
 
 module.exports = config;
