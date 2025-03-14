@@ -1,208 +1,181 @@
-import { getEnv } from '../utils/env';
-import { toast } from '../components/ui/use-toast';
 
-// Define the base URL for the API, with a fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
-
-interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  status: number;
-}
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { API_URL } from '@/utils/env';
 
 class ApiService {
-  private async request<T>(
-    endpoint: string, 
-    method: string = 'GET', 
-    data?: any,
-    authRequired: boolean = true
-  ): Promise<ApiResponse<T>> {
+  private baseURL: string;
+  
+  constructor() {
+    this.baseURL = API_URL || 'http://localhost:4000/api';
+  }
+  
+  // Helper method to get auth header
+  private getAuthHeader() {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+  
+  // Generic request method
+  async request<T>(endpoint: string, options: AxiosRequestConfig = {}): Promise<AxiosResponse<T>> {
     try {
-      const url = `${API_BASE_URL}/${endpoint}`;
-      const token = localStorage.getItem('token');
+      const url = `${this.baseURL}${endpoint}`;
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
+      // Always include auth header for authenticated requests
+      const headers = {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+        ...options.headers
       };
       
-      if (authRequired && token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const options: RequestInit = {
-        method,
+      const config = {
+        ...options,
         headers,
-        credentials: 'include',
+        url
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
-        options.body = JSON.stringify(data);
-      }
-      
-      console.log(`Making API request: ${method} ${url}`, data ? 'with data' : '');
-      const response = await fetch(url, options);
-      
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
-      }
-      
-      if (!response.ok) {
-        const errorMessage = responseData?.message || 'API request failed';
-        console.error(`API error: ${response.status} - ${errorMessage}`);
-        throw new Error(errorMessage);
-      }
-      
-      return {
-        data: responseData,
-        error: null,
-        status: response.status
-      };
+      return await axios(config);
     } catch (error) {
       console.error('API request failed:', error);
-      
-      // Don't show toast for health check failures, they're expected when backend is not running
-      if (!endpoint.includes('health')) {
-        toast({
-          title: 'API Error',
-          description: error instanceof Error ? error.message : 'Unknown error occurred',
-          variant: 'destructive'
-        });
-      }
-      
-      return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
-      };
+      throw error;
     }
   }
   
   // Auth endpoints
   async login(email: string, password: string) {
-    console.log('Attempting login via API for:', email);
-    return this.request<{ token: string, user: any }>(
-      'auth/login', 
-      'POST', 
-      { email, password },
-      false
-    );
+    return this.request<any>('/auth/login', {
+      method: 'POST',
+      data: { email, password }
+    });
   }
   
-  async register(userData: any) {
-    console.log('Attempting registration via API for:', userData.email);
-    return this.request<{ token: string, user: any }>(
-      'auth/register', 
-      'POST', 
-      userData,
-      false
-    );
+  async register(userData: { name: string, email: string, password: string }) {
+    return this.request<any>('/auth/register', {
+      method: 'POST',
+      data: userData
+    });
   }
   
-  // Health check endpoint
-  async checkHealth() {
-    return this.request<{ status: string, message: string }>(
-      'health',
-      'GET',
-      undefined,
-      false
-    );
+  async getUserProfile() {
+    return this.request<any>('/auth/me', {
+      method: 'GET'
+    });
+  }
+  
+  async forgotPassword(email: string) {
+    return this.request<any>('/auth/forgot-password', {
+      method: 'POST',
+      data: { email }
+    });
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string) {
+    return this.request<any>('/auth/reset-password', {
+      method: 'POST',
+      data: { email, resetCode, newPassword }
+    });
   }
   
   // User endpoints
-  async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+  async getUsers() {
+    return this.request<any>('/users', {
+      method: 'GET'
+    });
   }
   
-  async updateUser(userId: string, updates: any) {
-    return this.request<any>(`users/${userId}`, 'PUT', updates);
+  async updateUser(id: string, userData: any) {
+    return this.request<any>(`/users/${id}`, {
+      method: 'PUT',
+      data: userData
+    });
   }
   
-  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
-    return this.request<void>(
-      `users/${userId}/password`, 
-      'PUT', 
-      { currentPassword, newPassword }
-    );
+  async deleteUser(id: string) {
+    return this.request<any>(`/users/${id}`, {
+      method: 'DELETE'
+    });
   }
   
-  // Additional methods to support databaseService
-  async getUserByEmail(email: string) {
-    return this.request<any>(`users/email/${email}`, 'GET');
+  // Machine endpoints
+  async getMachines() {
+    return this.request<any>('/machines', {
+      method: 'GET'
+    });
   }
   
-  async getUserById(userId: string) {
-    return this.request<any>(`users/${userId}`, 'GET');
+  async getMachineById(id: string) {
+    return this.request<any>(`/machines/${id}`, {
+      method: 'GET'
+    });
   }
   
-  async updateProfile(userId: string, updates: any) {
-    return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
+  async createMachine(machineData: any) {
+    return this.request<any>('/machines', {
+      method: 'POST',
+      data: machineData
+    });
   }
   
-  async addCertification(userId: string, machineId: string) {
-    return this.request<{ success: boolean }>(
-      `certifications`, 
-      'POST', 
-      { userId, machineId }
-    );
+  async updateMachine(id: string, machineData: any) {
+    return this.request<any>(`/machines/${id}`, {
+      method: 'PUT',
+      data: machineData
+    });
   }
   
-  async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.request<{ success: boolean }>(
-      `bookings`, 
-      'POST', 
-      { userId, machineId, date, time }
-    );
+  async deleteMachine(id: string) {
+    return this.request<any>(`/machines/${id}`, {
+      method: 'DELETE'
+    });
   }
   
-  async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.request<{ success: boolean }>(
-      `machines/${machineId}/status`, 
-      'PUT', 
-      { status, note }
-    );
+  async getMachineStatus(id: string) {
+    return this.request<any>(`/machines/${id}/status`, {
+      method: 'GET'
+    });
+  }
+  
+  async updateMachineStatus(id: string, status: string, maintenanceNote?: string) {
+    return this.request<any>(`/machines/${id}/status`, {
+      method: 'PUT',
+      data: { status, maintenanceNote }
+    });
   }
   
   // Booking endpoints
-  async getAllBookings() {
-    return this.request<any[]>('bookings/all', 'GET');
+  async getBookings() {
+    return this.request<any>('/bookings', {
+      method: 'GET'
+    });
   }
   
-  async updateBookingStatus(bookingId: string, status: string) {
-    return this.request<any>(
-      `bookings/${bookingId}/status`, 
-      'PUT', 
-      { status }
-    );
+  async createBooking(bookingData: any) {
+    return this.request<any>('/bookings', {
+      method: 'POST',
+      data: bookingData
+    });
   }
   
-  async cancelBooking(bookingId: string) {
-    return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
+  // Certification endpoints
+  async addCertification(userId: string, machineId: string) {
+    return this.request<any>('/certifications', {
+      method: 'POST',
+      data: { userId, machineId }
+    });
   }
   
   // Admin endpoints
-  async updateAdminCredentials(email: string, password: string) {
-    return this.request<void>(
-      'admin/credentials', 
-      'PUT', 
-      { email, password }
-    );
+  async getDashboardData() {
+    return this.request<any>('/admin/dashboard', {
+      method: 'GET'
+    });
   }
   
-  // Dashboard endpoints
-  async getAllUsers() {
-    return this.request<any[]>('users', 'GET');
-  }
-  
-  async getMachineStatus(machineId: string) {
-    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
+  // Health check
+  async checkHealth() {
+    return this.request<any>('/health', {
+      method: 'GET'
+    });
   }
 }
 
-// Create and export a singleton instance
 export const apiService = new ApiService();

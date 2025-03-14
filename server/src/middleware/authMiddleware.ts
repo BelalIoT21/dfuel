@@ -40,9 +40,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       res.status(401);
       throw new Error('Not authorized, token failed');
     }
-  }
-
-  if (!token) {
+  } else {
     res.status(401);
     throw new Error('Not authorized, no token');
   }

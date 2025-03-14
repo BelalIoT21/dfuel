@@ -35,13 +35,14 @@ export const useAuthFunctions = (
         // Save the token for future API requests
         if (apiResponse.data.token) {
           localStorage.setItem('token', apiResponse.data.token);
+          console.log("Token saved to localStorage");
         }
         
         setUser(userData as User);
         localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
-          description: `Welcome back, ${userData.name}!`
+          description: `Welcome back, ${userData.name}!${userData.isAdmin ? ' Admin access granted.' : ''}`
         });
         return true;
       }
