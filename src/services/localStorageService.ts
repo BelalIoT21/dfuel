@@ -28,7 +28,16 @@ export class LocalStorageService {
     
     // If no users exist, initialize with admin
     if (this.users.length === 0) {
-      this.users = [...initialUsers];
+      // Get the most up-to-date admin credentials
+      const { adminEmail, adminPassword } = getAdminCredentials();
+      
+      const adminUser = {
+        ...initialUsers[0],
+        email: adminEmail,
+        password: adminPassword
+      };
+      
+      this.users = [adminUser];
       this.saveUsers();
     }
   }

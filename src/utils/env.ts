@@ -1,23 +1,32 @@
 
 /**
- * This module simulates an environment variables system using localStorage.
- * In a real production app, this would use actual .env files and environment variables.
+ * This module simulates an environment variables system.
+ * In a real production app with proper backend, environment variables would be 
+ * stored in .env files and accessed via process.env on the server.
+ * 
+ * For this demo, we're simulating a system that allows admin credential updates
+ * which would typically be handled differently in a real production app.
  */
 
+// In-memory store for our "environment variables"
+const ENV_VARS: Record<string, string> = {};
+
+// Initialize with default values - in a real app, this would be loaded from .env
 export const loadEnv = () => {
-  if (!localStorage.getItem('ADMIN_EMAIL')) {
-    localStorage.setItem('ADMIN_EMAIL', 'admin@learnit.com');
+  // Default admin credentials (only used if not already initialized)
+  if (!ENV_VARS['ADMIN_EMAIL']) {
+    ENV_VARS['ADMIN_EMAIL'] = 'admin@learnit.com';
   }
   
-  if (!localStorage.getItem('ADMIN_PASSWORD')) {
-    localStorage.setItem('ADMIN_PASSWORD', 'admin123');
+  if (!ENV_VARS['ADMIN_PASSWORD']) {
+    ENV_VARS['ADMIN_PASSWORD'] = 'admin123';
   }
 };
 
 export const getEnv = (key: string): string => {
-  return localStorage.getItem(key) || '';
+  return ENV_VARS[key] || '';
 };
 
 export const setEnv = (key: string, value: string): void => {
-  localStorage.setItem(key, value);
+  ENV_VARS[key] = value;
 };

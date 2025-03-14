@@ -107,6 +107,7 @@ export class UserService {
       const user = localStorageService.findUserById(userId);
       if (user?.isAdmin && updates.email) {
         const { adminPassword } = getAdminCredentials();
+        // Update the admin email in our environment system
         setAdminCredentials(updates.email, adminPassword);
       }
       
@@ -145,7 +146,7 @@ export class UserService {
       localStorageService.updateUser(userId, { password: newPassword });
     }
     
-    // If admin, update admin password in "environment"
+    // If admin, update admin password in environment system
     if (user.isAdmin) {
       const { adminEmail } = getAdminCredentials();
       setAdminCredentials(adminEmail, newPassword);
