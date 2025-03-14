@@ -33,7 +33,7 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    console.log(`Login successful for user: ${email}`);
+    console.log(`Login successful for user: ${email}, isAdmin: ${user.isAdmin}`);
 
     // Update last login time
     user.lastLogin = new Date();

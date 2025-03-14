@@ -10,8 +10,11 @@ interface StatsOverviewProps {
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   // Filter out safety cabinet and safety course from machine count
+  // Only count actual machines (not safety cabinet or safety course)
   const actualMachines = machines.filter(machine => 
-    machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+    machine.id !== 'safety-cabinet' && 
+    machine.id !== 'safety-course' && 
+    machine.id !== '3'
   );
   
   // Basic statistics for the admin dashboard

@@ -11,7 +11,7 @@ export class MachineService {
       return true; // Always available for safety cabinet
     }
     
-    if (machineId === 'safety-course') {
+    if (machineId === 'safety-course' || machineId === '3') {
       console.log(`Safety course status update requested - automatically available`);
       return true; // Always available for safety course
     }
@@ -36,7 +36,7 @@ export class MachineService {
       return 'available'; // Always return available for safety cabinet
     }
     
-    if (machineId === 'safety-course') {
+    if (machineId === 'safety-course' || machineId === '3') {
       console.log(`Safety course requested - returning hardcoded available status`);
       return 'available'; // Always return available for safety course
     }
@@ -58,7 +58,7 @@ export class MachineService {
   // Get machine maintenance note
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
     // Special cases - safety cabinet and safety course are separate entities
-    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
+    if (machineId === 'safety-cabinet' || machineId === 'safety-course' || machineId === '3') {
       return undefined; // No maintenance notes for training entities
     }
     

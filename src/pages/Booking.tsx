@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -90,6 +91,16 @@ const Booking = () => {
           title: "Booking Confirmed",
           description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
         });
+        
+        // Added a slight delay before navigating to dashboard to allow toast to be visible
+        setTimeout(() => {
+          // Navigate based on user type - admin goes to admin dashboard, regular users to home
+          if (user.isAdmin) {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/home');
+          }
+        }, 1500);
       } else {
         toast({
           title: "Booking Failed",
