@@ -14,6 +14,7 @@ export default function Layout() {
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <Stack 
+        initialRouteName="index"
         screenOptions={{
           headerStyle: {
             backgroundColor: '#7c3aed', // purple-600
