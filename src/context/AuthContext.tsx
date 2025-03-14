@@ -5,6 +5,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
+import { isUsingAdminCredentials } from '@/utils/adminCredentials';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,6 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             parsedUser.safetyCoursesCompleted = [];
           }
           
+          // Check if this is the admin user
+          if (isUsingAdminCredentials(parsedUser.email)) {
+            parsedUser.isAdmin = true;
+          }
+          
           setUser(parsedUser);
         }
       } catch (error) {
@@ -40,12 +46,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
+      // Check if this is the admin user
+      const isAdmin = isUsingAdminCredentials(email, password);
+      
       const authenticatedUser = await userDatabase.authenticate(email, password);
       
       if (authenticatedUser) {
         // Initialize safetyCoursesCompleted if it doesn't exist
         if (!authenticatedUser.safetyCoursesCompleted) {
           authenticatedUser.safetyCoursesCompleted = [];
+        }
+        
+        // Override isAdmin if using admin credentials
+        if (isAdmin) {
+          authenticatedUser.isAdmin = true;
         }
         
         setUser(authenticatedUser);
@@ -69,6 +83,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Initialize safetyCoursesCompleted if it doesn't exist
         if (!newUser.safetyCoursesCompleted) {
           newUser.safetyCoursesCompleted = [];
+        }
+        
+        // Check if this is the admin user
+        if (isUsingAdminCredentials(email, password)) {
+          newUser.isAdmin = true;
         }
         
         setUser(newUser);

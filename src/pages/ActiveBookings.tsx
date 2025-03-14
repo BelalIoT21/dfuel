@@ -28,11 +28,17 @@ const ActiveBookings = () => {
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
   
-  // Redirect if not admin
-  if (!user?.isAdmin) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    // Redirect if not admin
+    if (user && !user.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You do not have admin privileges",
+        variant: "destructive"
+      });
+      navigate('/home');
+    }
+  }, [user, navigate]);
 
   // Fetch bookings data from API
   useEffect(() => {
@@ -92,6 +98,28 @@ const ActiveBookings = () => {
       });
     }
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+          <p className="mb-4">You don't have permission to access this page.</p>
+          <Button onClick={() => navigate('/home')}>Return to Home</Button>
+        </div>
+      </div>
+    );
+  }
 
   // Render mobile card view for small screens
   const renderMobileView = () => (
@@ -195,7 +223,7 @@ const ActiveBookings = () => {
                     {booking.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right whitespace-nowrap">
                   {booking.status === 'Pending' ? (
                     <div className="flex justify-end gap-2">
                       <Button 

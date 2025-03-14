@@ -7,14 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
+import { AdminAccessRequired } from '@/components/admin/users/AdminAccessRequired';
 
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isAddingMachine, setIsAddingMachine] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,21 +42,32 @@ const AdminMachines = () => {
     fetchUsers();
   }, []);
   
-  if (!user?.isAdmin) {
+  useEffect(() => {
+    if (user && !user.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You do not have admin privileges",
+        variant: "destructive"
+      });
+      navigate('/home');
+    }
+  }, [user, navigate, toast]);
+
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-          <p className="mb-4">You don't have permission to access this page.</p>
-          <Link to="/home">
-            <Button>Return to Home</Button>
-          </Link>
+          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
         </div>
       </div>
     );
   }
+  
+  if (!user.isAdmin) {
+    return <AdminAccessRequired />;
+  }
 
-  // Filter out safety cabinet and safety course
+  // Filter out safety cabinet and safety course - we only want real machines
   const actualMachines = machines.filter(
     machine => machine.id !== 'safety-cabinet' && machine.id !== '3' && machine.id !== 'safety-course'
   );
