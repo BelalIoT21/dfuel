@@ -1,8 +1,27 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState } from 'react';
 
 const NotFound = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [redirectPath, setRedirectPath] = useState('/');
+  
+  useEffect(() => {
+    // Determine the appropriate redirect path based on user status
+    if (user) {
+      if (user.isAdmin) {
+        setRedirectPath('/admin');
+      } else {
+        setRedirectPath('/home');
+      }
+    } else {
+      setRedirectPath('/');
+    }
+  }, [user]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="text-center max-w-md">
@@ -11,8 +30,10 @@ const NotFound = () => {
         <p className="text-gray-600 mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <Link to="/home">
-          <Button>Return to Home</Button>
+        <Link to={redirectPath}>
+          <Button>
+            Return to {user?.isAdmin ? 'Admin Dashboard' : user ? 'Dashboard' : 'Home'}
+          </Button>
         </Link>
       </div>
     </div>
