@@ -1,74 +1,106 @@
 
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
-import { AdminAccessRequired } from '@/components/admin/users/AdminAccessRequired';
+import AdminHeader from '../components/admin/AdminHeader';
+import { PlatformOverview } from '../components/admin/PlatformOverview';
+import QuickActions from '../components/admin/QuickActions';
+import { StatsOverview } from '../components/admin/StatsOverview';
+import PendingActions from '../components/admin/PendingActions';
+import { DashboardContent } from '../components/admin/dashboard/DashboardContent';
+import { MachineStatus } from '../components/admin/MachineStatus';
 import { toast } from '@/components/ui/use-toast';
-import { apiService } from '@/services/apiService';
+import { useNavigate } from 'react-router-dom';
+import { machines } from '../utils/data';
+import userDatabase from '../services/userDatabase';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [machineData, setMachineData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  
+
   useEffect(() => {
-    const validateAdminAccess = async () => {
+    // Redirect non-admin users
+    if (user && !user.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin dashboard.",
+        variant: "destructive"
+      });
+      navigate('/home');
+    }
+    
+    // Load machine data for admin
+    const loadMachineData = async () => {
       try {
         setIsLoading(true);
         
-        if (!user) {
-          toast({
-            title: "Authentication required",
-            description: "Please log in to access the admin dashboard.",
-            variant: "destructive"
-          });
-          navigate('/');
-          return;
-        }
+        // In a real app, this would fetch from an API
+        // For now, we'll use the mock data and enhance it with status info
+        const enhancedMachines = await Promise.all(machines.map(async (machine) => {
+          try {
+            const status = await userDatabase.getMachineStatus(machine.id);
+            const maintenanceNote = await userDatabase.getMachineMaintenanceNote(machine.id);
+            
+            return {
+              ...machine,
+              status: status || 'available',
+              maintenanceNote
+            };
+          } catch (error) {
+            console.error(`Error loading status for machine ${machine.id}:`, error);
+            return {
+              ...machine,
+              status: 'available'
+            };
+          }
+        }));
         
-        // Verify admin access with backend
-        if (!user.isAdmin) {
-          toast({
-            title: "Admin access required",
-            description: "You don't have permission to access the admin dashboard.",
-            variant: "destructive"
-          });
-          navigate('/home');
-          return;
-        }
-        
-        setIsAdmin(true);
+        setMachineData(enhancedMachines);
       } catch (error) {
-        console.error("Admin validation error:", error);
+        console.error("Error loading machine data:", error);
         toast({
-          title: "Authentication error",
-          description: "There was a problem verifying your admin access.",
+          title: "Error",
+          description: "Failed to load machine data",
           variant: "destructive"
         });
-        navigate('/');
       } finally {
         setIsLoading(false);
       }
     };
     
-    validateAdminAccess();
+    if (user?.isAdmin) {
+      loadMachineData();
+    }
   }, [user, navigate]);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-800"></div>
-    </div>;
-  }
-  
-  if (!user || !isAdmin) {
-    return <AdminAccessRequired />;
+  if (!user?.isAdmin) {
+    return null; // Redirect handled in useEffect
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4">
-      <DashboardContent />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6 page-transition">
+        <AdminHeader user={user} />
+        
+        <StatsOverview />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <PlatformOverview />
+            <MachineStatus 
+              machineData={machineData} 
+              setMachineData={setMachineData} 
+            />
+          </div>
+          <div className="space-y-6">
+            <QuickActions />
+            <PendingActions />
+          </div>
+        </div>
+        
+        <DashboardContent />
+      </div>
     </div>
   );
 };

@@ -14,6 +14,7 @@ interface ExtendedMachine {
   courseCompleted: boolean;
   quizPassed: boolean;
   status: 'available' | 'maintenance' | 'in-use' | 'locked';
+  maintenanceNote?: string;
 }
 
 export const useMachineDashboard = () => {
@@ -67,6 +68,7 @@ export const useMachineDashboard = () => {
           try {
             console.log("Processing machine:", machine.id);
             const status = await userDatabase.getMachineStatus(machine.id);
+            const maintenanceNote = await userDatabase.getMachineMaintenanceNote(machine.id);
             
             // If both safety requirements are not met and it's not one of the safety items itself, mark as locked
             let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
@@ -80,7 +82,8 @@ export const useMachineDashboard = () => {
             
             return {
               ...machine,
-              status: machineStatus
+              status: machineStatus,
+              maintenanceNote
             };
           } catch (error) {
             console.error(`Error loading status for machine ${machine.id}:`, error);
