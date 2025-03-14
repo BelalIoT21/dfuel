@@ -37,7 +37,9 @@ export const StatCard = ({ title, value, icon, change, link }: StatCardProps) =>
           }`}>
             {change}
           </span>
-          <Link to={link} className="text-purple-600 hover:underline">View</Link>
+          <div className="ml-auto">
+            <Link to={link} className="text-purple-600 hover:underline">View</Link>
+          </div>
         </div>
       </CardContent>
     </Card>

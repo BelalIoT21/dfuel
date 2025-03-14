@@ -20,10 +20,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [selectedStatus, setSelectedStatus] = useState('available');
   const [maintenanceNote, setMaintenanceNote] = useState('');
 
-  // Sort machines so that Safety Cabinet appears at the bottom
+  // Sort machines so that Equipment appears at the bottom
   const sortedMachineData = [...machineData].sort((a, b) => {
-    if (a.type === 'Safety Cabinet' || a.type === 'Equipment') return 1;
-    if (b.type === 'Safety Cabinet' || b.type === 'Equipment') return -1;
+    if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
+    if (b.type === 'Equipment' || b.type === 'Safety Cabinet') return -1;
     return 0;
   });
 
@@ -64,7 +64,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           <div className="space-y-3">
             {sortedMachineData.length > 0 ? (
               sortedMachineData.map((machine) => {
-                const isSafetyCabinet = machine.type === 'Safety Cabinet' || machine.type === 'Equipment';
+                const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
                 
                 return (
                   <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
@@ -72,18 +72,18 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                       <div className="font-medium text-sm">{machine.name}</div>
                       <div className="text-xs text-gray-500">
                         Type: {machine.type}
-                        {!isSafetyCabinet && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
+                        {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
                       </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                       <span className={`text-xs px-2 py-1 rounded ${
-                        machine.status === 'available' || isSafetyCabinet
+                        machine.status === 'available' || isEquipment
                           ? 'bg-green-100 text-green-800' 
                           : machine.status === 'maintenance'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {isSafetyCabinet 
+                        {isEquipment 
                           ? 'Available' 
                           : machine.status === 'available' 
                             ? 'Available' 
@@ -91,7 +91,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                               ? 'Maintenance'
                               : 'In Use'}
                       </span>
-                      {!isSafetyCabinet && (
+                      {!isEquipment && (
                         <Button 
                           variant="outline" 
                           size="sm" 

@@ -8,20 +8,15 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
-  // Filter out safety cabinet from machines count - only count real machines
-  const realMachines = machines.filter(machine => machine.type !== 'Safety Cabinet');
+  // Filter out equipment (including Safety Cabinet) - only count real machines
+  const realMachines = machines.filter(machine => machine.type !== 'Equipment' && machine.type !== 'Safety Cabinet');
   
-  // Filter only safety cabinet equipment
-  const safetyEquipment = machines.filter(machine => machine.type === 'Safety Cabinet');
+  // Filter only equipment
+  const equipment = machines.filter(machine => machine.type === 'Equipment' || machine.type === 'Safety Cabinet');
   
   // Update machine types
   realMachines.forEach(machine => {
     machine.type = 'Machine';
-  });
-  
-  // Update safety cabinet type
-  safetyEquipment.forEach(equipment => {
-    equipment.type = 'Equipment';
   });
   
   // Basic statistics for the admin dashboard
@@ -37,7 +32,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       title: 'Total Machines', 
       value: realMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
-      change: '',  // Removed the 0% here
+      change: '',  // No change indicator
       link: '/admin/machines'
     },
     { 

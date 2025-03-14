@@ -130,6 +130,7 @@ export const machines: Machine[] = [
     image: '/placeholder.svg',
     courseCompleted: false,
     quizPassed: false,
+    type: 'Equipment', // Updated to Equipment directly at source
     specs: {
       manufacturer: 'Justrite',
       model: 'Sure-Grip EX',
