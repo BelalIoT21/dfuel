@@ -8,18 +8,9 @@ import mongoose from 'mongoose';
 // @access  Public
 export const getMachineStatus = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet - not a real machine, return mock status
+    // Special case for safety-cabinet - always return a mock status
     if (req.params.id === 'safety-cabinet') {
       console.log('Returning hardcoded available status for safety cabinet');
-      return res.json({ 
-        status: 'available',
-        note: ''
-      });
-    }
-    
-    // Special case for safety-course - not a real machine, return mock status
-    if (req.params.id === 'safety-course') {
-      console.log('Returning hardcoded available status for safety course');
       return res.json({ 
         status: 'available',
         note: ''

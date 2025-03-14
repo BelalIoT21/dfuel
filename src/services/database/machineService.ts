@@ -7,15 +7,10 @@ import { BaseService } from './baseService';
  */
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
+    // Special case - safety cabinet is not a real machine in the database
     if (machineId === 'safety-cabinet') {
       console.log('Safety cabinet requested - returning hardcoded available status');
       return 'available'; // Always return available for safety cabinet
-    }
-    
-    if (machineId === 'safety-course') {
-      console.log('Safety course requested - returning hardcoded available status');
-      return 'available'; // Always return available for safety course
     }
     
     try {
@@ -35,15 +30,10 @@ export class MachineDatabaseService extends BaseService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
+    // Special case - safety cabinet is not a real machine in the database
     if (machineId === 'safety-cabinet') {
       console.log('Safety cabinet status update requested - returning mock success');
       return true; // Always return success for safety cabinet
-    }
-    
-    if (machineId === 'safety-course') {
-      console.log('Safety course status update requested - returning mock success');
-      return true; // Always return success for safety course
     }
     
     try {

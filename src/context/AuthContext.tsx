@@ -18,14 +18,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const storedUser = await storage.getItem('learnit_user');
         if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          
-          // Initialize safetyCoursesCompleted if it doesn't exist (backwards compatibility)
-          if (!parsedUser.safetyCoursesCompleted) {
-            parsedUser.safetyCoursesCompleted = [];
-          }
-          
-          setUser(parsedUser);
+          console.log("Loading user from storage:", storedUser);
+          setUser(JSON.parse(storedUser));
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
@@ -40,14 +34,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
+      console.log("Attempting login:", email);
       const authenticatedUser = await userDatabase.authenticate(email, password);
       
       if (authenticatedUser) {
-        // Initialize safetyCoursesCompleted if it doesn't exist
+        console.log("Login successful:", authenticatedUser);
+        // Ensure safetyCoursesCompleted exists
         if (!authenticatedUser.safetyCoursesCompleted) {
           authenticatedUser.safetyCoursesCompleted = [];
         }
-        
         setUser(authenticatedUser);
         await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
         return true;
@@ -66,11 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newUser = await userDatabase.registerUser(email, password, name);
       
       if (newUser) {
-        // Initialize safetyCoursesCompleted if it doesn't exist
+        // Ensure safetyCoursesCompleted exists
         if (!newUser.safetyCoursesCompleted) {
           newUser.safetyCoursesCompleted = [];
         }
-        
         setUser(newUser);
         await storage.setItem('learnit_user', JSON.stringify(newUser));
         return true;
@@ -94,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
+      console.log("Adding certification:", machineId, "for user:", user.id);
       const success = await userDatabase.addCertification(user.id, machineId);
       
       if (success) {
@@ -115,23 +110,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Track safety course completion
-  const completeSafetyCourse = async (courseId: string) => {
+  // Add safety course completion
+  const addSafetyCourse = async (courseId: string = 'safety-course') => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.completeSafetyCourse(user.id, courseId);
+      console.log("Adding safety course:", courseId, "for user:", user.id);
+      const success = await userDatabase.addSafetyCourse(user.id, courseId);
       
       if (success) {
-        // Initialize safetyCoursesCompleted if it doesn't exist
-        const safetyCoursesCompleted = user.safetyCoursesCompleted || [];
+        // Ensure safetyCoursesCompleted array exists
+        const currentCourses = user.safetyCoursesCompleted || [];
         
-        // Update local user state with completed safety course
+        // Update local user state with new safety course
         const updatedUser = {
           ...user,
-          safetyCoursesCompleted: [...safetyCoursesCompleted, courseId]
+          safetyCoursesCompleted: [...currentCourses, courseId]
         };
         
+        console.log("Updated user with safety course:", updatedUser);
         setUser(updatedUser);
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
@@ -139,20 +136,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       return false;
     } catch (error) {
-      console.error('Error completing safety course:', error);
+      console.error('Error adding safety course:', error);
       return false;
     }
   };
 
   // Update profile
-  const updateProfile = async (details: { name?: string; email?: string }) => {
+  const updateProfile = async (name: string, email: string) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.updateUserProfile(user.id, details);
+      const success = await userDatabase.updateUserProfile(user.id, { name, email });
       
       if (success) {
-        const updatedUser = { ...user, ...details };
+        const updatedUser = { ...user, name, email };
         setUser(updatedUser);
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
@@ -212,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     logout,
     addCertification,
-    completeSafetyCourse,
+    addSafetyCourse, // Add the new method
     updateProfile,
     changePassword,
     requestPasswordReset,

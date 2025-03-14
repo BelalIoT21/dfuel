@@ -16,34 +16,19 @@ export class CertificationService {
     
     return localStorageService.addCertification(userId, machineId);
   }
-
-  // Track safety course completion
-  async completeSafetyCourse(userId: string, courseId: string): Promise<boolean> {
+  
+  // Add completed safety course
+  async addSafetyCourse(userId: string, courseId: string = 'safety-course'): Promise<boolean> {
     try {
-      // Try to update in MongoDB first
-      const success = await mongoDbService.completeSafetyCourse(userId, courseId);
+      // Try to update in MongoDB first (you would need to implement this method)
+      const success = await mongoDbService.updateUserSafetyCourses(userId, courseId);
       if (success) return true;
     } catch (error) {
-      console.error("Error completing safety course in MongoDB:", error);
+      console.error("Error adding safety course in MongoDB:", error);
       // Continue with localStorage if MongoDB fails
     }
     
-    // Fallback to localStorage
-    const user = localStorageService.findUserById(userId);
-    if (!user) return false;
-    
-    // Initialize safety courses array if it doesn't exist
-    if (!user.safetyCoursesCompleted) {
-      user.safetyCoursesCompleted = [];
-    }
-    
-    // Add the course if not already completed
-    if (!user.safetyCoursesCompleted.includes(courseId)) {
-      user.safetyCoursesCompleted.push(courseId);
-      return localStorageService.updateUser(userId, { safetyCoursesCompleted: user.safetyCoursesCompleted });
-    }
-    
-    return true; // Course was already completed
+    return localStorageService.addSafetyCourse(userId, courseId);
   }
 }
 
