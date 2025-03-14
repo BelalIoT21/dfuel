@@ -15,15 +15,9 @@ const BookingsCard = () => {
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Instead of trying to manipulate the DOM directly,
-    // navigate to the profile page with the certifications tab selected via URL
-    navigate('/profile?tab=certifications');
-    
-    // If we're already on the profile page with a different tab, 
-    // force a page refresh to ensure the URL parameter takes effect
-    if (location.pathname === '/profile' && !location.search.includes('tab=certifications')) {
-      window.location.href = '/profile?tab=certifications';
-    }
+    // Simply update the URL to include the tab parameter
+    const newUrl = '/profile?tab=certifications';
+    navigate(newUrl);
   };
 
   const handleButtonClick = (booking: any) => {

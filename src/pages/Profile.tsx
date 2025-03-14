@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileHeader from '@/components/profile/ProfileHeader';
@@ -11,8 +11,23 @@ import BookingsCard from '@/components/profile/BookingsCard';
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'profile';
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const defaultTab = tabParam || 'profile';
+  
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
+
+  // When URL params change, make sure the UI reflects it
+  useEffect(() => {
+    if (tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam)) {
+      // We don't need to do anything here as the Tabs component will handle this
+      // through the defaultValue prop
+    }
+  }, [tabParam]);
   
   // Redirect if user is not logged in
   if (!user) {
@@ -27,7 +42,7 @@ const Profile = () => {
         
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
-        <Tabs defaultValue={defaultTab} className="space-y-6">
+        <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="w-full mb-2 grid grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="certifications">Certifications</TabsTrigger>
