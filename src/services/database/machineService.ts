@@ -7,35 +7,22 @@ import { BaseService } from './baseService';
  */
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
+    // Special case - safety cabinet is not a real machine in the database
+    if (machineId === 'safety-cabinet') {
+      console.log('Safety cabinet requested - returning hardcoded available status');
+      return 'available'; // Always return available for safety cabinet
+    }
+    
     try {
       console.log(`Getting machine status for: ${machineId}`);
       
-      // For safety-cabinet, handle it differently since it might not exist in the database
-      if (machineId === 'safety-cabinet') {
-        try {
-          const response = await apiService.getMachineStatus(machineId);
-          if (response.data) {
-            return response.data.status;
-          }
-        } catch (error) {
-          console.log('Safety cabinet not found in API, using default available status');
-          return 'available'; // Default status for safety cabinet
-        }
-      } else {
-        // For other machines, proceed normally
-        const response = await apiService.getMachineStatus(machineId);
-        if (response.data) {
-          return response.data.status;
-        }
+      // For regular machines, proceed normally
+      const response = await apiService.getMachineStatus(machineId);
+      if (response.data) {
+        return response.data.status;
       }
     } catch (error) {
       console.error(`Error getting status for machine ${machineId}:`, error);
-      // For the safety-cabinet machine which might not exist in the database yet,
-      // we want to return 'available' to prevent UI issues
-      if (machineId === 'safety-cabinet') {
-        console.log('Using default available status for safety cabinet');
-        return 'available';
-      }
     }
     
     // Default to available if API fails
@@ -43,13 +30,13 @@ export class MachineDatabaseService extends BaseService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
+    // Special case - safety cabinet is not a real machine in the database
+    if (machineId === 'safety-cabinet') {
+      console.log('Safety cabinet status update requested - returning mock success');
+      return true; // Always return success for safety cabinet
+    }
+    
     try {
-      // For safety-cabinet, which might not exist in the database yet
-      if (machineId === 'safety-cabinet') {
-        console.log('Using mock success for safety cabinet status update');
-        return true;
-      }
-      
       const response = await apiService.updateMachineStatus(machineId, status, note);
       return response.data?.success || false;
     } catch (error) {

@@ -36,17 +36,17 @@ export const useMachineDetail = (id: string | undefined) => {
     // Load machine status
     const loadMachineStatus = async () => {
       if (id) {
+        // Special case for safety cabinet - always use 'available' without API call
+        if (id === 'safety-cabinet') {
+          console.log('Setting hardcoded available status for safety cabinet');
+          setMachineStatus('available');
+          return;
+        }
+        
+        // For regular machines, try to get status from database
         try {
           console.log(`Loading status for machine: ${id}`);
-          let status = 'available'; // Default status
-          
-          try {
-            status = await userDatabase.getMachineStatus(id);
-          } catch (statusError) {
-            console.error(`Error fetching status for machine ${id}:`, statusError);
-            // Leave the default status
-          }
-          
+          const status = await userDatabase.getMachineStatus(id);
           setMachineStatus(status || 'available');
         } catch (error) {
           console.error(`Error loading machine status for ${id}:`, error);

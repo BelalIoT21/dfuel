@@ -24,14 +24,15 @@ export const getMachines = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet, which might not exist as a real DB entity
+    // Special case for safety-cabinet - always return a mock machine
     if (req.params.id === 'safety-cabinet') {
+      console.log('Returning mock safety cabinet data');
       return res.json({
         _id: 'safety-cabinet',
         name: 'Safety Cabinet',
         type: 'Safety',
         description: 'Safety training equipment',
-        status: 'Available',
+        status: 'available',
         requiresCertification: true,
         difficulty: 'Beginner'
       });
@@ -80,9 +81,9 @@ export const getMachineById = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineStatus = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet - ALWAYS return available status
+    // Special case for safety-cabinet - always return a mock status
     if (req.params.id === 'safety-cabinet') {
-      console.log('Returning default available status for safety cabinet');
+      console.log('Returning hardcoded available status for safety cabinet');
       return res.json({ 
         status: 'available',
         note: ''
