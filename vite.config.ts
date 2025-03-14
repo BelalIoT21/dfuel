@@ -30,10 +30,6 @@ export default defineConfig(({ mode }) => ({
     // Add extensions to properly resolve .native files
     extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.tsx', '.ts', '.jsx', '.js']
   },
-  // Explicitly tell Vite to ignore certain imports in browser context
-  optimizeDeps: {
-    exclude: ['react-native', 'expo'],
-  },
   // Define global variables to help with platform detection
   define: {
     __DEV__: mode === 'development',
