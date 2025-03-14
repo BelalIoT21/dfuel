@@ -10,6 +10,7 @@ interface MachineActionsProps {
   onTakeQuiz: () => void;
   onGetCertified: () => void;
   onBookMachine: () => void;
+  isAdmin?: boolean;
 }
 
 const MachineActions = ({ 
@@ -18,7 +19,8 @@ const MachineActions = ({
   onTakeCourse, 
   onTakeQuiz, 
   onGetCertified, 
-  onBookMachine 
+  onBookMachine,
+  isAdmin = false
 }: MachineActionsProps) => {
   return (
     <View style={styles.actionContainer}>
@@ -51,7 +53,8 @@ const MachineActions = ({
         </Button>
       )}
       
-      {machineStatus === 'available' && isCertified && (
+      {/* Allow admin to book machines regardless of status */}
+      {(machineStatus === 'available' && isCertified) || isAdmin ? (
         <Button 
           mode="contained" 
           icon="calendar-plus" 
@@ -60,7 +63,7 @@ const MachineActions = ({
         >
           Book Machine
         </Button>
-      )}
+      ) : null}
     </View>
   );
 };

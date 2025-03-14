@@ -74,6 +74,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
           onTakeQuiz={handleTakeQuiz}
           onGetCertified={handleGetCertified}
           onBookMachine={handleBookMachine}
+          isAdmin={user?.isAdmin}
         />
       </View>
     </ScrollView>

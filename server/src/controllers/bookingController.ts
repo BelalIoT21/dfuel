@@ -23,15 +23,17 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
     
-    // Check if machine is available
-    if (machine.status !== 'Available') {
-      return res.status(400).json({ 
-        message: `Machine is currently ${machine.status.toLowerCase()}`
-      });
+    // For admin users, bypass machine status check
+    if (!req.user.isAdmin) {
+      // Check if machine is available for non-admin users
+      if (machine.status !== 'Available') {
+        return res.status(400).json({ 
+          message: `Machine is currently ${machine.status.toLowerCase()}`
+        });
+      }
     }
     
-    // Check if user has required certification (if applicable)
-    // Skip certification check for admins
+    // For admin users, bypass certification check
     if (machine.requiresCertification && !req.user.isAdmin) {
       const user = await User.findById(req.user._id);
       if (!user) {
@@ -45,20 +47,23 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
-    // Check if booking slot is available
-    const bookingDate = new Date(date);
-    const existingBooking = await Booking.findOne({
-      machine: machineId,
-      date: {
-        $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
-      },
-      time,
-      status: { $in: ['Pending', 'Approved'] }
-    });
-    
-    if (existingBooking) {
-      return res.status(400).json({ message: 'This time slot is already booked' });
+    // For admin users, bypass booking slot check
+    if (!req.user.isAdmin) {
+      // Check if booking slot is available for non-admin users
+      const bookingDate = new Date(date);
+      const existingBooking = await Booking.findOne({
+        machine: machineId,
+        date: {
+          $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+          $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+        },
+        time,
+        status: { $in: ['Pending', 'Approved'] }
+      });
+      
+      if (existingBooking) {
+        return res.status(400).json({ message: 'This time slot is already booked' });
+      }
     }
     
     // Create booking
@@ -67,7 +72,8 @@ export const createBooking = async (req: Request, res: Response) => {
       machine: machineId,
       date,
       time,
-      status: 'Pending'
+      // Auto-approve bookings made by admins
+      status: req.user.isAdmin ? 'Approved' : 'Pending'
     });
     
     const createdBooking = await booking.save();
