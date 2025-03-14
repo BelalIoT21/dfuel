@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 class ApiService {
@@ -98,12 +97,52 @@ class ApiService {
   
   // Machine endpoints
   async getMachines() {
-    return this.request<any>('/machines', {
+    // Special case - For client-side machine listing, add safety cabinet if needed
+    const response = await this.request<any>('/machines', {
       method: 'GET'
     });
+    
+    // Check if safety cabinet is already included
+    if (response.data && Array.isArray(response.data)) {
+      const hasSafetyCabinet = response.data.some(m => m.id === 'safety-cabinet' || m._id === 'safety-cabinet');
+      
+      if (!hasSafetyCabinet) {
+        // Add the safety cabinet as a special machine
+        response.data.push({
+          _id: 'safety-cabinet',
+          id: 'safety-cabinet',
+          name: 'Safety Cabinet',
+          type: 'Safety Cabinet',
+          description: 'Complete the safety course to get access to all machines',
+          status: 'Available',
+          requiresCertification: true,
+          difficulty: 'Beginner',
+          imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
+        });
+      }
+    }
+    
+    return response;
   }
   
   async getMachineById(id: string) {
+    // Special case for safety cabinet
+    if (id === 'safety-cabinet') {
+      return {
+        data: {
+          _id: 'safety-cabinet',
+          id: 'safety-cabinet',
+          name: 'Safety Cabinet',
+          type: 'Safety Cabinet',
+          description: 'Complete the safety course to get access to all machines',
+          status: 'Available',
+          requiresCertification: true,
+          difficulty: 'Beginner',
+          imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
+        }
+      };
+    }
+    
     return this.request<any>(`/machines/${id}`, {
       method: 'GET'
     });
