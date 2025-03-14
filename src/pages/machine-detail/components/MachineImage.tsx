@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,13 +19,19 @@ export const MachineImage = ({
   maintenanceDate, 
   progress 
 }: MachineImageProps) => {
+  const [imageError, setImageError] = useState(false);
+  
+  // Fallback image if the provided one fails to load
+  const fallbackImage = 'https://images.unsplash.com/photo-1487887235947-a955ef187fcc';
+  
   return (
     <Card className="overflow-hidden h-full">
       <div className="aspect-square bg-gray-100 flex items-center justify-center">
         <img 
-          src={image} 
+          src={imageError ? fallbackImage : image} 
           alt={name} 
           className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
         />
       </div>
       <CardContent className="p-4">
