@@ -90,7 +90,7 @@ export const machines: Machine[] = [
     id: '1',
     name: 'Laser Cutter',
     description: 'Professional grade laser cutting machine for precise cuts',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1565696392944-b1a54b3102dd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false,
     specs: {
@@ -108,7 +108,7 @@ export const machines: Machine[] = [
     id: '2',
     name: 'Ultimaker',
     description: '3D printer for high-quality prototypes and models',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false,
     specs: {
@@ -126,7 +126,7 @@ export const machines: Machine[] = [
     id: '3',
     name: 'Safety Cabinet',
     description: 'Storage for hazardous materials and equipment',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false,
     specs: {
@@ -144,7 +144,7 @@ export const machines: Machine[] = [
     id: '4',
     name: 'X1 E Carbon 3D Printer',
     description: 'Advanced 3D printer for carbon fiber composites',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false,
     specs: {
@@ -162,7 +162,7 @@ export const machines: Machine[] = [
     id: '5',
     name: 'Bambu Lab X1 E',
     description: 'Next-generation 3D printing technology',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     courseCompleted: false,
     quizPassed: false,
     specs: {
@@ -697,7 +697,7 @@ if (safetyCabinetIndex === -1) {
     name: 'Safety Cabinet',
     type: 'Safety Cabinet',
     description: 'Required safety training for all workshop equipment.',
-    image: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OXx8c2FmZXR5fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60',
+    image: 'https://images.unsplash.com/photo-1516841273335-e39b37888115?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60',
     maintenanceDate: '2023-04-01',
     specs: {
       Type: 'Course',

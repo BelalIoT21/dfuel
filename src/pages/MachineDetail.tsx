@@ -47,6 +47,7 @@ const MachineDetail = () => {
           <div className="md:w-1/3">
             <MachineImage
               image={machine.image}
+              imageUrl={machine.imageUrl}
               name={machine.name}
               status={machineStatus}
               maintenanceDate={machine.maintenanceDate}

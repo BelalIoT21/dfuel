@@ -25,4 +25,5 @@ export interface MongoMachineStatus {
   machineId: string;
   status: string;
   note?: string;
+  imageUrl?: string;
 }

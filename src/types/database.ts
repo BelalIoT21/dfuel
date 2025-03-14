@@ -28,7 +28,7 @@ export interface MachineStatus {
   machineId: string;
   status: string;
   note?: string;
+  imageUrl?: string;
 }
 
 export type UserWithoutSensitiveInfo = Omit<User, 'password' | 'resetCode'>;
-
