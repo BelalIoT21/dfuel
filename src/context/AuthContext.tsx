@@ -5,6 +5,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
+import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -30,47 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadUser();
   }, []);
 
-  // Login function
-  const login = async (email: string, password: string) => {
-    try {
-      const authenticatedUser = await userDatabase.authenticate(email, password);
-      
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
-        return true;
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  };
-
-  // Register function
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      const newUser = await userDatabase.registerUser(email, password, name);
-      
-      if (newUser) {
-        setUser(newUser);
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
-        return true;
-      } else {
-        throw new Error('Registration failed');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
-  };
-
-  // Logout function
-  const logout = async () => {
-    setUser(null);
-    await storage.removeItem('learnit_user');
-  };
+  const { login, googleLogin, register, logout, isLoading } = useAuthFunctions(user, setUser);
 
   // Add certification
   const addCertification = async (machineId: string) => {
@@ -99,14 +60,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update profile
-  const updateProfile = async (name: string, email: string) => {
+  const updateProfile = async (details: { name?: string; email?: string }) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.updateUserProfile(user.id, { name, email });
+      const success = await userDatabase.updateUserProfile(user.id, details);
       
       if (success) {
-        const updatedUser = { ...user, name, email };
+        const updatedUser = { 
+          ...user, 
+          ...(details.name && { name: details.name }),
+          ...(details.email && { email: details.email })
+        };
         setUser(updatedUser);
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
@@ -161,8 +126,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Combine all functions into the auth context value
   const value: AuthContextType = {
     user,
-    loading,
+    loading: loading || isLoading,
     login,
+    googleLogin,
     register,
     logout,
     addCertification,

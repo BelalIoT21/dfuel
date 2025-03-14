@@ -59,6 +59,13 @@ const Index = () => {
     console.log("Attempting registration for:", email);
     await register(email, password, name);
   };
+  
+  const handleGoogleLogin = async (googleData: any) => {
+    console.log("Attempting Google login for:", googleData.email);
+    if (useAuth().googleLogin) {
+      await useAuth().googleLogin(googleData);
+    }
+  };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
@@ -92,7 +99,8 @@ const Index = () => {
               transition={{ duration: 0.3 }}
             >
               <LoginForm 
-                onLogin={handleLogin} 
+                onLogin={handleLogin}
+                onGoogleLogin={handleGoogleLogin}
                 onToggleMode={toggleMode} 
               />
             </motion.div>
@@ -105,7 +113,8 @@ const Index = () => {
               transition={{ duration: 0.3 }}
             >
               <RegisterForm 
-                onRegister={handleRegister} 
+                onRegister={handleRegister}
+                onGoogleLogin={handleGoogleLogin}
                 onToggleMode={toggleMode} 
               />
             </motion.div>
