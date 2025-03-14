@@ -1,8 +1,8 @@
 
 // Learn more https://docs.expo.io/guides/customizing-metro
-import { getDefaultConfig } from 'expo/metro-config';
+const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getDefaultConfig(import.meta.url);
+const config = getDefaultConfig(__dirname);
 
 // Add support for any non-standard extensions your project uses
 config.resolver.sourceExts = [
@@ -15,4 +15,4 @@ config.resolver.sourceExts = [
 // config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
 // config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
 
-export default config;
+module.exports = config;
