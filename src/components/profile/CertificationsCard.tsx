@@ -50,7 +50,7 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{cert.name}</div>
                 <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
                 
-                {/* Show Book Now button only for machines that are NOT Safety Cabinets */}
+                {/* Only show Book Now button for actual machines, never for Safety Cabinet */}
                 {cert.type !== 'Safety Cabinet' && (
                   <Button 
                     variant="outline" 
