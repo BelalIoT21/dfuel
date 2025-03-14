@@ -1,5 +1,6 @@
+// Simulated user database service with MongoDB integration
+import mongoDbService, { MongoUser } from './mongoDbService';
 
-// Simulated user database service
 interface User {
   id: string;
   email: string;
@@ -53,19 +54,51 @@ const initialUsers: User[] = [
   }
 ];
 
-// In a real app, this would be a database. Here we use localStorage.
 class UserDatabase {
   private users: User[];
   private machineStatuses: {[key: string]: {status: string, note?: string}} = {};
+  private initialized: boolean = false;
   
   constructor() {
-    this.loadUsers();
-    this.loadMachineStatuses();
+    this.users = [];
+    this.initializeDatabase();
+  }
+  
+  private async initializeDatabase(): Promise<void> {
+    if (this.initialized) return;
     
-    // Initialize with default admin if no users exist
-    if (this.users.length === 0) {
-      this.users = [...initialUsers];
-      this.saveUsers();
+    try {
+      // Try to get users from MongoDB
+      const mongoUsers = await mongoDbService.getUsers();
+      
+      // If MongoDB has users, use them
+      if (mongoUsers.length > 0) {
+        this.users = mongoUsers as unknown as User[];
+      } else {
+        // Otherwise, load from localStorage or use initialUsers
+        this.loadUsers();
+        
+        // If still no users, initialize with default admin
+        if (this.users.length === 0) {
+          this.users = [...initialUsers];
+          
+          // Save default admin to MongoDB
+          for (const user of initialUsers) {
+            await mongoDbService.createUser(user as unknown as MongoUser);
+          }
+        }
+      }
+      
+      // Load machine statuses
+      this.loadMachineStatuses();
+      
+      this.initialized = true;
+    } catch (error) {
+      console.error("Error initializing database:", error);
+      // Fallback to localStorage
+      this.loadUsers();
+      this.loadMachineStatuses();
+      this.initialized = true;
     }
   }
   
@@ -88,32 +121,72 @@ class UserDatabase {
   }
   
   // Get all users (for admin)
-  getAllUsers(): Omit<User, 'password' | 'resetCode'>[] {
+  async getAllUsers(): Promise<Omit<User, 'password' | 'resetCode'>[]> {
+    await this.initializeDatabase();
+    
+    try {
+      // Try to get users from MongoDB first
+      const mongoUsers = await mongoDbService.getUsers();
+      if (mongoUsers.length > 0) {
+        return mongoUsers.map(({ password, resetCode, ...user }) => user) as any[];
+      }
+    } catch (error) {
+      console.error("Error getting users from MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     return this.users.map(({ password, resetCode, ...user }) => user);
   }
   
   // Find user by email
-  findUserByEmail(email: string): User | undefined {
+  async findUserByEmail(email: string): Promise<User | undefined> {
+    await this.initializeDatabase();
+    
+    try {
+      // Try to get user from MongoDB first
+      const mongoUser = await mongoDbService.getUserByEmail(email);
+      if (mongoUser) {
+        return mongoUser as unknown as User;
+      }
+    } catch (error) {
+      console.error("Error finding user by email in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     return this.users.find(user => user.email.toLowerCase() === email.toLowerCase());
   }
   
   // Authenticate user
-  authenticate(email: string, password: string): Omit<User, 'password' | 'resetCode'> | null {
-    const user = this.findUserByEmail(email);
-    if (user && user.password === password) {
-      // Update last login time
-      user.lastLogin = new Date().toISOString();
-      this.saveUsers();
-      const { password, resetCode, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+  async authenticate(email: string, password: string): Promise<Omit<User, 'password' | 'resetCode'> | null> {
+    try {
+      const user = await this.findUserByEmail(email);
+      if (user && user.password === password) {
+        // Update last login time
+        user.lastLogin = new Date().toISOString();
+        
+        // Update in MongoDB
+        try {
+          await mongoDbService.updateUser(user.id, { lastLogin: user.lastLogin });
+        } catch (error) {
+          console.error("Error updating user lastLogin in MongoDB:", error);
+          // Fall back to localStorage
+          this.saveUsers();
+        }
+        
+        const { password, resetCode, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      }
+    } catch (error) {
+      console.error("Error authenticating user:", error);
     }
     return null;
   }
   
   // Register new user
-  registerUser(email: string, password: string, name: string): Omit<User, 'password' | 'resetCode'> | null {
+  async registerUser(email: string, password: string, name: string): Promise<Omit<User, 'password' | 'resetCode'> | null> {
     // Check if user already exists
-    if (this.findUserByEmail(email)) {
+    const existingUser = await this.findUserByEmail(email);
+    if (existingUser) {
       return null;
     }
     
@@ -129,15 +202,36 @@ class UserDatabase {
       lastLogin: new Date().toISOString(),
     };
     
-    this.users.push(newUser);
-    this.saveUsers();
+    try {
+      // Add user to MongoDB
+      const createdUser = await mongoDbService.createUser(newUser as unknown as MongoUser);
+      if (!createdUser) {
+        // MongoDB failed, use localStorage
+        this.users.push(newUser);
+        this.saveUsers();
+      }
+    } catch (error) {
+      console.error("Error registering user in MongoDB:", error);
+      // MongoDB failed, use localStorage
+      this.users.push(newUser);
+      this.saveUsers();
+    }
     
     const { password: _, resetCode: __, ...userWithoutPassword } = newUser;
     return userWithoutPassword;
   }
   
   // Update user certifications
-  addCertification(userId: string, machineId: string): boolean {
+  async addCertification(userId: string, machineId: string): Promise<boolean> {
+    try {
+      // Try to update in MongoDB first
+      const success = await mongoDbService.updateUserCertifications(userId, machineId);
+      if (success) return true;
+    } catch (error) {
+      console.error("Error adding certification in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     const userIndex = this.users.findIndex(user => user.id === userId);
     if (userIndex === -1) return false;
     
@@ -149,10 +243,7 @@ class UserDatabase {
   }
   
   // Add a booking
-  addBooking(userId: string, machineId: string, date: string, time: string): boolean {
-    const userIndex = this.users.findIndex(user => user.id === userId);
-    if (userIndex === -1) return false;
-    
+  async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     const booking = {
       id: `booking-${Date.now()}`,
       machineId,
@@ -161,19 +252,58 @@ class UserDatabase {
       status: 'Pending' as const
     };
     
+    try {
+      // Try to add booking in MongoDB first
+      const success = await mongoDbService.addUserBooking(userId, booking);
+      if (success) return true;
+    } catch (error) {
+      console.error("Error adding booking in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
+    const userIndex = this.users.findIndex(user => user.id === userId);
+    if (userIndex === -1) return false;
+    
     this.users[userIndex].bookings.push(booking);
     this.saveUsers();
     return true;
   }
   
   // Get user bookings
-  getUserBookings(userId: string) {
+  async getUserBookings(userId: string) {
+    try {
+      // Try to get user from MongoDB first
+      const mongoUser = await mongoDbService.getUserById(userId);
+      if (mongoUser) {
+        return mongoUser.bookings;
+      }
+    } catch (error) {
+      console.error("Error getting user bookings from MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     const user = this.users.find(user => user.id === userId);
     return user ? user.bookings : [];
   }
   
   // Update user profile
-  updateUserProfile(userId: string, updates: {name?: string, email?: string}): boolean {
+  async updateUserProfile(userId: string, updates: {name?: string, email?: string}): Promise<boolean> {
+    try {
+      // Check if user is admin
+      const user = this.users.find(user => user.id === userId);
+      if (user?.isAdmin && updates.email) {
+        const { adminPassword } = getAdminCredentials();
+        setAdminCredentials(updates.email, adminPassword);
+      }
+      
+      // Try to update in MongoDB first
+      const success = await mongoDbService.updateUser(userId, updates);
+      if (success) return true;
+    } catch (error) {
+      console.error("Error updating user profile in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     const userIndex = this.users.findIndex(user => user.id === userId);
     if (userIndex === -1) return false;
     
@@ -194,7 +324,7 @@ class UserDatabase {
   }
 
   // Change user password
-  changePassword(userId: string, currentPassword: string, newPassword: string): boolean {
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
     const userIndex = this.users.findIndex(user => user.id === userId);
     if (userIndex === -1) return false;
     
@@ -204,8 +334,20 @@ class UserDatabase {
     // Enforce password requirements
     if (newPassword.length < 6) return false;
     
-    // Update password
-    this.users[userIndex].password = newPassword;
+    // Update password in MongoDB
+    try {
+      const success = await mongoDbService.updateUser(userId, { password: newPassword });
+      if (!success) {
+        // MongoDB failed, update localStorage
+        this.users[userIndex].password = newPassword;
+        this.saveUsers();
+      }
+    } catch (error) {
+      console.error("Error changing password in MongoDB:", error);
+      // MongoDB failed, update localStorage
+      this.users[userIndex].password = newPassword;
+      this.saveUsers();
+    }
     
     // If admin, update admin password in "environment"
     if (this.users[userIndex].isAdmin) {
@@ -213,29 +355,59 @@ class UserDatabase {
       setAdminCredentials(adminEmail, newPassword);
     }
     
-    this.saveUsers();
     return true;
   }
 
   // Update machine status
-  updateMachineStatus(machineId: string, status: string, note?: string): boolean {
+  async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
+    try {
+      // Try to update in MongoDB first
+      const success = await mongoDbService.updateMachineStatus(machineId, status, note);
+      if (success) return true;
+    } catch (error) {
+      console.error("Error updating machine status in MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     this.machineStatuses[machineId] = { status, note };
     this.saveMachineStatuses();
     return true;
   }
 
   // Get machine status
-  getMachineStatus(machineId: string): string {
+  async getMachineStatus(machineId: string): Promise<string> {
+    try {
+      // Try to get from MongoDB first
+      const status = await mongoDbService.getMachineStatus(machineId);
+      if (status) {
+        return status.status;
+      }
+    } catch (error) {
+      console.error("Error getting machine status from MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     return this.machineStatuses[machineId]?.status || 'available';
   }
   
   // Get machine maintenance note
-  getMachineMaintenanceNote(machineId: string): string | undefined {
+  async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
+    try {
+      // Try to get from MongoDB first
+      const status = await mongoDbService.getMachineStatus(machineId);
+      if (status) {
+        return status.note;
+      }
+    } catch (error) {
+      console.error("Error getting machine maintenance note from MongoDB:", error);
+      // Continue with localStorage if MongoDB fails
+    }
+    
     return this.machineStatuses[machineId]?.note;
   }
 
   // Request password reset
-  requestPasswordReset(email: string): boolean {
+  async requestPasswordReset(email: string): Promise<boolean> {
     const userIndex = this.users.findIndex(user => user.email.toLowerCase() === email.toLowerCase());
     if (userIndex === -1) return false;
     
@@ -244,12 +416,25 @@ class UserDatabase {
     const expiry = new Date();
     expiry.setHours(expiry.getHours() + 1); // Code expires in 1 hour
     
-    this.users[userIndex].resetCode = {
+    const resetCodeObj = {
       code: resetCode,
       expiry: expiry.toISOString()
     };
     
-    this.saveUsers();
+    try {
+      // Update in MongoDB
+      const success = await mongoDbService.updateUser(this.users[userIndex].id, { resetCode: resetCodeObj });
+      if (!success) {
+        // MongoDB failed, update localStorage
+        this.users[userIndex].resetCode = resetCodeObj;
+        this.saveUsers();
+      }
+    } catch (error) {
+      console.error("Error requesting password reset in MongoDB:", error);
+      // MongoDB failed, update localStorage
+      this.users[userIndex].resetCode = resetCodeObj;
+      this.saveUsers();
+    }
     
     // In a real app, this would send an email
     console.log(`
@@ -276,7 +461,7 @@ The Learnit Team
   }
 
   // Reset password with code
-  resetPassword(email: string, resetCode: string, newPassword: string): boolean {
+  async resetPassword(email: string, resetCode: string, newPassword: string): Promise<boolean> {
     const userIndex = this.users.findIndex(user => user.email.toLowerCase() === email.toLowerCase());
     if (userIndex === -1) return false;
     
@@ -294,8 +479,26 @@ The Learnit Team
     if (newPassword.length < 6) return false;
     
     // Update password and clear reset code
-    user.password = newPassword;
-    user.resetCode = undefined;
+    try {
+      // Update in MongoDB
+      const success = await mongoDbService.updateUser(user.id, { 
+        password: newPassword,
+        resetCode: undefined 
+      });
+      
+      if (!success) {
+        // MongoDB failed, update localStorage
+        user.password = newPassword;
+        user.resetCode = undefined;
+        this.saveUsers();
+      }
+    } catch (error) {
+      console.error("Error resetting password in MongoDB:", error);
+      // MongoDB failed, update localStorage
+      user.password = newPassword;
+      user.resetCode = undefined;
+      this.saveUsers();
+    }
     
     // If admin, update admin password in "environment"
     if (user.isAdmin) {
@@ -303,7 +506,6 @@ The Learnit Team
       setAdminCredentials(adminEmail, newPassword);
     }
     
-    this.saveUsers();
     return true;
   }
 }

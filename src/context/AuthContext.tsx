@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import userDatabase from '../services/userDatabase';
 import { useToast } from '@/hooks/use-toast';
@@ -49,19 +50,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const userData = userDatabase.authenticate(email, password);
-    if (userData) {
-      setUser(userData as User);
-      localStorage.setItem('learnit_user', JSON.stringify(userData));
-      toast({
-        title: "Login successful",
-        description: `Welcome back, ${userData.name}!`
-      });
-      return true;
-    } else {
+    try {
+      const userData = await userDatabase.authenticate(email, password);
+      if (userData) {
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${userData.name}!`
+        });
+        return true;
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Invalid credentials.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "Invalid credentials.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -69,19 +80,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
-    const userData = userDatabase.registerUser(email, password, name);
-    if (userData) {
-      setUser(userData as User);
-      localStorage.setItem('learnit_user', JSON.stringify(userData));
-      toast({
-        title: "Registration successful",
-        description: `Welcome, ${name}!`
-      });
-      return true;
-    } else {
+    try {
+      const userData = await userDatabase.registerUser(email, password, name);
+      if (userData) {
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${name}!`
+        });
+        return true;
+      } else {
+        toast({
+          title: "Registration failed",
+          description: "Email already in use.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "Email already in use.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -98,17 +119,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const addCertification = async (machineId: string): Promise<boolean> => {
     if (!user) return false;
-    const success = userDatabase.addCertification(user.id, machineId);
-    if (success) {
-      // Update user context with new certification
-      const updatedUser = { ...user, certifications: [...user.certifications, machineId] };
-      setUser(updatedUser);
-      localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-      return true;
-    } else {
+    
+    try {
+      const success = await userDatabase.addCertification(user.id, machineId);
+      if (success) {
+        // Update user context with new certification
+        const updatedUser = { ...user, certifications: [...user.certifications, machineId] };
+        setUser(updatedUser);
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        return true;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add certification.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error adding certification:", error);
       toast({
         title: "Error",
-        description: "Failed to add certification.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -117,20 +149,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = async (details: { name?: string; email?: string }): Promise<boolean> => {
     if (!user) return false;
-    const success = userDatabase.updateUserProfile(user.id, details);
-    if (success) {
-      const updatedUser = { ...user, ...details };
-      setUser(updatedUser);
-      localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully."
-      });
-      return true;
-    } else {
+    
+    try {
+      const success = await userDatabase.updateUserProfile(user.id, details);
+      if (success) {
+        const updatedUser = { ...user, ...details };
+        setUser(updatedUser);
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been updated successfully."
+        });
+        return true;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update profile.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -139,17 +182,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!user) return false;
-    const success = userDatabase.changePassword(user.id, currentPassword, newPassword);
-    if (success) {
-      toast({
-        title: "Password changed",
-        description: "Your password has been changed successfully."
-      });
-      return true;
-    } else {
+    
+    try {
+      const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
+      if (success) {
+        toast({
+          title: "Password changed",
+          description: "Your password has been changed successfully."
+        });
+        return true;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to change password. Please check your current password.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
       toast({
         title: "Error",
-        description: "Failed to change password. Please check your current password.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -157,17 +211,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const requestPasswordReset = async (email: string): Promise<boolean> => {
-    const success = userDatabase.requestPasswordReset(email);
-    if (success) {
-      toast({
-        title: "Password reset requested",
-        description: "Check your email for a reset code."
-      });
-      return true;
-    } else {
+    try {
+      const success = await userDatabase.requestPasswordReset(email);
+      if (success) {
+        toast({
+          title: "Password reset requested",
+          description: "Check your email for a reset code."
+        });
+        return true;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to request password reset. Email not found.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error requesting password reset:", error);
       toast({
         title: "Error",
-        description: "Failed to request password reset. Email not found.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -175,17 +239,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetPassword = async (email: string, resetCode: string, newPassword: string): Promise<boolean> => {
-    const success = userDatabase.resetPassword(email, resetCode, newPassword);
-    if (success) {
-      toast({
-        title: "Password reset successful",
-        description: "Your password has been reset."
-      });
-      return true;
-    } else {
+    try {
+      const success = await userDatabase.resetPassword(email, resetCode, newPassword);
+      if (success) {
+        toast({
+          title: "Password reset successful",
+          description: "Your password has been reset."
+        });
+        return true;
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to reset password. Invalid code or email.",
+          variant: "destructive"
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
       toast({
         title: "Error",
-        description: "Failed to reset password. Invalid code or email.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
