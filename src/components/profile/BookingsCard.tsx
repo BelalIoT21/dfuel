@@ -11,8 +11,6 @@ const BookingsCard = () => {
   
   if (!user) return null;
 
-  const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
-
   return (
     <Card className="border-purple-100">
       <CardHeader>
