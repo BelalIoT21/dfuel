@@ -19,9 +19,20 @@ const ProfileScreen = ({ navigation }) => {
     return null;
   }
 
+  const handleBackToDashboard = () => {
+    if (user.isAdmin) {
+      navigation.replace('AdminDashboard');
+    } else {
+      navigation.replace('Home');
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
-      <ProfileHeader user={user} />
+      <ProfileHeader 
+        user={user} 
+        onBackToDashboard={handleBackToDashboard}
+      />
 
       <ProfileInfoSection 
         user={user}

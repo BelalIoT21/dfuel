@@ -1,16 +1,27 @@
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Avatar } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Avatar, IconButton } from 'react-native-paper';
 import { User } from '@/types/database';
 
 interface ProfileHeaderProps {
   user: User;
+  onBackToDashboard: () => void;
 }
 
-const ProfileHeader = ({ user }: ProfileHeaderProps) => {
+const ProfileHeader = ({ user, onBackToDashboard }: ProfileHeaderProps) => {
   return (
     <View style={styles.header}>
+      <View style={styles.backButtonContainer}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={onBackToDashboard}
+          color="#7c3aed"
+        />
+        <Text style={styles.backText}>Back to Dashboard</Text>
+      </View>
+
       <Avatar.Text 
         size={80} 
         label={user.name.substr(0, 2).toUpperCase()} 
@@ -32,6 +43,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: 'white',
+  },
+  backButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+  },
+  backText: {
+    color: '#7c3aed',
+    fontSize: 16,
+    fontWeight: '500',
   },
   headerTitle: {
     marginTop: 10,
