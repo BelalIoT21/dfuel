@@ -27,7 +27,8 @@
       "package": "com.learnit.academy"
     },
     "web": {
-      "favicon": "./public/favicon.ico"
+      "favicon": "./public/favicon.ico",
+      "bundler": "webpack"
     },
     "entryPoint": "./App.js",
     "plugins": [

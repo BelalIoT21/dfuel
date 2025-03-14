@@ -26,6 +26,8 @@ if (isWeb) {
       );
       console.log("App rendered successfully");
     }
+  }).catch(err => {
+    console.error("Error loading App:", err);
   });
 } else {
   // For React Native, this file is not the entry point

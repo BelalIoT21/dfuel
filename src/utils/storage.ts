@@ -11,9 +11,13 @@ class StorageService {
       return localStorage.getItem(key);
     } else {
       try {
-        // Dynamically import AsyncStorage only in native environment
-        const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-        return await AsyncStorage.getItem(key);
+        // Use a safer approach to access AsyncStorage in native environments
+        // This avoids build issues with static analyzers
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          return await AsyncStorage.getItem(key);
+        }
+        return null;
       } catch (error) {
         console.error('AsyncStorage error in getItem:', error);
         return null;
@@ -26,8 +30,10 @@ class StorageService {
       localStorage.setItem(key, value);
     } else {
       try {
-        const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-        await AsyncStorage.setItem(key, value);
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          await AsyncStorage.setItem(key, value);
+        }
       } catch (error) {
         console.error('AsyncStorage error in setItem:', error);
       }
@@ -39,12 +45,28 @@ class StorageService {
       localStorage.removeItem(key);
     } else {
       try {
-        const { default: AsyncStorage } = await import('@react-native-async-storage/async-storage');
-        await AsyncStorage.removeItem(key);
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          await AsyncStorage.removeItem(key);
+        }
       } catch (error) {
         console.error('AsyncStorage error in removeItem:', error);
       }
     }
+  }
+
+  // Helper method to safely get AsyncStorage without build-time issues
+  private getNativeStorage(): any {
+    // This approach prevents bundlers from trying to resolve the import at build time
+    if (typeof global !== 'undefined' && global.require) {
+      try {
+        return global.require('@react-native-async-storage/async-storage');
+      } catch (e) {
+        console.warn('AsyncStorage not available:', e);
+        return null;
+      }
+    }
+    return null;
   }
 }
 
