@@ -8,6 +8,9 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
+  // Filter out safety cabinet from machines count
+  const realMachines = machines.filter(machine => machine.type !== 'Safety Cabinet');
+  
   // Basic statistics for the admin dashboard
   const stats = [
     { 
@@ -19,7 +22,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     },
     { 
       title: 'Total Machines', 
-      value: machines.length, 
+      value: realMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '0%',
       link: '/admin/machines'
@@ -28,7 +31,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       title: 'Certifications', 
       value: allUsers.reduce((total, user) => total + user.certifications.length, 0), 
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
-      change: '+' + allUsers.reduce((total, user) => total + user.certifications.length, 0),
+      change: '0',
       link: '/admin/users'
     },
     { 

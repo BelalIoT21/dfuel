@@ -20,6 +20,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [selectedStatus, setSelectedStatus] = useState('available');
   const [maintenanceNote, setMaintenanceNote] = useState('');
 
+  // Sort machines so that Safety Cabinet appears at the bottom
+  const sortedMachineData = [...machineData].sort((a, b) => {
+    if (a.type === 'Safety Cabinet') return 1;
+    if (b.type === 'Safety Cabinet') return -1;
+    return 0;
+  });
+
   const handleUpdateMachineStatus = (machine: any) => {
     setSelectedMachine(machine);
     setSelectedStatus(machine.status || 'available');
@@ -55,40 +62,49 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
           <div className="space-y-3">
-            {machineData.length > 0 ? (
-              machineData.map((machine) => (
-                <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
-                  <div>
-                    <div className="font-medium text-sm">{machine.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {machine.maintenanceNote ? `Note: ${machine.maintenanceNote}` : 'No maintenance notes'}
+            {sortedMachineData.length > 0 ? (
+              sortedMachineData.map((machine) => {
+                const isSafetyCabinet = machine.type === 'Safety Cabinet';
+                
+                return (
+                  <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
+                    <div>
+                      <div className="font-medium text-sm">{machine.name}</div>
+                      <div className="text-xs text-gray-500">
+                        Type: {machine.type}
+                        {!isSafetyCabinet && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        machine.status === 'available' || isSafetyCabinet
+                          ? 'bg-green-100 text-green-800' 
+                          : machine.status === 'maintenance'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {isSafetyCabinet 
+                          ? 'Available' 
+                          : machine.status === 'available' 
+                            ? 'Available' 
+                            : machine.status === 'maintenance'
+                              ? 'Maintenance'
+                              : 'In Use'}
+                      </span>
+                      {!isSafetyCabinet && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
+                          onClick={() => handleUpdateMachineStatus(machine)}
+                        >
+                          Update
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      machine.status === 'available' 
-                        ? 'bg-green-100 text-green-800' 
-                        : machine.status === 'maintenance'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {machine.status === 'available' 
-                        ? 'Available' 
-                        : machine.status === 'maintenance'
-                          ? 'Maintenance'
-                          : 'In Use'}
-                    </span>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
-                      onClick={() => handleUpdateMachineStatus(machine)}
-                    >
-                      Update
-                    </Button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-4 text-gray-500">
                 <p className="text-sm">No machines available yet.</p>

@@ -13,8 +13,15 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
+  // Sort machines so that Safety Cabinet appears at the bottom
+  const sortedMachines = [...machines].sort((a, b) => {
+    if (a.type === 'Safety Cabinet') return 1;
+    if (b.type === 'Safety Cabinet') return -1;
+    return 0;
+  });
+
   // Get user certifications
-  const userCertifications = machines
+  const userCertifications = sortedMachines
     .filter(machine => user?.certifications.includes(machine.id))
     .map(machine => ({
       id: machine.id,
