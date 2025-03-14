@@ -2,32 +2,24 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Divider } from 'react-native-paper';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useProfileNavigation } from './hooks/useProfileNavigation';
 
 // Import the component sections
-import ProfileHeader from './profile/ProfileHeader';
-import ProfileInfoSection from './profile/ProfileInfoSection';
-import SecuritySection from './profile/SecuritySection';
-import CertificationsSection from './profile/CertificationsSection';
-import LogoutButton from './profile/LogoutButton';
+import ProfileHeader from './ProfileHeader';
+import ProfileInfoSection from './ProfileInfoSection';
+import SecuritySection from './SecuritySection';
+import CertificationsSection from './CertificationsSection';
+import LogoutButton from './LogoutButton';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user, updateProfile, logout, changePassword } = useAuth();
+  const { user, updateProfile, changePassword } = useAuth();
+  const { handleBackToDashboard } = useProfileNavigation(navigation);
 
+  // If user is null, navigation is handled in the hook
   if (!user) {
-    navigation.replace('Login');
     return null;
   }
-
-  const handleBackToDashboard = () => {
-    console.log('Navigating back to dashboard. User is admin:', user.isAdmin);
-    if (user.isAdmin) {
-      navigation.navigate('AdminDashboard');
-    } else {
-      // Ensure we're using the correct screen name for regular users
-      navigation.navigate('Home');
-    }
-  };
 
   return (
     <ScrollView style={styles.container}>
@@ -53,7 +45,7 @@ const ProfileScreen = ({ navigation }) => {
       <CertificationsSection user={user} />
 
       <LogoutButton 
-        onLogout={logout}
+        onLogout={async () => await useAuth().logout()}
         onNavigateToLogin={() => navigation.replace('Login')}
       />
     </ScrollView>
