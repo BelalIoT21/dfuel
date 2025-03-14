@@ -33,3 +33,8 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
   }
   return defaultValue;
 };
+
+// Check if the app is running in a Capacitor environment
+export const isCapacitorEnvironment = (): boolean => {
+  return typeof (window as any)?.Capacitor !== 'undefined';
+};
