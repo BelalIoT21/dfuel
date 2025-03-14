@@ -5,7 +5,7 @@ import { AdminHeader } from '../components/admin/AdminHeader';
 import { PlatformOverview } from '../components/admin/PlatformOverview';
 import QuickActions from '../components/admin/QuickActions';
 import { StatsOverview } from '../components/admin/StatsOverview';
-import PendingActions from '../components/admin/PendingActions';
+import { PendingActions } from '../components/admin/PendingActions';
 import { DashboardContent } from '../components/admin/dashboard/DashboardContent';
 import { MachineStatus } from '../components/admin/MachineStatus';
 import { toast } from '@/components/ui/use-toast';
@@ -81,8 +81,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6 page-transition">
-        <AdminHeader user={user} />
-        
+        <AdminHeader />
         <StatsOverview />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -98,8 +97,6 @@ const AdminDashboard = () => {
             <PendingActions />
           </div>
         </div>
-        
-        <DashboardContent />
       </div>
     </div>
   );
