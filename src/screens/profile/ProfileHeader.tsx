@@ -12,7 +12,11 @@ interface ProfileHeaderProps {
 const ProfileHeader = ({ user, onBackToDashboard }: ProfileHeaderProps) => {
   return (
     <View style={styles.header}>
-      <View style={styles.backButtonContainer}>
+      <TouchableOpacity 
+        style={styles.backButtonContainer}
+        onPress={onBackToDashboard}
+        activeOpacity={0.7}
+      >
         <IconButton
           icon="arrow-left"
           size={24}
@@ -20,7 +24,7 @@ const ProfileHeader = ({ user, onBackToDashboard }: ProfileHeaderProps) => {
           color="#7c3aed"
         />
         <Text style={styles.backText}>Back to Dashboard</Text>
-      </View>
+      </TouchableOpacity>
 
       <Avatar.Text 
         size={80} 

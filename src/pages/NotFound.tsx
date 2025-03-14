@@ -22,6 +22,11 @@ const NotFound = () => {
     }
   }, [user]);
 
+  const handleReturn = () => {
+    console.log('Navigating to:', redirectPath);
+    navigate(redirectPath);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="text-center max-w-md">
@@ -30,11 +35,9 @@ const NotFound = () => {
         <p className="text-gray-600 mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <Link to={redirectPath}>
-          <Button>
-            Return to {user?.isAdmin ? 'Admin Dashboard' : user ? 'Dashboard' : 'Home'}
-          </Button>
-        </Link>
+        <Button onClick={handleReturn}>
+          Return to {user?.isAdmin ? 'Admin Dashboard' : user ? 'Dashboard' : 'Home'}
+        </Button>
       </div>
     </div>
   );

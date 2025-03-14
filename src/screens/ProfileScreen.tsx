@@ -20,10 +20,11 @@ const ProfileScreen = ({ navigation }) => {
   }
 
   const handleBackToDashboard = () => {
+    console.log('Navigating back to dashboard. User is admin:', user.isAdmin);
     if (user.isAdmin) {
-      navigation.replace('AdminDashboard');
+      navigation.navigate('AdminDashboard');
     } else {
-      navigation.replace('Home');
+      navigation.navigate('Home');
     }
   };
 
