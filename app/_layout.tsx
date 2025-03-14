@@ -3,7 +3,6 @@ import { Stack } from "expo-router";
 import React, { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text } from "react-native";
 
 export default function Layout() {
   // Log on initialization to verify the app is loading
