@@ -8,21 +8,6 @@ import mongoose from 'mongoose';
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet - always return a mock machine
-    if (req.params.id === 'safety-cabinet') {
-      console.log('Returning mock safety cabinet data');
-      return res.json({
-        _id: 'safety-cabinet',
-        name: 'Safety Cabinet',
-        type: 'Safety',
-        description: 'Safety training equipment',
-        status: 'available',
-        requiresCertification: true,
-        difficulty: 'Beginner',
-        imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
-      });
-    }
-    
     // Check if ID is a valid MongoDB ObjectId
     const isValidObjectId = mongoose.Types.ObjectId.isValid(req.params.id);
     

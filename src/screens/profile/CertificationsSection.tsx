@@ -9,12 +9,17 @@ interface CertificationsSectionProps {
 }
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
+  // Filter out safety-cabinet from the certifications list
+  const certifications = user.certifications 
+    ? user.certifications.filter(cert => cert !== 'safety-cabinet')
+    : [];
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
-      {user.certifications && user.certifications.length > 0 ? (
+      {certifications.length > 0 ? (
         <List.Section>
-          {user.certifications.map((certId) => (
+          {certifications.map((certId) => (
             <List.Item
               key={certId}
               title={`Machine ${certId}`}

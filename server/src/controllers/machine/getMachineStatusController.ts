@@ -8,16 +8,6 @@ import mongoose from 'mongoose';
 // @access  Public
 export const getMachineStatus = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet - always return a mock status
-    // Safety cabinet is not a machine, it's equipment that's always available
-    if (req.params.id === 'safety-cabinet') {
-      console.log('Returning hardcoded available status for safety cabinet');
-      return res.json({ 
-        status: 'available',
-        note: ''
-      });
-    }
-    
     // Check if ID is a valid MongoDB ObjectId
     const isValidObjectId = mongoose.Types.ObjectId.isValid(req.params.id);
     

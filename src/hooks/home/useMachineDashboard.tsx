@@ -33,11 +33,11 @@ export const useMachineDashboard = () => {
       try {
         setLoading(true);
         
-        // Check if user has completed the safety course (look for safety cabinet certification)
-        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
+        // Check if user has completed the safety course
+        const hasSafetyCert = user?.certifications?.includes('safety-course');
         setSafetyCourseCompleted(!!hasSafetyCert);
         
-        // Filter out safety cabinet from machine list as it's equipment, not a machine
+        // Filter out safety cabinet from machine list
         const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
         
         const extendedMachines = await Promise.all(actualMachines.map(async (machine) => {
@@ -65,15 +65,6 @@ export const useMachineDashboard = () => {
           }
         }));
         
-        // Add safety cabinet separately with always available status
-        const safetyCabinet = machines.find(m => m.id === 'safety-cabinet');
-        if (safetyCabinet) {
-          extendedMachines.push({
-            ...safetyCabinet,
-            status: 'available'
-          });
-        }
-        
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
@@ -83,12 +74,10 @@ export const useMachineDashboard = () => {
           variant: "destructive"
         });
         
-        // Fallback handling - include both machines and safety cabinet
-        const machinesWithStatus = machines.map(machine => ({
+        // Fallback handling - include machines with default statuses
+        const machinesWithStatus = actualMachines.map(machine => ({
           ...machine,
-          status: machine.id === 'safety-cabinet' 
-            ? 'available' 
-            : (!safetyCourseCompleted ? 'locked' : 'available')
+          status: !safetyCourseCompleted ? 'locked' : 'available'
         }));
         
         setMachineData(machinesWithStatus);

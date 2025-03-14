@@ -4,18 +4,17 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   
   if (!user) return null;
 
-  // Get user certifications
+  // Get user certifications, but filter out safety cabinet as it's not a machine
   const userCertifications = machines
-    .filter(machine => user?.certifications.includes(machine.id))
+    .filter(machine => machine.id !== 'safety-cabinet' && user?.certifications.includes(machine.id))
     .map(machine => ({
       id: machine.id,
       name: machine.name,
@@ -24,8 +23,7 @@ const CertificationsCard = () => {
     }));
 
   const handleTakeSafetyCourse = () => {
-    const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
-    navigate(redirectPath, { replace: true });
+    navigate('/course/safety-course');
   };
 
   const handleBookNow = (machineId) => {
@@ -50,17 +48,14 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{cert.name}</div>
                 <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
                 
-                {/* Only show Book Now button for actual machines, never for Safety Cabinet */}
-                {cert.type !== 'Safety Cabinet' && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2 border-purple-200 hover:bg-purple-100"
-                    onClick={() => handleBookNow(cert.id)}
-                  >
-                    Book Now
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 border-purple-200 hover:bg-purple-100"
+                  onClick={() => handleBookNow(cert.id)}
+                >
+                  Book Now
+                </Button>
               </div>
             ))}
           </div>

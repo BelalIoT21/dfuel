@@ -30,7 +30,6 @@ export const useMachineDetail = (id: string | undefined) => {
       }
       
       // Check if user has completed safety course
-      // Now checking for 'safety-course' instead of safety-cabinet
       setSafetyCertified(
         user.safetyCoursesCompleted?.includes('safety-course') || 
         false
@@ -40,8 +39,7 @@ export const useMachineDetail = (id: string | undefined) => {
     // Load machine status
     const loadMachineStatus = async () => {
       if (id) {
-        // Special case for safety cabinet or safety course - always use 'available' without API call
-        if (id === 'safety-cabinet' || id === 'safety-course') {
+        if (id === 'safety-course') {
           console.log(`Setting hardcoded available status for ${id}`);
           setMachineStatus('available');
           return;
@@ -69,9 +67,8 @@ export const useMachineDetail = (id: string | undefined) => {
       return;
     }
     
-    // If it's not the safety cabinet/course and user hasn't completed safety course,
-    // redirect to safety course
-    if (id !== 'safety-cabinet' && !safetyCertified) {
+    // If user hasn't completed safety course, redirect to safety course
+    if (!safetyCertified) {
       toast({
         title: "Safety Course Required",
         description: "You must complete the safety course first.",
@@ -91,9 +88,8 @@ export const useMachineDetail = (id: string | undefined) => {
       return;
     }
     
-    // If it's not the safety cabinet/course and user hasn't completed safety course,
-    // redirect to safety course
-    if (id !== 'safety-cabinet' && !safetyCertified) {
+    // If user hasn't completed safety course, redirect to safety course
+    if (!safetyCertified) {
       toast({
         title: "Safety Course Required",
         description: "You must complete the safety course first.",
@@ -108,7 +104,7 @@ export const useMachineDetail = (id: string | undefined) => {
   
   const handleBookMachine = () => {
     // Make sure it's a bookable machine type
-    if (machine && (machine.type === 'Safety Cabinet' || machine.id === 'safety-course')) {
+    if (machine && machine.id === 'safety-course') {
       toast({
         title: "Not Bookable",
         description: "This is not a bookable resource.",
@@ -169,11 +165,11 @@ export const useMachineDetail = (id: string | undefined) => {
   
   // Determine if machine is bookable
   const isBookable = machine ? 
-    (machine.type !== 'Safety Cabinet' && machine.id !== 'safety-course' && safetyCertified) : 
+    (machine.id !== 'safety-course' && safetyCertified) : 
     false;
   
-  // If it's not the safety cabinet/course itself, block access until safety course is completed
-  const isAccessible = id === 'safety-cabinet' || id === 'safety-course' || safetyCertified;
+  // If it's not the safety course itself, block access until safety course is completed
+  const isAccessible = id === 'safety-course' || safetyCertified;
   
   return {
     machine,
