@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -134,7 +135,7 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-start">
-          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
             &larr; Back to {machine.name}
           </Link>
         </div>
