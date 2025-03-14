@@ -16,18 +16,24 @@ export const loginUser = async (req: Request, res: Response) => {
 
     const { email, password } = req.body;
 
+    console.log(`Login attempt for email: ${email}`);
+
     // Find user by email
     const user = await User.findOne({ email });
 
     if (!user) {
+      console.log(`User not found with email: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
+      console.log(`Password mismatch for user: ${email}`);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    console.log(`Login successful for user: ${email}`);
 
     // Update last login time
     user.lastLogin = new Date();

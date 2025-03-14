@@ -39,7 +39,7 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      console.log(`Making API request: ${method} ${url}`);
+      console.log(`Making API request: ${method} ${url}`, data ? 'with data' : '');
       const response = await fetch(url, options);
       
       // Handle empty responses gracefully
@@ -53,7 +53,9 @@ class ApiService {
       }
       
       if (!response.ok) {
-        throw new Error(responseData?.message || 'API request failed');
+        const errorMessage = responseData?.message || 'API request failed';
+        console.error(`API error: ${response.status} - ${errorMessage}`);
+        throw new Error(errorMessage);
       }
       
       return {
@@ -63,11 +65,15 @@ class ApiService {
       };
     } catch (error) {
       console.error('API request failed:', error);
-      toast({
-        title: 'API Error',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'destructive'
-      });
+      
+      // Don't show toast for health check failures, they're expected when backend is not running
+      if (!endpoint.includes('health')) {
+        toast({
+          title: 'API Error',
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
+          variant: 'destructive'
+        });
+      }
       
       return {
         data: null,
@@ -79,6 +85,7 @@ class ApiService {
   
   // Auth endpoints
   async login(email: string, password: string) {
+    console.log('Attempting login via API for:', email);
     return this.request<{ token: string, user: any }>(
       'auth/login', 
       'POST', 
@@ -88,6 +95,7 @@ class ApiService {
   }
   
   async register(userData: any) {
+    console.log('Attempting registration via API for:', userData.email);
     return this.request<{ token: string, user: any }>(
       'auth/register', 
       'POST', 

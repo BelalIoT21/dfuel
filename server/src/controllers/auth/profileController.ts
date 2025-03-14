@@ -2,16 +2,20 @@
 import { Request, Response } from 'express';
 import { User } from '../../models/User';
 
-// @desc    Get current user profile
+// @desc    Get user profile
 // @route   GET /api/auth/me
 // @access  Private
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.user._id).select('-password -resetCode');
+    // req.user should be populated by the auth middleware
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authorized, no token' });
+    }
+
+    const user = await User.findById(req.user._id).select('-password');
     
     if (!user) {
-      res.status(404);
-      throw new Error('User not found');
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json(user);
