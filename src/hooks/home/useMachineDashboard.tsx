@@ -33,22 +33,19 @@ export const useMachineDashboard = () => {
       try {
         setLoading(true);
         
-        // Check if user has completed the safety course
-        const hasSafetyCert = user?.certifications?.includes('safety-course');
+        // Check if user has completed the safety course (look for safety cabinet certification)
+        const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
         setSafetyCourseCompleted(!!hasSafetyCert);
         
-        // Filter out safety cabinet from machine list
-        const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
-        
-        const extendedMachines = await Promise.all(actualMachines.map(async (machine) => {
+        const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
             
-            // If safety course is not completed, mark as locked
+            // If safety course is not completed and it's not the safety cabinet itself, mark as locked
             let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
               (status as 'available' | 'maintenance' | 'in-use') || 'available';
             
-            if (!hasSafetyCert) {
+            if (!hasSafetyCert && machine.id !== 'safety-cabinet') {
               machineStatus = 'locked';
             }
             
@@ -60,11 +57,10 @@ export const useMachineDashboard = () => {
             console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: !hasSafetyCert ? 'locked' : 'available'
+              status: !hasSafetyCert && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
             };
           }
         }));
-        
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
@@ -73,14 +69,10 @@ export const useMachineDashboard = () => {
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        
-        // Fallback handling - include machines with default statuses
-        const machinesWithStatus = actualMachines.map(machine => ({
+        setMachineData(machines.map(machine => ({
           ...machine,
-          status: !safetyCourseCompleted ? 'locked' : 'available'
-        }));
-        
-        setMachineData(machinesWithStatus);
+          status: !safetyCourseCompleted && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+        })));
       } finally {
         setLoading(false);
       }

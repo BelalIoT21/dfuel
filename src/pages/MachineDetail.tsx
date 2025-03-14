@@ -32,6 +32,7 @@ const MachineDetail = () => {
   }
   
   const isCertified = user?.certifications.includes(machine.id) || false;
+  const isSafetyCabinet = machine.id === 'safety-cabinet';
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
@@ -62,7 +63,7 @@ const MachineDetail = () => {
               </CardHeader>
               
               <CardContent>
-                {!isAccessible ? (
+                {!isAccessible && !isSafetyCabinet ? (
                   <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mb-4">
                     <div className="flex gap-3">
                       <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
@@ -72,7 +73,7 @@ const MachineDetail = () => {
                           You must complete the safety course before accessing this machine.
                         </p>
                         <Button 
-                          onClick={() => window.location.href = '/course/safety-course'}
+                          onClick={() => window.location.href = '/machine/safety-cabinet'}
                           className="bg-yellow-600 hover:bg-yellow-700 text-white"
                         >
                           Take Safety Course
@@ -92,7 +93,7 @@ const MachineDetail = () => {
                     onBookMachine={handleBookMachine}
                     onPassQuiz={handlePassQuiz}
                     isCertified={isCertified}
-                    isSafetyCabinet={false}
+                    isSafetyCabinet={isSafetyCabinet}
                   />
                 )}
               </CardContent>

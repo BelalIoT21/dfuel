@@ -20,11 +20,7 @@ class MongoMachineService {
     if (!this.machineStatusesCollection) return [];
     
     try {
-      // Filter out safety cabinet from results
-      const statuses = await this.machineStatusesCollection.find({
-        machineId: { $ne: 'safety-cabinet' }
-      }).toArray();
-      return statuses;
+      return await this.machineStatusesCollection.find().toArray();
     } catch (error) {
       console.error("Error getting machine statuses from MongoDB:", error);
       return [];
@@ -32,11 +28,6 @@ class MongoMachineService {
   }
   
   async getMachineStatus(machineId: string): Promise<MongoMachineStatus | null> {
-    // Safety cabinet is equipment, not a machine
-    if (machineId === 'safety-cabinet') {
-      return { machineId: 'safety-cabinet', status: 'available' };
-    }
-    
     await this.initCollection();
     if (!this.machineStatusesCollection) return null;
     
@@ -49,11 +40,6 @@ class MongoMachineService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Safety cabinet is equipment, not a machine
-    if (machineId === 'safety-cabinet') {
-      return true; // Pretend success
-    }
-    
     await this.initCollection();
     if (!this.machineStatusesCollection) return false;
     

@@ -21,10 +21,7 @@ export const useMachineData = (user, navigation) => {
         return;
       }
       
-      // Filter out safety cabinet completely - it's equipment, not a machine
-      const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
-      
-      const extendedMachines = await Promise.all(actualMachines.map(async (machine) => {
+      const extendedMachines = await Promise.all(machines.map(async (machine) => {
         try {
           console.log("Loading status for machine:", machine.id);
           let status = 'available'; // Default status
@@ -50,15 +47,13 @@ export const useMachineData = (user, navigation) => {
           };
         }
       }));
-      
       console.log("Extended machines data:", extendedMachines.length, "items");
       setMachineData(extendedMachines);
     } catch (error) {
       console.error("Error loading machine data:", error);
       // Fallback - set machines with default status
       console.log("Using fallback machine data");
-      const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
-      setMachineData(actualMachines.map(machine => ({
+      setMachineData(machines.map(machine => ({
         ...machine,
         status: 'available'
       })));

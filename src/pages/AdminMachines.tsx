@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +19,6 @@ const AdminMachines = () => {
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
-  
-  // Filter out safety cabinet as it's not a machine but equipment
-  const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
   
   // Form state for new machine
   const [formData, setFormData] = useState({
@@ -56,7 +54,7 @@ const AdminMachines = () => {
     );
   }
 
-  const filteredMachines = actualMachines.filter(
+  const filteredMachines = machines.filter(
     (machine) =>
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,7 +82,7 @@ const AdminMachines = () => {
 
   const handleEditMachine = (id: string) => {
     setEditingMachineId(id);
-    const machine = actualMachines.find(m => m.id === id);
+    const machine = machines.find(m => m.id === id);
     if (machine) {
       setFormData({
         name: machine.name,
@@ -117,6 +115,7 @@ const AdminMachines = () => {
     });
   };
 
+  // Calculate real stats for each machine
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
       user.certifications && user.certifications.includes(machineId)

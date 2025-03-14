@@ -9,20 +9,12 @@ interface CertificationsSectionProps {
 }
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
-  // Filter out safety-cabinet from the certifications list
-  const certifications = user.certifications 
-    ? user.certifications.filter(cert => cert !== 'safety-cabinet' && cert !== 'safety-course')
-    : [];
-    
-  // Safety courses completed
-  const safetyCourses = user.safetyCoursesCompleted || [];
-
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
-      {certifications.length > 0 ? (
+      {user.certifications && user.certifications.length > 0 ? (
         <List.Section>
-          {certifications.map((certId) => (
+          {user.certifications.map((certId) => (
             <List.Item
               key={certId}
               title={`Machine ${certId}`}
@@ -31,22 +23,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           ))}
         </List.Section>
       ) : (
-        <Text style={styles.emptyText}>No machine certifications yet</Text>
-      )}
-      
-      {safetyCourses.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>Safety Courses</Text>
-          <List.Section>
-            {safetyCourses.map((courseId) => (
-              <List.Item
-                key={courseId}
-                title={`Safety Course: ${courseId}`}
-                left={(props) => <List.Icon {...props} icon="shield" color="#10b981" />}
-              />
-            ))}
-          </List.Section>
-        </>
+        <Text style={styles.emptyText}>No certifications yet</Text>
       )}
     </View>
   );

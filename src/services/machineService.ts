@@ -5,11 +5,6 @@ import { localStorageService } from './localStorageService';
 export class MachineService {
   // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Safety cabinet is equipment, not a machine
-    if (machineId === 'safety-cabinet') {
-      return true; // Pretend success
-    }
-    
     try {
       // Try to update in MongoDB first
       const success = await mongoDbService.updateMachineStatus(machineId, status, note);
@@ -24,11 +19,6 @@ export class MachineService {
 
   // Get machine status
   async getMachineStatus(machineId: string): Promise<string> {
-    // Safety cabinet is equipment, not a machine - always return available
-    if (machineId === 'safety-cabinet') {
-      return 'available';
-    }
-    
     try {
       // Try to get from MongoDB first
       const status = await mongoDbService.getMachineStatus(machineId);
@@ -45,11 +35,6 @@ export class MachineService {
   
   // Get machine maintenance note
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
-    // Safety cabinet is equipment, not a machine
-    if (machineId === 'safety-cabinet') {
-      return undefined;
-    }
-    
     try {
       // Try to get from MongoDB first
       const status = await mongoDbService.getMachineStatus(machineId);
@@ -67,3 +52,4 @@ export class MachineService {
 
 // Create a singleton instance
 export const machineService = new MachineService();
+

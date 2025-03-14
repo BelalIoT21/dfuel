@@ -55,13 +55,6 @@ class ApiService {
       if (!response.ok) {
         const errorMessage = responseData?.message || 'API request failed';
         console.error(`API error: ${response.status} - ${errorMessage}`);
-        
-        // If we get a 401 error and authentication is required, try to handle it
-        if (response.status === 401 && authRequired) {
-          console.log('Authentication failed, might need to log in again');
-          // Don't clear token here, let the app handle proper logout through auth context
-        }
-        
         throw new Error(errorMessage);
       }
       
@@ -73,8 +66,8 @@ class ApiService {
     } catch (error) {
       console.error('API request failed:', error);
       
-      // Don't show toast for health check failures or machine status checks, they're expected when backend is not running
-      if (!endpoint.includes('health') && !endpoint.includes('machines') && !endpoint.includes('status')) {
+      // Don't show toast for health check failures, they're expected when backend is not running
+      if (!endpoint.includes('health')) {
         toast({
           title: 'API Error',
           description: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -175,16 +168,6 @@ class ApiService {
     );
   }
   
-  // Machine status endpoint (make public)
-  async getMachineStatus(machineId: string) {
-    return this.request<{ status: string, note?: string }>(
-      `machines/${machineId}/status`, 
-      'GET',
-      undefined,
-      false // Don't require auth for machine status
-    );
-  }
-  
   // Booking endpoints
   async getAllBookings() {
     return this.request<any[]>('bookings/all', 'GET');
@@ -214,6 +197,10 @@ class ApiService {
   // Dashboard endpoints
   async getAllUsers() {
     return this.request<any[]>('users', 'GET');
+  }
+  
+  async getMachineStatus(machineId: string) {
+    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
   }
 }
 
