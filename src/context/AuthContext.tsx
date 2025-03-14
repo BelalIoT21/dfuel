@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -19,10 +20,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Admin credentials
+const ADMIN_EMAIL = "admin@machinemaster.com";
+const ADMIN_PASSWORD = "admin123";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Simulated authentication - Replace with real auth later
   useEffect(() => {
@@ -36,27 +42,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      if (email === 'admin@admin.com' && password === 'admin') {
+      // Check for admin login
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         const adminUser = {
           id: '1',
-          email: 'admin@admin.com',
+          email: ADMIN_EMAIL,
           isAdmin: true,
-          name: 'Admin',
+          name: 'Administrator',
         };
         setUser(adminUser);
         localStorage.setItem('user', JSON.stringify(adminUser));
         navigate('/admin');
-      } else {
+        toast({
+          title: "Welcome Administrator",
+          description: "You have successfully logged in as an administrator."
+        });
+      } else if (email && password && password.length >= 6) {
+        // Basic validation for regular users
         const user = {
-          id: '2',
+          id: Math.random().toString(),
           email,
           isAdmin: false,
-          name: 'User',
+          name: email.split('@')[0],
         };
         setUser(user);
         localStorage.setItem('user', JSON.stringify(user));
         navigate('/home');
+        toast({
+          title: "Login Successful",
+          description: "Welcome back to Machine Master!"
+        });
+      } else {
+        // Login failed
+        toast({
+          title: "Login Failed",
+          description: "Invalid credentials. Please try again.",
+          variant: "destructive"
+        });
       }
     } finally {
       setIsLoading(false);
@@ -66,7 +88,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
+      // Basic validation
+      if (!email || !password || password.length < 6 || !name) {
+        toast({
+          title: "Registration Failed",
+          description: "Please provide a valid email, name, and password (min 6 characters).",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if trying to register as admin
+      if (email === ADMIN_EMAIL) {
+        toast({
+          title: "Registration Failed",
+          description: "This email is already in use. Please use a different email.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Simulating successful registration
       const user = {
         id: Math.random().toString(),
         email,
@@ -76,6 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/home');
+      toast({
+        title: "Registration Successful",
+        description: "Welcome to Machine Master!"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -85,6 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('user');
     navigate('/');
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out."
+    });
   };
 
   return (
