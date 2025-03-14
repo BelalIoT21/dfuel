@@ -22,8 +22,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
 
   // Sort machines so that Safety Cabinet appears at the bottom
   const sortedMachineData = [...machineData].sort((a, b) => {
-    if (a.type === 'Safety Cabinet') return 1;
-    if (b.type === 'Safety Cabinet') return -1;
+    if (a.type === 'Safety Cabinet' || a.type === 'Equipment') return 1;
+    if (b.type === 'Safety Cabinet' || b.type === 'Equipment') return -1;
     return 0;
   });
 
@@ -64,7 +64,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           <div className="space-y-3">
             {sortedMachineData.length > 0 ? (
               sortedMachineData.map((machine) => {
-                const isSafetyCabinet = machine.type === 'Safety Cabinet';
+                const isSafetyCabinet = machine.type === 'Safety Cabinet' || machine.type === 'Equipment';
                 
                 return (
                   <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">

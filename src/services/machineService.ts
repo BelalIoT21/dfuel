@@ -67,7 +67,18 @@ export class MachineService {
   // Helper method to get machines
   async getMachines(): Promise<any[]> {
     try {
-      return require('../utils/data').machines;
+      const machines = require('../utils/data').machines;
+      
+      // Update machine types based on whether they are regular machines or safety equipment
+      machines.forEach((machine: any) => {
+        if (machine.type === 'Safety Cabinet') {
+          machine.type = 'Equipment';
+        } else {
+          machine.type = 'Machine';
+        }
+      });
+      
+      return machines;
     } catch (error) {
       console.error("Error getting machines data:", error);
       return [];

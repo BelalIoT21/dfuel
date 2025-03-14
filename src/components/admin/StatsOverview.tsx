@@ -1,5 +1,5 @@
 
-import { Users, Settings, CalendarClock, UserCheck } from "lucide-react";
+import { Users, Settings, CalendarClock, UserCheck, ShieldCheck } from "lucide-react";
 import { StatCard } from "./StatCard";
 
 interface StatsOverviewProps {
@@ -8,8 +8,21 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
-  // Filter out safety cabinet from machines count
+  // Filter out safety cabinet from machines count - only count real machines
   const realMachines = machines.filter(machine => machine.type !== 'Safety Cabinet');
+  
+  // Filter only safety cabinet equipment
+  const safetyEquipment = machines.filter(machine => machine.type === 'Safety Cabinet');
+  
+  // Update machine types
+  realMachines.forEach(machine => {
+    machine.type = 'Machine';
+  });
+  
+  // Update safety cabinet type
+  safetyEquipment.forEach(equipment => {
+    equipment.type = 'Equipment';
+  });
   
   // Basic statistics for the admin dashboard
   const stats = [
@@ -24,14 +37,14 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       title: 'Total Machines', 
       value: realMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
-      change: '0%',
+      change: '',  // Removed the 0% here
       link: '/admin/machines'
     },
     { 
       title: 'Certifications', 
       value: allUsers.reduce((total, user) => total + user.certifications.length, 0), 
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
-      change: '0',
+      change: '0',  // Just 0 without +
       link: '/admin/users'
     },
     { 

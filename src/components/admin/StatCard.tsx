@@ -25,13 +25,15 @@ export const StatCard = ({ title, value, icon, change, link }: StatCardProps) =>
         </div>
         <div className="mt-2 flex justify-between items-center text-xs md:text-sm">
           <span className={`${
-            change === '0' 
-              ? 'text-black' 
-              : change.startsWith('+') 
-                ? 'text-green-600' 
-                : change.startsWith('-') 
-                  ? 'text-red-600' 
-                  : 'text-gray-600'
+            !change || change === '' 
+              ? 'hidden'
+              : change === '0' 
+                ? 'text-black' 
+                : change.startsWith('+') 
+                  ? 'text-green-600' 
+                  : change.startsWith('-') 
+                    ? 'text-red-600' 
+                    : 'text-gray-600'
           }`}>
             {change}
           </span>
