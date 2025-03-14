@@ -24,14 +24,22 @@ export const useMachineData = (user, navigation) => {
       const extendedMachines = await Promise.all(machines.map(async (machine) => {
         try {
           console.log("Loading status for machine:", machine.id);
-          const status = await userDatabase.getMachineStatus(machine.id);
-          console.log("Status for machine", machine.id, ":", status);
+          let status = 'available'; // Default status
+          
+          try {
+            status = await userDatabase.getMachineStatus(machine.id);
+            console.log("Status for machine", machine.id, ":", status);
+          } catch (statusError) {
+            console.error(`Error fetching status for machine ${machine.id}:`, statusError);
+            // Leave the default status
+          }
+          
           return {
             ...machine,
             status: status || 'available'
           };
         } catch (error) {
-          console.error(`Error loading status for machine ${machine.id}:`, error);
+          console.error(`Error processing machine ${machine.id}:`, error);
           // Always default to available if there's an error
           return {
             ...machine,

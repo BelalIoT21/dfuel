@@ -24,6 +24,19 @@ export const getMachines = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
+    // Special case for safety-cabinet, which might not exist as a real DB entity
+    if (req.params.id === 'safety-cabinet') {
+      return res.json({
+        _id: 'safety-cabinet',
+        name: 'Safety Cabinet',
+        type: 'Safety',
+        description: 'Safety training equipment',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Beginner'
+      });
+    }
+    
     // Check if ID is a valid MongoDB ObjectId
     const isValidObjectId = mongoose.Types.ObjectId.isValid(req.params.id);
     
@@ -67,6 +80,14 @@ export const getMachineById = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineStatus = async (req: Request, res: Response) => {
   try {
+    // Special case for safety-cabinet
+    if (req.params.id === 'safety-cabinet') {
+      return res.json({ 
+        status: 'Available',
+        note: ''
+      });
+    }
+    
     // Check if ID is a valid MongoDB ObjectId
     const isValidObjectId = mongoose.Types.ObjectId.isValid(req.params.id);
     

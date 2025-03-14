@@ -38,7 +38,15 @@ export const useMachineDetail = (id: string | undefined) => {
       if (id) {
         try {
           console.log(`Loading status for machine: ${id}`);
-          const status = await userDatabase.getMachineStatus(id);
+          let status = 'available'; // Default status
+          
+          try {
+            status = await userDatabase.getMachineStatus(id);
+          } catch (statusError) {
+            console.error(`Error fetching status for machine ${id}:`, statusError);
+            // Leave the default status
+          }
+          
           setMachineStatus(status || 'available');
         } catch (error) {
           console.error(`Error loading machine status for ${id}:`, error);
