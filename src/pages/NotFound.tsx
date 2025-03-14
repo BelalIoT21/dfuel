@@ -1,5 +1,5 @@
 
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
@@ -15,7 +15,7 @@ const NotFound = () => {
       if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
-        setRedirectPath('/dashboard');  // Use dashboard path for regular users
+        setRedirectPath('/home');  // Changed from '/dashboard' to '/home' to match routes in App.tsx
       }
     } else {
       setRedirectPath('/');
@@ -35,7 +35,7 @@ const NotFound = () => {
         <p className="text-gray-600 mb-8">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <Button onClick={handleReturn}>
+        <Button onClick={handleReturn} className="bg-purple-600 hover:bg-purple-700">
           Return to {user?.isAdmin ? 'Admin Dashboard' : user ? 'Dashboard' : 'Home'}
         </Button>
       </div>

@@ -24,6 +24,7 @@ const ProfileScreen = ({ navigation }) => {
     if (user.isAdmin) {
       navigation.navigate('AdminDashboard');
     } else {
+      // Ensure we're using the correct screen name for regular users
       navigation.navigate('Home');
     }
   };

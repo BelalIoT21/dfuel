@@ -73,7 +73,7 @@ const MachineDetail = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Machine Not Found</h1>
           <Link to="/home">
-            <Button>Return to Home</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">Return to Home</Button>
           </Link>
         </div>
       </div>
@@ -84,7 +84,7 @@ const MachineDetail = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-4xl mx-auto page-transition">
         <div className="mb-6">
-          <Link to="/home" className="text-blue-600 hover:underline flex items-center gap-1">
+          <Link to="/home" className="text-purple-600 hover:underline flex items-center gap-1">
             &larr; Back to Machines
           </Link>
         </div>
@@ -101,7 +101,7 @@ const MachineDetail = () => {
               </div>
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <Badge variant={machine.status === 'available' ? 'default' : 'destructive'}>
+                  <Badge variant={machine.status === 'available' ? 'default' : 'destructive'} className="bg-purple-600">
                     {machine.status === 'available' ? 'Available' : 'Maintenance'}
                   </Badge>
                   <span className="text-sm text-gray-500">
@@ -111,7 +111,7 @@ const MachineDetail = () => {
                 
                 <div className="mt-4">
                   <div className="text-sm text-gray-500 mb-1">Certification Progress</div>
-                  <Progress value={progress} className="h-2" />
+                  <Progress value={progress} className="h-2 bg-purple-100" indicatorClassName="bg-purple-600" />
                   <div className="flex justify-between text-sm mt-1">
                     <span>0%</span>
                     <span>100%</span>
@@ -159,7 +159,7 @@ const MachineDetail = () => {
                     <Button 
                       onClick={handleBookMachine} 
                       disabled={!user?.certifications.includes(machine.id)}
-                      className="w-full mt-2"
+                      className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
                     >
                       {user?.certifications.includes(machine.id) 
                         ? "Book Machine" 
@@ -197,6 +197,7 @@ const MachineDetail = () => {
                         <Button 
                           onClick={handleStartCourse}
                           variant={courseCompleted ? "outline" : "default"}
+                          className={courseCompleted ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
                         >
                           {courseCompleted ? "Review Course" : "Start Course"}
                         </Button>
@@ -205,6 +206,7 @@ const MachineDetail = () => {
                         {!courseCompleted && (
                           <Button 
                             variant="outline"
+                            className="border-purple-200 text-purple-700"
                             onClick={handleCompleteCourse}
                           >
                             (Demo) Mark Course Complete
@@ -224,6 +226,7 @@ const MachineDetail = () => {
                           onClick={handleStartQuiz}
                           variant={quizPassed ? "outline" : "default"}
                           disabled={!courseCompleted}
+                          className={quizPassed ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
                         >
                           {quizPassed ? "Review Quiz" : "Start Quiz"}
                         </Button>
@@ -232,6 +235,7 @@ const MachineDetail = () => {
                         {courseCompleted && !quizPassed && (
                           <Button 
                             variant="outline"
+                            className="border-purple-200 text-purple-700"
                             onClick={handlePassQuiz}
                           >
                             (Demo) Mark Quiz Passed
