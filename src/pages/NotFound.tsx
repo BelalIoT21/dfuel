@@ -15,7 +15,7 @@ const NotFound = () => {
       if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
-        setRedirectPath('/home');  // Changed from '/dashboard' to '/home' to match routes in App.tsx
+        setRedirectPath('/home');  
       }
     } else {
       setRedirectPath('/');

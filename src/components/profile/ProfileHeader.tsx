@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const ProfileHeader = () => {
   const { user, logout } = useAuth();
-  const redirectPath = user?.isAdmin ? '/admin' : '/dashboard';
+  const redirectPath = user?.isAdmin ? '/admin' : '/home';
 
   return (
     <div className="mb-6 flex justify-between items-center">
