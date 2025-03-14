@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, Text } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -23,22 +22,14 @@ const HomeScreen = ({ navigation }) => {
     return () => console.log("HomeScreen unmounted");
   }, []);
 
-  // Force a refresh if there's no data
-  useEffect(() => {
-    if (!machineData || machineData.length === 0) {
-      console.log("No machine data, triggering refresh");
-      onRefresh();
-    }
-  }, [machineData, onRefresh]);
-
   const renderContent = () => {
     // If we're still loading and not refreshing, show loading indicator
-    if (loading && !refreshing) {
+    if (loading && !refreshing && (!machineData || machineData.length === 0)) {
       console.log("Showing loading indicator");
       return <LoadingIndicator />;
     }
 
-    // Use a fallback if there's no machine data
+    // Always have data to display
     const displayData = machineData && machineData.length > 0 
       ? machineData 
       : machines.map(machine => ({

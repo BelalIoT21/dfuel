@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -40,29 +41,45 @@ class ApiService {
       }
       
       console.log(`Making API request: ${method} ${url}`, data ? 'with data' : '');
-      const response = await fetch(url, options);
       
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      options.signal = controller.signal;
+      
+      try {
+        const response = await fetch(url, options);
+        clearTimeout(timeoutId);
+        
+        // Handle empty responses gracefully
+        let responseData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json') && response.status !== 204) {
+          const text = await response.text();
+          responseData = text ? JSON.parse(text) : null;
+        } else {
+          responseData = null;
+        }
+        
+        if (!response.ok) {
+          const errorMessage = responseData?.message || 'API request failed';
+          console.error(`API error: ${response.status} - ${errorMessage}`);
+          throw new Error(errorMessage);
+        }
+        
+        return {
+          data: responseData,
+          error: null,
+          status: response.status
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          console.error('API request timed out:', endpoint);
+          throw new Error('Request timed out');
+        }
+        throw error;
       }
-      
-      if (!response.ok) {
-        const errorMessage = responseData?.message || 'API request failed';
-        console.error(`API error: ${response.status} - ${errorMessage}`);
-        throw new Error(errorMessage);
-      }
-      
-      return {
-        data: responseData,
-        error: null,
-        status: response.status
-      };
     } catch (error) {
       console.error('API request failed:', error);
       
