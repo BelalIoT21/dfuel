@@ -27,6 +27,6 @@ if (isWeb) {
   }
 } else {
   // For React Native, this file is not the entry point
-  // The entry point is App.tsx which is handled by Expo
+  // The entry point is App.native.tsx which is handled by Expo
   console.log("React Native environment detected");
 }
