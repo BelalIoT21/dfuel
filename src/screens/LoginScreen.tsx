@@ -1,14 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Surface, ActivityIndicator } from 'react-native-paper';
+import { 
+  View, 
+  StyleSheet, 
+  ScrollView, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableOpacity 
+} from 'react-native';
+import { Surface, Button } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
+import AuthHeader from './auth/AuthHeader';
+import LoginForm from './auth/LoginForm';
+import RegisterForm from './auth/RegisterForm';
+import SocialSignIn from './auth/SocialSignIn';
 
 const LoginScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { user, login, googleLogin, register } = useAuth();
@@ -19,28 +27,27 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [user, navigation]);
 
-  const handleSubmit = async () => {
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
-    
+  const handleLogin = async (email: string, password: string) => {
     setLoading(true);
     setError('');
     
     try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        if (!name) {
-          setError('Please enter your name');
-          setLoading(false);
-          return;
-        }
-        await register(email, password, name);
-      }
+      await login(email, password);
     } catch (err) {
       setError(err.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (email: string, password: string, name: string) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      await register(email, password, name);
+    } catch (err) {
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -63,69 +70,19 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.title}>Learnit</Text>
-          <Text style={styles.subtitle}>
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </Text>
-        </View>
+        <AuthHeader
+          title="Learnit"
+          subtitle={isLogin ? 'Welcome back!' : 'Create your account'}
+        />
 
         <Surface style={styles.formContainer} elevation={2}>
-          <TextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            style={styles.input}
-            mode="outlined"
-          />
-
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-            mode="outlined"
-          />
-
-          {!isLogin && (
-            <TextInput
-              label="Name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-              mode="outlined"
-            />
+          {isLogin ? (
+            <LoginForm onSubmit={handleLogin} loading={loading} />
+          ) : (
+            <RegisterForm onSubmit={handleRegister} loading={loading} />
           )}
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            style={styles.button}
-            loading={loading}
-            disabled={loading}
-          >
-            {isLogin ? 'Login' : 'Register'}
-          </Button>
           
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <Button
-            mode="outlined"
-            onPress={handleGoogleLogin}
-            style={styles.googleButton}
-            icon="google"
-          >
-            Continue with Google
-          </Button>
+          <SocialSignIn onGoogleLogin={handleGoogleLogin} />
 
           <Button
             mode="text"
@@ -150,58 +107,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#7c3aed', // purple-800
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280', // gray-600
-    marginTop: 5,
-  },
   formContainer: {
     padding: 20,
     borderRadius: 8,
     backgroundColor: 'white',
   },
-  input: {
-    marginBottom: 16,
-  },
-  button: {
-    marginTop: 10,
-    backgroundColor: '#7c3aed', // purple-600
-    paddingVertical: 8,
-  },
-  googleButton: {
-    marginTop: 10,
-    borderColor: '#7c3aed',
-  },
   toggleButton: {
     marginTop: 16,
-  },
-  errorText: {
-    color: '#ef4444', // red-500
-    marginBottom: 10,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e5e7eb', // gray-200
-  },
-  dividerText: {
-    marginHorizontal: 10,
-    color: '#6b7280', // gray-500
-    fontSize: 12,
   },
 });
 
