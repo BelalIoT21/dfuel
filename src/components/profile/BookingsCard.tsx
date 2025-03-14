@@ -13,8 +13,8 @@ const BookingsCard = () => {
   if (!user) return null;
 
   const handleBookMachine = () => {
-    // Navigate to the home page where the user can select a machine
-    navigate('/home');
+    // Navigate to the profile page with certifications tab selected
+    navigate('/profile?tab=certifications');
   };
 
   return (

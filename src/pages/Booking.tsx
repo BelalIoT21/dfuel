@@ -53,10 +53,13 @@ const Booking = () => {
   });
 
   useEffect(() => {
+    // Immediately redirect if we don't have a machine or it's a Safety Cabinet
     if (!machine) {
+      navigate('/home');
       return;
     }
     
+    // Check if this is a Safety Cabinet - redirect if it is
     if (machine.type === 'Safety Cabinet') {
       toast({
         title: "Not Bookable",
