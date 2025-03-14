@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
-import App from './App';  // Import directly without dynamic import
+import App from './App';  // Direct import without dynamic import
 
 // Add console log for debugging
 console.log("Initializing application");
@@ -27,6 +27,6 @@ if (isWeb) {
   }
 } else {
   // For React Native, this file is not the entry point
-  // The entry point is App.native.tsx which is handled by Expo
+  // The entry point is handled by Expo
   console.log("React Native environment detected");
 }
