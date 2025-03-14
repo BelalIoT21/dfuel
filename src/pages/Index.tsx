@@ -7,10 +7,12 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import LoadingIndicator from '@/components/home/LoadingIndicator';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -36,6 +38,8 @@ const Index = () => {
           description: 'Could not connect to the backend server. Using local storage instead.',
           variant: 'destructive'
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -51,21 +55,41 @@ const Index = () => {
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
-    console.log("Attempting login with:", email);
-    await login(email, password);
+    try {
+      console.log("Attempting login with:", email);
+      setIsLoading(true);
+      await login(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    try {
+      console.log("Attempting registration for:", email);
+      setIsLoading(true);
+      await register(email, password, name);
+    } catch (error) {
+      console.error("Registration error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
 
-  // Debug rendering
-  console.log("Rendering Index component");
+  // Show loading indicator while checking server status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+        <LoadingIndicator />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
