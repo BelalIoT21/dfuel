@@ -52,16 +52,6 @@ const MachineDetail = () => {
     navigate(`/booking/${id}`);
   };
   
-  const handleCompleteCourse = () => {
-    setCourseCompleted(true);
-    setProgress(progress => Math.min(progress + 50, 100));
-    
-    toast({
-      title: "Course Completed!",
-      description: "You can now take the quiz to get certified.",
-    });
-  };
-  
   const handlePassQuiz = () => {
     setQuizPassed(true);
     setProgress(100);
@@ -214,16 +204,6 @@ const MachineDetail = () => {
                         >
                           {courseCompleted ? "Review Course" : "Start Course"}
                         </Button>
-                        
-                        {!courseCompleted && (
-                          <Button 
-                            variant="outline"
-                            className="border-purple-200 text-purple-700"
-                            onClick={handleCompleteCourse}
-                          >
-                            (Demo) Mark Course Complete
-                          </Button>
-                        )}
                       </div>
                     </div>
                     

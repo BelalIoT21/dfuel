@@ -35,7 +35,7 @@ const MachineActions = ({
         style={styles.actionButton}
         onPress={onTakeCourse}
       >
-        Safety Course
+        Take Safety Course
       </Button>
       
       <Button 
