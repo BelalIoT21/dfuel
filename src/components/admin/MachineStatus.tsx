@@ -21,15 +21,17 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [maintenanceNote, setMaintenanceNote] = useState('');
   const [sortedMachineData, setSortedMachineData] = useState<any[]>([]);
 
-  // Sort machines to put safety cabinet last
+  // Filter out safety cabinet and safety course, and put them last
   useEffect(() => {
     if (machineData.length > 0) {
+      // Get only real machines (not safety cabinet or safety course)
       const regularMachines = machineData.filter(machine => 
-        machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
+        machine.id !== 'safety-cabinet' && machine.id !== 'safety-course' && machine.id !== '3'
       );
       
+      // Get safety items if they exist
       const safetyItems = machineData.filter(machine => 
-        machine.id === 'safety-cabinet' || machine.id === 'safety-course'
+        machine.id === 'safety-cabinet' || machine.id === 'safety-course' || machine.id === '3'
       );
       
       setSortedMachineData([...regularMachines, ...safetyItems]);
@@ -40,7 +42,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
 
   const handleUpdateMachineStatus = (machine: any) => {
     // Don't allow updating safety cabinet or safety course
-    if (machine.id === 'safety-cabinet' || machine.id === 'safety-course') {
+    if (machine.id === 'safety-cabinet' || machine.id === 'safety-course' || machine.id === '3') {
       return;
     }
     
@@ -68,7 +70,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
 
   // Helper function to determine if a machine is a safety item
   const isSafetyItem = (machineId: string) => {
-    return machineId === 'safety-cabinet' || machineId === 'safety-course';
+    return machineId === 'safety-cabinet' || machineId === 'safety-course' || machineId === '3';
   };
 
   return (
