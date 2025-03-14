@@ -21,12 +21,16 @@ config.resolver.nodeModulesPaths = [path.resolve(projectRoot, 'node_modules')];
 
 // Ensure resolver config is properly set
 config.resolver.assetExts = config.resolver.assetExts || [];
-config.transformer.minifierPath = 'metro-minify-terser';
-config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
 
 // Explicitly include web extensions (for handling web-specific assets)
 if (config.resolver.assetExts) {
-  config.resolver.assetExts.push('svg', 'webp', 'ttf', 'otf');
+  config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
+  config.resolver.assetExts.push('webp', 'ttf', 'otf');
+}
+
+if (config.resolver.sourceExts) {
+  config.resolver.sourceExts.push('svg');
 }
 
 module.exports = config;

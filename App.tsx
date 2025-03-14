@@ -3,6 +3,13 @@
 import 'expo-router/entry';
 import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
+import { LogBox } from 'react-native';
+
+// Ignore specific warnings that might appear in development
+LogBox.ignoreLogs([
+  'Overwriting fontFamily style attribute preprocessor',
+  'EventEmitter.removeListener',
+]);
 
 // The App component will never be rendered when using expo-router
 // It must export a default function for compatibility
