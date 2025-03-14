@@ -1,73 +1,51 @@
 
-import { isWeb } from './platform';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
- * Platform-agnostic storage implementation
- * Uses localStorage for web and AsyncStorage for native
+ * Storage utility for React Native
  */
-class StorageService {
-  async getItem(key: string): Promise<string | null> {
-    if (isWeb) {
-      return localStorage.getItem(key);
-    } else {
-      try {
-        // Use a safer approach to access AsyncStorage in native environments
-        // This avoids build issues with static analyzers
-        const AsyncStorage = this.getNativeStorage();
-        if (AsyncStorage) {
-          return await AsyncStorage.getItem(key);
-        }
-        return null;
-      } catch (error) {
-        console.error('AsyncStorage error in getItem:', error);
-        return null;
-      }
+export const storage = {
+  // Get item from storage
+  getItem: async (key: string): Promise<string | null> => {
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      console.error('Error getting item from storage:', error);
+      return null;
+    }
+  },
+  
+  // Set item in storage
+  setItem: async (key: string, value: string): Promise<boolean> => {
+    try {
+      await AsyncStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.error('Error setting item in storage:', error);
+      return false;
+    }
+  },
+  
+  // Remove item from storage
+  removeItem: async (key: string): Promise<boolean> => {
+    try {
+      await AsyncStorage.removeItem(key);
+      return true;
+    } catch (error) {
+      console.error('Error removing item from storage:', error);
+      return false;
+    }
+  },
+  
+  // Clear all items from storage
+  clear: async (): Promise<boolean> => {
+    try {
+      await AsyncStorage.clear();
+      return true;
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+      return false;
     }
   }
-
-  async setItem(key: string, value: string): Promise<void> {
-    if (isWeb) {
-      localStorage.setItem(key, value);
-    } else {
-      try {
-        const AsyncStorage = this.getNativeStorage();
-        if (AsyncStorage) {
-          await AsyncStorage.setItem(key, value);
-        }
-      } catch (error) {
-        console.error('AsyncStorage error in setItem:', error);
-      }
-    }
-  }
-
-  async removeItem(key: string): Promise<void> {
-    if (isWeb) {
-      localStorage.removeItem(key);
-    } else {
-      try {
-        const AsyncStorage = this.getNativeStorage();
-        if (AsyncStorage) {
-          await AsyncStorage.removeItem(key);
-        }
-      } catch (error) {
-        console.error('AsyncStorage error in removeItem:', error);
-      }
-    }
-  }
-
-  // Helper method to safely get AsyncStorage without build-time issues
-  private getNativeStorage(): any {
-    // This approach prevents bundlers from trying to resolve the import at build time
-    if (typeof global !== 'undefined' && global.require) {
-      try {
-        return global.require('@react-native-async-storage/async-storage');
-      } catch (e) {
-        console.warn('AsyncStorage not available:', e);
-        return null;
-      }
-    }
-    return null;
-  }
-}
-
-export const storage = new StorageService();
+};
+</lov-add-dependency>@react-native-async-storage/async-storage</lov-add-dependency>

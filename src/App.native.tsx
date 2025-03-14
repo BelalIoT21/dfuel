@@ -7,9 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text, View, LogBox } from 'react-native';
 
-// Import screens from their respective locations
-// Note: 'screens' directory contains mobile-specific components
-// while 'pages' directory contains web-specific components
+// Import screens directly from their locations
 import HomeScreen from './screens/home/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/profile/ProfileScreen';

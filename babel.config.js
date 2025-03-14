@@ -4,7 +4,7 @@ module.exports = function(api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Add any babel plugins needed for both platforms here
+      // Add any babel plugins needed for mobile here
       process.env.NODE_ENV === 'development' && 'react-refresh/babel',
       // Module resolver to handle platform-specific imports
       ['module-resolver', {
