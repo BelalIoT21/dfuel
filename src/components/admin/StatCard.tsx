@@ -1,6 +1,5 @@
 
-import React from "react";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
 interface StatCardProps {
@@ -34,7 +33,7 @@ export const StatCard = ({ title, value, icon, change, link }: StatCardProps) =>
           }`}>
             {change}
           </span>
-          <Link to={link} className="text-purple-600 hover:underline min-w-[40px] text-right">View</Link>
+          <Link to={link} className="text-purple-600 hover:underline">View</Link>
         </div>
       </CardContent>
     </Card>

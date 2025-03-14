@@ -1,8 +1,7 @@
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Button } from '../ui/button';
-import { useAuth } from '../../context/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -21,6 +20,7 @@ const CertificationsCard = () => {
       id: machine.id,
       name: machine.name,
       date: new Date().toLocaleDateString(), // In a real app, this would come from the database
+      type: machine.type
     }));
 
   const handleTakeSafetyCourse = () => {
@@ -50,7 +50,8 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{cert.name}</div>
                 <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
                 
-                {
+                {/* Only show Book Now button for actual machines, never for Safety Cabinet */}
+                {cert.type !== 'Safety Cabinet' && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -59,7 +60,7 @@ const CertificationsCard = () => {
                   >
                     Book Now
                   </Button>
-                }
+                )}
               </div>
             ))}
           </div>

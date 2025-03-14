@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
-    // Special case for safety-cabinet - always return a mock safety entity (not a machine)
+    // Special case for safety-cabinet - always return a mock machine
     if (req.params.id === 'safety-cabinet') {
       console.log('Returning mock safety cabinet data');
       return res.json({
@@ -20,21 +20,6 @@ export const getMachineById = async (req: Request, res: Response) => {
         requiresCertification: true,
         difficulty: 'Beginner',
         imageUrl: 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
-      });
-    }
-    
-    // Special case for safety-course - return a mock course entity (not a machine)
-    if (req.params.id === 'safety-course') {
-      console.log('Returning mock safety course data');
-      return res.json({
-        _id: 'safety-course',
-        name: 'General Safety Course',
-        type: 'Safety',
-        description: 'Required safety training for all workshop users',
-        status: 'available',
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: 'https://images.unsplash.com/photo-1541890289-b86df5bafd81?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60'
       });
     }
     

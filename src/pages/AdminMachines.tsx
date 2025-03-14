@@ -54,12 +54,7 @@ const AdminMachines = () => {
     );
   }
 
-  // Filter out safety cabinet and safety course
-  const actualMachines = machines.filter(
-    machine => machine.id !== 'safety-cabinet' && machine.id !== '3' && machine.id !== 'safety-course'
-  );
-
-  const filteredMachines = actualMachines.filter(
+  const filteredMachines = machines.filter(
     (machine) =>
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())

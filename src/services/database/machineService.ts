@@ -7,15 +7,10 @@ import { BaseService } from './baseService';
  */
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
-    if (machineId === 'safety-cabinet') {
-      console.log(`Safety cabinet requested - not a real machine, returning hardcoded available status`);
-      return 'available'; // Always return available for safety cabinet
-    }
-    
-    if (machineId === 'safety-course' || machineId === '3') {
-      console.log(`Safety course requested - not a real machine, returning hardcoded available status`);
-      return 'available'; // Always return available for safety course
+    // Special cases - safety cabinet and safety course are not real machines in the database
+    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
+      console.log(`${machineId} requested - returning hardcoded available status`);
+      return 'available'; // Always return available for safety cabinet/course
     }
     
     try {
@@ -35,15 +30,10 @@ export class MachineDatabaseService extends BaseService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    // Special cases - safety cabinet and safety course are separate entities, not real machines
-    if (machineId === 'safety-cabinet') {
-      console.log(`Safety cabinet status update requested - not a real machine, returning mock success`);
-      return true; // Always return success for safety cabinet
-    }
-    
-    if (machineId === 'safety-course' || machineId === '3') {
-      console.log(`Safety course status update requested - not a real machine, returning mock success`);
-      return true; // Always return success for safety course
+    // Special cases - safety cabinet and safety course are not real machines in the database
+    if (machineId === 'safety-cabinet' || machineId === 'safety-course') {
+      console.log(`${machineId} status update requested - returning mock success`);
+      return true; // Always return success for safety cabinet/course
     }
     
     try {

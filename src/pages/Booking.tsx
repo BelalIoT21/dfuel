@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -61,10 +60,10 @@ const Booking = () => {
     }
     
     // Check if this is a Safety Cabinet - redirect if it is
-    if (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course') {
+    if (machine.type === 'Safety Cabinet') {
       toast({
         title: "Not Bookable",
-        description: `${machine.type} is not a bookable resource.`,
+        description: "Safety Cabinet is not a bookable resource.",
         variant: "destructive"
       });
       navigate(`/machine/${id}`);
@@ -91,16 +90,6 @@ const Booking = () => {
           title: "Booking Confirmed",
           description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
         });
-        
-        // Added a slight delay before navigating to dashboard to allow toast to be visible
-        setTimeout(() => {
-          // Navigate based on user type - admin goes to admin dashboard, regular users to home
-          if (user.isAdmin) {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/home');
-          }
-        }, 1500);
       } else {
         toast({
           title: "Booking Failed",
@@ -126,16 +115,6 @@ const Booking = () => {
     processBooking(formattedDate, values.time);
   };
   
-  const handleBackClick = () => {
-    // Always go back to the appropriate dashboard, not to the machine page
-    if (user?.isAdmin) {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/home');
-    }
-    return;
-  };
-  
   if (!machine) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -155,13 +134,9 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-start">
-          <Button 
-            variant="ghost" 
-            onClick={handleBackClick} 
-            className="text-purple-600 hover:bg-purple-50 flex items-center gap-1"
-          >
-            &larr; Back to Dashboard
-          </Button>
+          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
+            &larr; Back to {machine.name}
+          </Link>
         </div>
         
         <h1 className="text-3xl font-bold mb-6">Book {machine.name}</h1>

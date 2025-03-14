@@ -17,27 +17,9 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
     
-    console.log(`Creating booking for machine ID: ${machineId}, user: ${req.user._id}`);
-    
-    // Handle both numeric and ObjectId machineIds
-    let machine;
-    try {
-      // Try to find by ObjectId first
-      if (mongoose.Types.ObjectId.isValid(machineId)) {
-        machine = await Machine.findById(machineId);
-      }
-      
-      // If not found, try to find by plain ID field
-      if (!machine) {
-        machine = await Machine.findOne({ id: machineId });
-      }
-    } catch (error) {
-      console.error(`Error finding machine: ${error}`);
-      return res.status(500).json({ message: 'Error finding machine' });
-    }
-    
+    // Check if machine exists
+    const machine = await Machine.findById(machineId);
     if (!machine) {
-      console.error(`Machine not found with ID: ${machineId}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
@@ -70,7 +52,7 @@ export const createBooking = async (req: Request, res: Response) => {
       // Check if booking slot is available for non-admin users
       const bookingDate = new Date(date);
       const existingBooking = await Booking.findOne({
-        machine: machine._id,
+        machine: machineId,
         date: {
           $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
           $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
@@ -84,10 +66,10 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
-    // Create booking with machine's MongoDB ID
+    // Create booking
     const booking = new Booking({
       user: req.user._id,
-      machine: machine._id,
+      machine: machineId,
       date,
       time,
       // Auto-approve bookings made by admins
@@ -95,7 +77,6 @@ export const createBooking = async (req: Request, res: Response) => {
     });
     
     const createdBooking = await booking.save();
-    console.log(`Booking created: ${createdBooking._id}`);
     
     // Add booking to user's bookings array
     await User.findByIdAndUpdate(
@@ -103,10 +84,7 @@ export const createBooking = async (req: Request, res: Response) => {
       { $push: { bookings: createdBooking._id } }
     );
     
-    res.status(201).json({
-      success: true,
-      booking: createdBooking
-    });
+    res.status(201).json(createdBooking);
   } catch (error) {
     console.error('Error in createBooking:', error);
     res.status(500).json({ 

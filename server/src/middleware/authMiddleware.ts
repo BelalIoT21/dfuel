@@ -24,33 +24,18 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-      
-      // Log the decoded token to see what's in it
-      console.log('Decoded token:', decoded);
-      
+
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
-      
-      if (!req.user) {
-        console.error('User not found for token');
-        res.status(401);
-        throw new Error('Not authorized, user not found');
-      }
-      
-      // CRITICAL: Always use the isAdmin value from the JWT token payload
-      // This ensures we're using the value that was set during login
-      // Force it to be a boolean with triple equals comparison
-      req.user.isAdmin = (decoded as any).isAdmin === true;
-      
-      console.log(`User authenticated: ${req.user.email}, isAdmin: ${req.user.isAdmin}`);
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
+      console.error(error);
       res.status(401);
       throw new Error('Not authorized, token failed');
     }
-  } else if (!token) {
-    console.error('No authorization token provided');
+  }
+
+  if (!token) {
     res.status(401);
     throw new Error('Not authorized, no token');
   }
@@ -58,18 +43,9 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
 // Admin middleware - check if user is admin
 export const admin = (req: Request, res: Response, next: NextFunction) => {
-  // Log the user data to debug
-  console.log('Admin check for user:', req.user ? {
-    id: req.user._id,
-    email: req.user.email,
-    isAdmin: req.user.isAdmin
-  } : 'No user');
-  
-  if (req.user && req.user.isAdmin === true) {
-    console.log(`Admin access granted for user: ${req.user.email}`);
+  if (req.user && req.user.isAdmin) {
     next();
   } else {
-    console.error('Admin access denied for user:', req.user ? req.user.email : 'unknown', 'isAdmin:', req.user ? req.user.isAdmin : false);
     res.status(403);
     throw new Error('Not authorized as an admin');
   }

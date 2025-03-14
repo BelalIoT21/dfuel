@@ -1,20 +1,17 @@
 
 import jwt from 'jsonwebtoken';
+import { SignOptions } from 'jsonwebtoken';
 
-// Generate JWT token
-export const generateToken = (id: string, isAdmin: boolean = false) => {
-  // Force isAdmin to be a boolean with triple equals comparison
-  const adminStatus = isAdmin === true;
+// Generate JWT Token
+export const generateToken = (id: string) => {
+  const secret = process.env.JWT_SECRET || 'fallback-secret';
   
-  console.log(`Generating token for user ID: ${id}, isAdmin: ${adminStatus}`);
+  // Create a properly typed options object with correct type handling
+  const options: SignOptions = {
+    // The expiresIn property expects a number (in seconds) or a string with a time unit
+    // In jsonwebtoken, expiresIn can be a number (seconds) or a string like '7d', '10h', etc.
+    expiresIn: (process.env.JWT_EXPIRE || '7d') as any,
+  };
   
-  // Use the explicit adminStatus variable in token payload
-  return jwt.sign(
-    { 
-      id, 
-      isAdmin: adminStatus 
-    }, 
-    process.env.JWT_SECRET || 'fallback-secret', 
-    { expiresIn: '30d' } // Extended token expiry for testing
-  );
+  return jwt.sign({ id }, secret, options);
 };

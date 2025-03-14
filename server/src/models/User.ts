@@ -8,7 +8,6 @@ export interface IUser extends mongoose.Document {
   password: string;
   isAdmin: boolean;
   certifications: string[];
-  safetyCoursesCompleted: string[]; // Added this field to match the front-end expectations
   bookings: mongoose.Types.ObjectId[];
   lastLogin: Date;
   resetCode?: {
@@ -44,9 +43,6 @@ const userSchema = new mongoose.Schema<IUser>(
       default: false,
     },
     certifications: [{
-      type: String,
-    }],
-    safetyCoursesCompleted: [{ // Added this field to schema
       type: String,
     }],
     bookings: [{

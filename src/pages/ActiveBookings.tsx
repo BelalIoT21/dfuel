@@ -1,249 +1,280 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Calendar, CalendarCell, CalendarGrid, CalendarHeadCell, CalendarHeader, CalendarHeadRow, CalendarRow } from "@/components/ui/calendar";
-import { useToast } from '@/components/ui/use-toast';
-import { BackToAdminButton } from '@/components/BackToAdminButton';
-import { useAuth } from '../context/AuthContext';
-import { machines } from '../utils/data';
-import userDatabase from '../services/userDatabase';
-
-// Let's create a separate component for the booking filters
-const BookingFilters = ({ searchTerm, setSearchTerm, selectedDate, setSelectedDate }) => {
-  return (
-    <Card className="mb-6">
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row gap-4 justify-between">
-          <div className="w-full md:w-1/3">
-            <Input
-              placeholder="Search bookings..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="w-full md:w-auto">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="border rounded-md p-3"
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Create a component for empty bookings state
-const EmptyBookings = () => {
-  return (
-    <div className="text-center py-8 text-gray-500">
-      <p className="mb-4">No bookings found matching your criteria.</p>
-    </div>
-  );
-};
-
-// Create a component for the booking item
-const BookingItem = ({ booking, index, handleViewDetails, handleUpdateStatus }) => {
-  const machine = machines.find(m => m.id === booking.machineId);
-  const machineType = machine?.type || 'Unknown machine';
-  
-  return (
-    <div className="p-4 border-b border-gray-200 last:border-0">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <p className="font-medium text-purple-800">{booking.userName || 'Unknown user'}</p>
-          <p className="text-sm text-gray-600">{machine?.name || 'Unknown machine'} - {machineType}</p>
-          <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
-        </div>
-        
-        <div className="flex items-center gap-3 self-end md:self-center">
-          <span className={`text-xs px-2 py-1 rounded ${
-            booking.status === 'Approved' 
-              ? 'bg-green-100 text-green-800' 
-              : booking.status === 'Canceled'
-                ? 'bg-red-100 text-red-800'
-                : 'bg-yellow-100 text-yellow-800'
-          }`}>
-            {booking.status}
-          </span>
-          
-          <div className="flex gap-2 mt-0">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="border-purple-200 hover:bg-purple-50"
-              onClick={() => handleViewDetails(booking.id)}
-            >
-              View
-            </Button>
-            
-            {booking.status === 'Pending' && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="border-green-200 hover:bg-green-50 text-green-600"
-                onClick={() => handleUpdateStatus(booking.id, 'Approved')}
-              >
-                Approve
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, XCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
+import { apiService } from '@/services/apiService';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ActiveBookings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   
-  useEffect(() => {
-    if (!user?.isAdmin) {
-      navigate('/home');
-      return;
-    }
-    
-    fetchData();
-  }, [user, navigate]);
-  
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      
-      // Get all users and their bookings
-      const users = await userDatabase.getAllUsers();
-      setAllUsers(users);
-      
-      // Extract all bookings from users
-      let allBookings: any[] = [];
-      users.forEach(user => {
-        if (user.bookings && user.bookings.length > 0) {
-          const userBookings = user.bookings.map((booking: any) => ({
-            ...booking,
-            userName: user.name,
-            userEmail: user.email
-          }));
-          allBookings = [...allBookings, ...userBookings];
-        }
-      });
-      
-      setBookings(allBookings);
-    } catch (error) {
-      console.error('Error fetching booking data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load booking data",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleViewDetails = (bookingId: string) => {
-    toast({
-      title: "View Details",
-      description: "Booking details view will be implemented soon"
-    });
-  };
-  
-  const handleUpdateStatus = (bookingId: string, status: string) => {
-    try {
-      // Update booking status in our local state
-      const updatedBookings = bookings.map(booking => {
-        if (booking.id === bookingId) {
-          return { ...booking, status };
-        }
-        return booking;
-      });
-      
-      setBookings(updatedBookings);
-      
-      // Show success message
-      toast({
-        title: "Status Updated",
-        description: `Booking has been ${status.toLowerCase()}`
-      });
-    } catch (error) {
-      console.error('Error updating booking status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update booking status",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Filter bookings based on search term and selected date
-  const filteredBookings = bookings.filter(booking => {
-    const matchesSearch = 
-      booking.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.machineId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      machines.find(m => m.id === booking.machineId)?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDate = selectedDate 
-      ? booking.date === selectedDate.toISOString().split('T')[0]
-      : true;
-    
-    return matchesSearch && matchesDate;
-  });
-  
+  // Redirect if not admin
   if (!user?.isAdmin) {
+    navigate('/');
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-6xl mx-auto page-transition">
-        <div className="mb-6">
-          <BackToAdminButton />
+  // Fetch bookings data from API
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getAllBookings();
+        if (response.data) {
+          setBookings(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load bookings data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  // Filter bookings based on selected filter
+  const filteredBookings = filter === 'all' 
+    ? bookings 
+    : bookings.filter((booking: any) => booking.status.toLowerCase() === filter);
+
+  // Handle approval or rejection
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
+    try {
+      // Call API to update the booking status
+      const response = await apiService.updateBookingStatus(bookingId, newStatus);
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Update the local state to reflect the change
+      setBookings(bookings.map((booking: any) => 
+        booking.id === bookingId ? { ...booking, status: newStatus } : booking
+      ));
+      
+      toast({
+        title: `Booking ${newStatus}`,
+        description: `You have ${newStatus.toLowerCase()} booking #${bookingId}`,
+        variant: newStatus === 'Approved' ? 'default' : 'destructive',
+      });
+    } catch (error) {
+      console.error(`Error updating booking status:`, error);
+      toast({
+        title: "Error",
+        description: "Failed to update booking status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Render mobile card view for small screens
+  const renderMobileView = () => (
+    <div className="space-y-4">
+      {filteredBookings.length > 0 ? (
+        filteredBookings.map((booking: any) => (
+          <Card key={booking.id} className="overflow-hidden">
+            <CardHeader className="p-4 pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">{booking.machineName}</CardTitle>
+                <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
+                      className={`
+                        ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
+                        ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
+                        ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                      `}>
+                  {booking.status}
+                </Badge>
+              </div>
+              <CardDescription>
+                <span className="font-medium">User:</span> {booking.userName}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <p className="text-sm mb-3">
+                <span className="font-medium">Date & Time:</span> {booking.date} at {booking.time}
+              </p>
+              
+              {booking.status === 'Pending' ? (
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    size="sm" 
+                    className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-1 w-full"
+                    onClick={() => handleStatusChange(booking.id, 'Approved')}
+                  >
+                    <CheckCircle size={16} />
+                    Approve
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    className="flex items-center justify-center gap-1 w-full"
+                    onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                  >
+                    <XCircle size={16} />
+                    Reject
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="border-purple-200 w-full">
+                  View Details
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <div className="text-center py-10 text-gray-500">
+          <p className="mb-2">No bookings found matching the selected filter.</p>
+          <Button 
+            variant="outline" 
+            className="mt-2"
+            onClick={() => setFilter('all')}
+          >
+            View All Bookings
+          </Button>
         </div>
-        
-        <h1 className="text-3xl font-bold mb-6">Active Bookings</h1>
-        
-        <BookingFilters 
-          searchTerm={searchTerm} 
-          setSearchTerm={setSearchTerm}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-        />
+      )}
+    </div>
+  );
+
+  // Render desktop table view for larger screens
+  const renderDesktopView = () => (
+    <div className="border rounded-md overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Machine</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>Date & Time</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredBookings.length > 0 ? (
+            filteredBookings.map((booking: any) => (
+              <TableRow key={booking.id}>
+                <TableCell className="font-medium">{booking.machineName}</TableCell>
+                <TableCell>{booking.userName}</TableCell>
+                <TableCell>
+                  {booking.date} at {booking.time}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
+                        className={`
+                          ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
+                          ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
+                          ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                        `}>
+                    {booking.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {booking.status === 'Pending' ? (
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
+                        onClick={() => handleStatusChange(booking.id, 'Approved')}
+                      >
+                        <CheckCircle size={16} />
+                        Approve
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        className="flex items-center gap-1"
+                        onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                      >
+                        <XCircle size={16} />
+                        Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" className="border-purple-200">
+                      View Details
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-10 text-gray-500">
+                <p className="mb-2">No bookings found matching the selected filter.</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => setFilter('all')}
+                >
+                  View All Bookings
+                </Button>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <AdminHeader pageTitle="Booking Management" />
         
         <Card>
-          <CardHeader>
-            <CardTitle>All Bookings</CardTitle>
-            <CardDescription>Manage and monitor all machine bookings</CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+            <div>
+              <CardTitle>Active Bookings</CardTitle>
+              <CardDescription>Manage machine booking requests and reservations</CardDescription>
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Bookings</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="inline-block h-8 w-8 rounded-full border-4 border-t-blue-500 border-opacity-25 animate-spin"></div>
-              </div>
-            ) : filteredBookings.length > 0 ? (
-              <div className="divide-y">
-                {filteredBookings.map((booking, index) => (
-                  <BookingItem 
-                    key={booking.id}
-                    booking={booking}
-                    index={index}
-                    handleViewDetails={handleViewDetails}
-                    handleUpdateStatus={handleUpdateStatus}
-                  />
-                ))}
+              <div className="text-center py-10">
+                <p className="text-gray-500">Loading bookings...</p>
               </div>
             ) : (
-              <EmptyBookings />
+              isMobile ? renderMobileView() : renderDesktopView()
             )}
           </CardContent>
         </Card>
