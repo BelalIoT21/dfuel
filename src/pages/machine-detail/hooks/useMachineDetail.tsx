@@ -14,9 +14,7 @@ export const useMachineDetail = (id: string | undefined) => {
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [machineStatus, setMachineStatus] = useState('available');
-  const [safetyCabinetCompleted, setSafetyCabinetCompleted] = useState(false);
-  const [safetyCourseCompleted, setSafetyCourseCompleted] = useState(false);
-  const [allSafetyRequirementsMet, setAllSafetyRequirementsMet] = useState(false);
+  const [safetyCertified, setSafetyCertified] = useState(false);
   
   const machine = machines.find(m => m.id === id);
   const course = courses[id || ''];
@@ -31,22 +29,18 @@ export const useMachineDetail = (id: string | undefined) => {
         setProgress(100);
       }
       
-      // Check if user has completed safety cabinet
-      const hasSafetyCabinetCert = user.certifications.includes('safety-cabinet');
-      setSafetyCabinetCompleted(hasSafetyCabinetCert);
-      
       // Check if user has completed safety course
-      const hasSafetyCourseCert = user.certifications.includes('safety-course');
-      setSafetyCourseCompleted(hasSafetyCourseCert);
-      
-      // Both requirements need to be met
-      setAllSafetyRequirementsMet(hasSafetyCabinetCert && hasSafetyCourseCert);
+      // Now checking for 'safety-course' instead of safety-cabinet
+      setSafetyCertified(
+        user.safetyCoursesCompleted?.includes('safety-course') || 
+        false
+      );
     }
 
     // Load machine status
     const loadMachineStatus = async () => {
       if (id) {
-        // Special case for safety cabinet and course - always use 'available' without API call
+        // Special case for safety cabinet or safety course - always use 'available' without API call
         if (id === 'safety-cabinet' || id === 'safety-course') {
           console.log(`Setting hardcoded available status for ${id}`);
           setMachineStatus('available');
@@ -69,41 +63,68 @@ export const useMachineDetail = (id: string | undefined) => {
   }, [user, id]);
   
   const handleStartCourse = () => {
+    // Safety course doesn't require prior certifications
+    if (id === 'safety-course') {
+      navigate(`/course/${id}`);
+      return;
+    }
+    
+    // If it's not the safety cabinet/course and user hasn't completed safety course,
+    // redirect to safety course
+    if (id !== 'safety-cabinet' && !safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course first.",
+        variant: "destructive"
+      });
+      navigate(`/course/safety-course`);
+      return;
+    }
+    
     navigate(`/course/${id}`);
   };
   
   const handleStartQuiz = () => {
+    // Safety course doesn't require prior certifications
+    if (id === 'safety-course') {
+      navigate(`/quiz/${id}`);
+      return;
+    }
+    
+    // If it's not the safety cabinet/course and user hasn't completed safety course,
+    // redirect to safety course
+    if (id !== 'safety-cabinet' && !safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course first.",
+        variant: "destructive"
+      });
+      navigate(`/course/safety-course`);
+      return;
+    }
+    
     navigate(`/quiz/${id}`);
   };
   
   const handleBookMachine = () => {
     // Make sure it's a bookable machine type
-    if (machine && (machine.type === 'Safety Equipment' || machine.type === 'Training')) {
+    if (machine && (machine.type === 'Safety Cabinet' || machine.id === 'safety-course')) {
       toast({
         title: "Not Bookable",
-        description: `${machine.name} is not a bookable resource.`,
+        description: "This is not a bookable resource.",
         variant: "destructive"
       });
       return;
     }
     
-    // Check if user has completed both safety requirements
-    if (!allSafetyRequirementsMet) {
-      if (!safetyCourseCompleted) {
-        toast({
-          title: "Safety Course Required",
-          description: "You must complete the safety course before booking machines.",
-          variant: "destructive"
-        });
-        navigate(`/machine/safety-course`);
-      } else if (!safetyCabinetCompleted) {
-        toast({
-          title: "Safety Cabinet Certification Required",
-          description: "You must complete the safety cabinet certification before booking machines.",
-          variant: "destructive"
-        });
-        navigate(`/machine/safety-cabinet`);
-      }
+    // Check if user has completed safety course
+    if (!safetyCertified) {
+      toast({
+        title: "Safety Course Required",
+        description: "You must complete the safety course before booking machines.",
+        variant: "destructive"
+      });
+      navigate(`/course/safety-course`);
       return;
     }
     
@@ -148,15 +169,11 @@ export const useMachineDetail = (id: string | undefined) => {
   
   // Determine if machine is bookable
   const isBookable = machine ? 
-    (machine.type !== 'Safety Equipment' && 
-     machine.type !== 'Training' && 
-     allSafetyRequirementsMet) : 
+    (machine.type !== 'Safety Cabinet' && machine.id !== 'safety-course' && safetyCertified) : 
     false;
   
-  // If it's not a safety-related machine, block access until both safety requirements are met
-  const isAccessible = id === 'safety-cabinet' || 
-                       id === 'safety-course' || 
-                       allSafetyRequirementsMet;
+  // If it's not the safety cabinet/course itself, block access until safety course is completed
+  const isAccessible = id === 'safety-cabinet' || id === 'safety-course' || safetyCertified;
   
   return {
     machine,
@@ -168,9 +185,7 @@ export const useMachineDetail = (id: string | undefined) => {
     isBookable,
     machineStatus,
     isAccessible,
-    safetyCabinetCompleted,
-    safetyCourseCompleted,
-    allSafetyRequirementsMet,
+    safetyCertified,
     handleStartCourse,
     handleStartQuiz,
     handleBookMachine,

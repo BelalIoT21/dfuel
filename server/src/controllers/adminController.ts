@@ -10,6 +10,11 @@ import dotenv from 'dotenv';
 // @access  Private/Admin
 export const getDashboardData = async (req: Request, res: Response) => {
   try {
+    // Verify user is admin
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized as admin' });
+    }
+
     // Get count of users, machines, and bookings
     const usersCount = await User.countDocuments();
     const machinesCount = await Machine.countDocuments();
@@ -66,6 +71,11 @@ export const getDashboardData = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateAdminCredentials = async (req: Request, res: Response) => {
   try {
+    // Verify user is admin
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized as admin' });
+    }
+    
     const { email, password } = req.body;
     
     if (!email && !password) {

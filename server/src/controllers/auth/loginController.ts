@@ -33,27 +33,22 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    console.log(`Login successful for user: ${email}, isAdmin: ${user.isAdmin}`);
+    console.log(`Login successful for user: ${email}`);
 
     // Update last login time
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token with admin status
-    const token = generateToken(user._id, user.isAdmin);
-
     // Return user data in the format expected by the frontend
     res.json({
       user: {
         _id: user._id,
-        id: user._id, // Add id for frontend compatibility
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
         certifications: user.certifications,
-        lastLogin: user.lastLogin
       },
-      token: token,
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error('Error in loginUser:', error);

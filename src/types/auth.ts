@@ -9,6 +9,7 @@ export interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   addCertification: (machineId: string) => Promise<boolean>;
+  completeSafetyCourse: (courseId: string) => Promise<boolean>; // Add safety course completion
   updateProfile: (details: { name?: string; email?: string }) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   requestPasswordReset: (email: string) => Promise<boolean>;
