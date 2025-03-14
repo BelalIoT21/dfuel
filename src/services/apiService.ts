@@ -1,12 +1,12 @@
 
 import axios from 'axios';
-import { API_URL } from '@/utils/env';
 
 class ApiService {
   private baseURL: string;
   
   constructor() {
-    this.baseURL = API_URL || 'http://localhost:4000/api';
+    // Fix API_URL import issue by using a direct reference to env variables
+    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
   }
   
   // Helper method to get auth header
