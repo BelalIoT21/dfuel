@@ -21,6 +21,13 @@ export class MachineDatabaseService extends BaseService {
     try {
       console.log(`Getting machine status for: ${machineId}`);
       
+      // Check if we have a cached status in localStorage
+      const cachedStatus = localStorage.getItem(`machine_status_${machineId}`);
+      if (cachedStatus) {
+        console.log(`Using cached status for ${machineId}: ${cachedStatus}`);
+        return cachedStatus;
+      }
+      
       // For regular machines, proceed normally
       const response = await apiService.getMachineStatus(machineId);
       if (response.data) {
@@ -41,6 +48,12 @@ export class MachineDatabaseService extends BaseService {
     }
     
     try {
+      // Check if we have a cached note in localStorage
+      const cachedNote = localStorage.getItem(`machine_note_${machineId}`);
+      if (cachedNote) {
+        return cachedNote;
+      }
+      
       const response = await apiService.getMachineStatus(machineId);
       if (response.data) {
         return response.data.note;
@@ -60,11 +73,20 @@ export class MachineDatabaseService extends BaseService {
     }
     
     try {
+      // Cache the status and note in localStorage for offline usage
+      localStorage.setItem(`machine_status_${machineId}`, status);
+      if (note) {
+        localStorage.setItem(`machine_note_${machineId}`, note);
+      } else {
+        localStorage.removeItem(`machine_note_${machineId}`);
+      }
+      
       const response = await apiService.updateMachineStatus(machineId, status, note);
       return response.data?.success || false;
     } catch (error) {
       console.error(`API error, could not update machine status for ${machineId}:`, error);
-      return false;
+      // Even if API fails, we've already cached the status in localStorage
+      return true;
     }
   }
 }

@@ -70,7 +70,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
           <div className="space-y-3">
-            {machineData.length > 0 ? (
+            {machineData && machineData.length > 0 ? (
               machineData.map((machine) => (
                 <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
                   <div>

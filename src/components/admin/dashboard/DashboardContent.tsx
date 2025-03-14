@@ -6,8 +6,8 @@ import { machines } from '../../../utils/data';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { StatsOverview } from '@/components/admin/StatsOverview';
 import { PlatformOverview } from '@/components/admin/PlatformOverview';
-import { QuickActions } from '@/components/admin/QuickActions';
-import { PendingActions } from '@/components/admin/PendingActions';
+import QuickActions from '@/components/admin/QuickActions';
+import PendingActions from '@/components/admin/PendingActions';
 import { MachineStatus } from '@/components/admin/MachineStatus';
 
 export const DashboardContent = () => {

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import AdminHeader from '../components/admin/AdminHeader';
+import { AdminHeader } from '../components/admin/AdminHeader';
 import { PlatformOverview } from '../components/admin/PlatformOverview';
 import QuickActions from '../components/admin/QuickActions';
 import { StatsOverview } from '../components/admin/StatsOverview';
