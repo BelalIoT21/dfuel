@@ -1,5 +1,5 @@
 
-// This is the entry point for React Native
+// This is the entry point for Expo
 import App from './src/App.native';
 
 export default App;
