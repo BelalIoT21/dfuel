@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { machines } from '../utils/data';
 import { Eye, EyeOff, User, Key, Mail } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { BackToAdminButton } from '@/components/BackToAdminButton';
 
 const Profile = () => {
   const { user, logout, updateProfile, changePassword } = useAuth();
@@ -83,12 +83,14 @@ const Profile = () => {
     }
   };
 
+  const redirectPath = user.isAdmin ? '/admin' : '/home';
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-6">
       <div className="max-w-4xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
-          <Link to="/home" className="text-purple-600 hover:underline flex items-center gap-1">
-            &larr; Back to Home
+          <Link to={redirectPath} className="text-purple-600 hover:underline flex items-center gap-1">
+            &larr; Back to Dashboard
           </Link>
           <Button variant="outline" onClick={logout} className="border-purple-200 hover:bg-purple-50">
             Logout
@@ -98,10 +100,10 @@ const Profile = () => {
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile">Profile Information</TabsTrigger>
-            <TabsTrigger value="certifications">Certifications</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsList className="w-full mb-2 flex flex-wrap">
+            <TabsTrigger value="profile" className="flex-1">Profile Information</TabsTrigger>
+            <TabsTrigger value="certifications" className="flex-1">Certifications</TabsTrigger>
+            <TabsTrigger value="bookings" className="flex-1">Bookings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile">
@@ -282,7 +284,7 @@ const Profile = () => {
                   <div className="text-center py-8 text-gray-500">
                     <p>You haven't completed any certifications yet.</p>
                     <Button className="mt-2 bg-purple-600 hover:bg-purple-700" asChild>
-                      <Link to="/home">Take a Safety Course</Link>
+                      <Link to={redirectPath}>Take a Safety Course</Link>
                     </Button>
                   </div>
                 )}
@@ -305,7 +307,7 @@ const Profile = () => {
                     {user.bookings.map((booking: any) => {
                       const machine = machines.find(m => m.id === booking.machineId);
                       return (
-                        <div key={booking.id} className="flex items-center justify-between border-b border-purple-100 pb-4 last:border-0">
+                        <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
                           <div>
                             <p className="font-medium text-purple-800">{machine?.name}</p>
                             <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
@@ -330,7 +332,7 @@ const Profile = () => {
                   <div className="text-center py-8 text-gray-500">
                     <p>You don't have any bookings yet.</p>
                     <Button className="mt-2 bg-purple-600 hover:bg-purple-700" asChild>
-                      <Link to="/home">Book a Machine</Link>
+                      <Link to={redirectPath}>Book a Machine</Link>
                     </Button>
                   </div>
                 )}
