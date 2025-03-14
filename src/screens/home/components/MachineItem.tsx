@@ -30,6 +30,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     }
   };
 
+  const isCertified = userCertifications.includes(machine.id);
+
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('MachineDetail', { 
@@ -49,7 +51,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
             >
               {getStatusLabel(machine.status)}
             </Chip>
-            {userCertifications?.includes(machine.id) && (
+            {isCertified && (
               <Chip 
                 style={{backgroundColor: '#7c3aed20'}}
                 textStyle={{color: '#7c3aed'}}
