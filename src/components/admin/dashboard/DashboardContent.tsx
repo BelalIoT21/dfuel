@@ -24,20 +24,39 @@ export const DashboardContent = () => {
           setAllUsers(response.data);
         }
         
-        // Filter out safety cabinet and safety course - they're not real machines
+        // First get regular machines
         const regularMachines = machines.filter(
           machine => machine.id !== 'safety-cabinet' && machine.id !== 'safety-course'
         );
         
+        // Get safety items
+        const safetyItems = machines.filter(
+          machine => machine.id === 'safety-cabinet' || machine.id === 'safety-course'
+        ).map(machine => ({
+          ...machine,
+          status: 'available' // Always available
+        }));
+        
         // Get machine statuses
         const machinesWithStatus = await Promise.all(regularMachines.map(async (machine) => {
-          const statusResponse = await apiService.getMachineStatus(machine.id);
-          return {
-            ...machine,
-            status: statusResponse.data || 'available'
-          };
+          try {
+            const statusResponse = await apiService.getMachineStatus(machine.id);
+            return {
+              ...machine,
+              status: statusResponse.data?.status || 'available',
+              maintenanceNote: statusResponse.data?.note || ''
+            };
+          } catch (error) {
+            console.error(`Error loading status for machine ${machine.id}:`, error);
+            return {
+              ...machine,
+              status: 'available'
+            };
+          }
         }));
-        setMachineData(machinesWithStatus);
+        
+        // Combine regular machines and safety items
+        setMachineData([...machinesWithStatus, ...safetyItems]);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       }
