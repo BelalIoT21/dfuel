@@ -1,132 +1,138 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/context/AuthContext';
-import { SafetyAlert } from '@/components/home/SafetyAlert';
-import { PageHeader } from '@/components/home/PageHeader';
-import LoadingIndicator from '@/components/home/LoadingIndicator';
-import { toast } from '@/components/ui/use-toast';
-
-// Define a type for quiz questions
-type Question = {
-  id: number;
-  text: string;
-  options: { id: string; text: string }[];
-  correctAnswer: string;
-};
-
-// Sample safety course quiz questions
-const safetyQuizQuestions: Question[] = [
-  {
-    id: 1,
-    text: "What should you always do before operating machinery?",
-    options: [
-      { id: "a", text: "Take a picture for social media" },
-      { id: "b", text: "Put on appropriate PPE" },
-      { id: "c", text: "Call a friend" },
-      { id: "d", text: "Turn up the music" }
-    ],
-    correctAnswer: "b"
-  },
-  {
-    id: 2,
-    text: "When should you report equipment malfunctions?",
-    options: [
-      { id: "a", text: "Only if they cause an injury" },
-      { id: "b", text: "At the end of the week" },
-      { id: "c", text: "Immediately" },
-      { id: "d", text: "Never, try to fix it yourself" }
-    ],
-    correctAnswer: "c"
-  },
-  {
-    id: 3,
-    text: "What should you do with loose clothing before operating machinery?",
-    options: [
-      { id: "a", text: "Secure it properly" },
-      { id: "b", text: "Nothing, it's fine" },
-      { id: "c", text: "Make it looser for comfort" },
-      { id: "d", text: "Cut it off" }
-    ],
-    correctAnswer: "a"
-  }
-];
+import { Progress } from '@/components/ui/progress';
+import { Check, X } from 'lucide-react';
+import { machines, quizzes, defaultQuiz } from '../utils/data';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../context/AuthContext';
 
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, addCertification } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
-
+  const { toast } = useToast();
+  const { addCertification } = useAuth();
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [attempts, setAttempts] = useState(1);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [certificationAdded, setCertificationAdded] = useState(false);
+  
+  const machine = machines.find(m => m.id === id);
+  const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
+  
+  // Initialize answers with undefined values to avoid auto-selection
   useEffect(() => {
-    // Load quiz questions based on the ID
-    try {
-      if (!id) {
-        setError("Quiz ID is missing");
-        setLoading(false);
-        return;
-      }
+    setSelectedAnswers(new Array(quiz.length).fill(undefined));
+  }, [quiz.length]);
+  
+  if (!machine) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
+          <Link to="/home">
+            <Button>Return to Home</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-      // We'll use our sample questions for the safety course
-      setQuestions(safetyQuizQuestions);
-      setLoading(false);
-    } catch (err) {
-      console.error("Error loading quiz:", err);
-      setError("Failed to load quiz questions");
-      setLoading(false);
+  const handleAnswer = (index: number) => {
+    const newAnswers = [...selectedAnswers];
+    newAnswers[currentQuestion] = index;
+    setSelectedAnswers(newAnswers);
+  };
+
+  const handleNext = () => {
+    if (currentQuestion < quiz.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
     }
-  }, [id]);
+  };
 
-  const handleAnswerChange = (questionId: number, answerId: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answerId
-    }));
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
   };
 
   const handleSubmit = async () => {
-    // Calculate score
-    let correctCount = 0;
-    questions.forEach(question => {
-      if (answers[question.id] === question.correctAnswer) {
-        correctCount++;
+    if (selectedAnswers.length !== quiz.length) {
+      toast({
+        title: "Incomplete",
+        description: "Please answer all questions before submitting."
+      });
+      return;
+    }
+
+    // Check if all questions are answered (not undefined)
+    const unanswered = selectedAnswers.findIndex(answer => answer === undefined);
+    if (unanswered !== -1) {
+      setCurrentQuestion(unanswered);
+      toast({
+        title: "Incomplete",
+        description: `Please answer question ${unanswered + 1} before submitting.`
+      });
+      return;
+    }
+
+    let correct = 0;
+    selectedAnswers.forEach((answer, index) => {
+      if (answer === quiz[index].correctAnswer) {
+        correct++;
       }
     });
+    setCorrectAnswers(correct);
 
-    const scorePercentage = Math.round((correctCount / questions.length) * 100);
-    setScore(scorePercentage);
-    setSubmitted(true);
+    const passThreshold = Math.ceil(quiz.length * 0.7);
+    const passed = correct >= passThreshold;
+    
+    setQuizSubmitted(true);
+    setShowResults(true);
 
-    // If score is passing (e.g., 70% or higher), grant certification
-    if (scorePercentage >= 70 && id) {
+    if (passed && !certificationAdded && id) {
       try {
         const success = await addCertification(id);
+        setCertificationAdded(success);
+        
         if (success) {
           toast({
-            title: "Certification Granted",
-            description: `You scored ${scorePercentage}% and earned certification!`,
+            title: "Quiz Passed!",
+            description: `You got ${correct} out of ${quiz.length} correct. You are now certified to use this machine.`
           });
         } else {
           toast({
-            title: "Certification Error",
-            description: "There was an issue granting your certification.",
+            title: "Quiz Passed!",
+            description: `You got ${correct} out of ${quiz.length} correct, but there was an issue adding your certification.`,
             variant: "destructive"
           });
         }
       } catch (error) {
-        console.error("Certification error:", error);
+        console.error("Error adding certification:", error);
         toast({
-          title: "Certification Error",
-          description: "There was an issue granting your certification.",
+          title: "Quiz Passed!",
+          description: `You got ${correct} out of ${quiz.length} correct, but there was an error processing your certification.`,
+          variant: "destructive"
+        });
+      }
+    } else if (!passed) {
+      if (attempts < 2) {
+        toast({
+          title: "Quiz Failed",
+          description: `You got ${correct} out of ${quiz.length} correct. You have one more attempt.`,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Quiz Failed",
+          description: "You've used all your attempts. Please review the safety course and try again.",
           variant: "destructive"
         });
       }
@@ -134,115 +140,181 @@ const Quiz = () => {
   };
 
   const handleRetry = () => {
-    setAnswers({});
-    setSubmitted(false);
-    setScore(0);
+    setAttempts(attempts + 1);
+    setQuizSubmitted(false);
+    setShowResults(false);
+    setCurrentQuestion(0);
+    setSelectedAnswers(new Array(quiz.length).fill(undefined));
   };
 
-  if (loading) {
-    return (
-      <div className="container mx-auto py-8">
-        <LoadingIndicator />
-      </div>
-    );
-  }
+  const handleReturnToCourse = () => {
+    navigate(`/course/${id}`);
+  };
 
-  if (error) {
-    return (
-      <div className="container mx-auto py-8">
-        <SafetyAlert 
-          title="Error Loading Quiz" 
-          description={error} 
-          action={{
-            label: "Go Home",
-            onClick: () => navigate("/home")
-          }}
-        />
-      </div>
-    );
-  }
+  const handleReturnToMachine = () => {
+    navigate(`/machine/${id}`);
+  };
+
+  const progress = Math.round(((currentQuestion + 1) / quiz.length) * 100);
 
   return (
-    <div className="container mx-auto py-8">
-      <PageHeader 
-        title="Safety Quiz" 
-        description="Test your knowledge of safety procedures"
-        backHref={`/course/${id}`}
-      />
-      
-      <div className="mt-8">
-        {submitted ? (
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
+      <div className="max-w-3xl mx-auto page-transition">
+        <div className="mb-6 flex justify-between items-center">
+          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+            &larr; Back to {machine.name}
+          </Link>
+          <div className="text-sm text-gray-500">Attempt {attempts} of 2</div>
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-6">{machine.name} Safety Quiz</h1>
+        
+        {!showResults ? (
           <Card>
-            <CardHeader>
-              <CardTitle>Quiz Results</CardTitle>
-              <CardDescription>
-                You scored {score}% ({score >= 70 ? 'Pass' : 'Fail'})
-              </CardDescription>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center mb-2">
+                <CardTitle>Question {currentQuestion + 1} of {quiz.length}</CardTitle>
+                <CardDescription>{machine.name} Safety Certification</CardDescription>
+              </div>
+              <Progress value={progress} className="h-2" />
             </CardHeader>
-            <CardContent>
-              {score >= 70 ? (
-                <div className="text-center p-4 bg-green-50 rounded-md text-green-800">
-                  <h3 className="font-bold text-xl mb-2">Congratulations!</h3>
-                  <p>You've passed the safety quiz and received certification.</p>
+            <CardContent className="p-6">
+              {!quizSubmitted ? (
+                <div className="space-y-6">
+                  <div className="text-xl font-semibold mb-4">
+                    {quiz[currentQuestion].question}
+                  </div>
+                  
+                  <RadioGroup
+                    value={selectedAnswers[currentQuestion]?.toString()}
+                    onValueChange={(value) => handleAnswer(parseInt(value))}
+                    className="space-y-3"
+                  >
+                    {quiz[currentQuestion].options.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50">
+                        <RadioGroupItem value={index.toString()} id={`option-${index}`} />
+                        <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">{option}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  
+                  <div className="flex justify-between mt-8">
+                    <Button
+                      variant="outline"
+                      onClick={handlePrevious}
+                      disabled={currentQuestion === 0}
+                    >
+                      Previous
+                    </Button>
+                    
+                    {currentQuestion < quiz.length - 1 ? (
+                      <Button 
+                        onClick={handleNext}
+                        disabled={selectedAnswers[currentQuestion] === undefined}
+                      >
+                        Next
+                      </Button>
+                    ) : (
+                      <Button 
+                        onClick={handleSubmit}
+                        disabled={selectedAnswers.length !== quiz.length}
+                      >
+                        Submit Quiz
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="text-center p-4 bg-red-50 rounded-md text-red-800">
-                  <h3 className="font-bold text-xl mb-2">Not quite there</h3>
-                  <p>You need to score at least 70% to pass. Please try again.</p>
+                <div className="text-center py-10">
+                  <div className="text-2xl font-bold mb-2">Quiz Submitted</div>
+                  <p className="text-gray-600 mb-6">Your results are being processed...</p>
+                  <div className="animate-pulse">Processing</div>
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-4">
-              {score < 70 && (
-                <Button onClick={handleRetry} variant="outline" className="w-full">
-                  Retry Quiz
-                </Button>
-              )}
-              <Button 
-                onClick={() => navigate('/home')} 
-                className="w-full"
-              >
-                Return Home
-              </Button>
-            </CardFooter>
           </Card>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Safety Quiz</CardTitle>
+              <CardTitle>Quiz Results</CardTitle>
               <CardDescription>
-                Answer all questions to complete the quiz. You need 70% to pass.
+                You answered {correctAnswers} out of {quiz.length} questions correctly
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {questions.map((question) => (
-                <div key={question.id} className="space-y-3">
-                  <h3 className="font-medium">
-                    {question.id}. {question.text}
-                  </h3>
-                  <RadioGroup 
-                    value={answers[question.id]} 
-                    onValueChange={(value) => handleAnswerChange(question.id, value)}
-                  >
-                    {question.options.map((option) => (
-                      <div key={option.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option.id} id={`q${question.id}-${option.id}`} />
-                        <Label htmlFor={`q${question.id}-${option.id}`}>{option.text}</Label>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="text-center py-4">
+                  {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
+                    <div className="mb-4">
+                      <div className="inline-flex items-center justify-center h-24 w-24 rounded-full bg-green-100 text-green-600 mb-4">
+                        <Check className="h-12 w-12" />
                       </div>
-                    ))}
-                  </RadioGroup>
+                      <h3 className="text-2xl font-bold text-green-600">Congratulations!</h3>
+                      <p className="text-gray-600">
+                        You have passed the quiz and are now certified to use the {machine.name}.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mb-4">
+                      <div className="inline-flex items-center justify-center h-24 w-24 rounded-full bg-red-100 text-red-600 mb-4">
+                        <X className="h-12 w-12" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-red-600">Not Quite There</h3>
+                      <p className="text-gray-600">
+                        You need to score at least 70% to pass the quiz.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ))}
+                
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg">Review Your Answers</h3>
+                  {quiz.map((question, index) => (
+                    <div key={index} className="border rounded-md p-4">
+                      <div className="flex items-start gap-2">
+                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                          selectedAnswers[index] === question.correctAnswer 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          {selectedAnswers[index] === question.correctAnswer 
+                            ? <Check className="h-4 w-4" /> 
+                            : <X className="h-4 w-4" />}
+                        </div>
+                        <div>
+                          <p className="font-medium mb-1">{question.question}</p>
+                          <p className="text-sm text-gray-600">Your answer: {question.options[selectedAnswers[index]]}</p>
+                          {selectedAnswers[index] !== question.correctAnswer && (
+                            <p className="text-sm text-green-600">Correct answer: {question.options[question.correctAnswer]}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                  {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
+                    <Button onClick={handleReturnToMachine}>
+                      Return to Machine Page
+                    </Button>
+                  ) : attempts < 2 ? (
+                    <>
+                      <Button variant="outline" onClick={handleReturnToCourse}>
+                        Review Course
+                      </Button>
+                      <Button onClick={handleRetry}>
+                        Retry Quiz
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={handleReturnToCourse}>
+                      Return to Course
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={handleSubmit} 
-                disabled={questions.length !== Object.keys(answers).length}
-                className="w-full"
-              >
-                Submit Answers
-              </Button>
-            </CardFooter>
           </Card>
         )}
       </div>

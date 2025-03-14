@@ -27,7 +27,7 @@ const SafetyAlert = ({ safetyCourseCompleted }: SafetyAlertProps) => {
               All machines are locked until you complete the required safety course.
             </p>
             <Button 
-              onClick={() => navigate('/course/safety-course')}
+              onClick={() => navigate('/machine/safety-cabinet')}
               className="bg-yellow-600 hover:bg-yellow-700 text-white"
             >
               Take Safety Course
