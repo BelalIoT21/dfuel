@@ -23,7 +23,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const handleUpdateMachineStatus = (machine: any) => {
     setSelectedMachine(machine);
     setSelectedStatus(machine.status || 'available');
-    setMaintenanceNote('');
+    setMaintenanceNote(machine.maintenanceNote || '');
     setIsMachineStatusDialogOpen(true);
   };
 
@@ -36,7 +36,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     // Update local state
     setMachineData(machineData.map(machine => 
       machine.id === selectedMachine.id 
-        ? { ...machine, status: selectedStatus } 
+        ? { ...machine, status: selectedStatus, maintenanceNote: selectedStatus === 'maintenance' ? maintenanceNote : '' } 
         : machine
     ));
     
@@ -111,7 +111,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               <Label htmlFor="machine-status">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger id="machine-status" className="bg-white">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder="Select status">
+                    {selectedStatus === 'available' ? 'Available' : 
+                     selectedStatus === 'maintenance' ? 'Maintenance' : 'In Use'}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-white">
                   <SelectItem value="available">Available</SelectItem>
