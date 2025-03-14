@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { machines } from '../utils/data';
@@ -19,13 +18,12 @@ interface ExtendedMachine {
 }
 
 const Home = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Redirect admin users to admin dashboard
     if (user?.isAdmin) {
       navigate('/admin');
       return;
@@ -34,7 +32,6 @@ const Home = () => {
     async function loadMachineData() {
       try {
         setLoading(true);
-        // Get machine statuses from database
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
@@ -58,7 +55,6 @@ const Home = () => {
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        // Set default machine data
         setMachineData(machines.map(machine => ({
           ...machine,
           status: 'available' as const
@@ -93,13 +89,6 @@ const Home = () => {
               className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800"
             >
               My Profile
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={logout} 
-              className="border-red-200 bg-red-100 hover:bg-red-200 text-red-800"
-            >
-              Logout
             </Button>
           </div>
         </div>
