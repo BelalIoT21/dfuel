@@ -37,15 +37,18 @@ export const useMachineDashboard = () => {
         const hasSafetyCert = user?.certifications?.includes('safety-cabinet');
         setSafetyCourseCompleted(!!hasSafetyCert);
         
-        const extendedMachines = await Promise.all(machines.map(async (machine) => {
+        // Filter out safety cabinet from machine list as it's equipment, not a machine
+        const actualMachines = machines.filter(machine => machine.id !== 'safety-cabinet');
+        
+        const extendedMachines = await Promise.all(actualMachines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
             
-            // If safety course is not completed and it's not the safety cabinet itself, mark as locked
+            // If safety course is not completed, mark as locked
             let machineStatus: 'available' | 'maintenance' | 'in-use' | 'locked' = 
               (status as 'available' | 'maintenance' | 'in-use') || 'available';
             
-            if (!hasSafetyCert && machine.id !== 'safety-cabinet') {
+            if (!hasSafetyCert) {
               machineStatus = 'locked';
             }
             
@@ -57,10 +60,20 @@ export const useMachineDashboard = () => {
             console.error(`Error loading status for machine ${machine.id}:`, error);
             return {
               ...machine,
-              status: !hasSafetyCert && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
+              status: !hasSafetyCert ? 'locked' : 'available'
             };
           }
         }));
+        
+        // Add safety cabinet separately with always available status
+        const safetyCabinet = machines.find(m => m.id === 'safety-cabinet');
+        if (safetyCabinet) {
+          extendedMachines.push({
+            ...safetyCabinet,
+            status: 'available'
+          });
+        }
+        
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
@@ -69,10 +82,16 @@ export const useMachineDashboard = () => {
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        setMachineData(machines.map(machine => ({
+        
+        // Fallback handling - include both machines and safety cabinet
+        const machinesWithStatus = machines.map(machine => ({
           ...machine,
-          status: !safetyCourseCompleted && machine.id !== 'safety-cabinet' ? 'locked' : 'available'
-        })));
+          status: machine.id === 'safety-cabinet' 
+            ? 'available' 
+            : (!safetyCourseCompleted ? 'locked' : 'available')
+        }));
+        
+        setMachineData(machinesWithStatus);
       } finally {
         setLoading(false);
       }

@@ -44,8 +44,6 @@ export const getMachineById = async (req: Request, res: Response) => {
           machineObj.imageUrl = 'https://images.unsplash.com/photo-1565696392944-b1a54b3102dd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
         } else if (type.includes('printer') || type.includes('3d')) {
           machineObj.imageUrl = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
-        } else if (type.includes('safety')) {
-          machineObj.imageUrl = 'https://images.unsplash.com/photo-1606091505136-3f9e61673f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
         } else {
           machineObj.imageUrl = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60';
         }

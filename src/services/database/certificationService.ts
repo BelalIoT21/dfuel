@@ -9,7 +9,7 @@ import { BaseService } from './baseService';
 export class CertificationDatabaseService extends BaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      // Special handling for safety-cabinet, which may not exist in the database yet
+      // Special handling for safety-cabinet, which may not exist in the database
       if (machineId === 'safety-cabinet') {
         console.log('Adding safety cabinet certification directly to localStorage');
         const user = localStorageService.findUserById(userId);
