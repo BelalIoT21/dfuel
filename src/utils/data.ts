@@ -297,6 +297,16 @@ export const quizzes = {
         'Continue the job but watch closely'
       ],
       correctAnswer: 1
+    },
+    {
+      question: 'Why is the ventilation system important when using the laser cutter?',
+      options: [
+        'It keeps the machine cool',
+        'It removes potentially harmful fumes and particles',
+        'It improves cutting quality',
+        'It is not important, just optional'
+      ],
+      correctAnswer: 1
     }
   ],
   'ultimaker': [
@@ -377,7 +387,7 @@ export const quizzes = {
       options: [
         'Clean it up with paper towels and throw them in the regular trash',
         'Leave it for someone else to clean',
-        'Use the spill kit and follow the chemical's SDS procedures',
+        'Use the spill kit and follow the chemical\'s SDS procedures',
         'Dilute it with water'
       ],
       correctAnswer: 2
@@ -397,8 +407,8 @@ export const quizzes = {
       options: [
         'Once a year',
         'Monthly',
-        'Never, it doesn't require inspection',
-        'Only when there's a problem'
+        'Never, it doesn\'t require inspection',
+        'Only when there\'s a problem'
       ],
       correctAnswer: 1
     }
@@ -429,7 +439,7 @@ export const quizzes = {
       options: [
         'It affects print time only',
         'It affects the strength properties of the final part',
-        'It doesn't matter for carbon fiber printing',
+        'It doesn\'t matter for carbon fiber printing',
         'It only affects surface finish'
       ],
       correctAnswer: 1
