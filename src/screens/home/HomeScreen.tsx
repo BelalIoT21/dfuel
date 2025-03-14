@@ -6,6 +6,7 @@ import { useMachineData } from './hooks/useMachineData';
 import MachineItem from './components/MachineItem';
 import HomeHeader from './components/HomeHeader';
 import LoadingIndicator from './components/LoadingIndicator';
+import { machines } from '../../utils/data';
 
 const HomeScreen = ({ navigation }) => {
   console.log("Rendering HomeScreen");
@@ -30,30 +31,28 @@ const HomeScreen = ({ navigation }) => {
     }
   }, [machineData, onRefresh]);
 
-  if (loading && !refreshing) {
-    console.log("Showing loading indicator");
-    return <LoadingIndicator />;
-  }
+  const renderContent = () => {
+    // If we're still loading and not refreshing, show loading indicator
+    if (loading && !refreshing) {
+      console.log("Showing loading indicator");
+      return <LoadingIndicator />;
+    }
 
-  // Fallback if there's no data
-  if (!machineData || machineData.length === 0) {
-    console.log("No machine data available");
+    // Use a fallback if there's no machine data
+    const displayData = machineData && machineData.length > 0 
+      ? machineData 
+      : machines.map(machine => ({
+          ...machine,
+          status: 'available',
+          isLocked: machine.id !== 'safety-cabinet' && 
+                    user?.certifications && 
+                    !user.certifications.includes('safety-cabinet')
+        }));
+
+    console.log("Rendering machine list with", displayData.length, "items");
     return (
-      <View style={styles.container}>
-        <HomeHeader />
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No machines available</Text>
-          <Text style={styles.emptyStateSubtext}>Pull down to refresh</Text>
-        </View>
-      </View>
-    );
-  }
-
-  console.log("Rendering machine list with", machineData.length, "items");
-  return (
-    <View style={styles.container}>
       <FlatList
-        data={machineData}
+        data={displayData}
         renderItem={({ item }) => (
           <MachineItem 
             machine={item} 
@@ -71,7 +70,19 @@ const HomeScreen = ({ navigation }) => {
           />
         }
         ListHeaderComponent={<HomeHeader />}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No machines available</Text>
+            <Text style={styles.emptyStateSubtext}>Pull down to refresh</Text>
+          </View>
+        }
       />
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderContent()}
     </View>
   );
 };

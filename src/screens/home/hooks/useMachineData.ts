@@ -16,6 +16,17 @@ export const useMachineData = (user, navigation) => {
       setLoading(true);
       console.log("Original machines data:", machines.length, "items");
       
+      // Immediately set fallback data to avoid blank screen
+      const fallbackMachines = machines.map(machine => ({
+        ...machine,
+        status: 'available',
+        isLocked: machine.id !== 'safety-cabinet' && 
+                  user?.certifications && 
+                  !user.certifications.includes('safety-cabinet')
+      }));
+      
+      setMachineData(fallbackMachines);
+      
       if (!machines || machines.length === 0) {
         console.error("No machines data available in source");
         setLoading(false);
@@ -23,36 +34,41 @@ export const useMachineData = (user, navigation) => {
         return;
       }
       
-      const extendedMachines = await Promise.all(machines.map(async (machine) => {
-        try {
-          console.log("Loading status for machine:", machine.id);
-          const status = await userDatabase.getMachineStatus(machine.id);
-          console.log("Status for machine", machine.id, ":", status);
-          
-          // Determine if machine is locked (safety course not completed)
-          const isLocked = machine.id !== 'safety-cabinet' && 
-                          user?.certifications && 
-                          !user.certifications.includes('safety-cabinet');
-          
-          return {
-            ...machine,
-            status: status || 'available',
-            isLocked: isLocked
-          };
-        } catch (error) {
-          console.error(`Error loading status for machine ${machine.id}:`, error);
-          return {
-            ...machine,
-            status: 'available',
-            isLocked: machine.id !== 'safety-cabinet' && 
-                      user?.certifications && 
-                      !user.certifications.includes('safety-cabinet')
-          };
-        }
-      }));
-      
-      console.log("Extended machines data:", extendedMachines.length, "items");
-      setMachineData(extendedMachines);
+      try {
+        const extendedMachines = await Promise.all(machines.map(async (machine) => {
+          try {
+            console.log("Loading status for machine:", machine.id);
+            const status = await userDatabase.getMachineStatus(machine.id);
+            console.log("Status for machine", machine.id, ":", status);
+            
+            // Determine if machine is locked (safety course not completed)
+            const isLocked = machine.id !== 'safety-cabinet' && 
+                            user?.certifications && 
+                            !user.certifications.includes('safety-cabinet');
+            
+            return {
+              ...machine,
+              status: status || 'available',
+              isLocked: isLocked
+            };
+          } catch (error) {
+            console.error(`Error loading status for machine ${machine.id}:`, error);
+            return {
+              ...machine,
+              status: 'available',
+              isLocked: machine.id !== 'safety-cabinet' && 
+                        user?.certifications && 
+                        !user.certifications.includes('safety-cabinet')
+            };
+          }
+        }));
+        
+        console.log("Extended machines data:", extendedMachines.length, "items");
+        setMachineData(extendedMachines);
+      } catch (error) {
+        console.error("Error in Promise.all:", error);
+        // Fallback already set above
+      }
     } catch (error) {
       console.error("Error loading machine data:", error);
       // Fallback - set machines with default status
@@ -81,13 +97,8 @@ export const useMachineData = (user, navigation) => {
       return;
     }
     
-    if (user) {
-      console.log("User is authenticated, loading machine data");
-      loadMachineData();
-    } else {
-      console.log("No user found, skipping data load");
-      setLoading(false);
-    }
+    // Always load machine data, even if user is not authenticated
+    loadMachineData();
   }, [user, navigation, loadMachineData]);
 
   const onRefresh = useCallback(() => {
