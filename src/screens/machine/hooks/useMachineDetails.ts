@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machines } from '../../../utils/data';
-import { machineDatabaseService } from '../../../services/database/machineService';
+import userDatabase from '../../../services/userDatabase';
 
 export const useMachineDetails = (machineId, user, navigation) => {
   const [machine, setMachine] = useState(null);
@@ -27,7 +27,7 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        const status = await machineDatabaseService.getMachineStatus(machineId);
+        const status = await userDatabase.getMachineStatus(machineId);
         setMachineStatus(status || 'available');
         setMachine(machineData);
         

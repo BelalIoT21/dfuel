@@ -39,10 +39,8 @@ export const useMachineDetail = (id: string | undefined) => {
         try {
           const status = await userDatabase.getMachineStatus(id);
           setMachineStatus(status || 'available');
-          console.log(`Loaded status for machine ${id}: ${status}`);
         } catch (error) {
           console.error("Error loading machine status:", error);
-          // Fallback to 'available' if there's an error
           setMachineStatus('available');
         }
       }
@@ -120,14 +118,12 @@ export const useMachineDetail = (id: string | undefined) => {
             title: "Certification Earned!",
             description: `You are now certified to use the ${machine?.name}.`,
           });
-          return true;
         } else {
           toast({
             title: "Certification Failed",
             description: "There was an issue adding your certification. Please try again.",
             variant: "destructive"
           });
-          return false;
         }
       } else {
         toast({
@@ -135,7 +131,6 @@ export const useMachineDetail = (id: string | undefined) => {
           description: "You must be logged in to get certified.",
           variant: "destructive"
         });
-        return false;
       }
     } catch (error) {
       console.error("Error adding certification:", error);
@@ -144,7 +139,6 @@ export const useMachineDetail = (id: string | undefined) => {
         description: "An unexpected error occurred while processing your certification.",
         variant: "destructive"
       });
-      return false;
     }
   };
   

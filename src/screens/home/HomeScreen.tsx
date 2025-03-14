@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, Text } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
@@ -5,13 +6,12 @@ import { useMachineData } from './hooks/useMachineData';
 import MachineItem from './components/MachineItem';
 import HomeHeader from './components/HomeHeader';
 import LoadingIndicator from './components/LoadingIndicator';
-import { machines } from '../../utils/data';
 
 const HomeScreen = ({ navigation }) => {
   console.log("Rendering HomeScreen");
   
   const { user } = useAuth();
-  console.log("User in HomeScreen:", user?.name || "No user");
+  console.log("User in HomeScreen:", user);
   
   const { machineData, loading, refreshing, onRefresh } = useMachineData(user, navigation);
   console.log("Machine data loaded:", machineData?.length || 0, "items");
@@ -22,28 +22,30 @@ const HomeScreen = ({ navigation }) => {
     return () => console.log("HomeScreen unmounted");
   }, []);
 
-  const renderContent = () => {
-    // If we're still loading and not refreshing, show loading indicator
-    if (loading && !refreshing && (!machineData || machineData.length === 0)) {
-      console.log("Showing loading indicator");
-      return <LoadingIndicator />;
-    }
+  if (loading && !refreshing) {
+    console.log("Showing loading indicator");
+    return <LoadingIndicator />;
+  }
 
-    // Always have data to display
-    const displayData = machineData && machineData.length > 0 
-      ? machineData 
-      : machines.map(machine => ({
-          ...machine,
-          status: 'available',
-          isLocked: machine.id !== 'safety-cabinet' && 
-                    user?.certifications && 
-                    !user.certifications.includes('safety-cabinet')
-        }));
-
-    console.log("Rendering machine list with", displayData.length, "items");
+  // Fallback if there's no data
+  if (!machineData || machineData.length === 0) {
+    console.log("No machine data available");
     return (
+      <View style={styles.container}>
+        <HomeHeader />
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>No machines available</Text>
+          <Text style={styles.emptyStateSubtext}>Pull down to refresh</Text>
+        </View>
+      </View>
+    );
+  }
+
+  console.log("Rendering machine list with", machineData.length, "items");
+  return (
+    <View style={styles.container}>
       <FlatList
-        data={displayData}
+        data={machineData}
         renderItem={({ item }) => (
           <MachineItem 
             machine={item} 
@@ -61,19 +63,7 @@ const HomeScreen = ({ navigation }) => {
           />
         }
         ListHeaderComponent={<HomeHeader />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No machines available</Text>
-            <Text style={styles.emptyStateSubtext}>Pull down to refresh</Text>
-          </View>
-        }
       />
-    );
-  };
-
-  return (
-    <View style={styles.container}>
-      {renderContent()}
     </View>
   );
 };
