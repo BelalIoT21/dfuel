@@ -40,6 +40,11 @@ class DatabaseService {
     return certificationDatabaseService.addCertification(userId, machineId);
   }
   
+  // Safety course methods
+  async addSafetyCourse(userId: string, courseId: string): Promise<boolean> {
+    return certificationDatabaseService.addSafetyCourse(userId, courseId);
+  }
+  
   // Booking methods
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     return bookingDatabaseService.addBooking(userId, machineId, date, time);

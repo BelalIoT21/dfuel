@@ -31,6 +31,10 @@ class MongoDbService {
     return mongoUserService.updateUserCertifications(userId, machineId);
   }
   
+  async updateUserSafetyCourses(userId: string, courseId: string): Promise<boolean> {
+    return mongoUserService.updateUserSafetyCourses(userId, courseId);
+  }
+  
   async addUserBooking(userId: string, booking: any): Promise<boolean> {
     return mongoUserService.addUserBooking(userId, booking);
   }
