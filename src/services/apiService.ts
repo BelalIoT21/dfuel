@@ -41,10 +41,19 @@ class ApiService {
       
       console.log(`Making API request: ${method} ${url}`);
       const response = await fetch(url, options);
-      const responseData = await response.json();
+      
+      // Handle empty responses gracefully
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json') && response.status !== 204) {
+        const text = await response.text();
+        responseData = text ? JSON.parse(text) : null;
+      } else {
+        responseData = null;
+      }
       
       if (!response.ok) {
-        throw new Error(responseData.message || 'API request failed');
+        throw new Error(responseData?.message || 'API request failed');
       }
       
       return {
@@ -114,6 +123,43 @@ class ApiService {
     );
   }
   
+  // Additional methods to support databaseService
+  async getUserByEmail(email: string) {
+    return this.request<any>(`users/email/${email}`, 'GET');
+  }
+  
+  async getUserById(userId: string) {
+    return this.request<any>(`users/${userId}`, 'GET');
+  }
+  
+  async updateProfile(userId: string, updates: any) {
+    return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
+  }
+  
+  async addCertification(userId: string, machineId: string) {
+    return this.request<{ success: boolean }>(
+      `certifications`, 
+      'POST', 
+      { userId, machineId }
+    );
+  }
+  
+  async addBooking(userId: string, machineId: string, date: string, time: string) {
+    return this.request<{ success: boolean }>(
+      `bookings`, 
+      'POST', 
+      { userId, machineId, date, time }
+    );
+  }
+  
+  async updateMachineStatus(machineId: string, status: string, note?: string) {
+    return this.request<{ success: boolean }>(
+      `machines/${machineId}/status`, 
+      'PUT', 
+      { status, note }
+    );
+  }
+  
   // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
     return this.request<void>(
@@ -129,7 +175,7 @@ class ApiService {
   }
   
   async getMachineStatus(machineId: string) {
-    return this.request<string>(`machines/${machineId}/status`, 'GET');
+    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
   }
 }
 

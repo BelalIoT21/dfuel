@@ -48,8 +48,9 @@ export class UserService {
     // Enforce password requirements
     if (newPassword.length < 6) return false;
     
-    // Update password
-    const success = await databaseService.updateUserProfile(userId, { password: newPassword });
+    // Update password - need to pass it as an object with password property
+    const updates = { password: newPassword };
+    const success = await databaseService.updateUserProfile(userId, updates);
     
     // If admin, update admin password in environment system
     if (success && user.isAdmin) {
@@ -121,10 +122,12 @@ export class UserService {
     if (newPassword.length < 6) return false;
     
     // Update password and clear reset code
-    const success = await databaseService.updateUserProfile(user.id, {
+    const updates = {
       password: newPassword,
       resetCode: undefined
-    } as any);
+    } as any;
+    
+    const success = await databaseService.updateUserProfile(user.id, updates);
     
     // If admin, update admin password in "environment"
     if (success && user.isAdmin) {

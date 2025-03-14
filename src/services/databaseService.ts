@@ -77,7 +77,7 @@ class DatabaseService {
   
   async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
     try {
-      const response = await apiService.register(email, password, name);
+      const response = await apiService.register({ email, password, name });
       if (response.data && response.data.user) {
         return response.data.user;
       }
@@ -112,10 +112,10 @@ class DatabaseService {
     return null;
   }
   
-  async updateUserProfile(userId: string, updates: {name?: string, email?: string}): Promise<boolean> {
+  async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
     try {
       const response = await apiService.updateProfile(userId, updates);
-      return response.success || false;
+      return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage update:", error);
       // Fallback to localStorage
@@ -126,7 +126,7 @@ class DatabaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     try {
       const response = await apiService.addCertification(userId, machineId);
-      return response.success || false;
+      return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage certification:", error);
       
@@ -146,7 +146,7 @@ class DatabaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
       const response = await apiService.addBooking(userId, machineId, date, time);
-      return response.success || false;
+      return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage booking:", error);
       
@@ -170,7 +170,7 @@ class DatabaseService {
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       const response = await apiService.getMachineStatus(machineId);
-      if (response.data && response.data.status) {
+      if (response.data) {
         return response.data.status;
       }
     } catch (error) {
@@ -184,7 +184,7 @@ class DatabaseService {
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
       const response = await apiService.updateMachineStatus(machineId, status, note);
-      return response.success || false;
+      return response.data?.success || false;
     } catch (error) {
       console.error("API error, could not update machine status:", error);
       return false;
