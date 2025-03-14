@@ -39,12 +39,15 @@ export const loginUser = async (req: Request, res: Response) => {
     user.lastLogin = new Date();
     await user.save();
 
+    // Return user data in the format expected by the frontend
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      certifications: user.certifications,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        certifications: user.certifications,
+      },
       token: generateToken(user._id),
     });
   } catch (error) {
