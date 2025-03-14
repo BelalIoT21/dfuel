@@ -13,6 +13,9 @@ const router = express.Router();
 // Add certification - allow both regular users and admins
 router.post('/', protect, addCertification);
 
+// Add safety course completion - allow both regular users and admins
+router.post('/safety-course', protect, addCertification);
+
 // Remove certification (admin only)
 router.delete('/', protect, admin, removeCertification);
 
