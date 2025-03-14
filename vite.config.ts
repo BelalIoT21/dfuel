@@ -10,11 +10,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     proxy: {
-      // Proxy API requests to a simulated backend
+      // Proxy API requests to our backend server
       '/api': {
-        target: 'http://localhost:3001', // In development this would point to your real backend
+        target: 'http://localhost:4000', // Point to our Express server
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        secure: false
       }
     }
   },

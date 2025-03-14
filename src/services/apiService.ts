@@ -1,13 +1,8 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-/**
- * This service provides functions to interact with the backend API.
- * For now, it simulates a real backend by using local storage,
- * but in a production app, this would make real HTTP requests.
- */
-
-const BASE_URL = getEnv('API_BASE_URL');
+const BASE_URL = '/api'; // This will be proxied to our backend server
 
 interface ApiResponse<T> {
   data: T | null;
@@ -23,49 +18,39 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
-      // For demo purposes, we'll simulate API responses
-      // In a real app, this would be a fetch or axios request
+      const url = `${BASE_URL}/${endpoint}`;
+      const token = localStorage.getItem('token');
       
-      console.log(`API ${method} request to ${endpoint}`, data);
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Get data from localStorage to simulate database
-      const storageKey = endpoint.split('/')[0];
-      const storedData = localStorage.getItem(storageKey);
-      
-      // Simulate different API operations
-      if (method === 'GET') {
-        // Return stored data or empty array
-        return {
-          data: (storedData ? JSON.parse(storedData) : []) as T,
-          error: null,
-          status: 200
-        };
-      } else if (method === 'POST' || method === 'PUT') {
-        // Store the data
-        localStorage.setItem(storageKey, JSON.stringify(data));
-        return {
-          data: data as T,
-          error: null,
-          status: 201
-        };
-      } else if (method === 'DELETE') {
-        // Remove the data
-        localStorage.removeItem(storageKey);
-        return {
-          data: null,
-          error: null,
-          status: 204
-        };
+      if (authRequired && token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
-      // Default response
+      const options: RequestInit = {
+        method,
+        headers,
+        credentials: 'include',
+      };
+      
+      if (data && (method === 'POST' || method === 'PUT')) {
+        options.body = JSON.stringify(data);
+      }
+      
+      console.log(`Making API request: ${method} ${url}`);
+      const response = await fetch(url, options);
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.message || 'API request failed');
+      }
+      
       return {
-        data: null,
-        error: 'Method not implemented',
-        status: 501
+        data: responseData,
+        error: null,
+        status: response.status
       };
     } catch (error) {
       console.error('API request failed:', error);
@@ -102,6 +87,16 @@ class ApiService {
     );
   }
   
+  // Health check endpoint
+  async checkHealth() {
+    return this.request<{ status: string, message: string }>(
+      'health',
+      'GET',
+      undefined,
+      false
+    );
+  }
+  
   // User endpoints
   async getCurrentUser() {
     return this.request<any>('users/me', 'GET');
@@ -128,7 +123,7 @@ class ApiService {
     );
   }
   
-  // New endpoints for DashboardContent
+  // Dashboard endpoints
   async getAllUsers() {
     return this.request<any[]>('users', 'GET');
   }
@@ -136,8 +131,6 @@ class ApiService {
   async getMachineStatus(machineId: string) {
     return this.request<string>(`machines/${machineId}/status`, 'GET');
   }
-  
-  // Other endpoints as needed
 }
 
 // Create and export a singleton instance

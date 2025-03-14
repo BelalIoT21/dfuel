@@ -15,6 +15,7 @@ import machineRoutes from './routes/machineRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import certificationRoutes from './routes/certificationRoutes';
 import adminRoutes from './routes/adminRoutes';
+import healthRoutes from './routes/healthRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -28,7 +29,10 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:8080', // Allow frontend to connect
+  credentials: true
+}));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(cookieParser());
@@ -40,8 +44,9 @@ app.use('/api/machines', machineRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/certifications', certificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/health', healthRoutes);
 
-// Health check endpoint
+// Health check endpoint (root level)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });

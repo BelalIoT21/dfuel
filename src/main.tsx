@@ -20,4 +20,5 @@ if (!rootElement) {
       <App />
     </StrictMode>
   );
+  console.log("App rendered successfully");
 }

@@ -5,11 +5,41 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
+import { apiService } from '@/services/apiService';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
+
+  // Check server connection
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const response = await apiService.checkHealth();
+        if (response.data) {
+          console.log("Server health check:", response.data);
+          setServerStatus('connected');
+          toast({
+            title: 'Server Connected',
+            description: 'Successfully connected to the backend server',
+          });
+        }
+      } catch (error) {
+        console.error("Server connection error:", error);
+        setServerStatus('disconnected');
+        toast({
+          title: 'Server Connection Failed',
+          description: 'Could not connect to the backend server',
+          variant: 'destructive'
+        });
+      }
+    };
+    
+    checkServer();
+  }, []);
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -42,6 +72,11 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
+          {serverStatus && (
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+              Server status: {serverStatus}
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
