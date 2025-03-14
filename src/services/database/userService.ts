@@ -1,5 +1,5 @@
 
-import { apiService } from '../apiService';
+import { apiService } from '../api';
 import { localStorageService } from '../localStorageService';
 import { User, UserWithoutSensitiveInfo } from '../../types/database';
 import { BaseService } from './baseService';
@@ -10,7 +10,7 @@ import { BaseService } from './baseService';
 export class UserDatabaseService extends BaseService {
   async getAllUsers(): Promise<UserWithoutSensitiveInfo[]> {
     return this.apiRequest<UserWithoutSensitiveInfo[]>(
-      () => apiService.getAllUsers(),
+      () => apiService.user.getAllUsers(),
       () => localStorageService.getUsers().map(({ password, resetCode, ...user }) => user),
       "API error in getAllUsers"
     ) || [];
@@ -18,7 +18,7 @@ export class UserDatabaseService extends BaseService {
   
   async findUserByEmail(email: string): Promise<User | undefined> {
     return this.apiRequest<User>(
-      () => apiService.getUserByEmail(email),
+      () => apiService.user.getUserByEmail(email),
       () => localStorageService.findUserByEmail(email),
       "API error in findUserByEmail"
     );
@@ -26,7 +26,7 @@ export class UserDatabaseService extends BaseService {
   
   async findUserById(id: string): Promise<User | undefined> {
     return this.apiRequest<User>(
-      () => apiService.getUserById(id),
+      () => apiService.user.getUserById(id),
       () => localStorageService.findUserById(id),
       "API error in findUserById"
     );
@@ -35,7 +35,7 @@ export class UserDatabaseService extends BaseService {
   async authenticate(email: string, password: string): Promise<UserWithoutSensitiveInfo | null> {
     try {
       console.log("Authenticating via API:", email);
-      const response = await apiService.login(email, password);
+      const response = await apiService.auth.login(email, password);
       if (response.data && response.data.user) {
         console.log("API authentication successful");
         // Store the token for future API requests
@@ -69,7 +69,7 @@ export class UserDatabaseService extends BaseService {
   async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
     try {
       console.log("Registering via API:", email);
-      const response = await apiService.register({ email, password, name });
+      const response = await apiService.auth.register({ email, password, name });
       if (response.data && response.data.user) {
         console.log("API registration successful");
         // Store the token for future API requests
@@ -112,7 +112,7 @@ export class UserDatabaseService extends BaseService {
   
   async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
     try {
-      const response = await apiService.updateProfile(userId, updates);
+      const response = await apiService.user.updateProfile(userId, updates);
       return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage update:", error);

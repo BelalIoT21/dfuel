@@ -1,5 +1,5 @@
 
-import { apiService } from '../apiService';
+import { apiService } from '../api';
 import { localStorageService } from '../localStorageService';
 import { BaseService } from './baseService';
 
@@ -9,7 +9,7 @@ import { BaseService } from './baseService';
 export class CertificationDatabaseService extends BaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      const response = await apiService.addCertification(userId, machineId);
+      const response = await apiService.certification.addCertification(userId, machineId);
       return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage certification:", error);

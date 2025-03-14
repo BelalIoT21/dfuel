@@ -1,5 +1,5 @@
 
-import { apiService } from '../apiService';
+import { apiService } from '../api';
 import { BaseService } from './baseService';
 
 /**
@@ -8,7 +8,7 @@ import { BaseService } from './baseService';
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
     try {
-      const response = await apiService.getMachineStatus(machineId);
+      const response = await apiService.machine.getMachineStatus(machineId);
       if (response.data) {
         return response.data.status;
       }
@@ -22,7 +22,7 @@ export class MachineDatabaseService extends BaseService {
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      const response = await apiService.updateMachineStatus(machineId, status, note);
+      const response = await apiService.machine.updateMachineStatus(machineId, status, note);
       return response.data?.success || false;
     } catch (error) {
       console.error("API error, could not update machine status:", error);
