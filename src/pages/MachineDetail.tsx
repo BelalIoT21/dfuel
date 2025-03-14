@@ -16,6 +16,7 @@ const MachineDetail = () => {
     courseCompleted,
     quizPassed,
     isBookable,
+    machineStatus,
     handleStartCourse,
     handleStartQuiz,
     handleBookMachine,
@@ -42,7 +43,7 @@ const MachineDetail = () => {
             <MachineImage
               image={machine.image}
               name={machine.name}
-              status={machine.status}
+              status={machineStatus}
               maintenanceDate={machine.maintenanceDate}
               progress={progress}
             />

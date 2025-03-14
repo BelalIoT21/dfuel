@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,6 +26,11 @@ const Quiz = () => {
   
   const machine = machines.find(m => m.id === id);
   const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
+  
+  // Initialize answers with undefined values to avoid auto-selection
+  useEffect(() => {
+    setSelectedAnswers(new Array(quiz.length).fill(undefined));
+  }, [quiz.length]);
   
   if (!machine) {
     return (
@@ -63,6 +68,17 @@ const Quiz = () => {
       toast({
         title: "Incomplete",
         description: "Please answer all questions before submitting."
+      });
+      return;
+    }
+
+    // Check if all questions are answered (not undefined)
+    const unanswered = selectedAnswers.findIndex(answer => answer === undefined);
+    if (unanswered !== -1) {
+      setCurrentQuestion(unanswered);
+      toast({
+        title: "Incomplete",
+        description: `Please answer question ${unanswered + 1} before submitting.`
       });
       return;
     }
@@ -128,7 +144,7 @@ const Quiz = () => {
     setQuizSubmitted(false);
     setShowResults(false);
     setCurrentQuestion(0);
-    setSelectedAnswers([]);
+    setSelectedAnswers(new Array(quiz.length).fill(undefined));
   };
 
   const handleReturnToCourse = () => {

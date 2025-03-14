@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { machines, courses } from '@/utils/data';
+import userDatabase from '@/services/userDatabase';
 
 export const useMachineDetail = (id: string | undefined) => {
   const { user, addCertification } = useAuth();
@@ -12,16 +13,33 @@ export const useMachineDetail = (id: string | undefined) => {
   const [progress, setProgress] = useState(0);
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
+  const [machineStatus, setMachineStatus] = useState('available');
   
   const machine = machines.find(m => m.id === id);
   const course = courses[id || ''];
   
   useEffect(() => {
+    // Load certification status
     if (user && id && user.certifications.includes(id)) {
       setCourseCompleted(true);
       setQuizPassed(true);
       setProgress(100);
     }
+
+    // Load machine status
+    const loadMachineStatus = async () => {
+      if (id) {
+        try {
+          const status = await userDatabase.getMachineStatus(id);
+          setMachineStatus(status || 'available');
+        } catch (error) {
+          console.error("Error loading machine status:", error);
+          setMachineStatus('available');
+        }
+      }
+    };
+
+    loadMachineStatus();
   }, [user, id]);
   
   const handleStartCourse = () => {
@@ -92,6 +110,7 @@ export const useMachineDetail = (id: string | undefined) => {
     courseCompleted,
     quizPassed,
     isBookable,
+    machineStatus,
     handleStartCourse,
     handleStartQuiz,
     handleBookMachine,

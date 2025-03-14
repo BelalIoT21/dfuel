@@ -118,16 +118,6 @@ export const MachineDetailTabs = ({
             >
               {quizPassed ? "Review Quiz" : "Start Quiz"}
             </Button>
-            
-            {courseCompleted && !quizPassed && (
-              <Button 
-                variant="outline"
-                className="border-purple-200 text-purple-700"
-                onClick={onPassQuiz}
-              >
-                (Demo) Mark Quiz Passed
-              </Button>
-            )}
           </div>
         </div>
         
