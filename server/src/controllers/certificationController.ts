@@ -142,3 +142,76 @@ export const checkCertification = async (req: Request, res: Response) => {
     });
   }
 };
+
+// @desc    Complete safety course
+// @route   POST /api/certifications/safety-course
+// @access  Private
+export const completeSafetyCourse = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.body;
+    
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required' });
+    }
+    
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Initialize safetyCoursesCompleted array if it doesn't exist
+    if (!user.safetyCoursesCompleted) {
+      user.safetyCoursesCompleted = [];
+    }
+    
+    // Check if user already completed this course
+    if (user.safetyCoursesCompleted.includes(courseId)) {
+      return res.status(400).json({ message: 'User already completed this safety course' });
+    }
+    
+    // Add the safety course to completed courses
+    user.safetyCoursesCompleted.push(courseId);
+    await user.save();
+    
+    res.json({ 
+      message: 'Safety course completed successfully', 
+      safetyCoursesCompleted: user.safetyCoursesCompleted 
+    });
+  } catch (error) {
+    console.error('Error in completeSafetyCourse:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Check if user has completed safety course
+// @route   GET /api/certifications/safety-course/check
+// @access  Private
+export const checkSafetyCourse = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.query;
+    
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required' });
+    }
+    
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if the safetyCoursesCompleted array exists and contains the course
+    const hasCompleted = user.safetyCoursesCompleted && 
+                         user.safetyCoursesCompleted.includes(courseId as string);
+    
+    res.json({ hasCompleted });
+  } catch (error) {
+    console.error('Error in checkSafetyCourse:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
