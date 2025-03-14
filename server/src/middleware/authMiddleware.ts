@@ -27,17 +27,16 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
+      
       next();
     } catch (error) {
-      console.error(error);
-      res.status(401);
-      throw new Error('Not authorized, token failed');
+      console.error('Token verification failed:', error);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    res.status(401);
-    throw new Error('Not authorized, no token');
+    return res.status(401).json({ message: 'Not authorized, no token' });
   }
 };
 
@@ -46,7 +45,6 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    res.status(403);
-    throw new Error('Not authorized as an admin');
+    return res.status(403).json({ message: 'Not authorized as an admin' });
   }
 };
