@@ -13,14 +13,12 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
-  // Filter out Safety Cabinet and Safety Course, only get real machines
+  // Get only real machines - include ID 5 (Bambu Lab X1 E) but exclude ID 6 (Machine Safety Course)
   const realMachines = machines.filter(machine => 
-    machine.type !== 'Safety Cabinet' && 
-    machine.type !== 'Equipment' &&
-    machine.id !== "6" // Filter out Machine Safety Course
+    machine.id !== "6" // Only exclude Machine Safety Course
   );
 
-  // Get user certifications, but exclude Safety Cabinet and Machine Safety Course
+  // Get user certifications, but exclude Machine Safety Course
   const userCertifications = realMachines
     .filter(machine => user?.certifications.includes(machine.id))
     .map(machine => ({

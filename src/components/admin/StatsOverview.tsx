@@ -28,17 +28,17 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     fetchBookingsCount();
   }, []);
   
-  // Calculate total certifications across all users (excluding safety certs)
+  // Calculate total certifications across all users (excluding safety course)
   useEffect(() => {
     const calculateCertifications = () => {
       let count = 0;
       
-      // For each user, count their machine certifications (excluding safety cabinet and safety course)
+      // For each user, count their machine certifications (excluding machine safety course)
       allUsers.forEach(user => {
         if (user.certifications) {
-          // Filter out safety cabinet (id: "5") and safety course (id: "6")
+          // Only filter out Machine Safety Course (ID: "6")
           const machineCerts = user.certifications.filter(certId => 
-            certId !== "5" && certId !== "6"
+            certId !== "6"
           );
           count += machineCerts.length;
         }
@@ -50,14 +50,14 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     calculateCertifications();
   }, [allUsers]);
   
-  // Filter out equipment (including Safety Cabinet) - only count real machines
-  const realMachines = machines.filter(machine => machine.type !== 'Equipment' && machine.type !== 'Safety Cabinet');
+  // Filter out equipment - only count real machines (including Bambu Lab X1 E)
+  const realMachines = machines.filter(machine => machine.type !== 'Equipment');
   
   // Basic statistics for the admin dashboard
   const stats = [
     { 
       title: 'Total Users', 
-      value: 2, // Fixed at 2 as requested
+      value: allUsers.length, 
       icon: <Users className="h-5 w-5 text-purple-600" />,
       change: '', // Removed change indicator
       link: '/admin/users'

@@ -33,10 +33,10 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   }, [user.certifications]);
 
-  // Filter out any certifications for Safety Cabinet and Machine Safety Course
+  // Only filter out Machine Safety Course (ID: "6")
   const filteredCertifications = user.certifications.filter(certId => {
-    // Filter out Safety Cabinet (ID: "5") and Machine Safety Course (ID: "6")
-    return certId !== "5" && certId !== "6";
+    // Filter out Machine Safety Course (ID: "6")
+    return certId !== "6";
   });
 
   return (
