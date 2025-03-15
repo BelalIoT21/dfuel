@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import { User } from '../models/User';
@@ -46,9 +47,19 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
+    // Format the date-time slot string
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toISOString().split('T')[0];
+    const timeSlot = `${formattedDate}-${time}`;
+    
     // For admin users, bypass booking slot check
     if (!req.user.isAdmin) {
-      // Check if booking slot is available for non-admin users
+      // Check if the time slot is already booked
+      if (machine.bookedTimeSlots.includes(timeSlot)) {
+        return res.status(400).json({ message: 'This time slot is already booked' });
+      }
+      
+      // Also check if there's any active booking for this slot
       const bookingDate = new Date(date);
       const existingBooking = await Booking.findOne({
         machine: machineId,
@@ -77,6 +88,11 @@ export const createBooking = async (req: Request, res: Response) => {
     
     const createdBooking = await booking.save();
     console.log('Created booking in MongoDB:', createdBooking);
+    
+    // If admin auto-approved, add to machine's booked time slots
+    if (req.user.isAdmin) {
+      await machine.addBookedTimeSlot(timeSlot);
+    }
     
     // Add booking reference to user's bookings array
     await User.findByIdAndUpdate(
@@ -129,7 +145,8 @@ export const getBookingById = async (req: Request, res: Response) => {
     }
     
     // Check if booking belongs to user or user is admin
-    if (booking.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    const populatedUser = booking.user as any;
+    if (populatedUser._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     
@@ -167,6 +184,16 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
     
+    const machine = await Machine.findById(booking.machine);
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+    
+    // Format the date-time slot string
+    const dateObj = new Date(booking.date);
+    const formattedDate = dateObj.toISOString().split('T')[0];
+    const timeSlot = `${formattedDate}-${booking.time}`;
+    
     // If status is changing to Approved, check if the time slot is already taken by another approved booking
     if (status === 'Approved' && booking.status !== 'Approved') {
       const bookingDate = new Date(booking.date);
@@ -187,19 +214,13 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
         });
       }
       
-      // Update machine status to show it's booked for this time slot if needed
-      await Machine.findByIdAndUpdate(
-        booking.machine,
-        { $addToSet: { bookedTimeSlots: `${booking.date.toISOString().split('T')[0]}-${booking.time}` } }
-      );
+      // Add the booked time slot to the machine
+      await machine.addBookedTimeSlot(timeSlot);
     }
     
     // If status is changing from Approved to something else, remove the booked time slot
     if (booking.status === 'Approved' && status !== 'Approved') {
-      await Machine.findByIdAndUpdate(
-        booking.machine,
-        { $pull: { bookedTimeSlots: `${booking.date.toISOString().split('T')[0]}-${booking.time}` } }
-      );
+      await machine.removeBookedTimeSlot(timeSlot);
     }
     
     booking.status = status;
@@ -239,6 +260,17 @@ export const cancelBooking = async (req: Request, res: Response) => {
       });
     }
     
+    // If the booking was approved, free up the time slot
+    if (booking.status === 'Approved') {
+      const machine = await Machine.findById(booking.machine);
+      if (machine) {
+        const dateObj = new Date(booking.date);
+        const formattedDate = dateObj.toISOString().split('T')[0];
+        const timeSlot = `${formattedDate}-${booking.time}`;
+        await machine.removeBookedTimeSlot(timeSlot);
+      }
+    }
+    
     booking.status = 'Canceled';
     const updatedBooking = await booking.save();
     
@@ -272,8 +304,8 @@ export const getAllBookings = async (req: Request, res: Response) => {
     // Format the response to include machine name and user name
     const formattedBookings = bookings.map(booking => {
       // Use type assertions to access populated fields
-      const machineDoc = booking.machine as unknown as { name: string; type: string };
-      const userDoc = booking.user as unknown as { name: string; email: string };
+      const machineDoc = booking.machine as any;
+      const userDoc = booking.user as any;
       
       return {
         _id: booking._id,

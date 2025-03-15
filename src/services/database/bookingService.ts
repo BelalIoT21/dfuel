@@ -138,7 +138,7 @@ export class BookingDatabaseService extends BaseService {
       // Try API first
       try {
         const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status });
-        if (response && response.data) {
+        if (response && !response.error) {
           console.log("Booking status updated via API:", response.data);
           return true;
         }
@@ -168,10 +168,17 @@ export class BookingDatabaseService extends BaseService {
           const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
           if (bookingIndex >= 0) {
             user.bookings[bookingIndex].status = status;
-            await userDatabaseService.updateUser(user.id, user);
-            console.log("Booking status updated in local storage");
-            updated = true;
-            break;
+            
+            // Update the user in local storage
+            const usersCopy = await this.getItem('users') || [];
+            const userIndex = usersCopy.findIndex((u: any) => u.id === user.id);
+            if (userIndex >= 0) {
+              usersCopy[userIndex] = user;
+              await this.setItem('users', usersCopy);
+              console.log("Booking status updated in local storage");
+              updated = true;
+              break;
+            }
           }
         }
       }
@@ -190,15 +197,14 @@ export class BookingDatabaseService extends BaseService {
   
   async getAllPendingBookings(): Promise<any[]> {
     try {
-      console.log("Getting all pending bookings");
+      console.log("Getting all bookings");
       
       // Try API first
       try {
         const response = await apiService.request('bookings/all', 'GET');
         if (response && response.data) {
-          const pendingBookings = response.data.filter(booking => booking.status === 'Pending');
-          console.log("Retrieved pending bookings from API:", pendingBookings.length);
-          return pendingBookings;
+          console.log("Retrieved all bookings from API:", response.data.length);
+          return response.data;
         }
       } catch (apiError) {
         console.error("API error when getting all bookings:", apiError);
@@ -206,27 +212,25 @@ export class BookingDatabaseService extends BaseService {
       
       // Fall back to local users and their bookings
       const allUsers = await userDatabaseService.getAllUsers();
-      const pendingBookings = [];
+      const allBookings = [];
       
       for (const user of allUsers) {
         if (user.bookings && user.bookings.length > 0) {
           for (const booking of user.bookings) {
-            if (booking.status === 'Pending') {
-              pendingBookings.push({
-                ...booking,
-                userName: user.name,
-                userEmail: user.email,
-                userId: user.id
-              });
-            }
+            allBookings.push({
+              ...booking,
+              userName: user.name,
+              userEmail: user.email,
+              userId: user.id
+            });
           }
         }
       }
       
-      console.log("Retrieved pending bookings from local storage:", pendingBookings.length);
-      return pendingBookings;
+      console.log("Retrieved all bookings from local storage:", allBookings.length);
+      return allBookings;
     } catch (error) {
-      console.error("Error getting pending bookings:", error);
+      console.error("Error getting all bookings:", error);
       return [];
     }
   }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import { Calendar, Clock, User } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { apiService } from '@/services/apiService';
 import { userDatabaseService } from '@/services/database/userService';
-import { bookingDatabaseService } from '@/services/database/bookingService';
 import { bookingService } from '@/services/bookingService';
 
 export const PendingBookingsCard = () => {
@@ -22,43 +22,22 @@ export const PendingBookingsCard = () => {
         setLoading(true);
         console.log('Fetching pending bookings...');
         
-        // First, try to get pending bookings via API
-        try {
-          const response = await apiService.request('bookings/all', 'GET');
-          if (response && response.data) {
-            const allBookings = response.data;
-            const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
-            console.log('Pending bookings found via API:', pendingOnly.length);
-            setPendingBookings(pendingOnly);
-            setLoading(false);
-            return;
-          }
-        } catch (apiError) {
-          console.error('API error, falling back to database service:', apiError);
+        // Get all bookings and filter for pending only
+        const response = await apiService.getAllBookings();
+        if (response && response.data) {
+          const allBookings = response.data;
+          const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
+          console.log('Pending bookings found via API:', pendingOnly.length);
+          setPendingBookings(pendingOnly);
+          setLoading(false);
+          return;
         }
         
-        // If API fails, fall back to direct database access
-        const users = await userDatabaseService.getAllUsers();
-        const allBookings = [];
-        
-        // Collect all bookings with their user info
-        for (const user of users) {
-          if (user.bookings && user.bookings.length > 0) {
-            for (const booking of user.bookings) {
-              if (booking.status === 'Pending') {
-                allBookings.push({
-                  ...booking,
-                  userName: user.name,
-                  userEmail: user.email,
-                  userId: user.id
-                });
-              }
-            }
-          }
-        }
-        
-        console.log('Pending bookings found via database service:', allBookings.length);
-        setPendingBookings(allBookings);
+        // If API fails, try getting all bookings and filtering
+        const allBookings = await bookingService.getAllBookings();
+        const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
+        console.log('Pending bookings found:', pendingOnly.length);
+        setPendingBookings(pendingOnly);
       } catch (error) {
         console.error('Error fetching pending bookings:', error);
         toast({
@@ -75,15 +54,23 @@ export const PendingBookingsCard = () => {
   }, []);
 
   // Handle booking approval
-  const handleApproveBooking = async (bookingId, userId) => {
+  const handleApproveBooking = async (booking) => {
     try {
-      console.log(`Approving booking: ${bookingId} for user: ${userId}`);
+      console.log(`Approving booking: ${booking._id || booking.id}`);
+      const bookingId = booking._id || booking.id;
       
       const success = await bookingService.updateBookingStatus(bookingId, 'Approved');
       
       if (success) {
-        // Update the local state
-        setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
+        // Update the local state by removing the approved booking
+        setPendingBookings(prevBookings => 
+          prevBookings.filter(b => (b._id || b.id) !== bookingId)
+        );
+        
+        toast({
+          title: "Booking Approved",
+          description: "The booking has been approved successfully.",
+        });
       } else {
         throw new Error("Failed to update booking status");
       }
@@ -98,15 +85,24 @@ export const PendingBookingsCard = () => {
   };
 
   // Handle booking rejection
-  const handleRejectBooking = async (bookingId, userId) => {
+  const handleRejectBooking = async (booking) => {
     try {
-      console.log(`Rejecting booking: ${bookingId} for user: ${userId}`);
+      console.log(`Rejecting booking: ${booking._id || booking.id}`);
+      const bookingId = booking._id || booking.id;
       
       const success = await bookingService.updateBookingStatus(bookingId, 'Rejected');
       
       if (success) {
-        // Update the local state
-        setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
+        // Update the local state by removing the rejected booking
+        setPendingBookings(prevBookings => 
+          prevBookings.filter(b => (b._id || b.id) !== bookingId)
+        );
+        
+        toast({
+          title: "Booking Rejected",
+          description: "The booking has been rejected.",
+          variant: "destructive",
+        });
       } else {
         throw new Error("Failed to update booking status");
       }
@@ -117,18 +113,6 @@ export const PendingBookingsCard = () => {
         description: "Failed to reject the booking",
         variant: "destructive",
       });
-    }
-  };
-
-  // Get machine name
-  const getMachineName = async (machineId) => {
-    try {
-      const machines = await userDatabaseService.getAllMachines();
-      const machine = machines.find(m => m.id === machineId);
-      return machine ? machine.name : 'Unknown Machine';
-    } catch (error) {
-      console.error('Error getting machine name:', error);
-      return 'Unknown Machine';
     }
   };
 
@@ -149,7 +133,7 @@ export const PendingBookingsCard = () => {
         ) : (
           <div className="space-y-4">
             {pendingBookings.map((booking) => (
-              <div key={booking.id} className="p-3 bg-gray-50 rounded-md">
+              <div key={booking._id || booking.id} className="p-3 bg-gray-50 rounded-md">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-medium text-sm">{booking.machineName || `Machine ID: ${booking.machineId}`}</h4>
@@ -159,9 +143,9 @@ export const PendingBookingsCard = () => {
                     </div>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Calendar className="h-3 w-3" />
-                      <span>{booking.date}</span>
+                      <span>{booking.date ? new Date(booking.date).toLocaleDateString() : 'Unknown Date'}</span>
                       <Clock className="h-3 w-3 ml-1" />
-                      <span>{booking.time}</span>
+                      <span>{booking.time || 'Unknown Time'}</span>
                     </div>
                   </div>
                   <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
@@ -200,23 +184,33 @@ export const PendingBookingsCard = () => {
                             <h3 className="font-semibold mb-2">Date & Time</h3>
                             <div className="flex items-center gap-2 text-gray-700">
                               <Calendar className="h-4 w-4 text-gray-500" />
-                              {selectedBooking.date}
+                              {selectedBooking.date ? new Date(selectedBooking.date).toLocaleDateString() : 'Unknown Date'}
                             </div>
                             <div className="flex items-center gap-2 text-gray-700 mt-1">
                               <Clock className="h-4 w-4 text-gray-500" />
-                              {selectedBooking.time}
+                              {selectedBooking.time || 'Unknown Time'}
                             </div>
                           </div>
                           <DialogFooter>
                             <Button 
                               variant="outline" 
-                              onClick={() => handleRejectBooking(selectedBooking.id, selectedBooking.userId)}
+                              onClick={() => {
+                                handleRejectBooking(selectedBooking);
+                                document.querySelector('[data-state="open"][role="dialog"]')?.dispatchEvent(
+                                  new KeyboardEvent('keydown', { key: 'Escape' })
+                                );
+                              }}
                               className="border-red-200 hover:bg-red-50 text-red-600"
                             >
                               Reject
                             </Button>
                             <Button 
-                              onClick={() => handleApproveBooking(selectedBooking.id, selectedBooking.userId)}
+                              onClick={() => {
+                                handleApproveBooking(selectedBooking);
+                                document.querySelector('[data-state="open"][role="dialog"]')?.dispatchEvent(
+                                  new KeyboardEvent('keydown', { key: 'Escape' })
+                                );
+                              }}
                               className="bg-green-600 hover:bg-green-700"
                             >
                               Approve
@@ -230,14 +224,14 @@ export const PendingBookingsCard = () => {
                     variant="outline" 
                     size="sm" 
                     className="text-xs h-8 border-red-200 hover:bg-red-50 text-red-600"
-                    onClick={() => handleRejectBooking(booking.id, booking.userId)}
+                    onClick={() => handleRejectBooking(booking)}
                   >
                     Reject
                   </Button>
                   <Button 
                     size="sm" 
                     className="text-xs h-8 bg-green-600 hover:bg-green-700 ml-auto"
-                    onClick={() => handleApproveBooking(booking.id, booking.userId)}
+                    onClick={() => handleApproveBooking(booking)}
                   >
                     Approve
                   </Button>

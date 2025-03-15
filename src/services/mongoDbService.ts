@@ -74,6 +74,35 @@ class MongoDbService {
     }
   }
   
+  // Get all bookings (for admin)
+  async getAllBookings(): Promise<any[]> {
+    if (isWeb) return [];
+    
+    try {
+      // Make an API request to get all bookings
+      const response = await fetch(`/api/bookings/all`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`Error getting all bookings: ${errorData.message || response.statusText}`);
+        return [];
+      }
+      
+      const bookings = await response.json();
+      console.log('Successfully retrieved all bookings:', bookings.length);
+      return bookings;
+    } catch (error) {
+      console.error('Error in MongoDbService.getAllBookings:', error);
+      return [];
+    }
+  }
+  
   // Machine methods
   async getMachineStatuses(): Promise<MongoMachineStatus[]> {
     if (isWeb) return [];

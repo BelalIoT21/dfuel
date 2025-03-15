@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -65,10 +66,11 @@ export class BookingService {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      // Use the API service for server-side updates
-      const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status });
+      // Try direct API call first (most reliable)
+      const response = await apiService.updateBookingStatus(bookingId, status);
       
-      if (!response.error) {
+      if (response && !response.error) {
+        console.log("Successfully updated booking status via API");
         toast({
           title: `Booking ${status}`,
           description: `The booking has been ${status.toLowerCase()} successfully.`,
@@ -76,6 +78,8 @@ export class BookingService {
         });
         return true;
       }
+      
+      console.error("API request failed, trying alternative methods");
       
       // If API fails, try MongoDB directly if not in web environment
       if (!isWeb) {
@@ -106,7 +110,12 @@ export class BookingService {
         return true;
       }
       
-      console.error("Failed to update booking status");
+      console.error("All attempts to update booking status failed");
+      toast({
+        title: "Error",
+        description: "There was a problem updating the booking status.",
+        variant: "destructive"
+      });
       return false;
     } catch (error) {
       console.error("Error in BookingService.updateBookingStatus:", error);
@@ -116,6 +125,35 @@ export class BookingService {
         variant: "destructive"
       });
       return false;
+    }
+  }
+  
+  // Get all bookings (admin only)
+  async getAllBookings(): Promise<any[]> {
+    try {
+      console.log("BookingService.getAllBookings: Fetching all bookings");
+      
+      // Try API first
+      const response = await apiService.getAllBookings();
+      if (response && response.data) {
+        console.log("Retrieved all bookings from API:", response.data.length);
+        return response.data;
+      }
+      
+      // If API fails, try MongoDB directly
+      if (!isWeb) {
+        const bookings = await mongoDbService.getAllBookings();
+        if (bookings && bookings.length > 0) {
+          console.log("Retrieved all bookings from MongoDB:", bookings.length);
+          return bookings;
+        }
+      }
+      
+      // As a last resort, use bookingDatabaseService
+      return bookingDatabaseService.getAllPendingBookings(); // This will get all bookings, not just pending
+    } catch (error) {
+      console.error("Error in BookingService.getAllBookings:", error);
+      return [];
     }
   }
 }
