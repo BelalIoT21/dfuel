@@ -25,12 +25,11 @@ const CertificationsCard = () => {
         data["5"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
         data["4"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
         data["3"] = { name: "Safety Cabinet", type: "Safety Cabinet" };
-        data["7"] = { name: "X1 E Carbon 3D Printer", type: "3D Printer" };
         
         if (user?.certifications) {
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["3", "4", "5", "6", "7"].includes(certId)) continue;
+            if (["3", "4", "5", "6"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
@@ -68,7 +67,7 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
-  // Get user certifications
+  // Get user certifications, but exclude Machine Safety Course (ID 6)
   const userCertifications = user.certifications
     .map(certId => ({
       id: certId,
@@ -92,8 +91,6 @@ const CertificationsCard = () => {
         // Check if we can map to a simple ID
         if (machineData[machineId]?.name?.includes("Bambu")) {
           shortId = "5"; // Use ID 5 for Bambu printers
-        } else if (machineData[machineId]?.name?.includes("Carbon")) {
-          shortId = "7"; // Use ID 7 for X1 E Carbon
         } else if (machineData[machineId]?.name?.includes("Laser")) {
           shortId = "1"; // Use ID 1 for Laser Cutters
         } else if (machineData[machineId]?.name?.includes("Ultimaker")) {

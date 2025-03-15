@@ -40,12 +40,6 @@ export const useMachineDetails = (machineId, user, navigation) => {
           machineData.type = "Safety Course";
         }
         
-        // Special handling for X1 E Carbon (ID: 7)
-        if (machineId === "7") {
-          machineData.type = "3D Printer";
-          machineData.name = "X1 E Carbon 3D Printer";
-        }
-        
         // Get machine status from MongoDB
         let status;
         try {

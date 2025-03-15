@@ -33,8 +33,6 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       types["4"] = "3D Printer";      // Added ID 4
       names["5"] = "Bambu Lab X1 E";
       types["5"] = "3D Printer";
-      names["7"] = "X1 E Carbon 3D Printer";
-      types["7"] = "3D Printer";
       
       if (user.certifications && user.certifications.length > 0) {
         // First try to get all machines at once to avoid multiple API calls
@@ -53,7 +51,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Process certifications
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "4", "5", "6", "7"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
             
             // First check our map
             if (machineMap[certId]) {
@@ -83,7 +81,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Fall back to individual fetches
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "4", "5", "6", "7"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
