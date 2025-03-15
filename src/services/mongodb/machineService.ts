@@ -14,6 +14,19 @@ class MongoMachineService {
         if (db) {
           this.machineStatusesCollection = db.collection<MongoMachineStatus>('machineStatuses');
           this.machinesCollection = db.collection<MongoMachine>('machines');
+          
+          // Log collection details for debugging
+          console.log(`MongoDB Collections initialized: 
+            - machineStatuses: ${this.machineStatusesCollection ? 'OK' : 'Failed'}
+            - machines: ${this.machinesCollection ? 'OK' : 'Failed'}`);
+          
+          // Check if machines collection is empty and log it
+          if (this.machinesCollection) {
+            const count = await this.machinesCollection.countDocuments();
+            console.log(`Machines collection has ${count} documents`);
+          }
+        } else {
+          console.error("Failed to connect to MongoDB database");
         }
       }
     } catch (error) {
@@ -141,6 +154,37 @@ class MongoMachineService {
     } catch (error) {
       console.error("Error adding machine to MongoDB:", error);
       return false;
+    }
+  }
+  
+  // Helper method to seed some default machines if none exist
+  async seedDefaultMachines(): Promise<void> {
+    await this.initCollections();
+    if (!this.machinesCollection) return;
+    
+    try {
+      const count = await this.machinesCollection.countDocuments();
+      if (count === 0) {
+        console.log("No machines found in MongoDB, seeding default machines...");
+        
+        const defaultMachines: MongoMachine[] = [
+          { _id: '1', name: 'Laser Cutter', type: 'Cutting', status: 'Available', description: 'Precision laser cutting machine', requiresCertification: true },
+          { _id: '2', name: '3D Printer', type: 'Printing', status: 'Available', description: '3D printing for rapid prototyping', requiresCertification: true },
+          { _id: '3', name: 'CNC Router', type: 'Cutting', status: 'Available', description: 'Computer-controlled cutting machine', requiresCertification: true },
+          { _id: '4', name: 'Vinyl Cutter', type: 'Cutting', status: 'Available', description: 'For cutting vinyl and other thin materials', requiresCertification: false },
+          { _id: '5', name: 'Soldering Station', type: 'Electronics', status: 'Available', description: 'For electronics work and repairs', requiresCertification: false }
+        ];
+        
+        for (const machine of defaultMachines) {
+          await this.addMachine(machine);
+        }
+        
+        console.log("Successfully seeded default machines to MongoDB");
+      } else {
+        console.log(`Found ${count} existing machines in MongoDB, skipping seed`);
+      }
+    } catch (error) {
+      console.error("Error seeding default machines to MongoDB:", error);
     }
   }
 }

@@ -67,19 +67,21 @@ export class BookingService {
     
     try {
       // Try direct API call first (most reliable)
-      const response = await apiService.updateBookingStatus(bookingId, status);
-      
-      if (response && !response.error) {
-        console.log("Successfully updated booking status via API");
-        toast({
-          title: `Booking ${status}`,
-          description: `The booking has been ${status.toLowerCase()} successfully.`,
-          variant: status === 'Approved' ? 'default' : 'destructive',
-        });
-        return true;
+      try {
+        const response = await apiService.updateBookingStatus(bookingId, status);
+        
+        if (response && !response.error) {
+          console.log("Successfully updated booking status via API");
+          toast({
+            title: `Booking ${status}`,
+            description: `The booking has been ${status.toLowerCase()} successfully.`,
+            variant: status === 'Approved' ? 'default' : 'destructive',
+          });
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API request failed, trying alternative methods", apiError);
       }
-      
-      console.error("API request failed, trying alternative methods");
       
       // If API fails, try MongoDB directly if not in web environment
       if (!isWeb) {
@@ -134,10 +136,21 @@ export class BookingService {
       console.log("BookingService.getAllBookings: Fetching all bookings");
       
       // Try API first
-      const response = await apiService.getAllBookings();
-      if (response && response.data) {
-        console.log("Retrieved all bookings from API:", response.data.length);
-        return response.data;
+      try {
+        const response = await apiService.getAllBookings();
+        if (response && response.data) {
+          console.log("Retrieved all bookings from API:", response.data.length);
+          // Add machine names if missing
+          const bookingsWithNames = response.data.map(booking => {
+            if (!booking.machineName) {
+              booking.machineName = this.getMachineName(booking.machineId);
+            }
+            return booking;
+          });
+          return bookingsWithNames;
+        }
+      } catch (apiError) {
+        console.error("API error when fetching bookings:", apiError);
       }
       
       // If API fails, try MongoDB directly
@@ -146,7 +159,14 @@ export class BookingService {
           const bookings = await mongoDbService.getAllBookings();
           if (bookings && bookings.length > 0) {
             console.log("Retrieved all bookings from MongoDB:", bookings.length);
-            return bookings;
+            // Add machine names if missing
+            const bookingsWithNames = bookings.map(booking => {
+              if (!booking.machineName) {
+                booking.machineName = this.getMachineName(booking.machineId);
+              }
+              return booking;
+            });
+            return bookingsWithNames;
           }
         } catch (mongoError) {
           console.error("MongoDB error when fetching bookings:", mongoError);
@@ -156,11 +176,31 @@ export class BookingService {
       // As a last resort, use bookingDatabaseService
       const bookings = await bookingDatabaseService.getAllPendingBookings();
       console.log("Retrieved all bookings from local database:", bookings.length);
-      return bookings;
+      // Make sure machine names are set correctly
+      const bookingsWithNames = bookings.map(booking => {
+        if (!booking.machineName) {
+          booking.machineName = this.getMachineName(booking.machineId);
+        }
+        return booking;
+      });
+      return bookingsWithNames;
     } catch (error) {
       console.error("Error in BookingService.getAllBookings:", error);
       return [];
     }
+  }
+  
+  // Helper method to get machine name from ID
+  private getMachineName(machineId: string): string {
+    const machineMap = {
+      '1': 'Laser Cutter',
+      '2': '3D Printer',
+      '3': 'CNC Router',
+      '4': 'Vinyl Cutter',
+      '5': 'Soldering Station'
+    };
+    
+    return machineMap[machineId] || `Machine ${machineId}`;
   }
 }
 

@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import { userDatabaseService } from './userService';
@@ -168,15 +169,22 @@ export class BookingDatabaseService extends BaseService {
           if (bookingIndex >= 0) {
             user.bookings[bookingIndex].status = status;
             
-            // Update the user in local storage
-            const usersCopy = await this.getItem('users') || [];
-            const userIndex = usersCopy.findIndex((u: any) => u.id === user.id);
-            if (userIndex >= 0) {
-              usersCopy[userIndex] = user;
-              await this.setItem('users', usersCopy);
-              console.log("Booking status updated in local storage");
-              updated = true;
-              break;
+            // Update the user in local storage using direct access to localStorage
+            try {
+              const storedUsers = localStorage.getItem('users');
+              if (storedUsers) {
+                const usersCopy = JSON.parse(storedUsers);
+                const userIndex = usersCopy.findIndex((u: any) => u.id === user.id);
+                if (userIndex >= 0) {
+                  usersCopy[userIndex] = user;
+                  localStorage.setItem('users', JSON.stringify(usersCopy));
+                  console.log("Booking status updated in local storage");
+                  updated = true;
+                  break;
+                }
+              }
+            } catch (localStorageError) {
+              console.error("Error updating local storage:", localStorageError);
             }
           }
         }
@@ -223,8 +231,8 @@ export class BookingDatabaseService extends BaseService {
               userId: user.id,
               // Add additional fields to match MongoDB response format
               _id: booking.id,
-              machineName: `Machine ${booking.machineId}`, // Provide a default machine name
-              machineType: 'Unknown Type',
+              machineName: this.getMachineName(booking.machineId), // Use helper method to get proper machine name
+              machineType: this.getMachineType(booking.machineId),
             });
           }
         }
@@ -236,6 +244,34 @@ export class BookingDatabaseService extends BaseService {
       console.error("Error getting all bookings:", error);
       return [];
     }
+  }
+  
+  // Helper method to get machine name by ID
+  private getMachineName(machineId: string): string {
+    const machines = [
+      { id: '1', name: 'Laser Cutter' },
+      { id: '2', name: '3D Printer' },
+      { id: '3', name: 'CNC Router' },
+      { id: '4', name: 'Vinyl Cutter' },
+      { id: '5', name: 'Soldering Station' }
+    ];
+    
+    const machine = machines.find(m => m.id === machineId);
+    return machine ? machine.name : `Machine ${machineId}`;
+  }
+  
+  // Helper method to get machine type by ID
+  private getMachineType(machineId: string): string {
+    const machines = [
+      { id: '1', type: 'Cutting' },
+      { id: '2', type: 'Printing' },
+      { id: '3', type: 'Cutting' },
+      { id: '4', type: 'Cutting' },
+      { id: '5', type: 'Electronics' }
+    ];
+    
+    const machine = machines.find(m => m.id === machineId);
+    return machine ? machine.type : 'Unknown Type';
   }
 }
 

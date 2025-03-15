@@ -7,6 +7,23 @@ import { isWeb } from '../utils/platform';
 
 // Maintains the same API as the original monolithic service
 class MongoDbService {
+  constructor() {
+    // Initialize and seed MongoDB when the service is created
+    if (!isWeb) {
+      this.initialize();
+    }
+  }
+  
+  async initialize() {
+    try {
+      console.log("Initializing MongoDB service...");
+      await mongoConnectionService.connect();
+      await mongoMachineService.seedDefaultMachines();
+    } catch (error) {
+      console.error("Error initializing MongoDB service:", error);
+    }
+  }
+  
   // User methods
   async getUsers(): Promise<MongoUser[]> {
     // Skip MongoDB in browser environment
@@ -50,24 +67,52 @@ class MongoDbService {
     try {
       console.log(`MongoDbService: Updating booking ${bookingId} to ${status}`);
       
-      // Make an API request to update the booking status
-      const response = await fetch(`/api/bookings/${bookingId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ status })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`Error updating booking status: ${errorData.message || response.statusText}`);
-        return false;
+      // First, try to update through the user collection
+      const allUsers = await mongoUserService.getUsers();
+      for (const user of allUsers) {
+        if (user.bookings && user.bookings.length > 0) {
+          const bookingIndex = user.bookings.findIndex(b => 
+            (b._id?.toString() === bookingId) || (b.id === bookingId)
+          );
+          
+          if (bookingIndex >= 0) {
+            // Found the booking, update its status
+            user.bookings[bookingIndex].status = status;
+            const success = await mongoUserService.updateUser(user._id, user);
+            if (success) {
+              console.log(`Successfully updated booking ${bookingId} to ${status} in MongoDB`);
+              return true;
+            }
+          }
+        }
       }
       
-      console.log('Successfully updated booking status via API');
-      return true;
+      // If we reach here, we couldn't find the booking in any user
+      console.error(`Could not find booking ${bookingId} in any user's bookings`);
+      
+      // Make an API request to update the booking status as a fallback
+      try {
+        const response = await fetch(`/api/bookings/${bookingId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ status })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error(`Error updating booking status: ${errorData.message || response.statusText}`);
+          return false;
+        }
+        
+        console.log('Successfully updated booking status via API');
+        return true;
+      } catch (error) {
+        console.error('Error in API fallback for updateBookingStatus:', error);
+        return false;
+      }
     } catch (error) {
       console.error('Error in MongoDbService.updateBookingStatus:', error);
       return false;
@@ -79,24 +124,37 @@ class MongoDbService {
     if (isWeb) return [];
     
     try {
-      // Make an API request to get all bookings
-      const response = await fetch(`/api/bookings/all`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      console.log("Getting all bookings from MongoDB");
+      const allUsers = await mongoUserService.getUsers();
+      const allBookings = [];
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error(`Error getting all bookings: ${errorData.message || response.statusText}`);
-        return [];
+      for (const user of allUsers) {
+        if (user.bookings && user.bookings.length > 0) {
+          for (const booking of user.bookings) {
+            // Get machine name
+            let machineName = "Unknown Machine";
+            try {
+              const machine = await mongoMachineService.getMachineById(booking.machineId);
+              machineName = machine?.name || this.getMachineName(booking.machineId);
+            } catch (err) {
+              console.error("Error getting machine name:", err);
+            }
+            
+            allBookings.push({
+              ...booking,
+              _id: booking._id || booking.id,
+              id: booking.id || booking._id,
+              userId: user._id,
+              userName: user.name,
+              userEmail: user.email,
+              machineName
+            });
+          }
+        }
       }
       
-      const bookings = await response.json();
-      console.log('Successfully retrieved all bookings from MongoDB:', bookings.length);
-      return bookings;
+      console.log(`Retrieved ${allBookings.length} bookings from MongoDB`);
+      return allBookings;
     } catch (error) {
       console.error('Error in MongoDbService.getAllBookings:', error);
       return [];
@@ -138,6 +196,19 @@ class MongoDbService {
   async addMachine(machine: MongoMachine): Promise<boolean> {
     if (isWeb) return false;
     return mongoMachineService.addMachine(machine);
+  }
+  
+  // Helper method to get machine name from ID
+  private getMachineName(machineId: string): string {
+    const machineMap = {
+      '1': 'Laser Cutter',
+      '2': '3D Printer',
+      '3': 'CNC Router',
+      '4': 'Vinyl Cutter',
+      '5': 'Soldering Station'
+    };
+    
+    return machineMap[machineId] || `Machine ${machineId}`;
   }
   
   // Connection method

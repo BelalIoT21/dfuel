@@ -23,17 +23,6 @@ export const PendingBookingsCard = () => {
         console.log('Fetching pending bookings...');
         
         // Get all bookings and filter for pending only
-        const response = await apiService.getAllBookings();
-        if (response && response.data) {
-          const allBookings = response.data;
-          const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
-          console.log('Pending bookings found via API:', pendingOnly.length);
-          setPendingBookings(pendingOnly);
-          setLoading(false);
-          return;
-        }
-        
-        // If API fails, try getting all bookings and filtering
         const allBookings = await bookingService.getAllBookings();
         const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
         console.log('Pending bookings found:', pendingOnly.length);
@@ -115,6 +104,19 @@ export const PendingBookingsCard = () => {
       });
     }
   };
+  
+  // Get machine name by ID for better display
+  const getMachineName = (machineId) => {
+    const machines = {
+      '1': 'Laser Cutter',
+      '2': '3D Printer',
+      '3': 'CNC Router',
+      '4': 'Vinyl Cutter',
+      '5': 'Soldering Station'
+    };
+    
+    return machines[machineId] || `Machine ${machineId}`;
+  };
 
   return (
     <Card className="border-purple-100">
@@ -136,7 +138,9 @@ export const PendingBookingsCard = () => {
               <div key={booking._id || booking.id} className="p-3 bg-gray-50 rounded-md">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h4 className="font-medium text-sm">{booking.machineName || `Machine ID: ${booking.machineId}`}</h4>
+                    <h4 className="font-medium text-sm">
+                      {booking.machineName || getMachineName(booking.machineId)}
+                    </h4>
                     <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                       <User className="h-3 w-3" />
                       <span>{booking.userName}</span>
@@ -175,7 +179,9 @@ export const PendingBookingsCard = () => {
                           </DialogHeader>
                           <div className="py-4">
                             <h3 className="font-semibold mb-2">Machine</h3>
-                            <p className="text-gray-700 mb-4">{selectedBooking.machineName || `Machine ID: ${selectedBooking.machineId}`}</p>
+                            <p className="text-gray-700 mb-4">
+                              {selectedBooking.machineName || getMachineName(selectedBooking.machineId)}
+                            </p>
                             
                             <h3 className="font-semibold mb-2">User</h3>
                             <p className="text-gray-700">{selectedBooking.userName}</p>
