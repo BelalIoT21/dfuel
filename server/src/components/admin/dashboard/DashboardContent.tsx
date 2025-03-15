@@ -25,7 +25,7 @@ export const DashboardContent = () => {
         }
         
         // Get machine statuses - first try MongoDB, then fall back to static data
-        let mongoDatabaseMachines = [];
+        let mongoDatabaseMachines: any[] = [];
         try {
           mongoDatabaseMachines = await mongoDbService.getAllMachines();
           console.log('Retrieved machines from MongoDB:', mongoDatabaseMachines);
