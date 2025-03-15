@@ -87,7 +87,7 @@ export class MachineService {
             return {
               id: mongoMachine._id,
               name: mongoMachine.name,
-              type: mongoMachine.type === 'Safety Cabinet' ? 'Equipment' : mongoMachine.type,
+              type: mongoMachine.type,
               description: mongoMachine.description,
               status: status || mongoMachine.status || 'available',
               requiresCertification: mongoMachine.requiresCertification,
@@ -110,7 +110,7 @@ export class MachineService {
         return {
           ...machine,
           status: status || 'available',
-          type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine'
+          type: machine.type
         };
       }
       
@@ -134,7 +134,7 @@ export class MachineService {
             return mongoMachines.map(machine => ({
               id: machine._id.toString(),
               name: machine.name,
-              type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine',
+              type: machine.type,
               description: machine.description,
               status: machine.status.toLowerCase(),
               requiresCertification: machine.requiresCertification,
@@ -150,7 +150,7 @@ export class MachineService {
       // Fallback to local data
       return machines.map(machine => ({
         ...machine,
-        type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine'
+        type: machine.type
       }));
     } catch (error) {
       console.error("Error getting machines data:", error);
