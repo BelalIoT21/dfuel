@@ -1,6 +1,7 @@
 
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
+import { machines } from '../utils/data';
 
 export class MachineService {
   // Update machine status
@@ -62,6 +63,30 @@ export class MachineService {
     }
     
     return localStorageService.getMachineMaintenanceNote(machineId);
+  }
+  
+  // Get machine by ID - new method to fix the booking page
+  async getMachineById(machineId: string): Promise<any | null> {
+    try {
+      console.log(`Getting machine by ID: ${machineId}`);
+      const allMachines = await this.getMachines();
+      const machine = allMachines.find(m => m.id === machineId);
+      
+      if (machine) {
+        // Get the latest status
+        const status = await this.getMachineStatus(machineId);
+        return {
+          ...machine,
+          status: status || 'available'
+        };
+      }
+      
+      console.log(`Machine not found with ID: ${machineId}`);
+      return null;
+    } catch (error) {
+      console.error(`Error getting machine with ID ${machineId}:`, error);
+      return null;
+    }
   }
   
   // Helper method to get machines

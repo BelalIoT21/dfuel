@@ -34,10 +34,13 @@ const BookingPage = () => {
         if (!id) return;
         setLoading(true);
         setError(null);
+        console.log(`Attempting to load machine with ID: ${id}`);
         const foundMachine = await machineService.getMachineById(id);
         if (foundMachine) {
+          console.log(`Successfully loaded machine:`, foundMachine);
           setMachine(foundMachine);
         } else {
+          console.error(`Machine not found with ID: ${id}`);
           setError('Machine not found');
         }
       } catch (err) {
@@ -115,7 +118,8 @@ const BookingPage = () => {
               setLoading(false);
             }
           })
-          .catch(() => {
+          .catch((error) => {
+            console.error("Error in retry:", error);
             setError('Failed to load machine details');
             setLoading(false);
           });
