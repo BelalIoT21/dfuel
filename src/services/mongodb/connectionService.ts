@@ -20,7 +20,7 @@ class MongoConnectionService {
   async connect(): Promise<any | null> {
     // Skip MongoDB connection in browser environment
     if (isWeb) {
-      console.log("Running in browser environment, skipping MongoDB connection");
+      console.log("Running in browser environment, using server API for MongoDB access");
       return null;
     }
     
