@@ -44,6 +44,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
+      setOpen(false); // Close dialog after action
     }
   };
 
@@ -74,6 +75,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
+      setOpen(false); // Close dialog after action
     }
   };
 
@@ -104,6 +106,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
+      setOpen(false); // Close dialog after action
     }
   };
 
@@ -134,6 +137,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
+      setOpen(false); // Close dialog after action
     }
   };
 

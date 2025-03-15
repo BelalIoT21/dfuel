@@ -17,6 +17,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const names = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
+          // Skip fetch if it's Machine Safety Course
+          if (certId === "6") continue;
           try {
             const machine = await machineService.getMachineById(certId);
             if (machine) {

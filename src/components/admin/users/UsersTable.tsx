@@ -38,7 +38,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
   const getMachineName = (certId: string) => {
     // Special case for Machine Safety Course
     if (certId === "6") return "Machine Safety Course";
-    // Special case for Safety Cabinet
+    // Special case for Bambu Lab X1 E
     if (certId === "5") return "Bambu Lab X1 E";
     
     // First try to find from fetched machines
@@ -80,7 +80,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      // Filter out machine safety course (ID: "6") from visible certifications
+                      // Remove ALL Machine Safety Course (ID: "6") from visible certifications
                       user.certifications
                         .filter((cert: string) => cert !== "6")
                         .map((cert: string) => (
