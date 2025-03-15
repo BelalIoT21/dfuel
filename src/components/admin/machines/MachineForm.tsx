@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 export interface MachineFormData {
   name: string;
@@ -21,6 +23,16 @@ export interface MachineFormData {
   certificationInstructions?: string;
   linkedCourseId?: string;
   linkedQuizId?: string;
+}
+
+interface Course {
+  id: string;
+  name: string;
+}
+
+interface Quiz {
+  id: string;
+  name: string;
 }
 
 interface MachineFormProps {
@@ -44,6 +56,24 @@ const MachineForm: React.FC<MachineFormProps> = ({
   description,
   submitLabel,
 }) => {
+  const { toast } = useToast();
+  const [courses, setCourses] = useState<Course[]>([
+    { id: '1', name: 'Basic Safety Training' },
+    { id: '2', name: 'Advanced Machine Operation' },
+    { id: '3', name: 'Laser Cutter Safety' },
+    { id: '4', name: '3D Printing Fundamentals' },
+    { id: '5', name: 'Woodworking Basics' },
+    { id: '6', name: 'Machine Safety Course' }
+  ]);
+
+  const [quizzes, setQuizzes] = useState<Quiz[]>([
+    { id: '1', name: 'Safety Knowledge Test' },
+    { id: '2', name: 'Machine Operation Quiz' },
+    { id: '3', name: 'Laser Cutter Certification' },
+    { id: '4', name: '3D Printing Assessment' },
+    { id: '5', name: 'Woodworking Safety Quiz' }
+  ]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -204,25 +234,45 @@ const MachineForm: React.FC<MachineFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="linkedCourseId">Linked Course ID</Label>
-              <Input
-                id="linkedCourseId"
+              <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
+              <Select
                 value={formData.linkedCourseId || ''}
-                onChange={handleInputChange}
-                placeholder="Enter linked course ID"
-              />
-              <p className="text-xs text-gray-500">Enter the ID of the safety course for this machine</p>
+                onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Select the safety course for this machine</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="linkedQuizId">Linked Quiz ID</Label>
-              <Input
-                id="linkedQuizId"
+              <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
+              <Select
                 value={formData.linkedQuizId || ''}
-                onChange={handleInputChange}
-                placeholder="Enter linked quiz ID"
-              />
-              <p className="text-xs text-gray-500">Enter the ID of the certification quiz for this machine</p>
+                onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a quiz" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {quizzes.map(quiz => (
+                    <SelectItem key={quiz.id} value={quiz.id}>
+                      {quiz.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Select the certification quiz for this machine</p>
             </div>
           </TabsContent>
         </Tabs>

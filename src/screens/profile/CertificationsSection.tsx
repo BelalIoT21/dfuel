@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { List } from 'react-native-paper';
@@ -66,7 +67,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     if (certId === "6") return "Safety Course";
     if (certId === "5") return "3D Printer";
     if (certId === "3") return "Safety Cabinet";
-    return machineTypes[certId] || "Machine";
+    const type = machineTypes[certId];
+    if (!type || type === '') return "Machine";
+    return type;
   };
 
   return (

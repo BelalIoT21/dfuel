@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,6 @@ const AdminMachines = () => {
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  // Form state for new/edit machine
   const [formData, setFormData] = useState<MachineFormData>({
     name: '',
     description: '',
@@ -39,8 +37,7 @@ const AdminMachines = () => {
     linkedCourseId: '',
     linkedQuizId: '',
   });
-  
-  // Fetch machines and users on component mount
+
   useEffect(() => {
     const fetchMachines = async () => {
       try {
@@ -48,7 +45,6 @@ const AdminMachines = () => {
         if (fetchedMachines && fetchedMachines.length > 0) {
           setMachinesList(fetchedMachines);
         } else {
-          // Fallback to mock data if API fails
           setMachinesList(machines);
         }
         setInitialLoadComplete(true);
@@ -71,7 +67,7 @@ const AdminMachines = () => {
     fetchMachines();
     fetchUsers();
   }, []);
-  
+
   if (!user?.isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -86,7 +82,6 @@ const AdminMachines = () => {
     );
   }
 
-  // Filter machines based on search term
   const filteredMachines = machinesList
     .filter(machine => 
       machine.type !== 'Equipment' && 
@@ -101,7 +96,6 @@ const AdminMachines = () => {
     try {
       setIsSubmitting(true);
       
-      // Call the API to create a new machine
       const newMachine = await machineDatabaseService.createMachine(formData);
       
       if (!newMachine) {
@@ -113,10 +107,8 @@ const AdminMachines = () => {
         description: `${formData.name} has been added successfully.`
       });
       
-      // Update the machines list
       setMachinesList(prev => [...prev, newMachine]);
       
-      // Reset form and state
       setIsAddingMachine(false);
       setFormData({
         name: '',
@@ -171,7 +163,6 @@ const AdminMachines = () => {
     try {
       setIsSubmitting(true);
       
-      // Call the API to update the machine
       const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
       
       if (!updatedMachine) {
@@ -183,7 +174,6 @@ const AdminMachines = () => {
         description: `${formData.name} has been updated successfully.`
       });
       
-      // Update the machines list
       setMachinesList(prev => 
         prev.map(m => 
           (m.id === editingMachineId || m._id === editingMachineId) 
@@ -192,7 +182,6 @@ const AdminMachines = () => {
         )
       );
       
-      // Reset form and state
       setEditingMachineId(null);
       setFormData({
         name: '',
@@ -233,7 +222,6 @@ const AdminMachines = () => {
         description: "The machine has been deleted successfully."
       });
       
-      // Update the machines list
       setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
     } catch (error) {
       console.error("Error deleting machine:", error);
@@ -245,13 +233,12 @@ const AdminMachines = () => {
     }
   };
 
-  // Calculate real stats for each machine
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
       user.certifications && user.certifications.includes(machineId)
     ).length;
   };
-  
+
   const getBookingsThisMonth = (machineId: string) => {
     let count = 0;
     allUsers.forEach(user => {
@@ -264,6 +251,11 @@ const AdminMachines = () => {
     });
     
     return count;
+  };
+
+  const getMachineType = (type: string | undefined) => {
+    if (!type || type === '') return 'Machine';
+    return type;
   };
 
   return (
@@ -351,7 +343,7 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Type: {machine.type || 'Unknown'}
+                          Type: {getMachineType(machine.type)}
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
                           Difficulty: {machine.difficulty || 'Beginner'}
