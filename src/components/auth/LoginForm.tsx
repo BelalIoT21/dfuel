@@ -70,7 +70,7 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
     if (!validateForm()) return;
     
     if (serverStatus === 'disconnected') {
-      setFormError('Cannot connect to server. Please ensure the backend server is running and MongoDB is connected.');
+      setFormError('Cannot connect to server. Please ensure the backend server is running.');
       return;
     }
     
@@ -79,7 +79,7 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError('Authentication failed. Please try again.');
+      setFormError('Authentication failed. Please check your credentials and try again.');
     }
   };
 
@@ -103,7 +103,7 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Server disconnected. Check if backend is running with MongoDB connected.
+              Server disconnected. Please check if the backend server is running.
             </AlertDescription>
           </Alert>
         )}

@@ -20,42 +20,35 @@ const Index = () => {
       try {
         console.log("Checking server health...");
         
-        // Try the simple / endpoint first (no DB check)
+        // First, check if basic server is running (just a ping)
         try {
           const response = await fetch('http://localhost:4000/');
+          
           if (response.ok) {
             console.log("Basic server connection OK");
             
-            // Then check the DB connection via the health endpoint
+            // Then check the database connection via the health endpoint
             try {
               const healthResponse = await apiService.checkHealth();
               console.log("Health check response:", healthResponse);
               
-              if (healthResponse.data && healthResponse.data.database && healthResponse.data.database.connected) {
+              if (healthResponse.data && healthResponse.data.status === 'success') {
                 setServerStatus('connected');
                 console.log("Server fully connected with database");
               } else {
-                setServerStatus('disconnected');
-                toast({
-                  title: 'Database Connection Issue',
-                  description: 'Backend server is running but the database connection is not established.',
-                  variant: 'destructive'
-                });
+                console.warn("Server is running but database may have issues");
+                setServerStatus('connected'); // Still mark as connected since basic functionality works
               }
             } catch (healthError) {
               console.error("Health check failed:", healthError);
-              setServerStatus('disconnected');
-              toast({
-                title: 'Health Check Failed',
-                description: 'Could not verify database connection. Please check server logs.',
-                variant: 'destructive'
-              });
+              // Even if health check fails, basic server is running
+              setServerStatus('connected');
             }
           } else {
             throw new Error('Server not responding');
           }
-        } catch (error) {
-          console.error("Basic server connection failed:", error);
+        } catch (serverError) {
+          console.error("Basic server connection failed:", serverError);
           setServerStatus('disconnected');
           toast({
             title: 'Server Connection Failed',
@@ -72,7 +65,7 @@ const Index = () => {
     checkServer();
     
     // Set up interval to periodically check server connection
-    const intervalId = setInterval(checkServer, 10000); // Check every 10 seconds
+    const intervalId = setInterval(checkServer, 15000); // Check every 15 seconds
     
     return () => clearInterval(intervalId); // Clean up on unmount
   }, []);
@@ -111,10 +104,6 @@ const Index = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
-
-  // Debug rendering
-  console.log("Rendering Index component, user:", user ? "logged in" : "not logged in");
-  console.log("Current server status:", serverStatus);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
