@@ -4,7 +4,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import { apiService } from '@/services/apiService';
 import { storage } from '@/utils/storage';
-import { Platform } from 'react-native';
+import { Platform } from '@/utils/platform';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

@@ -6,6 +6,18 @@
 
 export const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
 
+// Platform object to mimic react-native's Platform API
+export const Platform = {
+  OS: isWeb ? 'web' : 'unknown',
+  select: (obj: Record<string, any>) => {
+    if (isWeb && obj.web) {
+      return obj.web;
+    }
+    // Fallback to default or android as a last resort
+    return obj.default || obj.android || null;
+  }
+};
+
 export const isPlatformNative = (): boolean => {
   if (typeof navigator !== 'undefined') {
     return navigator.product === 'ReactNative';

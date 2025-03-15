@@ -1,42 +1,51 @@
 
 /**
- * Platform-agnostic storage implementation that now uses AsyncStorage only for native environments
- * For web, we don't use any client-side storage and rely solely on MongoDB/server-side persistence
+ * Platform-agnostic storage implementation that uses AsyncStorage for native environments
+ * For web, we rely on API/server-side persistence
  */
+import { Platform } from './platform';
+
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     try {
-      // Use a safer approach to access AsyncStorage in native environments
-      const AsyncStorage = this.getNativeStorage();
-      if (AsyncStorage) {
-        return await AsyncStorage.getItem(key);
+      // Only attempt to use AsyncStorage in non-web environments
+      if (Platform.OS !== 'web') {
+        // Use a safer approach to access AsyncStorage in native environments
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          return await AsyncStorage.getItem(key);
+        }
       }
       return null;
     } catch (error) {
-      console.error('AsyncStorage error in getItem:', error);
+      console.error('Storage error in getItem:', error);
       return null;
     }
   }
 
   async setItem(key: string, value: string): Promise<void> {
     try {
-      const AsyncStorage = this.getNativeStorage();
-      if (AsyncStorage) {
-        await AsyncStorage.setItem(key, value);
+      if (Platform.OS !== 'web') {
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          await AsyncStorage.setItem(key, value);
+        }
       }
     } catch (error) {
-      console.error('AsyncStorage error in setItem:', error);
+      console.error('Storage error in setItem:', error);
     }
   }
 
   async removeItem(key: string): Promise<void> {
     try {
-      const AsyncStorage = this.getNativeStorage();
-      if (AsyncStorage) {
-        await AsyncStorage.removeItem(key);
+      if (Platform.OS !== 'web') {
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          await AsyncStorage.removeItem(key);
+        }
       }
     } catch (error) {
-      console.error('AsyncStorage error in removeItem:', error);
+      console.error('Storage error in removeItem:', error);
     }
   }
 
