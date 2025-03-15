@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { motion } from 'framer-motion';
+import { toast } from '@/components/ui/use-toast';
 
 interface RegisterFormProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
@@ -35,6 +37,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   const [passwordError, setPasswordError] = useState('');
   const [nameError, setNameError] = useState('');
   const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -75,11 +78,45 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
     if (!validateForm()) return;
     
     try {
+      setLoading(true);
       await onRegister(email, password, name);
       console.log("Registration successful");
+      
+      // Clear form fields on success
+      setEmail('');
+      setPassword('');
+      setName('');
+      
+      // Success feedback
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully!"
+      });
+      
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError('Registration failed. Please try again.');
+      
+      // Extract appropriate error message
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Check if it's a "user exists" error
+      if (errorMessage.toLowerCase().includes('already exists')) {
+        setEmailError('This email is already registered');
+        setFormError('An account with this email already exists.');
+      } else {
+        setFormError(errorMessage);
+      }
+      
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,6 +151,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={`w-full ${nameError ? 'border-red-500' : ''}`}
+              disabled={loading}
             />
             {nameError && <p className="text-sm text-red-500">{nameError}</p>}
           </motion.div>
@@ -127,6 +165,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={`w-full ${emailError ? 'border-red-500' : ''}`}
+              disabled={loading}
             />
             {emailError && <p className="text-sm text-red-500">{emailError}</p>}
           </motion.div>
@@ -141,6 +180,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                disabled={loading}
               />
               <button 
                 type="button"
@@ -155,8 +195,12 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </motion.div>
         </motion.form>
@@ -171,6 +215,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
             onClick={onToggleMode}
             className="text-sm text-purple-600 hover:underline"
             type="button"
+            disabled={loading}
           >
             Already have an account? Sign In
           </button>
