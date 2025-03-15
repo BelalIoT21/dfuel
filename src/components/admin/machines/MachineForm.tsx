@@ -236,14 +236,14 @@ const MachineForm: React.FC<MachineFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
               <Select
-                value={formData.linkedCourseId || ''}
-                onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
+                value={formData.linkedCourseId || 'none'}
+                onValueChange={(value) => handleSelectChange('linkedCourseId', value === 'none' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {courses.map(course => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.name}
@@ -257,14 +257,14 @@ const MachineForm: React.FC<MachineFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
               <Select
-                value={formData.linkedQuizId || ''}
-                onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
+                value={formData.linkedQuizId || 'none'}
+                onValueChange={(value) => handleSelectChange('linkedQuizId', value === 'none' ? '' : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a quiz" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {quizzes.map(quiz => (
                     <SelectItem key={quiz.id} value={quiz.id}>
                       {quiz.name}
