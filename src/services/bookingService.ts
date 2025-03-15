@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -143,6 +144,24 @@ export class BookingService {
         }
       }
       
+      // Try getting from global bookings collection via API or localStorage
+      try {
+        const allBookings = await this.getAllBookings();
+        console.log("Retrieved all bookings:", allBookings);
+        
+        const userBookings = allBookings.filter(booking => 
+          booking.userId === userId || 
+          booking.user === userId
+        );
+        
+        console.log("Filtered user bookings:", userBookings);
+        if (userBookings.length > 0) {
+          return userBookings;
+        }
+      } catch (error) {
+        console.error("Error filtering user bookings from all bookings:", error);
+      }
+      
       // Try API next
       try {
         const response = await apiService.getUserBookings(userId);
@@ -154,10 +173,17 @@ export class BookingService {
         console.error("API error when getting bookings:", apiError);
       }
       
-      // Fall back to localStorage
+      // Fall back to localStorage - checking user object directly
+      const user = localStorageService.findUserById(userId);
+      if (user && user.bookings && user.bookings.length > 0) {
+        console.log("Retrieved bookings from user in localStorage:", user.bookings);
+        return user.bookings;
+      }
+      
+      // Final attempt - check bookings collection and filter by userId
       const bookings = localStorageService.getBookings();
       const userBookings = bookings.filter(booking => booking.userId === userId);
-      console.log("Retrieved bookings from localStorage:", userBookings);
+      console.log("Retrieved bookings from localStorage bookings collection:", userBookings);
       return userBookings;
     } catch (error) {
       console.error("Error in BookingService.getUserBookings:", error);
