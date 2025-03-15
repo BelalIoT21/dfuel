@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -157,8 +158,13 @@ export const deleteUser = async (req: Request, res: Response) => {
     const userId = req.params.id;
     console.log(`Attempting to delete user with ID: ${userId}`);
     
-    // Find user by ID
-    const user = await User.findById(userId);
+    // Find user by ID - try both direct MongoDB ID and custom ID format
+    let user = await User.findById(userId);
+    
+    // If not found by MongoDB ID, check if it's a custom ID format
+    if (!user && userId.startsWith('user-')) {
+      user = await User.findOne({ id: userId });
+    }
     
     if (!user) {
       console.log(`User with ID ${userId} not found`);
@@ -172,7 +178,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
     
     // Delete user
-    await User.deleteOne({ _id: userId });
+    await User.deleteOne({ _id: user._id });
     console.log(`User ${userId} deleted successfully`);
     
     res.status(200).json({ message: 'User removed successfully' });

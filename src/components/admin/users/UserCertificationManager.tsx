@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -34,20 +34,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
       
-      // First try MongoDB directly
-      let success = false;
-      try {
-        success = await mongoDbService.updateUserCertifications(userId, machineId);
-        console.log(`MongoDB addCertification result: ${success}`);
-      } catch (mongoError) {
-        console.error("MongoDB certification error:", mongoError);
-      }
-      
-      // If MongoDB direct call fails, try certification service (which tries all options)
-      if (!success) {
-        success = await certificationService.addCertification(userId, machineId);
-        console.log(`CertificationService addCertification result: ${success}`);
-      }
+      // Use certificationService as the primary method
+      const success = await certificationService.addCertification(userId, machineId);
       
       if (success) {
         toast({
@@ -88,22 +76,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Removing certification for machine ID: ${machineId} from user ID: ${userId}`);
       
-      let success = false;
-      try {
-        const userDoc = await mongoDbService.getUserById(userId);
-        if (userDoc) {
-          const updatedCertifications = userDoc.certifications.filter(id => id !== machineId);
-          success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
-          console.log(`MongoDB removeCertification result: ${success}`);
-        }
-      } catch (mongoError) {
-        console.error("MongoDB remove certification error:", mongoError);
-      }
-      
-      if (!success) {
-        success = await certificationService.removeCertification(userId, machineId);
-        console.log(`CertificationService removeCertification result: ${success}`);
-      }
+      const success = await certificationService.removeCertification(userId, machineId);
       
       if (success) {
         toast({
@@ -144,42 +117,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
       
-      let success = false;
-      try {
-        // Try direct MongoDB first
-        try {
-          success = await mongoDbService.updateUserCertifications(userId, "6");
-          console.log(`MongoDB addCertification for Safety Course result: ${success}`);
-        } catch (mongoError) {
-          console.error("MongoDB error adding safety certification:", mongoError);
-        }
-        
-        // If MongoDB fails, try certification service
-        if (!success) {
-          console.log("MongoDB failed, trying certification service...");
-          success = await certificationService.addCertification(userId, "6");
-          console.log(`addCertification result: ${success}`);
-        }
-        
-        // Last resort: add directly to localStorage
-        if (!success) {
-          console.log("Both methods failed, trying direct localStorage update...");
-          const user = localStorageService.findUserById(userId);
-          if (user) {
-            if (!user.certifications) user.certifications = [];
-            if (!user.certifications.includes("6")) {
-              user.certifications.push("6");
-              success = localStorageService.updateUser(userId, { certifications: user.certifications });
-              console.log(`Direct localStorage update result: ${success}`);
-            } else {
-              console.log("User already has certification in localStorage");
-              success = true;
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error in addCertification:", error);
-      }
+      const success = await certificationService.addMachineSafetyCertification(userId);
       
       if (success) {
         toast({
@@ -220,28 +158,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Removing Machine Safety Course (ID: 6) for user ${userId}`);
       
-      let success = false;
-      try {
-        // Try MongoDB first
-        try {
-          const userDoc = await mongoDbService.getUserById(userId);
-          if (userDoc) {
-            const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
-            success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
-            console.log(`MongoDB removeCertification for Safety Course result: ${success}`);
-          }
-        } catch (mongoError) {
-          console.error("MongoDB remove certification error:", mongoError);
-        }
-        
-        // If MongoDB fails, use certification service
-        if (!success) {
-          success = await certificationService.removeCertification(userId, "6");
-          console.log(`removeCertification result: ${success}`);
-        }
-      } catch (error) {
-        console.error("Error in removeCertification:", error);
-      }
+      const success = await certificationService.removeMachineSafetyCertification(userId);
       
       if (success) {
         toast({
@@ -282,15 +199,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       let success = false;
       try {
-        success = await mongoDbService.updateUser(user.id, { certifications: [] });
-        console.log(`MongoDB clearCertifications result: ${success}`);
-      } catch (mongoError) {
-        console.error("MongoDB error clearing certifications:", mongoError);
-      }
-      
-      if (!success) {
-        success = await localStorageService.updateUser(user.id, { certifications: [] });
-        console.log(`LocalStorage clearCertifications result: ${success}`);
+        success = await certificationService.clearAllCertifications(user.id || user._id);
+      } catch (error) {
+        console.error("Error in certification service:", error);
       }
       
       if (success) {
@@ -318,6 +229,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }
   };
 
+  const userId = user.id || user._id;
   const hasMachineSafetyCourse = user?.certifications?.includes("6");
 
   return (
@@ -342,7 +254,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveMachineSafetyCourse(user.id)}
+                    onClick={() => handleRemoveMachineSafetyCourse(userId)}
                     disabled={loading === 'machineSafety'}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -353,7 +265,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleMachineSafetyCourse(user.id)}
+                    onClick={() => handleMachineSafetyCourse(userId)}
                     disabled={loading === 'machineSafety'}
                   >
                     {loading === 'machineSafety' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -373,7 +285,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveCertification(user.id, "3")}
+                    onClick={() => handleRemoveCertification(userId, "3")}
                     disabled={loading === "3"}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -384,7 +296,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleAddCertification(user.id, "3")}
+                    onClick={() => handleAddCertification(userId, "3")}
                     disabled={loading === "3" || !hasMachineSafetyCourse}
                     className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
@@ -402,7 +314,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveCertification(user.id, "5")}
+                    onClick={() => handleRemoveCertification(userId, "5")}
                     disabled={loading === "5"}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -413,7 +325,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleAddCertification(user.id, "5")}
+                    onClick={() => handleAddCertification(userId, "5")}
                     disabled={loading === "5" || !hasMachineSafetyCourse}
                     className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
@@ -432,7 +344,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRemoveCertification(user.id, machine.id)}
+                      onClick={() => handleRemoveCertification(userId, machine.id)}
                       disabled={loading === machine.id}
                       className="bg-red-50 hover:bg-red-100 border-red-200"
                     >
@@ -443,7 +355,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAddCertification(user.id, machine.id)}
+                      onClick={() => handleAddCertification(userId, machine.id)}
                       disabled={loading === machine.id || !hasMachineSafetyCourse}
                       className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                     >

@@ -104,8 +104,12 @@ class UserDatabase {
           console.error(`API deletion error: ${response.status} ${response.statusText}`);
           // Don't try to parse JSON if there's no content
           if (response.headers.get('content-length') !== '0') {
-            const errorData = await response.json();
-            console.error(`API deletion error details: ${errorData.message}`);
+            try {
+              const errorData = await response.json();
+              console.error(`API deletion error details: ${errorData.message}`);
+            } catch (jsonError) {
+              console.error('Could not parse error response');
+            }
           }
         }
       } catch (apiError) {
@@ -116,7 +120,20 @@ class UserDatabase {
       console.log('Fallback: Deleting via MongoDB service...');
       const success = await mongoDbService.deleteUser(userId);
       console.log(`MongoDB deletion result for ${userId}: ${success}`);
-      return success;
+      
+      if (success) {
+        return true;
+      }
+      
+      // Last resort: LocalStorage
+      const user = localStorageService.findUserById(userId);
+      if (user) {
+        const localSuccess = localStorageService.deleteUser(userId);
+        console.log(`LocalStorage deletion result for ${userId}: ${localSuccess}`);
+        return localSuccess;
+      }
+      
+      return false;
     } catch (error) {
       console.error(`Error deleting user ${userId}:`, error);
       return false;

@@ -2,6 +2,19 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 import { Machine } from '../models/Machine';
+import mongoose from 'mongoose';
+
+// Helper function to find user by ID
+const findUserById = async (userId: string) => {
+  // Try to find by MongoDB ID first
+  if (mongoose.Types.ObjectId.isValid(userId)) {
+    const user = await User.findById(userId);
+    if (user) return user;
+  }
+  
+  // If not found or not a valid MongoDB ID, try to find by custom ID
+  return await User.findOne({ id: userId });
+};
 
 // @desc    Add certification to user
 // @route   POST /api/certifications
@@ -21,8 +34,8 @@ export const addCertification = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
     
-    // Check if user exists
-    const user = await User.findById(userId);
+    // Check if user exists (using the helper function)
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -61,8 +74,8 @@ export const removeCertification = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User ID and Machine ID are required' });
     }
     
-    // Check if user exists
-    const user = await User.findById(userId);
+    // Check if user exists (using the helper function)
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -94,7 +107,7 @@ export const removeCertification = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getUserCertifications = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.userId).select('certifications');
+    const user = await findUserById(req.params.userId);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
