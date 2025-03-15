@@ -5,6 +5,7 @@ import { userDatabaseService } from './userService';
 import { isWeb } from '../../utils/platform';
 import mongoDbService from '../mongoDbService';
 import { toast } from '../../components/ui/use-toast';
+import { localStorageService } from '../localStorageService';
 
 /**
  * Service that handles all booking-related database operations.
@@ -135,9 +136,16 @@ export class BookingDatabaseService extends BaseService {
     try {
       console.log(`Updating booking ${bookingId} status to ${status}`);
       
-      // Try API first
+      // Check if this is a client-generated ID
+      const isClientId = bookingId.startsWith('booking-');
+      
+      // Try API first with the appropriate endpoint format
       try {
-        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status });
+        const endpoint = isClientId
+          ? `bookings/${bookingId}/status`
+          : `bookings/${bookingId}/status`;
+          
+        const response = await apiService.request(endpoint, 'PUT', { status });
         if (response && !response.error) {
           console.log("Booking status updated via API:", response.data);
           return true;
@@ -159,7 +167,34 @@ export class BookingDatabaseService extends BaseService {
         }
       }
       
-      // Finally try local storage - find the booking in all users
+      // Direct local storage access for client-generated IDs
+      if (isClientId) {
+        try {
+          const users = await localStorageService.getAll('users');
+          let updated = false;
+          
+          for (const user of users) {
+            if (user.bookings && Array.isArray(user.bookings)) {
+              const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
+              if (bookingIndex >= 0) {
+                user.bookings[bookingIndex].status = status;
+                await localStorageService.update('users', user.id, user);
+                console.log(`Updated booking ${bookingId} status to ${status} in local storage`);
+                updated = true;
+                break;
+              }
+            }
+          }
+          
+          if (updated) {
+            return true;
+          }
+        } catch (storageError) {
+          console.error("Error accessing local storage:", storageError);
+        }
+      }
+      
+      // Finally try local users and their bookings
       const allUsers = await userDatabaseService.getAllUsers();
       
       let updated = false;
@@ -169,23 +204,11 @@ export class BookingDatabaseService extends BaseService {
           if (bookingIndex >= 0) {
             user.bookings[bookingIndex].status = status;
             
-            // Update the user in local storage using direct access to localStorage
-            try {
-              const storedUsers = localStorage.getItem('users');
-              if (storedUsers) {
-                const usersCopy = JSON.parse(storedUsers);
-                const userIndex = usersCopy.findIndex((u: any) => u.id === user.id);
-                if (userIndex >= 0) {
-                  usersCopy[userIndex] = user;
-                  localStorage.setItem('users', JSON.stringify(usersCopy));
-                  console.log("Booking status updated in local storage");
-                  updated = true;
-                  break;
-                }
-              }
-            } catch (localStorageError) {
-              console.error("Error updating local storage:", localStorageError);
-            }
+            // Update the user in memory
+            await userDatabaseService.updateUser(user.id, user);
+            console.log(`Updated booking ${bookingId} status to ${status} in memory`);
+            updated = true;
+            break;
           }
         }
       }

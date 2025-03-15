@@ -66,9 +66,17 @@ export class BookingService {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
+      // First check if this is a client-generated ID (usually has "booking-" prefix)
+      const isClientId = bookingId.startsWith('booking-');
+      
       // Try direct API call first (most reliable)
       try {
-        const response = await apiService.updateBookingStatus(bookingId, status);
+        // Use the appropriate endpoint format based on ID type
+        const endpoint = isClientId 
+          ? `bookings/${bookingId}/status` 
+          : `bookings/${bookingId}/status`;
+          
+        const response = await apiService.request(endpoint, 'PUT', { status });
         
         if (response && !response.error) {
           console.log("Successfully updated booking status via API");
@@ -101,7 +109,44 @@ export class BookingService {
         }
       }
       
-      // As a last resort, try the database service
+      // As a last resort, try to update in local storage
+      // This is especially important for client-generated IDs
+      try {
+        if (isClientId) {
+          // Get all users from local storage
+          const users = await localStorageService.getAll('users');
+          
+          // Find the user with this booking
+          let updated = false;
+          for (let user of users) {
+            if (user.bookings && Array.isArray(user.bookings)) {
+              const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
+              if (bookingIndex >= 0) {
+                // Update booking status
+                user.bookings[bookingIndex].status = status;
+                // Save user back to local storage
+                await localStorageService.update('users', user.id, user);
+                updated = true;
+                break;
+              }
+            }
+          }
+          
+          if (updated) {
+            console.log("Booking status updated in local storage");
+            toast({
+              title: `Booking ${status}`,
+              description: `The booking has been ${status.toLowerCase()} successfully.`,
+              variant: status === 'Approved' ? 'default' : 'destructive',
+            });
+            return true;
+          }
+        }
+      } catch (storageError) {
+        console.error("Local storage error when updating booking status:", storageError);
+      }
+      
+      // Finally try the database service (which has its own fallbacks)
       const success = await bookingDatabaseService.updateBookingStatus(bookingId, status);
       if (success) {
         toast({
