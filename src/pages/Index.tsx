@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +7,6 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import { logger } from '@/utils/logger';
-
-const pageLogger = logger.child('IndexPage');
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,33 +14,34 @@ const Index = () => {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
+  // Check server connection
   useEffect(() => {
     const checkServer = async () => {
       try {
-        pageLogger.info("Checking server health...");
+        console.log("Checking server health...");
         const response = await apiService.checkHealth();
         if (response.data) {
-          pageLogger.info("Server health check successful:", response.data);
+          console.log("Server health check:", response.data);
           setServerStatus('connected');
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
         } else {
-          pageLogger.warn("Server health check failed");
+          console.log("Server health check failed");
           setServerStatus('disconnected');
           toast({
             title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000/api.',
             variant: 'destructive'
           });
         }
       } catch (error) {
-        pageLogger.error("Server connection error:", error);
+        console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000/api.',
           variant: 'destructive'
         });
       }
@@ -51,38 +50,34 @@ const Index = () => {
     checkServer();
   }, []);
 
+  // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      pageLogger.info("User is logged in, redirecting:", user);
+      console.log("User is logged in, redirecting:", user);
       navigate('/home');
     }
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
-    pageLogger.info("Attempting login with:", { email });
+    console.log("Attempting login with:", email);
     const success = await login(email, password);
     if (success) {
-      pageLogger.info("Login successful, navigating to home");
+      console.log("Login successful, navigating to home");
       navigate('/home');
-    } else {
-      pageLogger.warn("Login failed for:", { email });
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    pageLogger.info("Attempting registration for:", { email });
+    console.log("Attempting registration for:", email);
     const success = await register(email, password, name);
     if (success) {
-      pageLogger.info("Registration successful, navigating to home");
+      console.log("Registration successful, navigating to home");
       navigate('/home');
-    } else {
-      pageLogger.warn("Registration failed for:", { email });
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-    pageLogger.debug(`Switched to ${isLogin ? 'register' : 'login'} mode`);
   };
 
   return (
@@ -97,7 +92,7 @@ const Index = () => {
             <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
               {serverStatus === 'connected' 
                 ? 'Connected to server' 
-                : 'Server connection failed. Please ensure the server is running at http://localhost:4000.'}
+                : 'Server connection failed. Please ensure the server is running at http://localhost:4000/api.'}
             </div>
           )}
         </div>

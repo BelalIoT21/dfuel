@@ -1,10 +1,5 @@
-
 import { getEnv } from '../utils/env';
-import { toast } from '../components/ui/use-toast';
-import { logger } from '../utils/logger';
-
-// API logger instance
-const apiLogger = logger.child('API');
+import { useToast } from '../hooks/use-toast';
 
 // API endpoints configuration with localhost as primary for local development
 // and relative path as fallback for deployed environments
@@ -22,7 +17,7 @@ class ApiService {
   private async switchEndpoint() {
     currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
     BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-    apiLogger.info(`Switching to API endpoint: ${BASE_URL}`);
+    console.log(`Switching to API endpoint: ${BASE_URL}`);
   }
 
   private async request<T>(
@@ -53,7 +48,7 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      apiLogger.info(`${method} ${url}`, data ? { requestData: data } : 'No request body');
+      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
       // Try with retry and endpoint switching logic
       let response;
@@ -65,14 +60,14 @@ class ApiService {
           response = await fetch(url, options);
           break; // If successful, exit the retry loop
         } catch (fetchError) {
-          apiLogger.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
+          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
           retryCount++;
           
           if (retryCount < maxRetries) {
             // Try a different endpoint before giving up
             this.switchEndpoint();
             const newUrl = `${BASE_URL}/${endpoint}`;
-            apiLogger.info(`Retrying with endpoint: ${newUrl}`);
+            console.log(`Retrying with endpoint: ${newUrl}`);
           } else {
             throw fetchError; // All retries failed, propagate the error
           }
@@ -95,7 +90,7 @@ class ApiService {
       
       if (!response.ok) {
         const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        apiLogger.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
+        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
           return {
@@ -108,20 +103,17 @@ class ApiService {
         throw new Error(errorMessage);
       }
       
-      // Log successful response
-      apiLogger.info(`${method} ${url} - Success: ${response.status}`, 
-        responseData ? { responseData } : 'Empty response');
-      
       return {
         data: responseData,
         error: null,
         status: response.status
       };
     } catch (error) {
-      apiLogger.error(`Request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
+        const { toast } = useToast();
         toast({
           title: `API Error`,
           description: "Could not connect to server. Please ensure the backend server is running.",
@@ -139,7 +131,7 @@ class ApiService {
   
   // Auth endpoints
   async login(email: string, password: string) {
-    apiLogger.info('Attempting login via API for:', { email });
+    console.log('Attempting login via API for:', email);
     return this.request<{ token: string, user: any }>(
       'auth/login', 
       'POST', 
