@@ -29,6 +29,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       types["1"] = "Laser Cutter";
       names["2"] = "Ultimaker";
       types["2"] = "3D Printer";
+      names["4"] = "Bambu Lab X1 E"; // Added ID 4
+      types["4"] = "3D Printer";      // Added ID 4
       names["5"] = "Bambu Lab X1 E";
       types["5"] = "3D Printer";
       
@@ -38,14 +40,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           const allMachines = await machineService.getMachines();
           console.log(`Got ${allMachines.length} machines to map certifications`);
           
-          // Filter out duplicate machines and CNC Mill
-          const uniqueMachines = Array.from(
-            new Map(allMachines.map(m => [m._id || m.id, m])).values()
-          ).filter(machine => machine.name.toLowerCase() !== "cnc mill");
-          
           // Create a map for quick lookup
           const machineMap = {};
-          uniqueMachines.forEach(machine => {
+          allMachines.forEach(machine => {
             if (machine.id) {
               machineMap[machine.id] = machine;
             }
@@ -54,7 +51,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Process certifications
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "6"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
             
             // First check our map
             if (machineMap[certId]) {
@@ -66,12 +63,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             // If not in the map, try individual fetch
             try {
               const machine = await machineService.getMachineById(certId);
-              if (machine && machine.name.toLowerCase() !== "cnc mill") {
+              if (machine) {
                 names[certId] = machine.name;
                 types[certId] = machine.type || 'Machine';
-              } else if (machine) {
-                // Skip CNC Mill
-                continue;
               } else {
                 names[certId] = `Machine ${certId}`;
                 types[certId] = 'Machine';
@@ -87,16 +81,13 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Fall back to individual fetches
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "6"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
-              if (machine && machine.name.toLowerCase() !== "cnc mill") {
+              if (machine) {
                 names[certId] = machine.name;
                 types[certId] = machine.type || 'Machine';
-              } else if (machine) {
-                // Skip CNC Mill
-                continue;
               } else {
                 names[certId] = `Machine ${certId}`;
                 types[certId] = 'Machine';
@@ -118,15 +109,6 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   }, [user.certifications]);
 
-  // Filter certifications to exclude "CNC Mill" before displaying
-  const filterCertifications = (certifications: string[]) => {
-    if (!certifications) return [];
-    return certifications.filter(certId => {
-      const machineName = machineNames[certId]?.toLowerCase();
-      return machineName && machineName !== "cnc mill";
-    });
-  };
-
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
@@ -134,7 +116,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         <Text style={styles.loadingText}>Loading certifications...</Text>
       ) : user.certifications && user.certifications.length > 0 ? (
         <List.Section>
-          {filterCertifications(user.certifications).map((certId) => (
+          {user.certifications.map((certId) => (
             <List.Item
               key={certId}
               title={machineNames[certId] || `Machine ${certId}`}

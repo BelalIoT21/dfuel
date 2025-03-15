@@ -168,6 +168,10 @@ class ApiService {
   async ping() {
     return this.request('GET', '/health', undefined, false);
   }
+  
+  async removeCertification(userId: string, machineId: string) {
+    return this.request('DELETE', `/certifications`, { userId, machineId });
+  }
 }
 
 export const apiService = new ApiService();

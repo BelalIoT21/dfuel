@@ -215,10 +215,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     switch (machineId) {
       case "1": return "Laser Cutter";
       case "2": return "Ultimaker";
-      case "3": return "X1 E Carbon 3D Printer";
-      case "4": return "Bambu Lab X1 E";
-      case "5": return "Safety Cabinet";
-      case "6": return "Safety Course";
+      case "3": return "Safety Cabinet";
+      case "4": return "Bambu Lab X1 E"; // Added ID 4
+      case "5": return "Bambu Lab X1 E";
+      case "6": return "Machine Safety Course";
       default: return `Machine ${machineId}`;
     }
   };
