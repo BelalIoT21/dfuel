@@ -1,8 +1,8 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService';
 import { toast } from '@/components/ui/use-toast';
+import { getEnv } from '@/utils/env';
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -14,7 +14,8 @@ class MongoConnectionService {
   
   constructor() {
     // Try to get URI from environment or use default
-    this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
+    // Use getEnv helper instead of directly accessing process.env
+    this.uri = getEnv('MONGODB_URI') || 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
