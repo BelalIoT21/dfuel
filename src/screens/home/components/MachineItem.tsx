@@ -51,6 +51,16 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
             >
               {getStatusLabel(machine.status)}
             </Chip>
+            
+            {machine.type && (
+              <Chip 
+                style={{backgroundColor: '#3b82f620'}}
+                textStyle={{color: '#3b82f6'}}
+              >
+                {machine.type}
+              </Chip>
+            )}
+            
             {isCertified && (
               <Chip 
                 style={{backgroundColor: '#7c3aed20'}}

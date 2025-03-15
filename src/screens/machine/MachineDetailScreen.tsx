@@ -13,7 +13,7 @@ import ErrorState from './components/ErrorState';
 const MachineDetailScreen = ({ route, navigation }) => {
   const { machineId } = route.params;
   const { user, addCertification } = useAuth();
-  const { machine, machineStatus, loading, isCertified, setIsCertified } = useMachineDetails(machineId, user, navigation);
+  const { machine, machineStatus, loading, isCertified, setIsCertified, hasMachineSafetyCert, userId } = useMachineDetails(machineId, user, navigation);
 
   const handleTakeCourse = () => {
     // Make sure we're passing the correct parameter name (machineId)
@@ -97,6 +97,8 @@ const MachineDetailScreen = ({ route, navigation }) => {
           onGetCertified={handleGetCertified}
           onBookMachine={handleBookMachine}
           isAdmin={user?.isAdmin}
+          hasMachineSafetyCert={hasMachineSafetyCert}
+          userId={userId}
         />
       </View>
     </ScrollView>

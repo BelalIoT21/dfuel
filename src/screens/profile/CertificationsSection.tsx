@@ -11,16 +11,24 @@ interface CertificationsSectionProps {
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
+  const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
   
   useEffect(() => {
     const fetchMachineNames = async () => {
       const names = {};
+      const types = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
           // Skip fetch for Machine Safety Course and special case for Bambu X1
           if (certId === "6") continue; 
           if (certId === "5") {
             names[certId] = "Bambu Lab X1 E";
+            types[certId] = "3D Printer";
+            continue;
+          }
+          if (certId === "3") {
+            names[certId] = "Safety Cabinet";
+            types[certId] = "Safety Cabinet";
             continue;
           }
           
@@ -28,6 +36,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             const machine = await machineService.getMachineById(certId);
             if (machine) {
               names[certId] = machine.name;
+              types[certId] = machine.type || 'Machine';
             }
           } catch (error) {
             console.error(`Error fetching machine ${certId}:`, error);
@@ -35,6 +44,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         }
       }
       setMachineNames(names);
+      setMachineTypes(types);
     };
     
     fetchMachineNames();
@@ -46,6 +56,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   // Helper function to get machine name with special handling for Bambu Lab X1 E
   const getMachineName = (certId: string) => {
     if (certId === "5") return "Bambu Lab X1 E";
+    if (certId === "3") return "Safety Cabinet";
     return machineNames[certId] || `Machine ${certId}`;
   };
 
@@ -58,6 +69,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             <List.Item
               key={certId}
               title={getMachineName(certId)}
+              description={machineTypes[certId] || "Machine"}
               left={(props) => <List.Icon {...props} icon="certificate" color="#7c3aed" />}
             />
           ))}
