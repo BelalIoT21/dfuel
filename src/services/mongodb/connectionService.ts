@@ -35,7 +35,18 @@ class MongoConnectionService {
         
         this.connectionPromise = new Promise(async (resolve, reject) => {
           try {
-            const { MongoClient, ServerApiVersion } = await import('mongodb');
+            // Safe import of MongoDB - this prevents crashing in web environment
+            let MongoClient, ServerApiVersion;
+            try {
+              const mongodb = await import('mongodb');
+              MongoClient = mongodb.MongoClient;
+              ServerApiVersion = mongodb.ServerApiVersion;
+            } catch (err) {
+              console.log("Could not import MongoDB client, likely in web environment", err);
+              this.isConnecting = false;
+              resolve(null);
+              return;
+            }
             
             this.client = new MongoClient(this.uri, {
               serverApi: {
@@ -68,7 +79,8 @@ class MongoConnectionService {
             console.error("Error connecting to MongoDB:", error);
             this.isConnecting = false;
             this.connectionPromise = null;
-            reject(error);
+            // Return null instead of rejecting to allow app to continue
+            resolve(null);
           }
         });
         
@@ -122,7 +134,7 @@ class MongoConnectionService {
     if (isWeb) return false;
     
     try {
-      if (!this.client) {
+      if (!this.client || !this.db) {
         return false;
       }
       

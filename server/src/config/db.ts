@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Use the MongoDB URI from .env but provide a fallback for local development
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
 
 export const connectDB = async () => {
@@ -29,7 +30,8 @@ export const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    process.exit(1);
+    // Don't exit process on connection error - this allows the app to work even if MongoDB isn't available
+    return null;
   }
 };
 
