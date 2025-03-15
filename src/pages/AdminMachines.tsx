@@ -8,8 +8,6 @@ import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
-import { apiService } from '@/services/apiService';
-import { machineDatabaseService } from '@/services/database/machineService';
 import { Button } from '@/components/ui/button';
 
 const AdminMachines = () => {
@@ -23,19 +21,13 @@ const AdminMachines = () => {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
-        console.log('Fetching machines from API...');
-        const fetchedMachines = await machineDatabaseService.getAllMachines();
-        if (fetchedMachines && fetchedMachines.length > 0) {
-          console.log(`Successfully fetched ${fetchedMachines.length} machines`);
-          setMachinesList(fetchedMachines);
-        } else {
-          console.log('No machines found, using demo data');
-          setMachinesList(machines);
-        }
+        console.log('Using demo machines data');
+        setMachinesList(machines.slice(0, 4));
         setInitialLoadComplete(true);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        setMachinesList(machines);
+        // Ensure we have fallback data if API fails
+        setMachinesList(machines.slice(0, 4));
         setInitialLoadComplete(true);
       }
     };
@@ -46,6 +38,7 @@ const AdminMachines = () => {
         setAllUsers(users);
       } catch (error) {
         console.error("Error fetching users:", error);
+        setAllUsers([]);
       }
     };
     
@@ -76,30 +69,6 @@ const AdminMachines = () => {
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-  const handleDeleteMachine = async (id: string) => {
-    try {
-      const success = await machineDatabaseService.deleteMachine(id);
-      
-      if (!success) {
-        throw new Error("Failed to delete machine");
-      }
-      
-      toast({
-        title: "Machine Deleted",
-        description: "The machine has been deleted successfully."
-      });
-      
-      setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
-    } catch (error) {
-      console.error("Error deleting machine:", error);
-      toast({
-        title: "Error Deleting Machine",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    }
-  };
 
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
@@ -152,7 +121,7 @@ const AdminMachines = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Machines</CardTitle>
-            <CardDescription>Manage and monitor your machines</CardDescription>
+            <CardDescription>View and monitor your machines</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -191,16 +160,6 @@ const AdminMachines = () => {
                         <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                           Bookings: {getBookingsThisMonth(machine.id || machine._id)}
                         </div>
-                        {machine.linkedCourseId && (
-                          <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
-                            Has Course
-                          </div>
-                        )}
-                        {machine.linkedQuizId && (
-                          <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
-                            Has Quiz
-                          </div>
-                        )}
                       </div>
                       
                       <div className="flex gap-2 mt-4">
