@@ -6,85 +6,13 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
-import { apiConnection } from '@/services/api/apiConnection';
 import { toast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Server, Database, RefreshCw } from 'lucide-react';
+import ConnectionStatus from '@/components/api/ConnectionStatus';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
-  const [connectionDetails, setConnectionDetails] = useState<any>(null);
-  const [isRetrying, setIsRetrying] = useState(false);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
-
-  // Check server connection
-  const checkServer = async () => {
-    try {
-      console.log("Checking server health...");
-      setIsRetrying(true);
-      setServerStatus('checking');
-      
-      // Check API connection first
-      const connected = await apiConnection.checkConnection();
-      
-      if (!connected) {
-        console.error("API connection failed");
-        setServerStatus('disconnected');
-        setConnectionDetails(null);
-        setIsRetrying(false);
-        
-        toast({
-          title: 'Server Connection Failed',
-          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Please ensure the server is running.`,
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      // Get detailed health information
-      const response = await apiService.checkHealth();
-      setIsRetrying(false);
-      
-      if (response.data) {
-        console.log("Server health check:", response.data);
-        setServerStatus('connected');
-        setConnectionDetails(response.data);
-        
-        toast({
-          title: 'Server Connected',
-          description: 'Successfully connected to the backend server',
-        });
-      } else if (response.error) {
-        console.error("Server connection error:", response.error);
-        setServerStatus('disconnected');
-        setConnectionDetails(null);
-        
-        toast({
-          title: 'Server Connection Failed',
-          description: `Could not connect to the backend server. ${response.error}`,
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error("Server connection error:", error);
-      setServerStatus('disconnected');
-      setConnectionDetails(null);
-      setIsRetrying(false);
-      
-      toast({
-        title: 'Server Connection Failed',
-        description: 'Could not connect to the backend server. Please try again later.',
-        variant: 'destructive'
-      });
-    }
-  };
-    
-  // Check server on component mount
-  useEffect(() => {
-    checkServer();
-  }, []);
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -142,49 +70,8 @@ const Index = () => {
           </p>
           
           {/* Server Status Display */}
-          <div className="mt-4 flex flex-col items-center">
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm 
-              ${serverStatus === 'connected' 
-                ? 'bg-green-100 text-green-800' 
-                : serverStatus === 'disconnected' 
-                  ? 'bg-red-100 text-red-800' 
-                  : 'bg-yellow-100 text-yellow-800'}`}
-            >
-              <Server size={16} className={serverStatus === 'checking' ? 'animate-pulse' : ''} />
-              Server: {serverStatus === 'connected' 
-                ? 'Connected' 
-                : serverStatus === 'disconnected' 
-                  ? 'Disconnected' 
-                  : 'Checking...'}
-            </div>
-            
-            {/* Display API URL */}
-            <div className="mt-2 text-xs text-gray-500">
-              API URL: {apiConnection.getBaseUrl()}
-            </div>
-            
-            {connectionDetails && connectionDetails.database && (
-              <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm 
-                  ${connectionDetails.database.status === 'connected' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'}"
-              >
-                <Database size={16} />
-                Database: {connectionDetails.database.status}
-                {connectionDetails.database.name ? ` (${connectionDetails.database.name})` : ''}
-              </div>
-            )}
-            
-            <Button 
-              size="sm" 
-              variant={serverStatus === 'disconnected' ? "default" : "outline"}
-              className="mt-3 gap-2"
-              onClick={checkServer}
-              disabled={isRetrying}
-            >
-              <RefreshCw size={16} className={isRetrying ? 'animate-spin' : ''} />
-              {isRetrying ? 'Connecting...' : 'Check Connection'}
-            </Button>
+          <div className="mt-4">
+            <ConnectionStatus />
           </div>
         </div>
 

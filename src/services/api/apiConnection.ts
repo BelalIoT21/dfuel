@@ -10,6 +10,8 @@ export class ApiConnection {
   private baseUrl: string;
   private isConnected: boolean = false;
   private connectionChecked: boolean = false;
+  private connectionCheckTimestamp: number = 0;
+  private connectionCheckInterval: number = 30000; // 30 seconds
 
   private constructor() {
     this.baseUrl = this.validateApiUrl(getEnv('API_URL', 'http://localhost:4000/api'));
@@ -58,7 +60,15 @@ export class ApiConnection {
   /**
    * Check if the server is reachable
    */
-  public async checkConnection(): Promise<boolean> {
+  public async checkConnection(force: boolean = false): Promise<boolean> {
+    // Don't check too frequently unless forced
+    const now = Date.now();
+    if (!force && 
+        this.connectionChecked && 
+        (now - this.connectionCheckTimestamp < this.connectionCheckInterval)) {
+      return this.isConnected;
+    }
+    
     try {
       const endpoint = `${this.baseUrl}/health`;
       console.log(`Checking API connection at: ${endpoint}`);
@@ -80,6 +90,7 @@ export class ApiConnection {
       
       this.isConnected = response.ok;
       this.connectionChecked = true;
+      this.connectionCheckTimestamp = now;
       
       if (this.isConnected) {
         console.log('API connection successful');
@@ -91,8 +102,48 @@ export class ApiConnection {
     } catch (error) {
       this.isConnected = false;
       this.connectionChecked = true;
+      this.connectionCheckTimestamp = now;
       console.error('API connection check failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Check server with detailed information
+   */
+  public async getServerInfo(): Promise<any> {
+    try {
+      const endpoint = `${this.baseUrl}/health`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'include'
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
+      this.isConnected = true;
+      this.connectionChecked = true;
+      this.connectionCheckTimestamp = Date.now();
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      this.isConnected = false;
+      console.error('Server info check failed:', error);
+      return null;
     }
   }
 
