@@ -5,7 +5,6 @@ import { StatCard } from './StatCard';
 import { machines } from '../../utils/data';
 import { User } from '@/types/database';
 import { Skeleton } from '@/components/ui/skeleton';
-import userDatabase from '@/services/userDatabase';
 import mongoDbService from '@/services/mongoDbService';
 
 interface StatsOverviewProps {
@@ -28,8 +27,9 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       try {
         setLoading(true);
         
-        // Get MongoDB user count
+        // Get MongoDB user count directly from the mongoDbService
         const mongoUserCount = await mongoDbService.getUserCount();
+        console.log(`MongoDB user count from StatsOverview: ${mongoUserCount}`);
         
         // Calculate certifications count
         let certCount = 0;
@@ -65,19 +65,8 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       }
     };
     
-    fetchUsers();
     fetchStats();
   }, [allUsers, machines]);
-
-  const fetchUsers = async () => {
-    try {
-      // Try to get users from MongoDB/userDatabase
-      const users = await userDatabase.getAllUsers();
-      console.log(`Retrieved ${users.length} users from userDatabase`);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
