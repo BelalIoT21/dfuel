@@ -1,4 +1,3 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService'; // New import
@@ -12,18 +11,12 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // In a real application, this would come from environment variables
-    this.uri = 'mongodb://localhost:27017/learnit';
+    // Try to get URI from environment or use default
+    this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
   async connect(): Promise<any | null> {
-    // Skip MongoDB connection in browser environment
-    if (isWeb) {
-      console.log("Running in browser environment, skipping MongoDB connection");
-      return null;
-    }
-    
     // If we're already connecting, return the existing promise
     if (this.isConnecting && this.connectionPromise) {
       console.log("MongoDB connection already in progress, waiting...");

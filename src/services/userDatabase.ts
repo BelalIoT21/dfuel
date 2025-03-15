@@ -8,6 +8,15 @@ class UserDatabase {
   // User methods
   async getAllUsers() {
     try {
+      // Always try MongoDB first before using localStorage fallback
+      const mongoUsers = await mongoDbService.getAllUsers();
+      if (mongoUsers && mongoUsers.length > 0) {
+        console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
+        return mongoUsers;
+      }
+      
+      // Fallback to userService
+      console.log("Falling back to userService for getAllUsers");
       return await userService.getAllUsers();
     } catch (error) {
       console.error('Error in getAllUsers:', error);
@@ -17,6 +26,15 @@ class UserDatabase {
   
   async findUserByEmail(email: string) {
     try {
+      // Try MongoDB first
+      const mongoUser = await mongoDbService.getUserByEmail(email);
+      if (mongoUser) {
+        console.log(`Found user ${email} in MongoDB`);
+        return mongoUser;
+      }
+      
+      // Fallback to userService
+      console.log(`Falling back to userService for findUserByEmail: ${email}`);
       return await userService.findUserByEmail(email);
     } catch (error) {
       console.error('Error in findUserByEmail:', error);
@@ -26,6 +44,28 @@ class UserDatabase {
   
   async authenticate(email: string, password: string) {
     try {
+      // First try to authenticate using MongoDB
+      console.log(`Attempting to authenticate ${email} with MongoDB`);
+      const mongoUser = await mongoDbService.getUserByEmail(email);
+      
+      if (mongoUser) {
+        // Simple password comparison (in production would use bcrypt)
+        if (mongoUser.password === password) {
+          console.log(`MongoDB authentication successful for ${email}`);
+          
+          // Update last login time
+          await mongoDbService.updateUser(mongoUser.id, {
+            lastLogin: new Date().toISOString()
+          });
+          
+          // Remove password before returning
+          const { password, ...userWithoutPassword } = mongoUser;
+          return userWithoutPassword;
+        }
+      }
+      
+      // Fallback to userService
+      console.log(`Falling back to userService for authentication: ${email}`);
       return await userService.authenticate(email, password);
     } catch (error) {
       console.error('Error in authenticate:', error);
@@ -105,7 +145,16 @@ class UserDatabase {
   // Helper to find user by ID
   async findUserById(userId: string) {
     try {
-      const user = await mongoDbService.getUserById(userId);
+      // Try MongoDB first
+      const mongoUser = await mongoDbService.getUserById(userId);
+      if (mongoUser) {
+        console.log(`Found user ${userId} in MongoDB`);
+        return mongoUser;
+      }
+      
+      // Fallback to local service
+      console.log(`Falling back to localStorage for findUserById: ${userId}`);
+      const user = await databaseService.findUserById(userId);
       return user;
     } catch (error) {
       console.error(`Error finding user ${userId}:`, error);
