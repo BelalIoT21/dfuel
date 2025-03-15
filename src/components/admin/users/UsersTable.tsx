@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -39,7 +38,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     const fetchMachines = async () => {
       try {
         const fetchedMachines = await machineService.getMachines();
-        setAllMachines([...machines, ...fetchedMachines]);
+        setAllMachines(fetchedMachines);
       } catch (error) {
         console.error('Error fetching machines:', error);
         setAllMachines(machines); // Fallback to local data
@@ -56,26 +55,13 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   );
 
   const getMachineName = (certId: string) => {
-    // Handle known special cases first
-    if (certId === "6" || certId === 6) return "Machine Safety Course";
-    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
-    if (certId === "3" || certId === 3) return "Safety Cabinet";
-    if (certId === "1" || certId === 1) return "Laser Cutter";
-    if (certId === "2" || certId === 2) return "Ultimaker";
-    if (certId === "4" || certId === 4) return "X1 E Carbon 3D Printer";
+    if (certId === "6") return "Machine Safety Course";
+    if (certId === "5") return "Bambu Lab X1 E";
+    if (certId === "3") return "Safety Cabinet";
     
-    // Check if it's a MongoDB ID format (24 hex chars)
-    if (typeof certId === 'string' && certId.length === 24 && /^[0-9a-fA-F]{24}$/.test(certId)) {
-      // Try to find in allMachines
-      const machine = allMachines.find(m => m._id === certId || m.id === certId);
-      if (machine) return machine.name;
-    }
-    
-    // Try to find by regular ID in all machines
-    const machine = allMachines.find(m => m.id === certId || m._id === certId);
+    const machine = allMachines.find(m => m.id === certId);
     if (machine) return machine.name;
     
-    // Fallback to find in hardcoded machines
     const localMachine = machines.find(m => m.id === certId);
     return localMachine ? localMachine.name : `Machine ${certId}`;
   };
@@ -160,25 +146,25 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
                       user.certifications
-                        .filter((cert: string | number) => cert !== "6" && cert !== 6)
-                        .map((cert: string | number) => (
+                        .filter((cert: string) => cert !== "6")
+                        .map((cert: string) => (
                           <span 
-                            key={cert.toString()} 
+                            key={cert} 
                             className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
                           >
-                            {getMachineName(cert.toString())}
+                            {getMachineName(cert)}
                           </span>
                         ))
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
                     )}
-                    {user.certifications?.includes("6") || user.certifications?.includes(6) ? (
+                    {user.certifications?.includes("6") && (
                       <span 
                         className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
                       >
                         Safety Course
                       </span>
-                    ) : null}
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
