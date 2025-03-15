@@ -17,18 +17,22 @@ class MongoConnectionService {
   }
   
   async connect(): Promise<Db | null> {
+    console.log('Attempting to connect to MongoDB...');
     // If already connected, return the db
     if (this.db) {
+      console.log('Using existing MongoDB connection');
       return this.db;
     }
     
     // If already connecting, return the existing promise
     if (this.isConnecting && this.connectionPromise) {
+      console.log('Connection already in progress, waiting...');
       return this.connectionPromise;
     }
     
     try {
       this.isConnecting = true;
+      console.log('Creating new MongoDB connection...');
       this.connectionPromise = this.connectToMongoDB();
       return await this.connectionPromise;
     } finally {
@@ -44,7 +48,6 @@ class MongoConnectionService {
       this.client = new MongoClient(this.uri, {
         connectTimeoutMS: 5000,
         socketTimeoutMS: 30000,
-        // Add more options as needed for your specific environment
       });
       
       await this.client.connect();
@@ -68,7 +71,6 @@ class MongoConnectionService {
       return this.db;
     } catch (error) {
       console.error('Error connecting to MongoDB:', error);
-      // Better error handling with specific messages
       console.error('Make sure MongoDB is running on localhost:27017');
       this.db = null;
       this.client = null;
@@ -95,12 +97,19 @@ class MongoConnectionService {
   
   async isConnected(): Promise<boolean> {
     try {
+      console.log('Testing MongoDB connection...');
+      
+      // If no client exists, try to connect
       if (!this.client || !this.db) {
-        return false;
+        console.log('No existing connection, attempting to connect...');
+        const db = await this.connect();
+        return db !== null;
       }
       
       // Ping the database to check if connection is alive
+      console.log('Pinging MongoDB to verify connection...');
       await this.db.command({ ping: 1 });
+      console.log('MongoDB ping successful');
       return true;
     } catch (error) {
       console.error('MongoDB connection check failed:', error);
