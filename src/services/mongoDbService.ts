@@ -9,7 +9,13 @@ class MongoDbService {
       const response = await apiService.getMachines();
       if (response.data && Array.isArray(response.data)) {
         console.log(`Got ${response.data.length} machines from MongoDB`);
-        return response.data;
+        return response.data.map(machine => ({
+          ...machine,
+          id: machine._id?.toString() || machine.id || '',
+          name: machine.name || '',
+          type: machine.type || '',
+          status: machine.status || 'Available'
+        }));
       }
       return [];
     } catch (error) {
@@ -22,7 +28,17 @@ class MongoDbService {
     try {
       console.log(`Getting machine by ID from MongoDB: ${id}`);
       const response = await apiService.getMachineById(id);
-      return response.data || null;
+      if (response.data) {
+        // Ensure consistent format
+        return {
+          ...response.data,
+          id: response.data._id?.toString() || response.data.id || id,
+          name: response.data.name || '',
+          type: response.data.type || '',
+          status: response.data.status || 'Available'
+        };
+      }
+      return null;
     } catch (error) {
       console.error(`Error getting machine by ID ${id} from MongoDB:`, error);
       return null;
@@ -34,7 +50,17 @@ class MongoDbService {
     try {
       console.log(`Getting machine by MongoDB ID: ${mongoId}`);
       const response = await apiService.getMachineById(mongoId);
-      return response.data || null;
+      if (response.data) {
+        // Ensure consistent format
+        return {
+          ...response.data,
+          id: response.data._id?.toString() || response.data.id || mongoId,
+          name: response.data.name || '',
+          type: response.data.type || '',
+          status: response.data.status || 'Available'
+        };
+      }
+      return null;
     } catch (error) {
       console.error(`Error getting machine by MongoDB ID ${mongoId}:`, error);
       return null;
@@ -48,7 +74,10 @@ class MongoDbService {
       const response = await apiService.getAllUsers();
       if (response.data && Array.isArray(response.data)) {
         console.log(`Got ${response.data.length} users from MongoDB`);
-        return response.data;
+        return response.data.map(user => ({
+          ...user,
+          id: user._id?.toString() || user.id || ''
+        }));
       }
       return [];
     } catch (error) {
@@ -66,7 +95,14 @@ class MongoDbService {
     try {
       console.log(`Getting user by ID from MongoDB: ${id}`);
       const response = await apiService.getUserById(id);
-      return response.data || null;
+      if (response.data) {
+        // Ensure consistent format
+        return {
+          ...response.data,
+          id: response.data._id?.toString() || response.data.id || id
+        };
+      }
+      return null;
     } catch (error) {
       console.error(`Error getting user by ID ${id} from MongoDB:`, error);
       return null;
