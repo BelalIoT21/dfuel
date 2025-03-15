@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { machines } from '../../../utils/data';
+import { machineService } from '../../../services/machineService';
 import userDatabase from '../../../services/userDatabase';
 
 export const useMachineData = (user, navigation) => {
@@ -12,15 +12,20 @@ export const useMachineData = (user, navigation) => {
     console.log("Loading machine data...");
     try {
       setLoading(true);
-      console.log("Original machines data:", machines.length, "items");
+      
+      // Use machineService to get machines from MongoDB first
+      const machines = await machineService.getMachines();
       
       if (!machines || machines.length === 0) {
-        console.error("No machines data available in source");
+        console.error("No machines data available from MongoDB or local source");
         setLoading(false);
         setRefreshing(false);
         return;
       }
       
+      console.log("Fetched machines data:", machines.length, "items");
+      
+      // Load status for each machine
       const extendedMachines = await Promise.all(machines.map(async (machine) => {
         try {
           console.log("Loading status for machine:", machine.id);
@@ -38,16 +43,14 @@ export const useMachineData = (user, navigation) => {
           };
         }
       }));
+      
       console.log("Extended machines data:", extendedMachines.length, "items");
       setMachineData(extendedMachines);
     } catch (error) {
       console.error("Error loading machine data:", error);
-      // Fallback - set machines with default status
-      console.log("Using fallback machine data");
-      setMachineData(machines.map(machine => ({
-        ...machine,
-        status: 'available'
-      })));
+      // Fallback handled by machineService which will return local data if MongoDB fails
+      setLoading(false);
+      setRefreshing(false);
     } finally {
       setLoading(false);
       setRefreshing(false);

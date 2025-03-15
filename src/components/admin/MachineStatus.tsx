@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { machineService } from '../../services/machineService';
 import userDatabase from '../../services/userDatabase';
 
 interface MachineStatusProps {
@@ -18,8 +19,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [selectedMachine, setSelectedMachine] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState('available');
   const [maintenanceNote, setMaintenanceNote] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Sort machines so that Equipment and Safety Cabinet appears at the bottom
+  // Sort machines by type
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
     if (b.type === 'Equipment' || b.type === 'Safety Cabinet') return -1;
@@ -29,24 +31,37 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const handleUpdateMachineStatus = (machine: any) => {
     setSelectedMachine(machine);
     setSelectedStatus(machine.status || 'available');
-    setMaintenanceNote('');
+    setMaintenanceNote(machine.maintenanceNote || '');
     setIsMachineStatusDialogOpen(true);
   };
 
-  const saveMachineStatus = () => {
+  const saveMachineStatus = async () => {
     if (!selectedMachine) return;
     
-    // Update machine status in the database
-    userDatabase.updateMachineStatus(selectedMachine.id, selectedStatus, maintenanceNote);
+    setIsLoading(true);
     
-    // Update local state
-    setMachineData(machineData.map(machine => 
-      machine.id === selectedMachine.id 
-        ? { ...machine, status: selectedStatus } 
-        : machine
-    ));
-    
-    setIsMachineStatusDialogOpen(false);
+    try {
+      // Update machine status using machineService which will use MongoDB
+      const success = await machineService.updateMachineStatus(
+        selectedMachine.id, 
+        selectedStatus,
+        maintenanceNote
+      );
+      
+      if (success) {
+        // Update local state
+        setMachineData(machineData.map(machine => 
+          machine.id === selectedMachine.id 
+            ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
+            : machine
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating machine status:", error);
+    } finally {
+      setIsLoading(false);
+      setIsMachineStatusDialogOpen(false);
+    }
   };
 
   // Function to get displayed machine type
@@ -167,8 +182,12 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             <Button variant="outline" onClick={() => setIsMachineStatusDialogOpen(false)} className="border-purple-200 bg-purple-50 hover:bg-purple-100">
               Cancel
             </Button>
-            <Button onClick={saveMachineStatus} className="bg-purple-600 hover:bg-purple-700">
-              Save Changes
+            <Button 
+              onClick={saveMachineStatus} 
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

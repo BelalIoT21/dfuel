@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { machines } from '../../../utils/data';
+import { machineService } from '../../../services/machineService';
 import userDatabase from '../../../services/userDatabase';
 
 export const useMachineDetails = (machineId, user, navigation) => {
@@ -20,7 +20,9 @@ export const useMachineDetails = (machineId, user, navigation) => {
     const loadMachineDetails = async () => {
       try {
         setLoading(true);
-        const machineData = machines.find(m => m.id === machineId);
+        
+        // Get machine from MongoDB through machineService
+        const machineData = await machineService.getMachineById(machineId);
         
         if (!machineData) {
           Alert.alert('Error', 'Machine not found');

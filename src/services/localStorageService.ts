@@ -1,3 +1,4 @@
+
 import { User, Booking, MachineStatus, UserWithoutSensitiveInfo } from '../types/database';
 import { storage } from '../utils/storage';
 
@@ -138,6 +139,7 @@ class LocalStorageService {
     }
   }
   
+  // Machine status functions now act as a fallback only
   getMachineStatus(machineId: string): string | null {
     try {
       const statusesJson = localStorage.getItem(machineStatusKey);
@@ -149,12 +151,35 @@ class LocalStorageService {
     }
   }
   
-  updateMachineStatus(machineId: string, status: string): boolean {
+  getMachineMaintenanceNote(machineId: string): string | undefined {
     try {
+      const notesKey = 'learnit_machine_notes';
+      const notesJson = localStorage.getItem(notesKey);
+      const notes = notesJson ? JSON.parse(notesJson) : {};
+      return notes[machineId];
+    } catch (error) {
+      console.error('Error getting machine maintenance note from localStorage:', error);
+      return undefined;
+    }
+  }
+  
+  updateMachineStatus(machineId: string, status: string, note?: string): boolean {
+    try {
+      // Update status
       const statusesJson = localStorage.getItem(machineStatusKey);
       const statuses = statusesJson ? JSON.parse(statusesJson) : {};
       statuses[machineId] = status;
       localStorage.setItem(machineStatusKey, JSON.stringify(statuses));
+      
+      // If there's a note, store it separately
+      if (note !== undefined) {
+        const notesKey = 'learnit_machine_notes';
+        const notesJson = localStorage.getItem(notesKey);
+        const notes = notesJson ? JSON.parse(notesJson) : {};
+        notes[machineId] = note;
+        localStorage.setItem(notesKey, JSON.stringify(notes));
+      }
+      
       return true;
     } catch (error) {
       console.error('Error updating machine status in localStorage:', error);

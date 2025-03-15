@@ -55,12 +55,12 @@ export const seedDatabase = async () => {
       certifications: []
     });
 
-    // Create machines with specific names matching the image
+    // Create machines with specific types
     console.log('Creating machines...');
     const machines = [
       {
         name: 'Laser Cutter',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'A high-quality laser cutter for detailed cutting projects.',
         status: 'Available',
         requiresCertification: true,
@@ -69,7 +69,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Ultimaker',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'Ultimaker 3D printer for precise prototyping and modeling.',
         status: 'Available',
         requiresCertification: true,
@@ -78,7 +78,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'X1 E Carbon 3D Printer',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'Advanced 3D printer for carbon fiber composites.',
         status: 'Available',
         requiresCertification: true,
@@ -87,7 +87,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Bambu Lab X1 E',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'High-speed multi-material 3D printer with exceptional print quality.',
         status: 'Available',
         requiresCertification: true,
@@ -96,7 +96,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Soldering Station',
-        type: 'Electronics',
+        type: 'Machine',
         description: 'Professional soldering station for electronics work.',
         status: 'Available',
         requiresCertification: true,
