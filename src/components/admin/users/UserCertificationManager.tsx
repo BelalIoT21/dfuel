@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,6 +21,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [isClearing, setIsClearing] = useState(false);
 
   const handleAddCertification = async (userId: string, machineId: string) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(machineId);
     try {
       console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
@@ -65,6 +75,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const handleRemoveCertification = async (userId: string, machineId: string) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(machineId);
     try {
       console.log(`Removing certification for machine ID: ${machineId} from user ID: ${userId}`);
@@ -112,6 +131,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const handleMachineSafetyCourse = async (userId: string) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading('machineSafety');
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
@@ -179,6 +207,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const handleRemoveMachineSafetyCourse = async (userId: string) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading('machineSafety');
     try {
       console.log(`Removing Machine Safety Course (ID: 6) for user ${userId}`);
@@ -232,7 +269,14 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const handleClearAllCertifications = async () => {
-    if (!user || !user.id) return;
+    if (!user || !user.id) {
+      toast({
+        title: "Error",
+        description: "User ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsClearing(true);
     try {

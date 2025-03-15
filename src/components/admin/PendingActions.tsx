@@ -1,116 +1,73 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { PendingBookingsCard } from "./PendingBookingsCard";
+import { useState, useEffect } from 'react';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { bookingService } from '@/services/bookingService';
-import { Loader2, RefreshCw } from 'lucide-react';
-import mongoDbService from '@/services/mongoDbService';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { PendingBookingsCard } from './PendingBookingsCard';
 
 export const PendingActions = () => {
-  const [pendingBookings, setPendingBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { toast } = useToast();
+  const [pendingBookings, setPendingBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const fetchPendingBookings = useCallback(async () => {
+  const fetchPendingBookings = async () => {
     try {
-      setIsLoading(true);
+      console.log("Fetching bookings for admin view...");
+      setLoading(true);
       
-      // Try MongoDB first for direct database access
-      let allBookings = [];
-      try {
-        console.log("Fetching bookings directly from MongoDB");
-        allBookings = await mongoDbService.getAllBookings();
-        console.log(`Found ${allBookings.length} bookings in MongoDB`);
-      } catch (mongoError) {
-        console.error("MongoDB booking fetch error:", mongoError);
-      }
+      const bookings = await bookingService.getAllBookings();
+      console.log("Received bookings from service:", bookings.length);
       
-      // If MongoDB fails or returns empty, use the service
-      if (!allBookings || allBookings.length === 0) {
-        console.log("Falling back to bookingService");
-        allBookings = await bookingService.getAllBookings();
-        console.log(`Found ${allBookings.length} total bookings via bookingService`);
-      }
+      // Filter out just the pending ones
+      const pending = bookings.filter(booking => booking.status === 'Pending');
+      console.log("Pending bookings:", pending.length);
       
-      const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
-      console.log(`Found ${pendingOnly.length} pending bookings`);
-      
-      setPendingBookings(pendingOnly);
+      setPendingBookings(pending);
+      setError(null);
     } catch (error) {
-      console.error('Error fetching pending bookings:', error);
-      setPendingBookings([]);
+      console.error("Error fetching bookings:", error);
+      setError("Failed to load bookings");
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      setLoading(false);
     }
-  }, []);
-  
+  };
+
   useEffect(() => {
     fetchPendingBookings();
-    
-    // Set up polling to refresh pending bookings every 10 seconds
-    const intervalId = setInterval(() => {
-      console.log("Auto-refreshing pending bookings");
-      fetchPendingBookings();
-    }, 10000);
-    
-    return () => clearInterval(intervalId);
-  }, [fetchPendingBookings]);
+  }, []);
 
-  // Handle booking status change to completely refresh the list
-  const handleBookingStatusChange = useCallback(async () => {
-    console.log("Booking status changed, refreshing list");
-    // Force immediate refresh of the bookings list
-    await fetchPendingBookings();
-  }, [fetchPendingBookings]);
-
-  const handleManualRefresh = () => {
-    setIsRefreshing(true);
+  const handleBookingStatusChange = () => {
+    console.log("Booking status changed, refreshing pending bookings...");
     fetchPendingBookings();
-    toast({
-      title: "Refreshing Bookings",
-      description: "Fetching the latest booking information..."
-    });
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">Pending Actions</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleManualRefresh}
-          disabled={isRefreshing}
-          className="flex items-center gap-1"
-        >
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          Refresh
-        </Button>
-      </div>
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="text-center p-4 bg-white rounded-lg shadow flex flex-col items-center">
-            <Loader2 className="h-6 w-6 text-purple-600 animate-spin mb-2" />
-            <p>Loading pending bookings...</p>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Pending Actions</CardTitle>
+        <CardDescription>Review and approve booking requests</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center items-center p-4">
+            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : pendingBookings.length > 0 ? (
+        ) : error ? (
+          <div className="text-center p-4 bg-red-50 rounded-md text-red-600">
+            <p>{error}</p>
+            <button 
+              onClick={fetchPendingBookings} 
+              className="mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
           <PendingBookingsCard 
-            pendingBookings={pendingBookings}
+            pendingBookings={pendingBookings} 
             onBookingStatusChange={handleBookingStatusChange}
           />
-        ) : (
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <p className="text-gray-500">No pending bookings to approve</p>
-          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

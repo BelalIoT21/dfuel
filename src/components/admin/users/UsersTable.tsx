@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -38,7 +39,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     const fetchMachines = async () => {
       try {
         const fetchedMachines = await machineService.getMachines();
-        setAllMachines(fetchedMachines);
+        setAllMachines([...machines, ...fetchedMachines]);
       } catch (error) {
         console.error('Error fetching machines:', error);
         setAllMachines(machines); // Fallback to local data
@@ -59,6 +60,14 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     if (certId === "5") return "Bambu Lab X1 E";
     if (certId === "3") return "Safety Cabinet";
     
+    // Check if it's a MongoDB ID format
+    if (certId.length === 24 && /^[0-9a-fA-F]{24}$/.test(certId)) {
+      // Try to find in allMachines
+      const machine = allMachines.find(m => m._id === certId || m.id === certId);
+      if (machine) return machine.name;
+    }
+    
+    // Try to find by regular ID
     const machine = allMachines.find(m => m.id === certId);
     if (machine) return machine.name;
     

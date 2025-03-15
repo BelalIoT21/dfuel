@@ -20,28 +20,70 @@ export const PendingBookingsCard = ({
   const { toast } = useToast();
   
   const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
+    if (!bookingId) {
+      toast({
+        title: "Error",
+        description: "Booking ID is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setProcessingBookingId(bookingId);
     
     try {
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
       if (action === 'Deleted') {
-        // Use MongoDB to delete the booking
-        await mongoDbService.deleteBooking(bookingId);
+        // First try MongoDB to delete the booking
+        let success = false;
+        try {
+          success = await mongoDbService.deleteBooking(bookingId);
+          console.log(`MongoDB deleteBooking result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB error deleting booking:", mongoError);
+        }
         
-        toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from the system."
-        });
+        // If MongoDB fails, try bookingService
+        if (!success) {
+          success = await bookingService.deleteBooking(bookingId);
+          console.log(`BookingService deleteBooking result: ${success}`);
+        }
         
-        // After deleting, trigger refresh of the bookings list
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
+        if (success) {
+          toast({
+            title: "Booking Removed",
+            description: "The booking has been removed from the system."
+          });
+          
+          // After deleting, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Delete Failed",
+            description: "Could not delete booking. Please try again.",
+            variant: "destructive"
+          });
         }
       } else {
         // Handle approval/rejection
-        const success = await mongoDbService.updateBookingStatus(bookingId, action);
-        console.log(`MongoDB updateBookingStatus result: ${success}`);
+        let success = false;
+        
+        // Try MongoDB first
+        try {
+          success = await mongoDbService.updateBookingStatus(bookingId, action);
+          console.log(`MongoDB updateBookingStatus result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB error updating booking status:", mongoError);
+        }
+        
+        // If MongoDB fails, try bookingService
+        if (!success) {
+          success = await bookingService.updateBookingStatus(bookingId, action);
+          console.log(`BookingService updateBookingStatus result: ${success}`);
+        }
         
         if (success) {
           toast({
@@ -94,7 +136,7 @@ export const PendingBookingsCard = ({
           </div>
           
           {pendingBookings.map((booking) => (
-            <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+            <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
               <div>
                 <p className="font-medium text-purple-800">
                   {booking.machineName || `Machine ${booking.machineId}`}
@@ -108,30 +150,30 @@ export const PendingBookingsCard = ({
                   variant="outline"
                   size="sm"
                   className="border-green-200 hover:bg-green-50 text-green-700"
-                  onClick={() => handleBookingAction(booking.id, 'Approved')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Approved')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                   Approve
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => handleBookingAction(booking.id, 'Rejected')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Rejected')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Deleted')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
                   Delete
                 </Button>
               </div>
