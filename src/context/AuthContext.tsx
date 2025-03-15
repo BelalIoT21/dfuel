@@ -59,23 +59,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Login successful via API");
         const userData = apiResponse.data;
         
-        // Ensure we have both user data and token
-        if (userData) {
-          // Store token for future API requests
-          localStorage.setItem('token', userData.token);
-          
-          // Store user data without sensitive info
-          const userToStore = userData;
-          setUser(userToStore);
-          localStorage.setItem('learnit_user', JSON.stringify(userToStore));
-          
-          toast({
-            title: "Login successful",
-            description: `Welcome back, ${userToStore.name || 'User'}!`
-          });
-          
-          return true;
-        }
+        // Save the token for future API requests
+        localStorage.setItem('token', userData.token);
+        
+        // Store user data
+        const userToStore = userData.user || userData;
+        setUser(userToStore);
+        localStorage.setItem('learnit_user', JSON.stringify(userToStore));
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${userToStore.name || 'User'}!`
+        });
+        
+        return true;
       }
       
       // If API login fails, fallback to local authentication

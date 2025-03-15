@@ -13,9 +13,14 @@ export const useProfileNavigation = (navigation) => {
 
   const handleBackToDashboard = () => {
     console.log('Navigating back to dashboard. User is admin:', user?.isAdmin);
-    // Allow admin users to access the Home screen for booking machines
-    // instead of only redirecting to AdminDashboard
-    navigation.navigate('Home');
+    
+    if (user?.isAdmin) {
+      // Admin users should go to the admin dashboard
+      navigation.navigate('AdminDashboard');
+    } else {
+      // Regular users go to the Home screen
+      navigation.navigate('Home');
+    }
   };
 
   return {

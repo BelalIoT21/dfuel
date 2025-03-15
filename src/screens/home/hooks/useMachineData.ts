@@ -63,7 +63,7 @@ export const useMachineData = (user, navigation) => {
         try {
           console.log("Loading status for machine:", machine.id);
           // Try to get status directly from MongoDB
-          const statusData = await mongoDbService.getMachineStatus(machine.id);
+          const statusData = await machineService.getMachineStatus(machine.id);
           const status = statusData ? statusData.status : 'available';
           console.log("Status for machine", machine.id, ":", status);
           return {
@@ -94,11 +94,8 @@ export const useMachineData = (user, navigation) => {
     console.log("useMachineData hook effect running");
     console.log("User in hook:", user);
     
-    if (user?.isAdmin) {
-      console.log("User is admin, navigating to AdminDashboard");
-      navigation.replace('AdminDashboard');
-      return;
-    }
+    // Only navigate admin users away if they aren't explicitly trying to access the Home screen
+    // This allows admins to still use the Home screen when they want to
     
     if (user) {
       console.log("User is authenticated, loading machine data");

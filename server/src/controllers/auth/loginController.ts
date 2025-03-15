@@ -40,6 +40,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     console.log(`Login successful for user: ${email}`);
+    console.log(`User is admin: ${user.isAdmin}`);
 
     // Generate JWT token
     const token = generateToken(user._id.toString());
@@ -53,6 +54,7 @@ export const loginUser = async (req: Request, res: Response) => {
     res.status(200).json({
       user: {
         _id: user._id,
+        id: user._id, // Adding id field for client compatibility
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,

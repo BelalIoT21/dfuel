@@ -15,7 +15,14 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (user) {
-      navigation.replace(user.isAdmin ? 'AdminDashboard' : 'Home');
+      // Check user admin status and redirect accordingly
+      if (user.isAdmin) {
+        console.log("Admin user detected, navigating to AdminDashboard");
+        navigation.replace('AdminDashboard');
+      } else {
+        console.log("Regular user detected, navigating to Home");
+        navigation.replace('Home');
+      }
     }
   }, [user, navigation]);
 
@@ -30,6 +37,7 @@ const LoginScreen = ({ navigation }) => {
     
     try {
       if (isLogin) {
+        console.log(`Attempting to login with email: ${email}`);
         await login(email, password);
       } else {
         if (!name) {
@@ -37,9 +45,11 @@ const LoginScreen = ({ navigation }) => {
           setLoading(false);
           return;
         }
+        console.log(`Attempting to register with email: ${email}`);
         await register(email, password, name);
       }
     } catch (err) {
+      console.error("Authentication error:", err);
       setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);

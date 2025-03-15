@@ -13,6 +13,14 @@ const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   console.log("User in HomeScreen:", user);
   
+  // Check if user is admin and redirect if needed
+  useEffect(() => {
+    if (user?.isAdmin) {
+      console.log("User is admin, redirecting to AdminDashboard");
+      navigation.replace('AdminDashboard');
+    }
+  }, [user, navigation]);
+  
   const { machineData, loading, refreshing, onRefresh } = useMachineData(user, navigation);
   console.log("Machine data loaded:", machineData?.length || 0, "items");
   console.log("Loading state:", loading, "Refreshing state:", refreshing);
@@ -21,6 +29,12 @@ const HomeScreen = ({ navigation }) => {
     console.log("HomeScreen mounted");
     return () => console.log("HomeScreen unmounted");
   }, []);
+
+  // If the user is admin, show a temporary loading state
+  // The useEffect above will handle the redirect
+  if (user?.isAdmin) {
+    return <LoadingIndicator />;
+  }
 
   if (loading && !refreshing) {
     console.log("Showing loading indicator");

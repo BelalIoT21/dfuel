@@ -67,7 +67,12 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       console.log("User is logged in, redirecting:", user);
-      navigate('/home');
+      // Redirect admin users to admin dashboard
+      if (user.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/home');
+      }
     }
   }, [user, navigate]);
 
