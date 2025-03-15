@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -53,7 +54,7 @@ class ApiService {
       
       if (!response.ok) {
         const errorMessage = responseData?.message || 'API request failed';
-        console.error(`API error: ${response.status} - ${errorMessage}`);
+        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         throw new Error(errorMessage);
       }
       
@@ -63,12 +64,12 @@ class ApiService {
         status: response.status
       };
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
         toast({
-          title: 'API Error',
+          title: `API Error (${endpoint})`,
           description: error instanceof Error ? error.message : 'Unknown error occurred',
           variant: 'destructive'
         });

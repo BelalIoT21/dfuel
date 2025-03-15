@@ -1,11 +1,12 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Title, Paragraph, Button, List } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 
 const AdminDashboardScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const [loadingStatus, setLoadingStatus] = useState({ isLoading: false, error: null });
 
   // Check if user is admin and redirect non-admins
   if (!user?.isAdmin) {
@@ -16,7 +17,16 @@ const AdminDashboardScreen = ({ navigation }) => {
   }
 
   const navigateToScreen = (screen, params = {}) => {
-    navigation.navigate(screen, params);
+    try {
+      console.log(`Navigating to ${screen}`, params);
+      navigation.navigate(screen, params);
+    } catch (error) {
+      console.error(`Navigation error to ${screen}:`, error);
+      Alert.alert(
+        "Navigation Error",
+        `Could not navigate to ${screen}. Error: ${error.message}`
+      );
+    }
   };
 
   return (
