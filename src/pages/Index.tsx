@@ -11,7 +11,6 @@ import { toast } from '@/components/ui/use-toast';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [apiUrl, setApiUrl] = useState<string>('');
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -20,9 +19,6 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        // Get the current API URL
-        setApiUrl('http://localhost:4000/api');
-        
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check:", response.data);
@@ -84,10 +80,6 @@ const Index = () => {
               Server status: {serverStatus}
             </div>
           )}
-          {/* Display API URL */}
-          <div className="mt-1 text-xs text-gray-500">
-            API URL: {apiUrl}
-          </div>
         </div>
 
         <AnimatePresence mode="wait">
