@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -183,7 +184,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           
           <h4 className="text-sm font-medium mb-2">Machine Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
-            {/* First, the Bambu Lab X1 E (previously Safety Training with ID "5") */}
+            {/* First, the Bambu Lab X1 E (ID "5") */}
             <div className="flex justify-between items-center border p-2 rounded">
               <span>Bambu Lab X1 E</span>
               <div>

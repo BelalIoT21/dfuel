@@ -33,11 +33,16 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   }, [user.certifications]);
 
-  // Only filter out Machine Safety Course (ID: "6")
+  // Filter out Machine Safety Course (ID: "6")
   const filteredCertifications = user.certifications.filter(certId => {
-    // Filter out Machine Safety Course (ID: "6")
     return certId !== "6";
   });
+
+  // Helper function to get machine name with special handling for ID "6"
+  const getMachineName = (certId: string) => {
+    if (certId === "6") return "Machine Safety Course";
+    return machineNames[certId] || `Machine ${certId}`;
+  };
 
   return (
     <View style={styles.section}>
@@ -47,7 +52,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           {filteredCertifications.map((certId) => (
             <List.Item
               key={certId}
-              title={machineNames[certId] || `Machine ${certId}`}
+              title={getMachineName(certId)}
               left={(props) => <List.Icon {...props} icon="certificate" color="#7c3aed" />}
             />
           ))}

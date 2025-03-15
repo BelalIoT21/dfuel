@@ -36,6 +36,9 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
 
   // Helper function to get machine name by ID
   const getMachineName = (certId: string) => {
+    // Special case for Machine Safety Course
+    if (certId === "6") return "Machine Safety Course";
+    
     // First try to find from fetched machines
     const machine = allMachines.find(m => m.id === certId);
     if (machine) return machine.name;
@@ -75,14 +78,17 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      user.certifications.map((cert: string) => (
-                        <span 
-                          key={cert} 
-                          className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                        >
-                          {getMachineName(cert)}
-                        </span>
-                      ))
+                      // Filter out machine safety course (ID: "6") from visible certifications
+                      user.certifications
+                        .filter((cert: string) => cert !== "6")
+                        .map((cert: string) => (
+                          <span 
+                            key={cert} 
+                            className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+                          >
+                            {getMachineName(cert)}
+                          </span>
+                        ))
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
                     )}
@@ -108,3 +114,4 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
     </div>
   );
 };
+
