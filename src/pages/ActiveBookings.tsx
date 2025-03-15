@@ -66,6 +66,8 @@ const ActiveBookings = () => {
   // Handle approval or rejection
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     try {
+      console.log(`Updating booking ${bookingId} status to ${newStatus}`);
+      
       // Call API to update the booking status
       const response = await apiService.updateBookingStatus(bookingId, newStatus);
       
@@ -75,12 +77,12 @@ const ActiveBookings = () => {
       
       // Update the local state to reflect the change
       setBookings(bookings.map((booking: any) => 
-        booking.id === bookingId ? { ...booking, status: newStatus } : booking
+        booking._id === bookingId ? { ...booking, status: newStatus } : booking
       ));
       
       toast({
         title: `Booking ${newStatus}`,
-        description: `You have ${newStatus.toLowerCase()} booking #${bookingId}`,
+        description: `You have ${newStatus.toLowerCase()} the booking`,
         variant: newStatus === 'Approved' ? 'default' : 'destructive',
       });
     } catch (error) {
