@@ -1,190 +1,187 @@
 
-// Add or update the setToken method and ensure it's used in all requests
+import axios from 'axios';
+import { authUtils } from './authUtils';
+
+/**
+ * Main API Service for communicating with the backend.
+ */
+
 class ApiService {
-  private baseUrl: string;
-  private token: string | null = null;
-
+  baseURL: string;
+  
   constructor() {
-    // Use environment variables if available, otherwise fallback to localhost
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-    this.baseUrl = apiUrl;
-    
-    // Initialize token from localStorage if available
-    this.token = localStorage.getItem('token');
-    console.log(`API Service initialized with ${this.token ? 'existing token' : 'no token'}`);
-    console.log(`API URL: ${this.baseUrl}`);
+    this.baseURL = 'http://localhost:4000/api';
   }
-
-  setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem('token', token);
-      console.log('Token saved to localStorage');
-    } else {
-      localStorage.removeItem('token');
-      console.log('Token removed from localStorage');
-    }
-    console.log(`API token ${token ? 'set' : 'cleared'}`);
-  }
-
-  async request(method: string, endpoint: string, data?: any, requiresAuth: boolean = true) {
-    const url = `${this.baseUrl}${endpoint}`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    
-    // Add auth token if available and required
-    if (requiresAuth && this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-    
-    const options: RequestInit = {
-      method,
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-      // Add credentials to allow cookies if needed
-      credentials: 'include',
-    };
-    
-    console.log(`Making API request: ${method} ${url}${data ? ' with data: ' + JSON.stringify(data) : ''}${requiresAuth ? (this.token ? ' with auth token' : ' no auth token available') : ' no auth required'}`);
-    
+  
+  /**
+   * Make a request to the API
+   */
+  async request(endpoint: string, method: string = 'GET', data?: any, useToken: boolean = true): Promise<any> {
     try {
-      const response = await fetch(url, options);
+      const url = `${this.baseURL}/${endpoint}`;
+      console.info(`Making API request: ${method} ${url}${useToken ? ' with auth token' : ''}`);
       
-      // Try to parse as JSON, but handle non-JSON responses
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        const text = await response.text();
-        try {
-          responseData = JSON.parse(text);
-        } catch (e) {
-          responseData = { message: text };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authentication token if required
+      if (useToken) {
+        const token = authUtils.getToken();
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.warn('Authentication token required but not found');
         }
       }
       
-      if (!response.ok) {
-        console.error(`API error for ${method} ${url}: ${response.status} - ${responseData.message || 'Unknown error'}`);
-        console.error(`API request failed for ${endpoint.split('/')[1]}: ${responseData.message || 'Unknown error'}`);
-        return { 
-          data: null, 
-          error: responseData.message || 'Server error', 
-          status: response.status,
-          success: false 
-        };
-      }
+      const config = {
+        method,
+        url,
+        headers,
+        data: data ? JSON.stringify(data) : undefined,
+      };
       
-      return { 
-        data: responseData, 
-        error: null, 
-        status: response.status,
-        success: true 
+      const response = await axios(config);
+      return {
+        data: response.data,
+        error: null
       };
     } catch (error) {
-      console.error(`Network error for ${method} ${url}:`, error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error.message : 'Network error. Server may be unavailable.', 
-        status: 0,
-        success: false 
+      const errorResponse = error.response;
+      const status = errorResponse?.status;
+      const message = errorResponse?.data?.message || 'An error occurred';
+      
+      console.error(`API error for ${method} ${this.baseURL}/${endpoint}: ${status} - ${message} - ${endpoint}`, error);
+      
+      return {
+        data: null,
+        error: message,
+        status
       };
     }
   }
-
-  // User authentication methods
-  async login(email: string, password: string) {
-    console.log("Attempting login via API for:", email);
-    return this.request('POST', '/auth/login', { email, password }, false);
-  }
-
-  async register(userData: { email: string; password: string; name: string }) {
-    return this.request('POST', '/auth/register', userData, false);
-  }
-
-  async getCurrentUser() {
-    return this.request('GET', '/auth/me');
-  }
-
-  // User count (public endpoint)
-  async getUserCount() {
-    return this.request('GET', '/auth/user-count', undefined, false);
-  }
-
-  // Make sure all other API methods include the token
-  async getAllUsers() {
-    return this.request('GET', '/users');
+  
+  // User-related methods
+  
+  /**
+   * Register a new user
+   */
+  async register(email: string, password: string, name: string): Promise<any> {
+    return this.request('auth/register', 'POST', { email, password, name }, false);
   }
   
-  async getUserByEmail(email: string) {
-    return this.request('GET', `/users/email/${email}`);
+  /**
+   * Login a user
+   */
+  async login(email: string, password: string): Promise<any> {
+    return this.request('auth/login', 'POST', { email, password }, false);
   }
   
-  async getUserById(id: string) {
-    return this.request('GET', `/users/${id}`);
+  /**
+   * Get the current user's profile
+   */
+  async getUserProfile(): Promise<any> {
+    return this.request('auth/me', 'GET', undefined, true);
   }
   
-  async updateProfile(id: string, updates: any) {
-    return this.request('PUT', `/users/${id}`, updates);
+  /**
+   * Update user profile
+   */
+  async updateUserProfile(updates: any): Promise<any> {
+    return this.request('auth/profile', 'PUT', updates, true);
   }
   
-  async deleteUser(id: string) {
-    return this.request('DELETE', `/users/${id}`);
+  /**
+   * Get all users (admin only)
+   */
+  async getUsers(): Promise<any> {
+    return this.request('users', 'GET', undefined, true);
   }
   
-  async addCertification(userId: string, machineId: string) {
-    return this.request('POST', `/certifications/add`, { userId, machineId });
+  // Machine-related methods
+  
+  /**
+   * Get all machines
+   */
+  async getMachines(): Promise<any> {
+    return this.request('machines', 'GET', undefined, false);
   }
   
-  async getMachineById(id: string) {
-    return this.request('GET', `/machines/${id}`);
+  /**
+   * Get machine by id
+   */
+  async getMachineById(id: string): Promise<any> {
+    return this.request(`machines/${id}`, 'GET', undefined, false);
   }
   
-  async getMachines() {
-    return this.request('GET', '/machines');
+  /**
+   * Update machine status
+   */
+  async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'PUT', { status, note }, true);
   }
   
-  async getMachineStatus(machineId: string) {
-    return this.request('GET', `/machines/${machineId}/status`);
+  /**
+   * Get machine status
+   */
+  async getMachineStatus(machineId: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'GET', undefined, true);
   }
   
-  async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.request('PUT', `/machines/${machineId}/status`, { status, note });
+  // Booking-related methods
+  
+  /**
+   * Create a booking
+   */
+  async createBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
+    return this.request('bookings', 'POST', { userId, machineId, date, time }, true);
   }
   
-  async getMachineMaintenanceNote(machineId: string) {
-    return this.request('GET', `/machines/${machineId}/note`);
+  /**
+   * Get all bookings (admin only)
+   */
+  async getAllBookings(): Promise<any> {
+    return this.request('bookings/all', 'GET', undefined, true);
   }
   
-  async deleteBooking(bookingId: string) {
-    return this.request('DELETE', `/bookings/${bookingId}`);
+  /**
+   * Get user bookings
+   */
+  async getUserBookings(userId: string): Promise<any> {
+    return this.request(`bookings/user/${userId}`, 'GET', undefined, true);
   }
   
-  async clearAllBookings() {
-    return this.request('DELETE', '/bookings/clear-all');
+  /**
+   * Update booking status
+   */
+  async updateBookingStatus(bookingId: string, status: string): Promise<any> {
+    return this.request(`bookings/${bookingId}/status`, 'PUT', { status }, true);
   }
   
-  async removeCertification(userId: string, machineId: string) {
-    return this.request('DELETE', `/certifications`, { userId, machineId });
-  }
-
-  // Add missing booking-related API methods
-  async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.request('POST', '/bookings', { userId, machineId, date, time });
+  // Certification-related methods
+  
+  /**
+   * Add certification
+   */
+  async addCertification(userId: string, machineId: string): Promise<any> {
+    return this.request('certifications', 'POST', { userId, machineId }, true);
   }
   
-  async getUserBookings(userId: string) {
-    return this.request('GET', `/bookings?userId=${userId}`);
+  /**
+   * Remove certification
+   */
+  async removeCertification(userId: string, machineId: string): Promise<any> {
+    return this.request('certifications', 'DELETE', { userId, machineId }, true);
   }
   
-  async getAllBookings() {
-    return this.request('GET', '/bookings/all');
-  }
-
-  async updateBookingStatus(bookingId: string, status: string) {
-    return this.request('PUT', `/bookings/update-status`, { bookingId, status });
+  /**
+   * Get user certifications
+   */
+  async getUserCertifications(userId: string): Promise<any> {
+    return this.request(`certifications/user/${userId}`, 'GET', undefined, true);
   }
 }
 
+// Create a singleton instance of the service
 export const apiService = new ApiService();

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +24,7 @@ const idMapping: Record<string, string> = {
   "67d5fd3c50bbb3312ae0fb21": "3", // Safety Cabinet
   "67d5fd3c50bbb3312ae0fb22": "6", // Safety Course
   "67d5fd3c50bbb3312ae0fb23": "4", // Another Bambu Lab
+  "67d5fd3c50bbb3312ae0fb24": "7", // X1 E Carbon 3D Printer
 };
 
 // Reverse mapping for converting short IDs to MongoDB IDs
@@ -35,6 +35,7 @@ const reverseIdMapping: Record<string, string> = {
   "3": "67d5fd3c50bbb3312ae0fb21", // Safety Cabinet
   "6": "67d5fd3c50bbb3312ae0fb22", // Safety Course
   "4": "67d5fd3c50bbb3312ae0fb23", // Another Bambu Lab
+  "7": "67d5fd3c50bbb3312ae0fb24", // X1 E Carbon 3D Printer
 };
 
 // Define machine types for consistent identification
@@ -45,6 +46,7 @@ const machineTypeMapping: Record<string, string> = {
   "4": "3D Printer", // Bambu Lab
   "5": "3D Printer", // Bambu Lab
   "6": "Safety Course",
+  "7": "3D Printer", // X1 E Carbon 3D Printer
 };
 
 // Hardcoded machines data for fallback
@@ -54,7 +56,8 @@ const hardcodedMachines = {
   "3": { id: "3", name: "Safety Cabinet", type: "Safety Cabinet" },
   "4": { id: "4", name: "Bambu Lab X1 E", type: "3D Printer" },
   "5": { id: "5", name: "Bambu Lab X1 E", type: "3D Printer" },
-  "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" }
+  "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" },
+  "7": { id: "7", name: "X1 E Carbon 3D Printer", type: "3D Printer" }
 };
 
 const BookingPage = () => {
@@ -71,11 +74,6 @@ const BookingPage = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
 
   useEffect(() => {
-    // Ensure machines are in MongoDB (for server versions)
-    machineService.ensureMachinesInMongoDB().catch(err => {
-      console.error("Error ensuring machines in MongoDB:", err);
-    });
-
     async function loadMachine() {
       try {
         if (!id) return;
@@ -188,11 +186,6 @@ const BookingPage = () => {
     loadMachine();
   }, [id]);
 
-  // Update available time slots when date changes
-  useEffect(() => {
-    updateAvailableTimeSlots(selectedDate);
-  }, [selectedDate, bookedSlots]);
-  
   const updateAvailableTimeSlots = (date: Date | undefined) => {
     if (!date) return;
     

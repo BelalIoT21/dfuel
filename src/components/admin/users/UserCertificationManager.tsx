@@ -5,10 +5,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
 import { machines } from '@/utils/data';
-import { Loader2, Trash } from 'lucide-react';
+import { Loader2, Trash, Plus } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
 import { localStorageService } from '@/services/localStorageService';
 import { machineService } from '@/services/machineService';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -76,6 +78,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           description: "User certification has been updated."
         });
         onCertificationAdded();
+        
+        // Close the dialog
+        setOpen(false);
       } else {
         toast({
           title: "Error",
@@ -115,7 +120,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       try {
         const userDoc = await mongoDbService.getUserById(userId);
         if (userDoc) {
-          const updatedCertifications = userDoc.certifications.filter(id => id !== machineId);
+          const updatedCertifications = (userDoc.certifications || []).filter(id => id !== machineId);
           success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
           console.log(`MongoDB removeCertification result: ${success}`);
         }
@@ -186,6 +191,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           description: "All certifications have been removed from this user."
         });
         onCertificationAdded();
+        
+        // Close the dialog
+        setOpen(false);
       } else {
         toast({
           title: "Error",
@@ -216,9 +224,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       case "1": return "Laser Cutter";
       case "2": return "Ultimaker";
       case "3": return "Safety Cabinet";
-      case "4": return "Bambu Lab X1 E"; // Added ID 4
+      case "4": return "Bambu Lab X1 E";
       case "5": return "Bambu Lab X1 E";
       case "6": return "Machine Safety Course";
+      case "7": return "X1 E Carbon 3D Printer";
       default: return `Machine ${machineId}`;
     }
   };
@@ -233,6 +242,41 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       name: getMachineName(certId)
     }));
   }
+  
+  // Get list of machines that the user is not certified for
+  const getAvailableMachines = () => {
+    const userCerts = user?.certifications || [];
+    
+    // Start with a list of common machines to certify for
+    const commonMachines = [
+      { id: "1", name: "Laser Cutter" },
+      { id: "2", name: "Ultimaker" },
+      { id: "3", name: "Safety Cabinet" },
+      { id: "4", name: "Bambu Lab X1 E" },
+      { id: "5", name: "Bambu Lab X1 E" },
+      { id: "6", name: "Machine Safety Course" },
+      { id: "7", name: "X1 E Carbon 3D Printer" },
+    ];
+    
+    // Filter out machines the user is already certified for
+    const available = commonMachines.filter(machine => !userCerts.includes(machine.id));
+    
+    // Add other machines from allMachines that aren't in commonMachines
+    allMachines.forEach(machine => {
+      const machineId = machine._id || machine.id;
+      if (machineId && 
+          !userCerts.includes(machineId) && 
+          !available.some(m => m.id === machineId) &&
+          !commonMachines.some(m => m.id === machineId)) {
+        available.push({
+          id: machineId,
+          name: machine.name
+        });
+      }
+    });
+    
+    return available;
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -246,43 +290,79 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             Manage certifications for this user.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <h4 className="text-sm font-medium mb-2">Machine Certifications</h4>
-          <div className="grid grid-cols-1 gap-2">
-            {/* Display all user certifications with remove buttons */}
-            {getUserCertifications().map(cert => (
-              <div key={cert.id} className="flex justify-between items-center border p-2 rounded">
-                <span>{cert.name}</span>
-                <Button
+        
+        <ScrollArea className="max-h-[400px] px-1">
+          <div className="py-4">
+            <h4 className="text-sm font-medium mb-2">Current Certifications</h4>
+            <div className="grid grid-cols-1 gap-2">
+              {getUserCertifications().length > 0 ? (
+                getUserCertifications().map(cert => (
+                  <div key={cert.id} className="flex justify-between items-center border p-2 rounded">
+                    <span>{cert.name}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveCertification(user.id || user._id, cert.id)}
+                      disabled={loading === cert.id}
+                      className="bg-red-50 hover:bg-red-100 border-red-200"
+                    >
+                      {loading === cert.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                      Remove
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-2 text-gray-500">
+                  <p>No certifications yet</p>
+                </div>
+              )}
+            </div>
+            
+            {user?.certifications?.length > 0 && (
+              <div className="mt-4 border-t pt-4">
+                <Button 
                   variant="outline"
                   size="sm"
-                  onClick={() => handleRemoveCertification(user.id || user._id, cert.id)}
-                  disabled={loading === cert.id}
-                  className="bg-red-50 hover:bg-red-100 border-red-200"
+                  className="w-full border-red-200 hover:bg-red-50 text-red-700"
+                  onClick={handleClearAllCertifications}
+                  disabled={isClearing}
                 >
-                  {loading === cert.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Remove
+                  {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Trash className="h-4 w-4 mr-2" />
+                  Clear All Certifications
                 </Button>
               </div>
-            ))}
-          </div>
-          
-          {user?.certifications?.length > 0 && (
-            <div className="mt-4 border-t pt-4">
-              <Button 
-                variant="outline"
-                size="sm"
-                className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                onClick={handleClearAllCertifications}
-                disabled={isClearing}
-              >
-                {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Trash className="h-4 w-4 mr-2" />
-                Clear All Certifications
-              </Button>
+            )}
+            
+            <Separator className="my-4" />
+            
+            <h4 className="text-sm font-medium mb-2">Add Certification</h4>
+            <div className="grid grid-cols-1 gap-2">
+              {getAvailableMachines().length > 0 ? (
+                getAvailableMachines().map(machine => (
+                  <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
+                    <span>{machine.name}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddCertification(user.id || user._id, machine.id)}
+                      disabled={loading === machine.id}
+                      className="bg-green-50 hover:bg-green-100 border-green-200"
+                    >
+                      {loading === machine.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                      Add
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-2 text-gray-500">
+                  <p>No additional certifications available</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </ScrollArea>
+        
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
