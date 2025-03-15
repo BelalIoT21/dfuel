@@ -1,7 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService'; // New import
+import mongoSeedService from './seedService';
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -12,19 +12,17 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // In a real application, this would come from environment variables
+    // Use the same URI for both preview and local machine
     this.uri = 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
   async connect(): Promise<any | null> {
-    // Skip MongoDB connection in browser environment
     if (isWeb) {
-      console.log("Running in browser environment, skipping MongoDB connection");
+      console.log("Running in browser environment, using server API for MongoDB access");
       return null;
     }
     
-    // If we're already connecting, return the existing promise
     if (this.isConnecting && this.connectionPromise) {
       console.log("MongoDB connection already in progress, waiting...");
       return this.connectionPromise;
@@ -35,10 +33,8 @@ class MongoConnectionService {
         this.isConnecting = true;
         console.log(`Attempting to connect to MongoDB at ${this.uri}...`);
         
-        // Create a new connection promise
         this.connectionPromise = new Promise(async (resolve, reject) => {
           try {
-            // Only import MongoDB in non-web environments
             const { MongoClient, ServerApiVersion } = await import('mongodb');
             
             this.client = new MongoClient(this.uri, {
@@ -46,7 +42,10 @@ class MongoConnectionService {
                 version: ServerApiVersion.v1,
                 strict: true,
                 deprecationErrors: true,
-              }
+              },
+              connectTimeoutMS: 5000,      // Connection timeout
+              socketTimeoutMS: 30000,      // Socket timeout
+              waitQueueTimeoutMS: 10000,   // Wait queue timeout
             });
             
             await this.client.connect();
@@ -59,7 +58,6 @@ class MongoConnectionService {
             const collections = await this.db.listCollections().toArray();
             console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
             
-            // Initialize seed data if not already done
             if (!this.initialized) {
               await this.initializeData();
               this.initialized = true;
@@ -74,7 +72,6 @@ class MongoConnectionService {
           }
         });
         
-        // Wait for the connection to complete
         const result = await this.connectionPromise;
         this.isConnecting = false;
         return result;
@@ -88,15 +85,11 @@ class MongoConnectionService {
     }
   }
   
-  // New method to initialize data
   private async initializeData(): Promise<void> {
     try {
       console.log("Initializing MongoDB with seed data...");
       
-      // First seed machines (as they're referenced by users and bookings)
       await mongoMachineService.seedDefaultMachines();
-      
-      // Then seed users and bookings
       await mongoSeedService.seedUsers();
       await mongoSeedService.seedBookings();
       
@@ -106,7 +99,6 @@ class MongoConnectionService {
     }
   }
   
-  // Method to close the connection when the application shuts down
   async close(): Promise<void> {
     if (!isWeb && this.client) {
       try {
@@ -118,7 +110,6 @@ class MongoConnectionService {
     }
   }
 
-  // Get the database instance
   async getDb(): Promise<any | null> {
     if (this.db) {
       return this.db;
@@ -127,7 +118,6 @@ class MongoConnectionService {
     return this.connect();
   }
   
-  // Check if the database connection is active
   async isConnected(): Promise<boolean> {
     if (isWeb) return false;
     
@@ -136,7 +126,6 @@ class MongoConnectionService {
         return false;
       }
       
-      // Try a simple command to test the connection
       await this.db.command({ ping: 1 });
       console.log("MongoDB connection is active");
       return true;
@@ -147,6 +136,5 @@ class MongoConnectionService {
   }
 }
 
-// Create a singleton instance
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;

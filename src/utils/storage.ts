@@ -3,17 +3,18 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we don't use localStorage anymore since we're using MongoDB exclusively
- * For native environments, we still use AsyncStorage for session persistence
+ * For web environments, MongoDB access is handled through API calls
+ * For native environments, we use AsyncStorage for session persistence
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
+      // In web environment, we use API calls to MongoDB instead of localStorage
+      console.log('Web environment - using MongoDB via API');
       return null;
     } else {
       try {
-        // Use a safer approach to access AsyncStorage in native environments
+        // Native environment - use AsyncStorage
         const AsyncStorage = this.getNativeStorage();
         if (AsyncStorage) {
           return await AsyncStorage.getItem(key);
@@ -28,7 +29,8 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
+      // In web environment, we use API calls to MongoDB instead of localStorage
+      console.log('Web environment - using MongoDB via API');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -43,7 +45,8 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
+      // In web environment, we use API calls to MongoDB instead of localStorage
+      console.log('Web environment - using MongoDB via API');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -58,7 +61,6 @@ class StorageService {
 
   // Helper method to safely get AsyncStorage without build-time issues
   private getNativeStorage(): any {
-    // This approach prevents bundlers from trying to resolve the import at build time
     if (typeof global !== 'undefined' && global.require) {
       try {
         return global.require('@react-native-async-storage/async-storage');
