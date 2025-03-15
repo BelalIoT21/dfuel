@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
+import { isWeb } from '@/utils/platform';
+import { storage } from '@/utils/storage';
 
 export const useAuthFunctions = (
   user: User | null, 
@@ -34,6 +36,16 @@ export const useAuthFunctions = (
         const userData = apiResponse.data.user;
         
         setUser(userData as User);
+        
+        // Only store in AsyncStorage for native platforms
+        if (!isWeb) {
+          try {
+            await storage.setItem('learnit_user', JSON.stringify(userData));
+            console.log("User data stored in AsyncStorage");
+          } catch (storageError) {
+            console.error("Error storing user data:", storageError);
+          }
+        }
         
         toast({
           title: "Login successful",
@@ -87,6 +99,16 @@ export const useAuthFunctions = (
         
         setUser(userData as User);
         
+        // Only store in AsyncStorage for native platforms
+        if (!isWeb) {
+          try {
+            await storage.setItem('learnit_user', JSON.stringify(userData));
+            console.log("User data stored in AsyncStorage");
+          } catch (storageError) {
+            console.error("Error storing user data:", storageError);
+          }
+        }
+        
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -115,6 +137,13 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
+    // Clear AsyncStorage only for non-web platforms
+    if (!isWeb) {
+      storage.removeItem('learnit_user')
+        .then(() => console.log("User data removed from AsyncStorage"))
+        .catch(error => console.error("Error removing user data:", error));
+    }
+    
     toast({
       description: "Logged out successfully."
     });

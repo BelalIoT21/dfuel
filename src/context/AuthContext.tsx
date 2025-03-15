@@ -4,7 +4,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import { apiService } from '@/services/apiService';
 import { storage } from '@/utils/storage';
-import { Platform } from '@/utils/platform';
+import { Platform, isWeb } from '@/utils/platform';
 import mongoDbService from '@/services/mongoDbService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
@@ -12,30 +12,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with loading false
   
   // Get auth functions
   const { login: authLogin, register: authRegister, logout: authLogout } = useAuthFunctions(user, setUser);
-
-  // Load user from storage only (no localStorage)
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        // Only try to get from AsyncStorage
-        const storedUser = await storage.getItem('learnit_user');
-        
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-        console.error('Error loading user from storage:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadUser();
-  }, []);
 
   // Login function
   const login = async (email: string, password: string) => {
@@ -174,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

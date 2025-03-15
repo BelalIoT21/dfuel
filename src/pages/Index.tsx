@@ -14,6 +14,8 @@ const Index = () => {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
+  console.log("Index component running with user:", user);
+
   // Check server connection
   useEffect(() => {
     const checkServer = async () => {
@@ -53,18 +55,42 @@ const Index = () => {
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
     try {
-      await login(email, password);
+      const success = await login(email, password);
+      if (!success) {
+        toast({
+          title: "Login failed",
+          description: "Invalid credentials or server error",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
     try {
-      await register(email, password, name);
+      const success = await register(email, password, name);
+      if (!success) {
+        toast({
+          title: "Registration failed",
+          description: "Email may already be in use or server error",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
     }
   };
 
@@ -72,8 +98,7 @@ const Index = () => {
     setIsLogin(!isLogin);
   };
 
-  // Debug rendering
-  console.log("Rendering Index component");
+  console.log("Rendering Index component, login mode:", isLogin);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
