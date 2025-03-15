@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
-import { Button, Card, ProgressBar } from 'react-native-paper';
+import { Button, Card, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 import { courses } from '../../utils/data';
 
@@ -9,26 +9,48 @@ const SafetyCourseScreen = ({ route, navigation }) => {
   const { machineId } = route.params || {};
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Find the course for the given machine ID
   const course = courses[machineId];
   
   useEffect(() => {
+    console.log("SafetyCourseScreen mounted with machineId:", machineId);
+    console.log("Course data:", course);
+    
     if (!user) {
+      console.log("No user found, redirecting to login");
       navigation.replace('Login');
       return;
     }
     
-    if (!machineId || !course) {
-      console.error('No valid machine ID or course found');
-      navigation.goBack();
-    }
+    // Add a small delay to ensure data is properly loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      if (!machineId || !course) {
+        setError('No valid machine ID or course found');
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, [user, machineId, course, navigation]);
   
-  if (!course) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Course not found for this machine.</Text>
+        <ActivityIndicator size="large" color="#7c3aed" />
+        <Text style={styles.loadingText}>Loading course content...</Text>
+      </View>
+    );
+  }
+  
+  if (error || !course) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          {error || 'Course not found for this machine.'}
+        </Text>
         <Button 
           mode="contained" 
           onPress={() => navigation.goBack()}
@@ -75,11 +97,17 @@ const SafetyCourseScreen = ({ route, navigation }) => {
       
       <Card style={styles.card}>
         <View style={styles.slideImageContainer}>
-          <Image 
-            source={{ uri: course.slides[currentSlide].image || '/placeholder.svg' }} 
-            style={styles.slideImage}
-            resizeMode="contain"
-          />
+          {course.slides[currentSlide].image ? (
+            <Image 
+              source={{ uri: course.slides[currentSlide].image || '/placeholder.svg' }} 
+              style={styles.slideImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.noImageContainer}>
+              <Text style={styles.noImageText}>No image available</Text>
+            </View>
+          )}
         </View>
         
         <Card.Content style={styles.cardContent}>
@@ -167,6 +195,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  noImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noImageText: {
+    color: '#9ca3af',
+    fontSize: 16,
+  },
   cardContent: {
     padding: 16,
   },
@@ -203,6 +240,12 @@ const styles = StyleSheet.create({
   button: {
     margin: 16,
     backgroundColor: '#7c3aed',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#7c3aed',
+    textAlign: 'center',
   },
 });
 
