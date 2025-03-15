@@ -1,8 +1,7 @@
 
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../.././server/src/components/ui/button';
-import { useAuth } from '../context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 
 const NotFound = () => {

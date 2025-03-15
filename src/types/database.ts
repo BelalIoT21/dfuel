@@ -22,7 +22,6 @@ export interface Booking {
   date: string;
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
-  machineName?: string;
 }
 
 export interface MachineStatus {

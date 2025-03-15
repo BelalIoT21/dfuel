@@ -14,7 +14,6 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "jsx": "react",
     "paths": {
       "@/*": [
         "./server/* ./node_modules/@types",

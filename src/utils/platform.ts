@@ -1,52 +1,35 @@
 
-// Platform detection utility
+/**
+ * This file provides platform detection utilities
+ * to help with conditional rendering and functionality
+ */
 
-// Check if running in a browser environment
-export const isBrowser = typeof window !== "undefined";
+export const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
 
-// Basic check for native platforms
-export const isNative = false; // Simplified since we're targeting web
-
-// For web usage, we'll just define isWeb as true
-export const isWeb = true;
-
-// Helper function to detect iOS
-export function isIOS() {
-  if (!isBrowser) return false;
-  
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent);
-}
-
-// Helper function to detect Android
-export function isAndroid() {
-  if (!isBrowser) return false;
-  
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /android/.test(userAgent);
-}
-
-// Export the function directly to check whether the platform is iOS
-export const isPlatformIOS = isIOS();
-
-// Export the function directly to check whether the platform is Android
-export const isPlatformAndroid = isAndroid();
-
-// Export the function to check whether this is a native platform
-export const isPlatformNative = isNative;
-
-// General mobile detection
-export function isMobile() {
-  if (!isBrowser) return false;
-  
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod|android|mobile/.test(userAgent);
-}
-
-// Check IE browser's compatibility - empty function since we're not targeting IE
-export function isIEBrowser() {
-  if (!isBrowser) return false;
-  
-  // Check for IE-specific properties (in real implementation, this would be more complex)
+export const isPlatformNative = (): boolean => {
+  if (typeof navigator !== 'undefined') {
+    return navigator.product === 'ReactNative';
+  }
   return false;
-}
+};
+
+export const isIOS = (): boolean => {
+  if (!isWeb) {
+    return false;
+  }
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+};
+
+export const isAndroid = (): boolean => {
+  if (!isWeb) {
+    return false;
+  }
+  return /Android/.test(navigator.userAgent);
+};
+
+export const isMobile = (): boolean => {
+  if (!isWeb) {
+    return true; // If not web, assume mobile
+  }
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};

@@ -1,12 +1,12 @@
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { machines } from '../utils/data';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../.././server/src/components/ui/card";
-import { Button } from "../.././server/src/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
 import userDatabase from '../services/userDatabase';
-import { toast } from '../.././server/src/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 interface ExtendedMachine {
   id: string;

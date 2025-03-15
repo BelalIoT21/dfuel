@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button } from '../.././server/src/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../.././server/src/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '../.././server/src/components/ui/radio-group';
-import { Label } from '../.././server/src/components/ui/label';
-import { Progress } from '../.././server/src/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Check, X } from 'lucide-react';
 import { machines, quizzes, defaultQuiz } from '../utils/data';
-import { useToast } from '.././hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 
 const Quiz = () => {

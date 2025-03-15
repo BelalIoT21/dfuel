@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button } from '../.././server/src/components/ui/button';
-import { Card, CardContent } from '../.././server/src/components/ui/card';
-import { Progress } from '../.././server/src/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { courses, machines } from '../utils/data';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const Course = () => {
   const { id } = useParams<{ id: string }>();

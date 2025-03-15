@@ -4,7 +4,7 @@ import mongoMachineService from './machineService';
 import mongoSeedService from './seedService';
 import { getEnv } from '../../utils/env';
 import { apiService } from '../apiService';
-import { toast } from '../../../server/src/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 class MongoConnectionService {
   private client: any | null = null;

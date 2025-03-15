@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '../../server/src/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../server/src/components/ui/card";
-import { Input } from '../../server/src/components/ui/input';
-import { useToast } from '../hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
-import { BackToAdminButton } from '../../server/src/components/BackToAdminButton';
+import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
-import { machineDatabaseService } from '../services/database/machineService';
+import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminMachines = () => {
-
-
   const { user } = useAuth();
   const { toast } = useToast();
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);

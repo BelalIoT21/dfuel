@@ -1,4 +1,5 @@
-import express, { Request } from 'express';
+
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
@@ -53,16 +54,8 @@ const allowedOrigins = [
   /^https:\/\/[\w-]+\.lovableproject\.com$/
 ];
 
-// Extend the Request interface to include requestId and timestamp
-declare module 'express-serve-static-core' {
-  interface Request {
-    requestId?: string;
-    timestamp?: string;
-  }
-}
-
 // Custom request logger middleware
-app.use((req: Request, res, next) => {
+app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   const requestId = Math.random().toString(36).substring(2, 10);
   

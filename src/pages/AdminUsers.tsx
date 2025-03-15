@@ -1,17 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "../../server/src/components/ui/card";
-import { useToast } from '../hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { useToast } from '@/hooks/use-toast';
 import userDatabase from '../services/userDatabase';
-import { UserSearch } from '../../server/src/components/admin/users/UserSearch';
-import { UsersTable } from '../../server/src/components/admin/users/UsersTable';
+import { UserSearch } from '../components/admin/users/UserSearch';
+import { UsersTable } from '../components/admin/users/UsersTable';
 import { UserWithoutSensitiveInfo } from '../types/database';
-import { BackToAdminButton } from '../../server/src/components/BackToAdminButton';
-import { StatsOverview } from '../../server/src/components/admin/StatsOverview';
-import { machines } from '../utils/data';
-import { Button } from "../../server/src/components/ui/button";
+import { BackToAdminButton } from '@/components/BackToAdminButton';
+import { StatsOverview } from '@/components/admin/StatsOverview';
+import { machines } from '@/utils/data';
+import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const AdminUsers = () => {

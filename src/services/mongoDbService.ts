@@ -1,9 +1,10 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoSeedService from './mongodb/seedService';
 import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
-import { toast } from "../hooks/use-toast";
+import { toast } from '@/components/ui/use-toast';
 
 class MongoDbService {
   async getAllUsers() {

@@ -70,18 +70,7 @@ export class CertificationService {
         const user = await mongoDbService.getUserById(userId);
         if (user) {
           // Filter out the certification
-          interface User {
-            certifications: string[];
-            [key: string]: any;  // For other potential user properties
-          }
-
-          interface ApiResponse {
-            data?: {
-              success?: boolean;
-            };
-            error: null | any;
-          }
-          const updatedCertifications: string[] = user.certifications.filter((id: string): boolean => id !== machineId);
+          const updatedCertifications = user.certifications.filter(id => id !== machineId);
           // Update the user with the new certifications list
           const success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
           if (success) {

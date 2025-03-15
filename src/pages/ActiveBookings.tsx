@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { AdminHeader } from '../.././server/src/components/admin/AdminHeader';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../.././server/src/components/ui/card";
+import { useState, useEffect } from 'react';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Table, 
   TableBody, 
@@ -9,39 +9,26 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "../.././server/src/components/ui/table";
-import { Button } from "../.././server/src/components/ui/button";
-import { useAuth } from '../context/AuthContext';
-import { Badge } from '../.././server/src/components/ui/badge';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Info, RefreshCw } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../.././server/src/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '../.././server/src/components/ui/use-toast';
-import { useIsMobile } from '../hooks/use-mobile';
-import { bookingService } from '../services/bookingService';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../.././server/src/components/ui/dialog";
+import { toast } from '@/components/ui/use-toast';
+import { apiService } from '@/services/apiService';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { bookingService } from '@/services/bookingService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const ActiveBookings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  interface Booking {
-    _id?: string;
-    id?: string;
-    machineName?: string;
-    machineType?: string;
-    userName?: string;
-    userEmail?: string;
-    date?: string;
-    time?: string;
-    status?: string;
-    createdAt?: string;
-    updatedAt?: string;
-  }
-
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
@@ -104,7 +91,7 @@ const ActiveBookings = () => {
     : bookings.filter((booking: any) => booking.status?.toLowerCase() === filter.toLowerCase());
 
   // Function to get the badge variant based on status
-  const getStatusBadgeClass = (status: string = 'unknown') => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'approved':
         return 'bg-green-500 hover:bg-green-600';
@@ -456,7 +443,7 @@ const ActiveBookings = () => {
                 </p>
                 
                 <h3 className="font-semibold mb-2">Status</h3>
-                <Badge className={getStatusBadgeClass(selectedBooking.status || 'unknown')}>
+                <Badge className={getStatusBadgeClass(selectedBooking.status)}>
                   {selectedBooking.status || 'Unknown'}
                 </Badge>
                 
