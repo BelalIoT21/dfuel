@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +92,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <SelectValue placeholder="Select machine type" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Machine">Machine</SelectItem>
                   <SelectItem value="Cutting">Cutting</SelectItem>
                   <SelectItem value="Printing">Printing</SelectItem>
                   <SelectItem value="Electronics">Electronics</SelectItem>
