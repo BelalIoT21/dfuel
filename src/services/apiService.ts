@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -137,7 +136,9 @@ class ApiService {
   
   // User endpoints
   async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+    console.log("Fetching current user with auth token");
+    // Use auth/me endpoint instead of users/me to match the server's routes
+    return this.request<{ user: any }>('auth/me', 'GET');
   }
   
   async updateUser(userId: string, updates: any) {

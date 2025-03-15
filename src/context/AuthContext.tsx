@@ -4,6 +4,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { apiService } from '@/services/apiService';
+import { useToast } from '@/hooks/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -11,15 +12,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { login: apiLogin, register: apiRegister, logout: apiLogout, isLoading } = useAuthFunctions(user, setUser);
+  const { toast } = useToast();
 
   // Load user from token on initial load
   useEffect(() => {
     const loadUser = async () => {
       try {
+        // Check if we have a token in localStorage
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          console.log("No token found, user is not logged in");
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Token found, attempting to load user");
         // Try to get current user from API
         const response = await apiService.getCurrentUser();
-        if (response.data && response.data.user) {
+        
+        if (response.error) {
+          console.error("Error loading user session:", response.error);
+          // Clear invalid token
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            toast({
+              title: "Session expired",
+              description: "Your login session has expired. Please log in again.",
+              variant: "destructive"
+            });
+          }
+        } else if (response.data && response.data.user) {
           setUser(response.data.user);
+          console.log("User loaded successfully:", response.data.user);
         } else {
           // If no current user, user is not logged in
           console.log("No active user session found");
@@ -32,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     loadUser();
-  }, []);
+  }, [toast]);
 
   // Login function - directly use the apiLogin from useAuthFunctions
   const login = async (email: string, password: string) => {

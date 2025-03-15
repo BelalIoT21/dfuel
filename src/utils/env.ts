@@ -35,6 +35,14 @@ export const setEnv = (key: string, value: string): void => {
 export const getEnv = (key: string, defaultValue: string = ''): string => {
   // For predefined values, check our defaults first
   if (key in ENV_DEFAULTS) {
+    // First try from session storage, then fall back to defaults
+    try {
+      const value = sessionStorage.getItem(`env_${key}`);
+      if (value) return value;
+    } catch (error) {
+      console.error('Failed to retrieve environment variable from session storage:', error);
+    }
+    
     return ENV_DEFAULTS[key as keyof typeof ENV_DEFAULTS];
   }
   
