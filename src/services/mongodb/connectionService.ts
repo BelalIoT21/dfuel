@@ -5,6 +5,8 @@ class MongoConnectionService {
   private client: any | null = null;
   private db: any | null = null;
   private uri: string;
+  private isConnecting: boolean = false;
+  private connectionPromise: Promise<any | null> | null = null;
   
   constructor() {
     // In a real application, this would come from environment variables
@@ -18,27 +20,52 @@ class MongoConnectionService {
       return null;
     }
     
+    // If we're already connecting, return the existing promise
+    if (this.isConnecting && this.connectionPromise) {
+      return this.connectionPromise;
+    }
+    
     try {
       if (!this.client) {
-        // Only import MongoDB in non-web environments
-        const { MongoClient, ServerApiVersion } = await import('mongodb');
+        this.isConnecting = true;
         
-        this.client = new MongoClient(this.uri, {
-          serverApi: {
-            version: ServerApiVersion.v1,
-            strict: true,
-            deprecationErrors: true,
+        // Create a new connection promise
+        this.connectionPromise = new Promise(async (resolve, reject) => {
+          try {
+            // Only import MongoDB in non-web environments
+            const { MongoClient, ServerApiVersion } = await import('mongodb');
+            
+            this.client = new MongoClient(this.uri, {
+              serverApi: {
+                version: ServerApiVersion.v1,
+                strict: true,
+                deprecationErrors: true,
+              }
+            });
+            
+            await this.client.connect();
+            console.log("Connected to MongoDB");
+            
+            this.db = this.client.db('learnit');
+            resolve(this.db);
+          } catch (error) {
+            console.error("Error connecting to MongoDB:", error);
+            this.isConnecting = false;
+            this.connectionPromise = null;
+            reject(error);
           }
         });
         
-        await this.client.connect();
-        console.log("Connected to MongoDB");
-        
-        this.db = this.client.db('learnit');
+        // Wait for the connection to complete
+        const result = await this.connectionPromise;
+        this.isConnecting = false;
+        return result;
       }
       return this.db;
     } catch (error) {
       console.error("Error connecting to MongoDB:", error);
+      this.isConnecting = false;
+      this.connectionPromise = null;
       return null;
     }
   }
@@ -53,6 +80,15 @@ class MongoConnectionService {
         console.error("Error closing MongoDB connection:", error);
       }
     }
+  }
+
+  // Get the database instance
+  async getDb(): Promise<any | null> {
+    if (this.db) {
+      return this.db;
+    }
+    
+    return this.connect();
   }
 }
 
