@@ -1,4 +1,3 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService'; 
@@ -14,8 +13,7 @@ class MongoConnectionService {
   private maxConnectionAttempts: number = 3;
   
   constructor() {
-    // Use an environment-aware MongoDB connection string
-    // For web environments, we'll default to a relative path
+    // Use the correct hardcoded MongoDB connection URL
     if (isWeb) {
       this.uri = 'http://localhost:4000/api/mongodb';
     } else {

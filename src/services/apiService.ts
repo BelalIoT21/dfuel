@@ -1,10 +1,9 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Prioritize the localhost direct endpoint which is more reliable for auth requests
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
-let currentEndpointIndex = 0;
-let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+// Set the API URL directly to the known working endpoint
+const API_URL = 'http://localhost:4000/api';
+let BASE_URL = API_URL;
 
 interface ApiResponse<T> {
   data: T | null;
@@ -13,12 +12,6 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
-  private async switchEndpoint() {
-    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
-    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-    console.log(`Switching to API endpoint: ${BASE_URL}`);
-  }
-
   private async request<T>(
     endpoint: string, 
     method: string = 'GET', 
@@ -49,32 +42,17 @@ class ApiService {
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
-      // Try with retry and endpoint switching logic
+      // Try the request
       let response;
-      let retryCount = 0;
-      const maxRetries = API_ENDPOINTS.length;
-      
-      while (retryCount < maxRetries) {
-        try {
-          response = await fetch(url, options);
-          break; // If successful, exit the retry loop
-        } catch (fetchError) {
-          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            // Try a different endpoint before giving up
-            this.switchEndpoint();
-            const newUrl = `${BASE_URL}/${endpoint}`;
-            console.log(`Retrying with endpoint: ${newUrl}`);
-          } else {
-            throw fetchError; // All retries failed, propagate the error
-          }
-        }
+      try {
+        response = await fetch(url, options);
+      } catch (fetchError) {
+        console.error(`API fetch failed: ${url}`, fetchError);
+        throw fetchError;
       }
       
       if (!response) {
-        throw new Error('Failed to connect to any API endpoints');
+        throw new Error('Failed to connect to API endpoint');
       }
       
       // Handle empty responses gracefully
@@ -148,6 +126,7 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
+    console.log('Checking server health at:', `${BASE_URL}/health`);
     return this.request<{ status: string, message: string }>(
       'health',
       'GET',
