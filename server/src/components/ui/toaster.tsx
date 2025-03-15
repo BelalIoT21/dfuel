@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useToast } from "./use-toast";
 import {
@@ -9,22 +10,12 @@ import {
   ToastViewport,
 } from "./toast";
 
-interface ToastType {
-  title?: string;
-  description?: string;
-  action?: React.ReactNode;
-  [key: string]: any;
-}
-
-const { toasts }: { toasts: ToastType[] } = useToast()
-
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts } = useToast();
 
   return (
     <ToastProvider>
-      {toasts.map(function (toast: ToastType) {
-        const { id, title, description, action, ...props } = toast;
+      {toasts.map(function({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
@@ -36,9 +27,9 @@ export function Toaster() {
             {action}
             <ToastClose />
           </Toast>
-        )
+        );
       })}
       <ToastViewport />
     </ToastProvider>
-  )
+  );
 }

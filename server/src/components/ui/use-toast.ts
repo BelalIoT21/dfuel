@@ -1,5 +1,5 @@
 
-// Import from the project's hooks directory using an absolute path instead of a relative path
-import { useToast, toast } from "@/hooks/use-toast";
+// Import directly using a relative path instead of aliased path
+import { useToast, toast } from "../../../../src/hooks/use-toast";
 
 export { useToast, toast };
