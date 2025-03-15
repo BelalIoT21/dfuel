@@ -1,6 +1,11 @@
-import { toast } from '@/components/ui/use-toast';
-import { apiConnection } from './api/apiConnection';
-import { apiLogger } from './api/apiLogger';
+
+import { getEnv } from '../utils/env';
+import { useToast } from '../hooks/use-toast';
+
+// Try to connect to local API first, but have a fallback to relative path
+const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+let currentEndpointIndex = 0;
+let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
 interface ApiResponse<T> {
   data: T | null;
@@ -9,37 +14,10 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
-  // Get the current base URL
-  getBaseUrl(): string {
-    return apiConnection.getBaseUrl();
-  }
-
-  // Check if the API server is reachable
-  async checkHealth(): Promise<ApiResponse<any>> {
-    const connected = await apiConnection.checkConnection();
-    
-    if (connected) {
-      try {
-        return await this.request<{ status: string, message: string, database?: any }>(
-          'health',
-          'GET',
-          undefined,
-          false
-        );
-      } catch (error) {
-        return {
-          data: null,
-          error: 'Health check request failed',
-          status: 0
-        };
-      }
-    } else {
-      return {
-        data: null,
-        error: 'Cannot connect to API server',
-        status: 0
-      };
-    }
+  private async switchEndpoint() {
+    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
+    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+    console.log(`Switching to API endpoint: ${BASE_URL}`);
   }
 
   private async request<T>(
@@ -48,13 +26,8 @@ class ApiService {
     data?: any,
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
-    const startTime = performance.now();
-    
     try {
-      const url = apiConnection.buildUrl(endpoint);
-      
-      apiLogger.logRequest(method, url, data);
-      
+      const url = `${BASE_URL}/${endpoint}`;
       const token = localStorage.getItem('token');
       
       const headers: HeadersInit = {
@@ -69,23 +42,41 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
-        mode: 'cors',
       };
       
-      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
+      if (data && (method === 'POST' || method === 'PUT')) {
         options.body = JSON.stringify(data);
       }
       
-      // Add a timeout to the fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      options.signal = controller.signal;
+      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
-      const response = await fetch(url, options);
-      clearTimeout(timeoutId);
+      // Try with retry and endpoint switching logic
+      let response;
+      let retryCount = 0;
+      const maxRetries = API_ENDPOINTS.length;
       
-      const endTime = performance.now();
-      const duration = endTime - startTime;
+      while (retryCount < maxRetries) {
+        try {
+          response = await fetch(url, options);
+          break; // If successful, exit the retry loop
+        } catch (fetchError) {
+          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            // Try a different endpoint before giving up
+            this.switchEndpoint();
+            const newUrl = `${BASE_URL}/${endpoint}`;
+            console.log(`Retrying with endpoint: ${newUrl}`);
+          } else {
+            throw fetchError; // All retries failed, propagate the error
+          }
+        }
+      }
+      
+      if (!response) {
+        throw new Error('Failed to connect to any API endpoints');
+      }
       
       // Handle empty responses gracefully
       let responseData;
@@ -97,15 +88,14 @@ class ApiService {
         responseData = null;
       }
       
-      apiLogger.logResponse(method, url, response.status, responseData, duration);
-      
       if (!response.ok) {
         const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
+        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
           return {
             data: null,
-            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
+            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
             status: response.status
           };
         }
@@ -119,22 +109,14 @@ class ApiService {
         status: response.status
       };
     } catch (error) {
-      apiLogger.logError(method, endpoint, error);
-      
-      // Check if it's an AbortError (timeout)
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return {
-          data: null,
-          error: 'Request timed out. The server might be unavailable.',
-          status: 0
-        };
-      }
+      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
+        const { toast } = useToast();
         toast({
-          title: `API Error (${endpoint})`,
-          description: error instanceof Error ? error.message : 'Unknown error occurred',
+          title: `API Error`,
+          description: "Could not connect to server. Using local storage fallback.",
           variant: 'destructive'
         });
       }
@@ -142,9 +124,7 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: error instanceof Error && 
-               (error.message.includes('Failed to fetch') || 
-                error.message.includes('Network Error')) ? 0 : 500
+        status: 500
       };
     }
   }
@@ -170,10 +150,19 @@ class ApiService {
     );
   }
   
+  // Health check endpoint
+  async checkHealth() {
+    return this.request<{ status: string, message: string }>(
+      'health',
+      'GET',
+      undefined,
+      false
+    );
+  }
+  
   // User endpoints
   async getCurrentUser() {
-    console.log("Fetching current user with auth token");
-    return this.request<{ user: any }>('auth/me', 'GET');
+    return this.request<any>('users/me', 'GET');
   }
   
   async updateUser(userId: string, updates: any) {
@@ -204,6 +193,7 @@ class ApiService {
   // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
+    // Use the correct endpoint format based on the server routes
     return this.request<{ success: boolean }>(
       'certifications', 
       'POST', 
@@ -213,6 +203,7 @@ class ApiService {
   
   async removeCertification(userId: string, machineId: string) {
     console.log(`Removing certification for user ${userId}, machine ${machineId}`);
+    // The DELETE method might need different handling for the body
     return this.request<{ success: boolean }>(
       'certifications', 
       'DELETE', 
@@ -250,8 +241,10 @@ class ApiService {
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
+    // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
+    // Try endpoint with /:id/status format first
     try {
       const response = await this.request<any>(
         `bookings/${bookingId}/status`, 
@@ -266,6 +259,7 @@ class ApiService {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
+    // Try alternative endpoint if first one fails
     try {
       return await this.request<any>(
         `bookings/update-status`, 
@@ -344,29 +338,6 @@ class ApiService {
   
   async deleteMachine(machineId: string) {
     return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
-  }
-  
-  // Storage-related API methods
-  async getStorageItem(key: string) {
-    return this.request<{ value: string }>(
-      `storage/${key}`,
-      'GET'
-    );
-  }
-  
-  async setStorageItem(key: string, value: string) {
-    return this.request<{ success: boolean }>(
-      'storage',
-      'POST',
-      { key, value }
-    );
-  }
-  
-  async removeStorageItem(key: string) {
-    return this.request<{ success: boolean }>(
-      `storage/${key}`,
-      'DELETE'
-    );
   }
 }
 
