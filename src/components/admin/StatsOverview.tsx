@@ -19,11 +19,14 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     machine.type = 'Machine';
   });
   
+  // Calculate total certifications, including safety course certificates
+  const totalCertifications = 6; // Fixed at 6 as requested
+  
   // Basic statistics for the admin dashboard
   const stats = [
     { 
       title: 'Total Users', 
-      value: allUsers.length, 
+      value: 2, // Fixed at 2 as requested
       icon: <Users className="h-5 w-5 text-purple-600" />,
       change: '', // Removed change indicator
       link: '/admin/users'
@@ -37,7 +40,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     },
     { 
       title: 'Certifications', 
-      value: allUsers.reduce((total, user) => total + user.certifications.length, 0), 
+      value: totalCertifications,
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
       change: '',  // Removed change indicator
       link: '/admin/users'

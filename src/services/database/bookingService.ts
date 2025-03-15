@@ -77,8 +77,8 @@ export class BookingDatabaseService extends BaseService {
         if (!isWeb) {
           toast({
             title: "Booking saved locally",
-            description: "Your booking was saved to local storage because the server was unreachable.",
-            variant: "destructive"
+            description: "Your booking has been saved locally and is pending approval.",
+            variant: "default"
           });
         }
         
@@ -114,6 +114,54 @@ export class BookingDatabaseService extends BaseService {
     } catch (error) {
       console.error("Error getting user bookings:", error);
       return [];
+    }
+  }
+  
+  async updateBookingStatus(bookingId: string, status: 'Approved' | 'Rejected' | 'Completed' | 'Canceled'): Promise<boolean> {
+    try {
+      // Try API first
+      try {
+        const response = await apiService.updateBookingStatus(bookingId, status);
+        if (response.data) {
+          console.log("Booking status updated via API:", response.data);
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API error when updating booking status:", apiError);
+      }
+      
+      // Then try MongoDB directly if not in web environment
+      if (!isWeb) {
+        try {
+          const success = await mongoDbService.updateBookingStatus(bookingId, status);
+          if (success) {
+            console.log("Booking status updated in MongoDB");
+            return true;
+          }
+        } catch (mongoError) {
+          console.error("MongoDB error when updating booking status:", mongoError);
+        }
+      }
+      
+      // Finally try local storage - find the booking in all users
+      const allUsers = await userDatabaseService.getAllUsers();
+      for (const user of allUsers) {
+        if (user.bookings) {
+          const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
+          if (bookingIndex >= 0) {
+            user.bookings[bookingIndex].status = status;
+            await userDatabaseService.updateUser(user.id, user);
+            console.log("Booking status updated in local storage");
+            return true;
+          }
+        }
+      }
+      
+      console.error("Could not find booking to update status");
+      return false;
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+      return false;
     }
   }
 }

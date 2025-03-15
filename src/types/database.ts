@@ -21,7 +21,7 @@ export interface Booking {
   machineId: string;
   date: string;
   time: string;
-  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled';
+  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
 }
 
 export interface MachineStatus {
@@ -31,4 +31,3 @@ export interface MachineStatus {
 }
 
 export type UserWithoutSensitiveInfo = Omit<User, 'password' | 'resetCode'>;
-
