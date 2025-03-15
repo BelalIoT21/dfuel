@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -6,9 +7,9 @@ const getBaseApiUrl = () => {
   const url = getEnv('API_URL', 'http://localhost:4000/api');
   
   // Validate URL format - it should be an HTTP URL for REST API calls
-  if (url.startsWith('mongodb://')) {
+  if (!url.startsWith('http')) {
     console.error('Invalid API URL format. Using default API URL instead.');
-    // Reset to default in case of MongoDB URI - the MongoDB URI is for the server only
+    // Reset to default - API URLs must be HTTP/HTTPS
     return 'http://localhost:4000/api';
   }
   

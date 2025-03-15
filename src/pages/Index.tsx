@@ -12,6 +12,7 @@ import { getEnv } from '@/utils/env';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [connectionDetails, setConnectionDetails] = useState<any>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -28,6 +29,7 @@ const Index = () => {
         if (response.data) {
           console.log("Server health check:", response.data);
           setServerStatus('connected');
+          setConnectionDetails(response.data);
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
@@ -35,15 +37,17 @@ const Index = () => {
         } else if (response.error) {
           console.error("Server connection error:", response.error);
           setServerStatus('disconnected');
+          setConnectionDetails(null);
           toast({
             title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. Please ensure the server is running.',
+            description: `Could not connect to the backend server at ${currentApiUrl}. Please ensure the server is running.`,
             variant: 'destructive'
           });
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
+        setConnectionDetails(null);
         toast({
           title: 'Server Connection Failed',
           description: 'Could not connect to the backend server. Please try again later.',
@@ -117,6 +121,12 @@ const Index = () => {
               <div className={`text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
                 Server status: {serverStatus}
               </div>
+              {connectionDetails && connectionDetails.database && (
+                <div className="text-xs text-gray-600 mt-1">
+                  Database: {connectionDetails.database.status} 
+                  {connectionDetails.database.name ? ` (${connectionDetails.database.name})` : ''}
+                </div>
+              )}
             </div>
           )}
         </div>

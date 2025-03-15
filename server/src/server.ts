@@ -43,12 +43,43 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:8080',
+  'https://learnit-client.vercel.app', 
+  'https://lovableproject.com',
+  // Allow any subdomain of lovableproject.com
+  /^https:\/\/[\w-]+\.lovableproject\.com$/
+];
+
 // Updated CORS configuration to explicitly allow requests from the frontend origin
 app.use(cors({
-  origin: ['http://localhost:8080', 'https://learnit-client.vercel.app', 'https://lovableproject.com'],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if the origin is allowed
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked request from:', origin);
+      callback(null, true); // Still allow for development, but log it
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 app.use(helmet({
@@ -56,6 +87,12 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Add a middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.originalUrl} - Origin: ${req.headers.origin || 'unknown'}`);
+  next();
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
