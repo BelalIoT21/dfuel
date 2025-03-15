@@ -16,6 +16,18 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
+      // Check if server is available first
+      const healthCheck = await apiService.checkHealth();
+      if (healthCheck.error) {
+        console.error("Server not available:", healthCheck.error);
+        toast({
+          title: "Server connection failed",
+          description: "Cannot connect to the server. Please ensure the server is running on port 4000.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       // API login
       const apiResponse = await apiService.login(email, password);
       

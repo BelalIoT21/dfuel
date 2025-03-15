@@ -1,18 +1,9 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Configuration for API endpoints
-// When running in production or with API_URL env set, use that value
-// Otherwise, try multiple options with a preference for the local server
-const API_URL = (() => {
-  // Check for environment variables first
-  const envApiUrl = getEnv('API_URL');
-  if (envApiUrl) return envApiUrl;
-  
-  // When running in development, try connecting to the server
-  // Default to localhost:4000 which is the typical server port
-  return 'http://localhost:4000/api';
-})();
+// Set API URL directly to the known working endpoint
+// No conditional logic to avoid potential issues
+const API_URL = 'http://localhost:4000/api';
 
 // Export for debugging
 console.log('API service configured with base URL:', API_URL);
@@ -47,7 +38,7 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
-        mode: 'cors', // Add explicit CORS mode
+        mode: 'cors', // Keep explicit CORS mode
       };
       
       if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {

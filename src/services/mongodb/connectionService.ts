@@ -1,5 +1,4 @@
-
-import { isWeb } from '../../utils/env';
+import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService'; 
 
