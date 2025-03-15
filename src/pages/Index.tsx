@@ -45,6 +45,11 @@ const Index = () => {
             } catch (healthError) {
               console.error("Health check failed:", healthError);
               setServerStatus('disconnected');
+              toast({
+                title: 'Health Check Failed',
+                description: 'Could not verify database connection. Please check server logs.',
+                variant: 'destructive'
+              });
             }
           } else {
             throw new Error('Server not responding');

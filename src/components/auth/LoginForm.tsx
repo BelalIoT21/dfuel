@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
