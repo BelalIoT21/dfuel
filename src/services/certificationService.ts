@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { apiService } from './apiService';
@@ -142,11 +143,12 @@ export class CertificationService {
     }
   }
   
-  // Machine Safety Course certification management
+  // Machine Safety Course certification management - simplified without special user handling
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
+    // Remove special handling for specific users
     // Just add the certification directly for all users
     return this.addCertification(userId, MACHINE_SAFETY_ID);
   }
@@ -155,8 +157,54 @@ export class CertificationService {
     console.log(`Removing machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
+    // Remove special handling for specific users
     // Just remove the certification directly for all users
     return this.removeCertification(userId, MACHINE_SAFETY_ID);
+  }
+  
+  // Safety course certification management
+  async addSafetyCertification(userId: string): Promise<boolean> {
+    console.log(`Adding safety certification for user ${userId}`);
+    const SAFETY_MACHINE_ID = "3"; // Safety cabinet ID
+    return this.addCertification(userId, SAFETY_MACHINE_ID);
+  }
+  
+  async removeSafetyCertification(userId: string): Promise<boolean> {
+    console.log(`Removing safety certification for user ${userId}`);
+    const SAFETY_MACHINE_ID = "3"; // Safety cabinet ID
+    return this.removeCertification(userId, SAFETY_MACHINE_ID);
+  }
+  
+  // Check if user has a specific certification
+  async checkCertification(userId: string, machineId: string): Promise<boolean> {
+    try {
+      // Try MongoDB first
+      try {
+        const user = await mongoDbService.getUserById(userId);
+        if (user) {
+          return user.certifications.includes(machineId);
+        }
+      } catch (mongoErr) {
+        console.error("MongoDB error checking certification:", mongoErr);
+      }
+      
+      // Then try API
+      try {
+        const response = await apiService.checkCertification(userId, machineId);
+        if (response.data !== null && response.error === null) {
+          return !!response.data;
+        }
+      } catch (apiErr) {
+        console.error("Error checking certification via API:", apiErr);
+      }
+      
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      return user ? user.certifications.includes(machineId) : false;
+    } catch (error) {
+      console.error("Error checking certification:", error);
+      return false;
+    }
   }
 }
 

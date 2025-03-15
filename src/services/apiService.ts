@@ -1,3 +1,4 @@
+
 // Add or update the setToken method and ensure it's used in all requests
 class ApiService {
   private baseUrl: string;
@@ -133,7 +134,7 @@ class ApiService {
   }
   
   async addCertification(userId: string, machineId: string) {
-    return this.request('POST', '/certifications/add', { userId, machineId });
+    return this.request('POST', `/certifications/add`, { userId, machineId });
   }
   
   async getMachineById(id: string) {
@@ -166,14 +167,6 @@ class ApiService {
   
   async ping() {
     return this.request('GET', '/health', undefined, false);
-  }
-  
-  async removeCertification(userId: string, machineId: string) {
-    return this.request('DELETE', `/certifications`, { userId, machineId });
-  }
-  
-  async getUserCertifications(userId: string) {
-    return this.request('GET', `/certifications/user/${userId}`);
   }
 }
 

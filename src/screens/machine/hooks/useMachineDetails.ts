@@ -38,7 +38,6 @@ export const useMachineDetails = (machineId, user, navigation) => {
         // Special handling for Machine Safety Course (ID: 6)
         if (machineId === "6") {
           machineData.type = "Safety Course";
-          machineData.name = "Machine Safety Course";
         }
         
         // Get machine status from MongoDB
