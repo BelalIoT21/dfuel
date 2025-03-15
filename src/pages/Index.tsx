@@ -33,7 +33,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please try again later.',
+          description: 'Could not connect to the backend server. Using local storage instead.',
           variant: 'destructive'
         });
       }
@@ -46,7 +46,7 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       console.log("User is logged in, redirecting:", user);
-      navigate('/home');
+      navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate]);
 

@@ -47,7 +47,7 @@ const App = () => {
   useEffect(() => {
     toast({
       title: "Welcome to Learnit",
-      description: "Please log in to continue",
+      description: "Your learning platform is ready to use",
     });
   }, []);
 
@@ -61,7 +61,6 @@ const App = () => {
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Redirect root to login page */}
               <Route path="/" element={<Index />} />
               <Route path="/home" element={<Home />} />
               <Route path="/machine/:id" element={<MachineDetail />} />
