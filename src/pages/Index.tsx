@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +6,9 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/utils/logger';
+
+const pageLogger = logger.child('IndexPage');
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,21 +16,20 @@ const Index = () => {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
-  // Check server connection
   useEffect(() => {
     const checkServer = async () => {
       try {
-        console.log("Checking server health...");
+        pageLogger.info("Checking server health...");
         const response = await apiService.checkHealth();
         if (response.data) {
-          console.log("Server health check:", response.data);
+          pageLogger.info("Server health check successful:", response.data);
           setServerStatus('connected');
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
         } else {
-          console.log("Server health check failed");
+          pageLogger.warn("Server health check failed");
           setServerStatus('disconnected');
           toast({
             title: 'Server Connection Failed',
@@ -37,7 +38,7 @@ const Index = () => {
           });
         }
       } catch (error) {
-        console.error("Server connection error:", error);
+        pageLogger.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
@@ -50,34 +51,38 @@ const Index = () => {
     checkServer();
   }, []);
 
-  // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      console.log("User is logged in, redirecting:", user);
+      pageLogger.info("User is logged in, redirecting:", user);
       navigate('/home');
     }
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
-    console.log("Attempting login with:", email);
+    pageLogger.info("Attempting login with:", { email });
     const success = await login(email, password);
     if (success) {
-      console.log("Login successful, navigating to home");
+      pageLogger.info("Login successful, navigating to home");
       navigate('/home');
+    } else {
+      pageLogger.warn("Login failed for:", { email });
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email);
+    pageLogger.info("Attempting registration for:", { email });
     const success = await register(email, password, name);
     if (success) {
-      console.log("Registration successful, navigating to home");
+      pageLogger.info("Registration successful, navigating to home");
       navigate('/home');
+    } else {
+      pageLogger.warn("Registration failed for:", { email });
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
+    pageLogger.debug(`Switched to ${isLogin ? 'register' : 'login'} mode`);
   };
 
   return (
