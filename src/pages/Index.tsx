@@ -7,15 +7,10 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import { ConnectionStatus } from '@/components/common/ConnectionStatus';
-import { AlertCircle, Database, HardDrive, Server } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { connectionManager } from '@/services/api/connectionManager';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -24,39 +19,23 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        setIsLoading(true);
-        
-        // Force a connection check first
-        await connectionManager.checkConnection();
-        
-        // Then get detailed server health
         const response = await apiService.checkHealth();
-        console.log("Health check response:", response);
-        
         if (response.data) {
           console.log("Server health check:", response.data);
-          setServerStatus(response.data);
+          setServerStatus('connected');
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
-        } else if (response.error) {
-          console.error("Health check error:", response.error);
-          toast({
-            title: 'Server Connection Issue',
-            description: `Error getting server details: ${response.error}`,
-            variant: 'destructive'
-          });
         }
       } catch (error) {
         console.error("Server connection error:", error);
+        setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please check the connection settings.',
+          description: 'Could not connect to the backend server. Please try again later.',
           variant: 'destructive'
         });
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -86,7 +65,7 @@ const Index = () => {
   };
 
   // Debug rendering
-  console.log("Rendering Index component, serverStatus:", serverStatus);
+  console.log("Rendering Index component");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -96,6 +75,11 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
+          {serverStatus && (
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+              Server status: {serverStatus}
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -127,70 +111,6 @@ const Index = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        
-        <div className="mt-8">
-          <ConnectionStatus />
-          
-          {serverStatus ? (
-            <div className="mt-4 p-4 border rounded-md">
-              <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
-                <Server className="h-4 w-4" />
-                Server Information
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <HardDrive className="h-3.5 w-3.5 text-gray-500" />
-                  <span className="text-gray-500">Environment:</span>
-                </div>
-                <div className="font-medium">{serverStatus.environment || 'Unknown'}</div>
-                
-                <div className="flex items-center gap-1.5">
-                  <Database className="h-3.5 w-3.5 text-gray-500" />
-                  <span className="text-gray-500">Database:</span>
-                </div>
-                <div className="font-medium flex items-center">
-                  {serverStatus.database && serverStatus.database.connected ? (
-                    <span className="text-green-600">Connected</span>
-                  ) : (
-                    <span className="text-red-600 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      Disconnected
-                    </span>
-                  )}
-                </div>
-                
-                {serverStatus.database && serverStatus.database.connected && (
-                  <>
-                    <div className="text-gray-500">Host:</div>
-                    <div className="font-medium">{serverStatus.database.host}</div>
-                    
-                    <div className="text-gray-500">Database:</div>
-                    <div className="font-medium">{serverStatus.database.database}</div>
-                  </>
-                )}
-              </div>
-            </div>
-          ) : isLoading ? (
-            <div className="mt-4 p-4 border rounded-md">
-              <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
-                <Server className="h-4 w-4" />
-                Server Information
-              </h3>
-              <p className="text-sm text-gray-500 py-2">Checking server status...</p>
-            </div>
-          ) : (
-            <div className="mt-4 p-4 border rounded-md border-red-200 bg-red-50">
-              <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2 text-red-700">
-                <AlertCircle className="h-4 w-4" />
-                Server Information Unavailable
-              </h3>
-              <p className="text-sm text-red-600">
-                Could not retrieve server information. Please check your connection settings.
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
