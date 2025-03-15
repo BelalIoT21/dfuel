@@ -23,6 +23,21 @@ export const loginUser = async (req: Request, res: Response) => {
 
     if (!user) {
       console.log(`User not found with email: ${email}`);
+      
+      // Check if there are any users in the database
+      const userCount = await User.countDocuments({});
+      console.log(`Total users in database: ${userCount}`);
+      
+      // For development, provide more helpful error
+      if (process.env.NODE_ENV === 'development') {
+        if (userCount === 0) {
+          return res.status(400).json({ 
+            message: 'No users in database. Database may need seeding.',
+            debug: true
+          });
+        }
+      }
+      
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
