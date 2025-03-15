@@ -150,15 +150,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
             {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
           </motion.div>
           
-          <motion.div className="flex justify-between items-center" variants={itemAnimation}>
-            <button
-              type="button" 
-              onClick={setAdminCredentials}
-              className="text-xs text-purple-600 hover:underline"
-            >
-              Use default admin
-            </button>
-            
+          <motion.div className="text-right" variants={itemAnimation}>
             <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
               <DialogTrigger asChild>
                 <button
