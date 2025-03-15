@@ -10,6 +10,15 @@ import { generateToken } from '../../utils/tokenUtils';
 // @access  Public
 export const loginUser = async (req: Request, res: Response) => {
   try {
+    // Check MongoDB connection first
+    if (mongoose.connection.readyState !== 1) {
+      console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
+      return res.status(500).json({ 
+        message: 'Database connection error',
+        details: 'MongoDB is not connected. Please check server logs.'
+      });
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log('Validation errors:', errors.array());

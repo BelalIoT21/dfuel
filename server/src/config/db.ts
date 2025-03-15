@@ -12,11 +12,19 @@ export const connectDB = async () => {
   try {
     console.log(`Attempting to connect to MongoDB at ${MONGODB_URI}...`);
     
+    // Check if already connected
+    if (mongoose.connection.readyState === 1) {
+      console.log('MongoDB already connected');
+      return mongoose.connection;
+    }
+    
     const options = {
       // Add connection options to improve reliability
       connectTimeoutMS: 10000, // 10 seconds
       socketTimeoutMS: 45000,  // 45 seconds
       serverSelectionTimeoutMS: 10000, // 10 seconds
+      retryWrites: true,
+      retryReads: true
     };
 
     const conn = await mongoose.connect(MONGODB_URI, options);
@@ -47,6 +55,18 @@ export const connectDB = async () => {
     console.error('Check if MongoDB is running locally or update your MONGODB_URI in .env');
     process.exit(1);
   }
+};
+
+// Function to check the MongoDB connection status
+export const checkDbConnection = () => {
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const state = states[mongoose.connection.readyState] || 'unknown';
+  
+  console.log(`MongoDB connection state: ${state} (${mongoose.connection.readyState})`);
+  return {
+    connected: mongoose.connection.readyState === 1,
+    state: state
+  };
 };
 
 // Close the MongoDB connection when the application shuts down

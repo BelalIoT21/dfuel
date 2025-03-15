@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import { connectDB } from './config/db';
+import { connectDB, checkDbConnection } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
 import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
 
@@ -21,12 +21,7 @@ import healthRoutes from './routes/healthRoutes';
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB().then(async () => {
-  // Ensure admin user exists
-    await ensureAdminUser();
-  });
-
+// Initialize app
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -43,19 +38,54 @@ app.use(helmet({
 app.use(morgan('dev'));
 app.use(cookieParser());
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/machines', machineRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/certifications', certificationRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/health', healthRoutes);
+// Connect to MongoDB
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
+    
+    // Check connection after connecting
+    const dbStatus = checkDbConnection();
+    if (!dbStatus.connected) {
+      console.error(`Failed to connect to MongoDB. Current state: ${dbStatus.state}`);
+    } else {
+      // Ensure admin user exists
+      await ensureAdminUser();
+    }
+    
+    // API Routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/machines', machineRoutes);
+    app.use('/api/bookings', bookingRoutes);
+    app.use('/api/certifications', certificationRoutes);
+    app.use('/api/admin', adminRoutes);
+    app.use('/api/health', healthRoutes);
 
-// Health check endpoint (root level)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
-});
+    // Health check endpoint (root level)
+    app.get('/health', (req, res) => {
+      const dbStatus = checkDbConnection();
+      res.status(200).json({ 
+        status: 'ok', 
+        message: 'Server is running',
+        database: dbStatus
+      });
+    });
+
+    // Error handling middleware
+    app.use(notFound);
+    app.use(errorHandler);
+
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+      console.log(`MongoDB connection status: ${dbStatus.state}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
 // Log all API routes for debugging
 console.log('Registered API routes:');
@@ -89,13 +119,7 @@ app._router.stack.forEach((middleware: {
   }
 });
 
-// Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
-
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+startServer();
 
 export default app;
