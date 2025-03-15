@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import userDatabase from '@/services/userDatabase';
@@ -16,11 +15,6 @@ export const useAuthFunctions = (
     try {
       setIsLoading(true);
       console.log("Login attempt for:", email);
-      
-      // Check if this is admin@learnit.com and we're in local development mode
-      if (email === 'admin@learnit.com') {
-        console.log("Admin login attempt detected");
-      }
       
       // First try API login
       try {

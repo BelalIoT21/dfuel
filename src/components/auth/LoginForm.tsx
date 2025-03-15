@@ -77,19 +77,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     }
   };
 
-  const handleAdminLogin = async () => {
-    setEmail('admin@learnit.com');
-    setPassword('admin123');
-    setFormError('');
-    
-    try {
-      await onLogin('admin@learnit.com', 'admin123');
-    } catch (error) {
-      console.error("Admin login error:", error);
-      setFormError('Admin login failed. Please ensure the admin user exists in your database.');
-    }
-  };
-
   return (
     <Card className="shadow-lg border-purple-100">
       <CardHeader className="pb-2">
@@ -169,17 +156,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           <motion.div variants={itemAnimation}>
             <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
               Sign In
-            </Button>
-          </motion.div>
-
-          <motion.div variants={itemAnimation} className="flex justify-center">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleAdminLogin}
-              className="w-full border-purple-300 text-purple-700 hover:bg-purple-50"
-            >
-              Login as Admin
             </Button>
           </motion.div>
         </motion.form>
