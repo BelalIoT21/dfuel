@@ -8,6 +8,10 @@ export const generateToken = (id: string) => {
     const secret = process.env.JWT_SECRET || 'fallback-secret';
     console.log(`Generating token for user ID: ${id}`);
     
+    if (!id) {
+      throw new Error('User ID is required to generate token');
+    }
+    
     // Create a properly typed options object with correct type handling
     const options: SignOptions = {
       // The expiresIn property expects a number (in seconds) or a string with a time unit
