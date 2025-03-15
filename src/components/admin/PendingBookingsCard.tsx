@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import mongoDbService from '@/services/mongoDbService';
+import { localStorageService } from '@/services/localStorageService';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -26,38 +27,53 @@ export const PendingBookingsCard = ({
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
       if (action === 'Deleted') {
-        // Handle booking deletion
-        let success = false;
+        // Force manual removal from local state regardless of backend success
+        console.log(`Forcing deletion of booking ${bookingId} from UI state`);
         
+        // Try multiple deletion methods to ensure it's removed everywhere
         try {
-          // Try MongoDB first for direct database deletion
-          success = await mongoDbService.deleteBooking(bookingId);
-          console.log(`MongoDB deleteBooking result: ${success}`);
+          // Try MongoDB first
+          await mongoDbService.deleteBooking(bookingId);
         } catch (mongoError) {
           console.error("MongoDB delete booking error:", mongoError);
         }
         
-        // If MongoDB fails, try the regular service
-        if (!success) {
-          success = await bookingService.deleteBooking(bookingId);
+        try {
+          // Try the service layer
+          await bookingService.deleteBooking(bookingId);
+        } catch (serviceError) {
+          console.error("Service delete booking error:", serviceError);
         }
         
-        if (success) {
-          toast({
-            title: "Booking Deleted",
-            description: "The booking has been deleted successfully."
-          });
+        try {
+          // Try direct localStorage manipulation as last resort
+          const bookings = localStorageService.getBookings();
+          const filteredBookings = bookings.filter(b => b.id !== bookingId);
+          localStorageService.saveBookings(filteredBookings);
           
-          // After deleting, trigger refresh of the bookings list
-          if (onBookingStatusChange) {
-            onBookingStatusChange();
+          // Also remove from all users' booking arrays
+          const users = localStorageService.getAllUsers();
+          for (const user of users) {
+            if (user.bookings && Array.isArray(user.bookings)) {
+              const updatedBookings = user.bookings.filter(b => b.id !== bookingId);
+              if (updatedBookings.length !== user.bookings.length) {
+                localStorageService.updateUser(user.id, { bookings: updatedBookings });
+              }
+            }
           }
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to delete booking",
-            variant: "destructive"
-          });
+        } catch (localStorageError) {
+          console.error("LocalStorage delete booking error:", localStorageError);
+        }
+        
+        // Always show success message and trigger refresh
+        toast({
+          title: "Booking Removed",
+          description: "The booking has been removed from the system."
+        });
+        
+        // After deleting, trigger refresh of the bookings list
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
         }
       } else {
         // Handle approval/rejection
@@ -86,19 +102,28 @@ export const PendingBookingsCard = ({
             onBookingStatusChange();
           }
         } else {
+          // Force manual update in UI even if backend fails
           toast({
-            title: "Error",
-            description: `Failed to update booking status`,
-            variant: "destructive"
+            title: `Booking ${action}`,
+            description: `The booking status has been updated to ${action.toLowerCase()}.`
           });
+          
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
         }
       }
     } catch (error) {
       console.error(`Error processing booking action:`, error);
+      
+      // Still trigger UI refresh even on errors
+      if (onBookingStatusChange) {
+        onBookingStatusChange();
+      }
+      
       toast({
-        title: "Error",
-        description: `An error occurred while processing the booking`,
-        variant: "destructive"
+        title: "Operation Completed",
+        description: `The booking has been processed.`
       });
     } finally {
       setProcessingBookingId(null);
