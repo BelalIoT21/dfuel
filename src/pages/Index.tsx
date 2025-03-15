@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
+import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {

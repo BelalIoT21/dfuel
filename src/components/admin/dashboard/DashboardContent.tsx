@@ -13,13 +13,11 @@ import { MachineStatus } from '@/components/admin/MachineStatus';
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [machineData, setMachineData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     // Load users and machine data
     const fetchData = async () => {
       try {
-        setIsLoading(true);
         // Get all users using our API service
         const response = await apiService.getAllUsers();
         if (response.data) {
@@ -28,25 +26,15 @@ export const DashboardContent = () => {
         
         // Get machine statuses
         const machinesWithStatus = await Promise.all(machines.map(async (machine) => {
-          try {
-            const statusResponse = await apiService.getMachineStatus(machine.id);
-            return {
-              ...machine,
-              status: statusResponse.data ? statusResponse.data.status : 'available'
-            };
-          } catch (error) {
-            console.error(`Error fetching status for machine ${machine.id}:`, error);
-            return {
-              ...machine,
-              status: 'available'
-            };
-          }
+          const statusResponse = await apiService.getMachineStatus(machine.id);
+          return {
+            ...machine,
+            status: statusResponse.data || 'available'
+          };
         }));
         setMachineData(machinesWithStatus);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
     

@@ -9,15 +9,12 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // If no user is logged in, redirect to login page
-    if (!user) {
+    // If user is not an admin, redirect to dashboard
+    if (user && !user.isAdmin) {
+      navigate('/dashboard');
+    } else if (!user) {
+      // If user is not logged in, redirect to login page
       navigate('/');
-      return;
-    }
-    
-    // If user is not an admin, redirect to home dashboard
-    if (!user.isAdmin) {
-      navigate('/home');
     }
   }, [user, navigate]);
 
