@@ -1,433 +1,377 @@
 
-import React, { useState, useEffect } from 'react';
-import { machineDatabaseService } from '@/services/database/machineService';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Table, TableBody, TableCell, TableHead, 
-  TableHeader, TableRow 
-} from '@/components/ui/table';
-import { 
-  Dialog, DialogContent, DialogDescription, 
-  DialogHeader, DialogTitle, DialogTrigger 
-} from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, PlusCircle, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { machines } from '../utils/data';
+import { BackToAdminButton } from '@/components/BackToAdminButton';
+import userDatabase from '../services/userDatabase';
+import { apiService } from '@/services/apiService';
 import MachineForm, { MachineFormData, initialFormData } from '@/components/admin/machines/MachineForm';
+import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminMachines = () => {
-  const [machines, setMachines] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<MachineFormData>({...initialFormData});
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState<boolean>(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [isAddingMachine, setIsAddingMachine] = useState(false);
+  const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [machinesList, setMachinesList] = useState<any[]>([]);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  
+  const [formData, setFormData] = useState<MachineFormData>({...initialFormData});
 
-  // Fetch all machines on component mount
   useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        console.log('Fetching machines from API...');
+        const fetchedMachines = await machineDatabaseService.getAllMachines();
+        if (fetchedMachines && fetchedMachines.length > 0) {
+          console.log(`Successfully fetched ${fetchedMachines.length} machines`);
+          setMachinesList(fetchedMachines);
+        } else {
+          console.log('No machines found, using demo data');
+          setMachinesList(machines);
+        }
+        setInitialLoadComplete(true);
+      } catch (error) {
+        console.error("Error fetching machines:", error);
+        setMachinesList(machines);
+        setInitialLoadComplete(true);
+      }
+    };
+
+    const fetchUsers = async () => {
+      try {
+        const users = await userDatabase.getAllUsers();
+        setAllUsers(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    
     fetchMachines();
+    fetchUsers();
   }, []);
 
-  const fetchMachines = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log("Fetching machines from API...");
-      const machinesData = await machineDatabaseService.getAllMachines();
-      
-      if (machinesData.length > 0) {
-        console.log(`Fetched ${machinesData.length} machines`);
-        setMachines(machinesData);
-      } else {
-        console.log("No machines found, using demo data");
-        // Here we might want to use some demo data if needed
-        setMachines([]);
-      }
-    } catch (error) {
-      console.error('Error fetching machines:', error);
-      setError('Failed to load machines. Please try again later.');
-      toast({
-        title: 'Error',
-        description: 'Failed to load machines',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!user?.isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+          <p className="mb-4">You don't have permission to access this page.</p>
+          <Link to="/home">
+            <Button>Return to Home</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredMachines = machinesList
+    .filter(machine => 
+      machine.type !== 'Equipment' && 
+      machine.type !== 'Safety Cabinet'
+    )
+    .filter(machine =>
+      machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   const handleAddMachine = async () => {
     try {
       setIsSubmitting(true);
+      
       console.log("Creating machine with data:", formData);
+      const newMachine = await machineDatabaseService.createMachine(formData);
       
-      // Send request to create machine
-      const response = await machineDatabaseService.createMachine(formData);
-      console.log("Machine creation response:", response);
-      
-      if (response) {
-        toast({
-          title: 'Success',
-          description: 'Machine created successfully',
-        });
-        
-        // Add the new machine to the list
-        setMachines(prev => [...prev, response]);
-        
-        // Reset form and close dialog
-        setFormData({...initialFormData});
-        setIsAddDialogOpen(false);
-      } else {
+      if (!newMachine) {
         throw new Error("Failed to create machine");
       }
-    } catch (error) {
-      console.error('Error adding machine:', error);
+      
       toast({
-        title: 'Error',
-        description: 'Failed to create machine',
-        variant: 'destructive',
+        title: "Machine Added",
+        description: `${formData.name} has been added successfully.`
+      });
+      
+      // Add the new machine to the list
+      setMachinesList(prev => [...prev, newMachine]);
+      
+      // Reset form and state
+      setIsAddingMachine(false);
+      setFormData({...initialFormData});
+    } catch (error) {
+      console.error("Error adding machine:", error);
+      toast({
+        title: "Error Adding Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleEditMachine = async () => {
-    if (!selectedMachineId) return;
+  const handleCancelAdd = () => {
+    setIsAddingMachine(false);
+    setFormData({...initialFormData});
+  };
+
+  const handleEditMachine = (id: string) => {
+    setEditingMachineId(id);
+    const machine = machinesList.find(m => m.id === id || m._id === id);
+    if (machine) {
+      setFormData({
+        name: machine.name,
+        description: machine.description || '',
+        type: machine.type || 'Cutting',
+        status: machine.status || 'Available',
+        requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
+        difficulty: machine.difficulty || 'Intermediate',
+        imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
+        details: machine.details || '',
+        specifications: machine.specifications || '',
+        certificationInstructions: machine.certificationInstructions || '',
+        linkedCourseId: machine.linkedCourseId || '',
+        linkedQuizId: machine.linkedQuizId || '',
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMachineId(null);
+    setFormData({...initialFormData});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMachineId) return;
     
     try {
       setIsSubmitting(true);
       
-      // Send request to update machine
-      const response = await machineDatabaseService.updateMachine(selectedMachineId, formData);
+      const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
       
-      if (response) {
-        toast({
-          title: 'Success',
-          description: 'Machine updated successfully',
-        });
-        
-        // Update the machine in the list
-        setMachines(prev => 
-          prev.map(machine => 
-            machine._id === selectedMachineId ? response : machine
-          )
-        );
-        
-        // Reset form and close dialog
-        setFormData({...initialFormData});
-        setIsEditDialogOpen(false);
-        setSelectedMachineId(null);
-      } else {
+      if (!updatedMachine) {
         throw new Error("Failed to update machine");
       }
-    } catch (error) {
-      console.error('Error updating machine:', error);
+      
       toast({
-        title: 'Error',
-        description: 'Failed to update machine',
-        variant: 'destructive',
+        title: "Machine Updated",
+        description: `${formData.name} has been updated successfully.`
+      });
+      
+      setMachinesList(prev => 
+        prev.map(m => 
+          (m.id === editingMachineId || m._id === editingMachineId) 
+            ? { ...m, ...updatedMachine } 
+            : m
+        )
+      );
+      
+      setEditingMachineId(null);
+      setFormData({...initialFormData});
+    } catch (error) {
+      console.error("Error updating machine:", error);
+      toast({
+        title: "Error Updating Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteMachine = async () => {
-    if (!selectedMachineId) return;
-    
+  const handleDeleteMachine = async (id: string) => {
     try {
-      setIsSubmitting(true);
+      const success = await machineDatabaseService.deleteMachine(id);
       
-      // Send request to delete machine
-      const success = await machineDatabaseService.deleteMachine(selectedMachineId);
-      
-      if (success) {
-        toast({
-          title: 'Success',
-          description: 'Machine deleted successfully',
-        });
-        
-        // Remove the machine from the list
-        setMachines(prev => prev.filter(machine => machine._id !== selectedMachineId));
-        
-        // Close dialog and reset selected machine
-        setIsDeleteDialogOpen(false);
-        setSelectedMachineId(null);
-      } else {
+      if (!success) {
         throw new Error("Failed to delete machine");
       }
-    } catch (error) {
-      console.error('Error deleting machine:', error);
+      
       toast({
-        title: 'Error',
-        description: 'Failed to delete machine',
-        variant: 'destructive',
+        title: "Machine Deleted",
+        description: "The machine has been deleted successfully."
       });
-    } finally {
-      setIsSubmitting(false);
+      
+      setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
+    } catch (error) {
+      console.error("Error deleting machine:", error);
+      toast({
+        title: "Error Deleting Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
     }
   };
-  
-  const handleEditClick = (machine: any) => {
-    setSelectedMachineId(machine._id);
-    // Format machine data to match form structure
-    const machineFormData: MachineFormData = {
-      name: machine.name,
-      description: machine.description,
-      type: machine.type,
-      status: machine.status,
-      requiresCertification: machine.requiresCertification,
-      difficulty: machine.difficulty || 'Intermediate',
-      imageUrl: machine.imageUrl || '/placeholder.svg',
-      details: machine.details || '',
-      specifications: machine.specifications || '',
-      certificationInstructions: machine.certificationInstructions || '',
-      linkedCourseId: machine.linkedCourseId || '',
-      linkedQuizId: machine.linkedQuizId || '',
-    };
-    setFormData(machineFormData);
-    setIsEditDialogOpen(true);
+
+  const getUsersCertifiedCount = (machineId: string) => {
+    return allUsers.filter(user => 
+      user.certifications && user.certifications.includes(machineId)
+    ).length;
   };
 
-  const handleDeleteClick = (machineId: string) => {
-    setSelectedMachineId(machineId);
-    setIsDeleteDialogOpen(true);
+  const getBookingsThisMonth = (machineId: string) => {
+    let count = 0;
+    allUsers.forEach(user => {
+      if (user.bookings) {
+        const machineBookings = user.bookings.filter((booking: any) => 
+          booking.machineId === machineId
+        );
+        count += machineBookings.length;
+      }
+    });
+    
+    return count;
   };
 
-  const handleAddCancel = () => {
-    setFormData({...initialFormData});
-    setIsAddDialogOpen(false);
+  const getMachineType = (type: string | undefined) => {
+    if (!type || type === '') return 'Machine';
+    return type;
   };
-
-  const handleEditCancel = () => {
-    setFormData({...initialFormData});
-    setIsEditDialogOpen(false);
-    setSelectedMachineId(null);
-  };
-
-  const renderStatusBadge = (status: string) => {
-    let color = '';
-    switch (status) {
-      case 'Available':
-        color = 'bg-green-100 text-green-800';
-        break;
-      case 'Maintenance':
-        color = 'bg-yellow-100 text-yellow-800';
-        break;
-      case 'Out of Order':
-        color = 'bg-red-100 text-red-800';
-        break;
-      default:
-        color = 'bg-gray-100 text-gray-800';
-    }
-    return <Badge className={color}>{status}</Badge>;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
-        <span className="ml-2">Loading machines...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-red-600">
-            <AlertCircle className="mr-2" />
-            Error
-          </CardTitle>
-          <CardDescription>
-            There was an error loading the machines
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>{error}</p>
-          <Button onClick={fetchMachines} className="mt-4">
-            Try Again
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Machines</h1>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Add Machine
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Add New Machine</DialogTitle>
-              <DialogDescription>
-                Create a new machine for the system. Fill in all the required fields.
-              </DialogDescription>
-            </DialogHeader>
-            <MachineForm
-              formData={formData}
-              setFormData={setFormData}
-              isSubmitting={isSubmitting}
-              onSubmit={handleAddMachine}
-              onCancel={handleAddCancel}
-              title="Add New Machine"
-              description="Create a new machine in the system"
-              submitLabel="Create Machine"
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {machines.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No Machines Found</CardTitle>
-            <CardDescription>
-              There are no machines in the system yet. Click "Add Machine" to get started.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Add Your First Machine
-            </Button>
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
+      <div className="max-w-6xl mx-auto page-transition">
+        <div className="mb-6">
+          <BackToAdminButton />
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-6">Machine Management</h1>
+        
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4 justify-between">
+              <div className="w-full md:w-1/3">
+                <Input
+                  placeholder="Search machines..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div>
+                <Button onClick={() => setIsAddingMachine(true)}>
+                  Add New Machine
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Machine List</CardTitle>
-            <CardDescription>
-              Manage your machines from this panel
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Certification</TableHead>
-                  <TableHead>Difficulty</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {machines.map((machine) => (
-                  <TableRow key={machine._id}>
-                    <TableCell className="font-medium">{machine.name}</TableCell>
-                    <TableCell>{machine.type}</TableCell>
-                    <TableCell>{renderStatusBadge(machine.status)}</TableCell>
-                    <TableCell>
-                      {machine.requiresCertification ? (
-                        <Badge className="bg-blue-100 text-blue-800">Required</Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-800">Not Required</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{machine.difficulty || 'N/A'}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditClick(machine)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          onClick={() => handleDeleteClick(machine._id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Edit Machine Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Edit Machine</DialogTitle>
-            <DialogDescription>
-              Update the details for this machine.
-            </DialogDescription>
-          </DialogHeader>
+        
+        {isAddingMachine && (
           <MachineForm
             formData={formData}
             setFormData={setFormData}
             isSubmitting={isSubmitting}
-            onSubmit={handleEditMachine}
-            onCancel={handleEditCancel}
+            onSubmit={handleAddMachine}
+            onCancel={handleCancelAdd}
+            title="Add New Machine"
+            description="Enter the details for the new machine"
+            submitLabel="Add Machine"
+          />
+        )}
+        
+        {editingMachineId && (
+          <MachineForm
+            formData={formData}
+            setFormData={setFormData}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSaveEdit}
+            onCancel={handleCancelEdit}
             title="Edit Machine"
-            description="Update machine details"
+            description="Update the details for this machine"
             submitLabel="Save Changes"
           />
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              machine and remove any associated data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteMachine}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
+        )}
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>All Machines</CardTitle>
+            <CardDescription>Manage and monitor all machines</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {!initialLoadComplete ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p>Loading machines...</p>
+                </div>
+              ) : filteredMachines.length > 0 ? (
+                filteredMachines.map((machine) => (
+                  <div key={machine.id || machine._id} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
+                    <div className="flex-shrink-0 w-full md:w-1/4">
+                      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={machine.imageUrl || machine.image || '/placeholder.svg'}
+                          alt={machine.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex-grow">
+                      <h3 className="text-lg font-medium">{machine.name}</h3>
+                      <p className="text-gray-600 text-sm mt-1">{machine.description}</p>
+                      
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                          Type: {getMachineType(machine.type)}
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
+                          Difficulty: {machine.difficulty || 'Beginner'}
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                          Users Certified: {getUsersCertifiedCount(machine.id || machine._id)}
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                          Bookings: {getBookingsThisMonth(machine.id || machine._id)}
+                        </div>
+                        {machine.linkedCourseId && (
+                          <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                            Has Course
+                          </div>
+                        )}
+                        {machine.linkedQuizId && (
+                          <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
+                            Has Quiz
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2 mt-4">
+                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id || machine._id)}>
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleDeleteMachine(machine.id || machine._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
               ) : (
-                'Delete'
+                <div className="text-center py-8 text-gray-500">
+                  No machines found matching your search criteria.
+                </div>
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
