@@ -1,11 +1,8 @@
 
 import { getEnv } from '../utils/env';
-import { useToast } from '../hooks/use-toast';
+import { toast } from '../components/ui/use-toast';
 
-// Try to connect to local API first, but have a fallback to relative path
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
-let currentEndpointIndex = 0;
-let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+const BASE_URL = '/api'; // This will be proxied to our backend server
 
 interface ApiResponse<T> {
   data: T | null;
@@ -14,12 +11,6 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
-  private async switchEndpoint() {
-    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
-    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-    console.log(`Switching to API endpoint: ${BASE_URL}`);
-  }
-
   private async request<T>(
     endpoint: string, 
     method: string = 'GET', 
@@ -49,34 +40,7 @@ class ApiService {
       }
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
-      
-      // Try with retry and endpoint switching logic
-      let response;
-      let retryCount = 0;
-      const maxRetries = API_ENDPOINTS.length;
-      
-      while (retryCount < maxRetries) {
-        try {
-          response = await fetch(url, options);
-          break; // If successful, exit the retry loop
-        } catch (fetchError) {
-          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            // Try a different endpoint before giving up
-            this.switchEndpoint();
-            const newUrl = `${BASE_URL}/${endpoint}`;
-            console.log(`Retrying with endpoint: ${newUrl}`);
-          } else {
-            throw fetchError; // All retries failed, propagate the error
-          }
-        }
-      }
-      
-      if (!response) {
-        throw new Error('Failed to connect to any API endpoints');
-      }
+      const response = await fetch(url, options);
       
       // Handle empty responses gracefully
       let responseData;
@@ -95,7 +59,7 @@ class ApiService {
         if (response.status === 404) {
           return {
             data: null,
-            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
+            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
             status: response.status
           };
         }
@@ -113,10 +77,9 @@ class ApiService {
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        const { toast } = useToast();
         toast({
-          title: `API Error`,
-          description: "Could not connect to server. Using local storage fallback.",
+          title: `API Error (${endpoint})`,
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
           variant: 'destructive'
         });
       }

@@ -6,8 +6,7 @@ import {
   getBookingById, 
   updateBookingStatus, 
   cancelBooking,
-  getAllBookings,
-  deleteBooking
+  getAllBookings
 } from '../controllers/bookingController';
 import { protect, admin } from '../middleware/authMiddleware';
 import { body, param } from 'express-validator';
@@ -61,8 +60,5 @@ router.put(
 
 // Cancel booking
 router.put('/:id/cancel', protect, cancelBooking);
-
-// Delete booking (admin only)
-router.delete('/:id', protect, admin, deleteBooking);
 
 export default router;
