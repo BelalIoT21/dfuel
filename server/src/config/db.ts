@@ -14,7 +14,12 @@ export const connectDB = async () => {
     // Set mongoose options
     mongoose.set('strictQuery', false);
     
-    const conn = await mongoose.connect(MONGODB_URI);
+    const conn = await mongoose.connect(MONGODB_URI, {
+      // These options are deprecated but adding for compatibility with older MongoDB versions
+      // @ts-ignore - These options are needed for older MongoDB versions
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     console.log(`Using database: ${MONGODB_DB_NAME}`);

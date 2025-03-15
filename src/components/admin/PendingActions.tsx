@@ -6,44 +6,32 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { isWeb } from '@/utils/platform';
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState(false);
   const { toast } = useToast();
   
   const fetchPendingBookings = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(false);
       
+      // Try MongoDB first for direct database access
       let allBookings = [];
-      
-      // In web environment, MongoDB might not be accessible
-      if (!isWeb) {
-        try {
-          console.log("Fetching bookings directly from MongoDB");
-          allBookings = await mongoDbService.getAllBookings();
-          console.log(`Found ${allBookings.length} bookings in MongoDB`);
-        } catch (mongoError) {
-          console.error("MongoDB booking fetch error:", mongoError);
-        }
+      try {
+        console.log("Fetching bookings directly from MongoDB");
+        allBookings = await mongoDbService.getAllBookings();
+        console.log(`Found ${allBookings.length} bookings in MongoDB`);
+      } catch (mongoError) {
+        console.error("MongoDB booking fetch error:", mongoError);
       }
       
       // If MongoDB fails or returns empty, use the service
       if (!allBookings || allBookings.length === 0) {
         console.log("Falling back to bookingService");
-        try {
-          allBookings = await bookingService.getAllBookings();
-          console.log(`Found ${allBookings.length} total bookings via bookingService`);
-        } catch (serviceError) {
-          console.error("BookingService error:", serviceError);
-          setError(true);
-          allBookings = [];
-        }
+        allBookings = await bookingService.getAllBookings();
+        console.log(`Found ${allBookings.length} total bookings via bookingService`);
       }
       
       const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
@@ -53,7 +41,6 @@ export const PendingActions = () => {
     } catch (error) {
       console.error('Error fetching pending bookings:', error);
       setPendingBookings([]);
-      setError(true);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -63,11 +50,11 @@ export const PendingActions = () => {
   useEffect(() => {
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 30 seconds (reduced from 10 seconds)
+    // Set up polling to refresh pending bookings every 10 seconds
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 30000);
+    }, 10000);
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
@@ -112,11 +99,6 @@ export const PendingActions = () => {
           <div className="text-center p-4 bg-white rounded-lg shadow flex flex-col items-center">
             <Loader2 className="h-6 w-6 text-purple-600 animate-spin mb-2" />
             <p>Loading pending bookings...</p>
-          </div>
-        ) : error ? (
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <p className="text-red-500 mb-2">Error loading bookings</p>
-            <Button variant="outline" size="sm" onClick={handleManualRefresh}>Try Again</Button>
           </div>
         ) : pendingBookings.length > 0 ? (
           <PendingBookingsCard 
