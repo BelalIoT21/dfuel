@@ -55,6 +55,11 @@ export class ApiService {
     }
   }
   
+  // Simple ping method to check API connectivity
+  async ping(): Promise<ApiResponse> {
+    return this.request('GET', '/health');
+  }
+  
   // User certification related methods
   async addCertification(userId: string, machineId: string): Promise<ApiResponse> {
     return this.request('POST', `/certifications/add`, { userId, machineId });

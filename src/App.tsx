@@ -65,8 +65,9 @@ const App = () => {
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Redirect root to login page */}
-              <Route path="/" element={<Index />} />
+              {/* Root path now redirects explicitly to the login page */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<Index />} />
               <Route path="/home" element={<Home />} />
               <Route path="/machine/:id" element={<MachineDetail />} />
               <Route path="/course/:id" element={<Course />} />
