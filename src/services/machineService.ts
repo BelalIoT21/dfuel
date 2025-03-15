@@ -4,8 +4,24 @@ import mongoDbService from './mongoDbService';
 import { apiService } from './apiService';
 
 export class MachineService {
+  // Cache for machines to avoid repeated fetches when MongoDB fails
+  private cachedMachines: any[] | null = null;
+  private lastCacheTime: number = 0;
+  private CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  private isCacheValid(): boolean {
+    return this.cachedMachines !== null && 
+           (Date.now() - this.lastCacheTime) < this.CACHE_DURATION;
+  }
+
   async getMachines() {
     try {
+      // Return cached machines if valid
+      if (this.isCacheValid()) {
+        console.log('Using cached machine data:', this.cachedMachines.length);
+        return this.cachedMachines;
+      }
+
       // Try to get machines from MongoDB first
       try {
         const mongoMachines = await mongoDbService.getAllMachines();
@@ -23,6 +39,11 @@ export class MachineService {
             steps: machine.steps || [],
             status: machine.status || 'Available'
           }));
+          
+          // Update cache
+          this.cachedMachines = normalizedMachines;
+          this.lastCacheTime = Date.now();
+          
           return normalizedMachines;
         }
       } catch (mongoError) {
@@ -46,27 +67,34 @@ export class MachineService {
             steps: machine.steps || [],
             status: machine.status || 'Available'
           }));
+          
+          // Update cache
+          this.cachedMachines = normalizedMachines;
+          this.lastCacheTime = Date.now();
+          
           return normalizedMachines;
         }
       } catch (apiError) {
         console.error('Error getting machines from API:', apiError);
       }
       
-      // Use static mappings for certain IDs
-      const staticMachineMap = {
-        "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
-        "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
-        "3": { id: "3", name: "Safety Course", type: "Safety Course" },
-        "5": { id: "5", name: "X1 E Carbon 3D Printer", type: "3D Printer" },
-        "6": { id: "6", name: "Soldering Station", type: "Electronics" },
-        "8": { id: "8", name: "Safety Cabinet", type: "Workshop" }
-      };
-      
       // Fall back to local data
       console.log('Using local machine data:', machines.length);
+      
+      // Update cache with local data
+      this.cachedMachines = machines;
+      this.lastCacheTime = Date.now();
+      
       return machines;
     } catch (error) {
       console.error('Error in getMachines:', error);
+      
+      // If we have any cached data, return it even if expired
+      if (this.cachedMachines !== null) {
+        console.log('Using expired cached machine data as fallback');
+        return this.cachedMachines;
+      }
+      
       return machines;
     }
   }
@@ -192,6 +220,12 @@ export class MachineService {
       console.error('Error in getMachineByMongoId:', error);
       return null;
     }
+  }
+  
+  // Helper method to clear the cache for testing or forcing a refresh
+  clearCache() {
+    this.cachedMachines = null;
+    this.lastCacheTime = 0;
   }
 }
 

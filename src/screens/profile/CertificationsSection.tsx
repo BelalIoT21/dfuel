@@ -12,9 +12,11 @@ interface CertificationsSectionProps {
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchMachineNames = async () => {
+      setIsLoading(true);
       const names: Record<string, string> = {};
       const types: Record<string, string> = {};
       
@@ -31,29 +33,75 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       types["2"] = "3D Printer";
       
       if (user.certifications && user.certifications.length > 0) {
-        for (const certId of user.certifications) {
-          // Skip special cases we've already handled
-          if (["1", "2", "3", "5", "8"].includes(certId)) continue;
+        // First try to get all machines at once to avoid multiple API calls
+        try {
+          const allMachines = await machineService.getMachines();
+          console.log(`Got ${allMachines.length} machines to map certifications`);
           
-          try {
-            const machine = await machineService.getMachineById(certId);
-            if (machine) {
-              names[certId] = machine.name;
-              types[certId] = machine.type || 'Machine';
-            } else {
+          // Create a map for quick lookup
+          const machineMap = {};
+          allMachines.forEach(machine => {
+            if (machine.id) {
+              machineMap[machine.id] = machine;
+            }
+          });
+          
+          // Process certifications
+          for (const certId of user.certifications) {
+            // Skip special cases we've already handled
+            if (["1", "2", "3", "5", "8"].includes(certId)) continue;
+            
+            // First check our map
+            if (machineMap[certId]) {
+              names[certId] = machineMap[certId].name;
+              types[certId] = machineMap[certId].type || 'Machine';
+              continue;
+            }
+            
+            // If not in the map, try individual fetch
+            try {
+              const machine = await machineService.getMachineById(certId);
+              if (machine) {
+                names[certId] = machine.name;
+                types[certId] = machine.type || 'Machine';
+              } else {
+                names[certId] = `Machine ${certId}`;
+                types[certId] = 'Machine';
+              }
+            } catch (error) {
+              console.error(`Error fetching machine ${certId}:`, error);
               names[certId] = `Machine ${certId}`;
               types[certId] = 'Machine';
             }
-          } catch (error) {
-            console.error(`Error fetching machine ${certId}:`, error);
-            names[certId] = `Machine ${certId}`;
-            types[certId] = 'Machine';
+          }
+        } catch (error) {
+          console.error("Failed to fetch machines:", error);
+          // Fall back to individual fetches
+          for (const certId of user.certifications) {
+            // Skip special cases we've already handled
+            if (["1", "2", "3", "5", "8"].includes(certId)) continue;
+            
+            try {
+              const machine = await machineService.getMachineById(certId);
+              if (machine) {
+                names[certId] = machine.name;
+                types[certId] = machine.type || 'Machine';
+              } else {
+                names[certId] = `Machine ${certId}`;
+                types[certId] = 'Machine';
+              }
+            } catch (error) {
+              console.error(`Error fetching machine ${certId}:`, error);
+              names[certId] = `Machine ${certId}`;
+              types[certId] = 'Machine';
+            }
           }
         }
       }
       
       setMachineNames(names);
       setMachineTypes(types);
+      setIsLoading(false);
     };
     
     fetchMachineNames();
@@ -62,7 +110,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
-      {user.certifications && user.certifications.length > 0 ? (
+      {isLoading ? (
+        <Text style={styles.loadingText}>Loading certifications...</Text>
+      ) : user.certifications && user.certifications.length > 0 ? (
         <List.Section>
           {user.certifications.map((certId) => (
             <List.Item
@@ -95,6 +145,11 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#6b7280',
     fontStyle: 'italic',
+    textAlign: 'center',
+    marginVertical: 10,
+  },
+  loadingText: {
+    color: '#6b7280',
     textAlign: 'center',
     marginVertical: 10,
   },
