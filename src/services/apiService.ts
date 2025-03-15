@@ -1,13 +1,38 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Set API URL directly to the known working endpoint
-// No conditional logic to avoid potential issues
-const API_URL = 'http://localhost:4000/api';
+// Define API URLs - allow fallback paths to help in different environments
+const API_URLS = {
+  local: 'http://localhost:4000/api',
+  development: window.location.origin.includes('localhost') 
+    ? 'http://localhost:4000/api' 
+    : `${window.location.origin}/api`,
+  production: `${window.location.origin}/api`
+};
 
-// Export for debugging
-console.log('API service configured with base URL:', API_URL);
-let BASE_URL = API_URL;
+// Get the proper URL based on environment or default to local
+const getApiUrl = () => {
+  const environment = process.env.NODE_ENV || 'development';
+  console.log('Current environment:', environment);
+  
+  // For safety, check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return API_URLS.local;
+  }
+
+  // Try to detect if we're running in the same domain as the server
+  // This helps with deployment scenarios
+  if (environment === 'production') {
+    return API_URLS.production;
+  }
+  
+  // In development, prefer localhost:4000
+  return API_URLS.local;
+};
+
+// Set the base URL and log it for debugging
+const BASE_URL = getApiUrl();
+console.log('API service configured with base URL:', BASE_URL);
 
 interface ApiResponse<T> {
   data: T | null;
@@ -38,7 +63,7 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
-        mode: 'cors', // Keep explicit CORS mode
+        mode: 'cors',
       };
       
       if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
@@ -47,65 +72,87 @@ class ApiService {
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
-      // Try the request
-      let response;
+      // Check if server is reachable first for non-health endpoints (avoid infinite loop)
+      if (!endpoint.includes('health')) {
+        try {
+          // Make a lightweight fetch to see if the server responds at all
+          const pingResponse = await fetch(`${BASE_URL}/health`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-cache',
+          });
+          
+          if (!pingResponse.ok) {
+            console.warn(`Server health check failed with status ${pingResponse.status}`);
+          } else {
+            console.log('Server is reachable');
+          }
+        } catch (pingError) {
+          console.warn('Cannot reach server:', pingError);
+          // We continue with the actual request, as the ping is just informational
+        }
+      }
+      
+      // Actual API request with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       try {
-        response = await fetch(url, options);
-      } catch (fetchError) {
-        console.error(`API fetch failed: ${url}`, fetchError);
+        options.signal = controller.signal;
+        const response = await fetch(url, options);
+        clearTimeout(timeoutId);
         
-        // For health check endpoints, provide more debugging info
-        if (endpoint.includes('health')) {
-          console.log('Server connection issue - please verify:');
-          console.log('1. Server is running on port 4000');
-          console.log('2. No CORS issues (check browser console)');
-          console.log('3. Network connectivity between client and server');
+        if (!response) {
+          throw new Error('Failed to connect to API endpoint');
         }
         
-        throw fetchError;
-      }
-      
-      if (!response) {
-        throw new Error('Failed to connect to API endpoint');
-      }
-      
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
-      }
-      
-      if (!response.ok) {
-        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
+        // Handle empty responses gracefully
+        let responseData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json') && response.status !== 204) {
+          const text = await response.text();
+          responseData = text ? JSON.parse(text) : null;
+        } else {
+          responseData = null;
+        }
         
-        if (response.status === 404) {
+        if (!response.ok) {
+          const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
+          console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
+          
           return {
             data: null,
-            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
+            error: errorMessage,
             status: response.status
           };
         }
         
-        throw new Error(errorMessage);
+        return {
+          data: responseData,
+          error: null,
+          status: response.status
+        };
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error(`API fetch failed: ${url}`, fetchError);
+        
+        if (fetchError.name === 'AbortError') {
+          return {
+            data: null,
+            error: 'Request timed out after 10 seconds',
+            status: 408
+          };
+        }
+        
+        throw fetchError;
       }
-      
-      return {
-        data: responseData,
-        error: null,
-        status: response.status
-      };
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        // Don't use the hook directly here - it's not inside a component
-        console.error('API error - would show toast in component');
+        console.error('API error:', error);
       }
       
       return {

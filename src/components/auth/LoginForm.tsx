@@ -40,6 +40,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [serverDetails, setServerDetails] = useState<any>(null);
 
   // Check server connection
   useEffect(() => {
@@ -50,6 +51,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         if (response.data) {
           console.log("Server health check from login form:", response.data);
           setServerStatus('connected');
+          setServerDetails(response.data);
         } else {
           setServerStatus('disconnected');
         }
@@ -92,7 +94,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     if (!validateForm()) return;
     
     if (serverStatus === 'disconnected') {
-      setFormError('Cannot login: Server is disconnected. Please try again later.');
+      setFormError('Cannot login: Server is disconnected. Please ensure the server is running on port 4000.');
       return;
     }
     
@@ -124,6 +126,20 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               serverStatus === 'connected' ? 'Connected' : 'Disconnected'
             }
           </span>
+        </div>
+        
+        {/* API URL information for debugging */}
+        <div className="mt-2 text-xs text-gray-500 break-all">
+          <p>API URL: {window.location.origin.includes('localhost') 
+            ? 'http://localhost:4000/api' 
+            : `${window.location.origin}/api`}
+          </p>
+          <details className="mt-1">
+            <summary className="cursor-pointer">Server Details</summary>
+            <pre className="text-xs mt-1 bg-gray-100 p-2 rounded overflow-auto max-h-24">
+              {serverDetails ? JSON.stringify(serverDetails, null, 2) : 'No server information available'}
+            </pre>
+          </details>
         </div>
       </CardHeader>
       <CardContent>
