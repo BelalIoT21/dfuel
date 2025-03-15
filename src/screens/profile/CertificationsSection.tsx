@@ -21,7 +21,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Set special cases first
       names["6"] = "Machine Safety Course";
       types["6"] = "Safety Course";
-      names["5"] = "Bambu Lab X1 E";
+      names["5"] = "Bambu Lab X1 Carbon";
       types["5"] = "3D Printer";
       names["3"] = "Safety Cabinet";
       types["3"] = "Safety Cabinet";

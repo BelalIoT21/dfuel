@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -76,7 +75,6 @@ class MongoMachineService {
     }
   }
   
-  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) return [];
@@ -96,7 +94,12 @@ class MongoMachineService {
     if (!this.machinesCollection) return null;
     
     try {
-      const machine = await this.machinesCollection.findOne({ _id: machineId });
+      let machine = await this.machinesCollection.findOne({ _id: machineId });
+      
+      if (!machine) {
+        machine = await this.machinesCollection.findOne({ id: machineId });
+      }
+      
       console.log(`Retrieved machine from MongoDB: ${machine?.name || 'not found'}`);
       return machine;
     } catch (error) {
@@ -135,11 +138,9 @@ class MongoMachineService {
     if (!this.machinesCollection) return false;
     
     try {
-      // Check if the machine already exists
       const exists = await this.machineExists(machine._id);
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
-        // Update the machine to ensure it has all properties
         const result = await this.machinesCollection.updateOne(
           { _id: machine._id },
           { $set: machine }
@@ -147,7 +148,6 @@ class MongoMachineService {
         return result.acknowledged;
       }
       
-      // Add the machine to the collection
       const result = await this.machinesCollection.insertOne(machine);
       console.log(`Machine with ID ${machine._id} added to MongoDB: ${machine.name}`);
       return result.acknowledged;
@@ -157,7 +157,6 @@ class MongoMachineService {
     }
   }
   
-  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) return;
@@ -170,67 +169,107 @@ class MongoMachineService {
         const defaultMachines: MongoMachine[] = [
           { 
             _id: '1', 
-            name: 'Laser Cutter', 
-            type: 'Cutting', 
+            name: 'Epilog Laser Cutter', 
+            type: 'Laser Cutter', 
             status: 'Available', 
-            description: 'Precision laser cutting machine for detailed work on various materials.', 
+            description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.', 
             requiresCertification: true,
-            difficulty: 'Advanced',
-            imageUrl: '/machines/laser-cutter.jpg'
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/laser-cutter.jpg',
+            specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather'
           },
           { 
             _id: '2', 
-            name: '3D Printer', 
-            type: 'Printing', 
+            name: 'Ultimaker S5', 
+            type: '3D Printer', 
             status: 'Available', 
-            description: 'FDM 3D printing for rapid prototyping and model creation.', 
+            description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.', 
             requiresCertification: true,
             difficulty: 'Intermediate',
-            imageUrl: '/machines/3d-printer.jpg'
+            imageUrl: '/machines/3d-printer.jpg',
+            specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU'
           },
           { 
             _id: '3', 
-            name: 'CNC Router', 
-            type: 'Cutting', 
-            status: 'Maintenance', 
-            description: 'Computer-controlled cutting machine for wood, plastic, and soft metals.', 
-            requiresCertification: true,
-            difficulty: 'Advanced',
-            maintenanceNote: 'Undergoing monthly maintenance, available next week.',
-            imageUrl: '/machines/cnc-router.jpg'
+            name: 'Machine Safety Course', 
+            type: 'Safety Course', 
+            status: 'Available', 
+            description: 'Required safety training for all makerspace users.', 
+            requiresCertification: false,
+            difficulty: 'Beginner',
+            imageUrl: '/machines/safety.jpg'
           },
           { 
             _id: '4', 
-            name: 'Vinyl Cutter', 
-            type: 'Cutting', 
+            name: 'HAAS CNC Mill', 
+            type: 'CNC Machine', 
             status: 'Available', 
-            description: 'For cutting vinyl, paper, and other thin materials for signs and decorations.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/vinyl-cutter.jpg'
+            description: 'Industrial CNC milling machine for precision metalworking.', 
+            requiresCertification: true,
+            difficulty: 'Advanced',
+            imageUrl: '/machines/cnc-mill.jpg',
+            specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
           },
           { 
             _id: '5', 
+            name: 'Bambu Lab X1 Carbon', 
+            type: '3D Printer', 
+            status: 'Available', 
+            description: 'High-speed multi-material 3D printer with exceptional print quality.', 
+            requiresCertification: true,
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/bambu-printer.jpg',
+            specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS'
+          },
+          { 
+            _id: '6', 
             name: 'Soldering Station', 
             type: 'Electronics', 
             status: 'Available', 
-            description: 'Professional-grade soldering equipment for electronics work and repairs.', 
-            requiresCertification: false,
+            description: 'Professional soldering station for electronics work.', 
+            requiresCertification: true,
             difficulty: 'Intermediate',
-            imageUrl: '/machines/soldering-station.jpg'
+            imageUrl: '/machines/soldering-station.jpg',
+            specifications: 'Temperature range: 200°C-450°C, Digital control, ESD safe'
+          },
+          { 
+            _id: '7', 
+            name: 'Vinyl Cutter', 
+            type: 'Cutting', 
+            status: 'Maintenance', 
+            description: 'Precision vinyl cutter for signs, stickers, and heat transfers.', 
+            requiresCertification: false,
+            difficulty: 'Beginner',
+            imageUrl: '/machines/vinyl-cutter.jpg',
+            maintenanceNote: 'Replacing cutting blade, available next week.',
+            specifications: 'Cutting width: 24", Materials: Vinyl, Paper, Heat Transfer Vinyl'
+          },
+          { 
+            _id: '8', 
+            name: 'Woodworking Tools', 
+            type: 'Workshop', 
+            status: 'Available', 
+            description: 'Full suite of woodworking hand tools and power tools.', 
+            requiresCertification: true,
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/woodworking.jpg'
           }
         ];
         
-        // Also create machine statuses
         for (const machine of defaultMachines) {
-          await this.addMachine(machine);
+          await this.machinesCollection.insertOne(machine);
           
-          // Add corresponding machine status
-          await this.updateMachineStatus(
-            machine._id, 
-            machine.status, 
-            machine.maintenanceNote
-          );
+          if (this.machineStatusesCollection) {
+            await this.machineStatusesCollection.updateOne(
+              { machineId: machine._id },
+              { $set: { 
+                machineId: machine._id, 
+                status: machine.status, 
+                note: machine.maintenanceNote 
+              }},
+              { upsert: true }
+            );
+          }
         }
         
         console.log("Successfully seeded default machines to MongoDB");
@@ -243,6 +282,5 @@ class MongoMachineService {
   }
 }
 
-// Create a singleton instance
 const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;

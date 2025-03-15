@@ -1,7 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService'; // New import
+import mongoSeedService from './seedService';
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -88,13 +88,13 @@ class MongoConnectionService {
     }
   }
   
-  // New method to initialize data
+  // Initialize data in the correct order
   private async initializeData(): Promise<void> {
     try {
       console.log("Initializing MongoDB with seed data...");
       
       // First seed machines (as they're referenced by users and bookings)
-      await mongoMachineService.seedDefaultMachines();
+      await mongoSeedService.seedMachines();
       
       // Then seed users and bookings
       await mongoSeedService.seedUsers();
