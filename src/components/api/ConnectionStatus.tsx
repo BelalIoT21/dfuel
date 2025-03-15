@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Server, Database, AlertCircle, HelpCircle } from 'lucide-react';
+import { RefreshCw, Server, Database, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiConnection } from '@/services/api/apiConnection';
 import { toast } from '@/components/ui/use-toast';
 import mongoConnectionService from '@/services/mongodb/connectionService';
-import { Tooltip } from '@/components/ui/tooltip';
 
 export function ConnectionStatus() {
   const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
@@ -31,7 +30,7 @@ export function ConnectionStatus() {
         
         toast({
           title: 'Server Connection Failed',
-          description: `Could not connect to the backend server. Make sure your server is running.`,
+          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Please ensure the server is running.`,
           variant: 'destructive'
         });
         return;
@@ -70,7 +69,7 @@ export function ConnectionStatus() {
       
       toast({
         title: 'Server Connection Failed',
-        description: 'Could not connect to the backend server. Please check if the server is running.',
+        description: 'Could not connect to the backend server. Please try again later.',
         variant: 'destructive'
       });
     } finally {
@@ -98,22 +97,11 @@ export function ConnectionStatus() {
           : serverStatus === 'disconnected' 
             ? 'Disconnected' 
             : 'Checking...'}
-            
-        <Tooltip>
-          <Tooltip.Trigger asChild>
-            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-              <HelpCircle size={12} />
-              <span className="sr-only">Server connection info</span>
-            </Button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <p className="max-w-xs text-xs">
-              {serverStatus === 'connected' 
-                ? 'Connected to the backend server successfully.' 
-                : 'Unable to connect to the server. Make sure your server is running with "npm run server" in the server directory.'}
-            </p>
-          </Tooltip.Content>
-        </Tooltip>
+      </div>
+      
+      {/* Display API URL */}
+      <div className="mt-2 text-xs text-gray-500">
+        API URL: {apiConnection.getBaseUrl()}
       </div>
       
       {connectionDetails && connectionDetails.database && (
@@ -123,12 +111,6 @@ export function ConnectionStatus() {
           <Database size={16} />
           Database: {connectionDetails.database.status}
           {connectionDetails.database.name ? ` (${connectionDetails.database.name})` : ''}
-        </div>
-      )}
-      
-      {serverStatus === 'disconnected' && (
-        <div className="mt-2 text-xs text-red-500 max-w-xs text-center">
-          <p>The server is not running or not accessible. Make sure to start your server with <code>npm run server</code> in the server directory.</p>
         </div>
       )}
       
@@ -155,20 +137,11 @@ export function ConnectionStatus() {
         </Button>
       </div>
       
-      {showDetails && (
+      {showDetails && connectionDetails && (
         <div className="mt-4 p-3 bg-gray-50 rounded text-xs w-full max-w-xs overflow-auto">
-          <h4 className="font-medium">Connection Details:</h4>
-          {connectionDetails ? (
-            <pre className="whitespace-pre-wrap">
-              {JSON.stringify(connectionDetails, null, 2)}
-            </pre>
-          ) : (
-            <div>
-              <p>No connection details available.</p>
-              <p className="mt-2">Connection Status: {serverStatus}</p>
-              <p className="mt-1">Connection Checked: {apiConnection.hasConnectionBeenChecked() ? 'Yes' : 'No'}</p>
-            </div>
-          )}
+          <pre className="whitespace-pre-wrap">
+            {JSON.stringify(connectionDetails, null, 2)}
+          </pre>
         </div>
       )}
     </div>
