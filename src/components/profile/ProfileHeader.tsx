@@ -9,8 +9,11 @@ const ProfileHeader = () => {
   const redirectPath = user?.isAdmin ? '/admin' : '/home';
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-      <Link to={redirectPath} className="text-purple-600 hover:underline flex items-center gap-2 text-sm sm:text-base py-1">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-8 p-1">
+      <Link 
+        to={redirectPath} 
+        className="text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-2 text-sm sm:text-base py-1.5 font-medium"
+      >
         <ArrowLeft size={18} className="flex-shrink-0" />
         <span>Back to Dashboard</span>
       </Link>
