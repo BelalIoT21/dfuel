@@ -21,16 +21,17 @@ const CertificationsCard = () => {
         const data = {};
         
         // Add special cases with correct naming
-        data["7"] = { name: "X1 E Carbon 3D Printer", type: "3D Printer" };
-        data["6"] = { name: "Machine Safety Course", type: "Safety Course" };
-        data["5"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
-        data["4"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
+        data["1"] = { name: "Laser Cutter", type: "Laser Cutter" };
+        data["2"] = { name: "Ultimaker", type: "3D Printer" };
         data["3"] = { name: "Safety Cabinet", type: "Safety Cabinet" };
+        data["4"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
+        data["5"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
+        data["7"] = { name: "X1 E Carbon 3D Printer", type: "3D Printer" };
         
         if (user?.certifications) {
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["3", "4", "5", "6", "7"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "7"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
@@ -75,9 +76,8 @@ const CertificationsCard = () => {
       name: machineData[certId]?.name || `Machine ${certId}`,
       date: format(new Date(), 'dd/MM/yyyy'), // In a real app, this would come from the database
       type: machineData[certId]?.type || 'Machine',
-      isBookable: !["3", "6"].includes(certId) && 
-                 machineData[certId]?.type !== 'Safety Cabinet' && 
-                 machineData[certId]?.type !== 'Safety Course'
+      isBookable: certId !== "3" && 
+                 machineData[certId]?.type !== 'Safety Cabinet'
     }));
 
   const handleBookNow = (machineId, isBookable) => {
@@ -124,7 +124,7 @@ const CertificationsCard = () => {
                 <div className="text-sm text-gray-500 mb-1">Certified on: {cert.date}</div>
                 <div className="text-xs text-gray-400 mb-2">{cert.type || 'Machine'}</div>
                 
-                {cert.type === 'Safety Cabinet' || cert.type === 'Safety Course' ? (
+                {cert.type === 'Safety Cabinet' ? (
                   <Button 
                     variant="outline" 
                     size="sm" 

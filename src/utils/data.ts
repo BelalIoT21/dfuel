@@ -51,16 +51,6 @@ export const machines = [
     image: "https://placehold.co/600x400?text=Bambu+Lab"
   },
   {
-    id: "6",
-    name: "Machine Safety Course",
-    description: "Required safety training for using workshop equipment",
-    type: "Safety Course",
-    difficulty: "Beginner",
-    requiresCertification: false,
-    status: "available",
-    image: "https://placehold.co/600x400?text=Safety+Course"
-  },
-  {
     id: "7",
     name: "X1 E Carbon 3D Printer",
     description: "Advanced 3D printer for creating carbon fiber reinforced parts",
@@ -96,3 +86,22 @@ export const users = [
 ];
 
 export const bookings = [];
+
+// Add these exports to fix the error in MachineDetail.tsx
+export const courses = {
+  "1": { title: "Laser Cutter Safety", modules: ["Safety Basics", "Machine Controls", "Material Selection"] },
+  "2": { title: "3D Printer Fundamentals", modules: ["Printer Setup", "Filament Selection", "Print Settings"] },
+  "3": { title: "Safety Cabinet Usage", modules: ["Equipment Organization", "PPE Usage", "Safety Protocols"] },
+  "4": { title: "Bambu Lab X1 E Operation", modules: ["Setup and Calibration", "Print Settings", "Maintenance"] },
+  "5": { title: "Bambu Lab X1 E Operation", modules: ["Setup and Calibration", "Print Settings", "Maintenance"] },
+  "7": { title: "X1 E Carbon 3D Printing", modules: ["Carbon Fiber Materials", "Advanced Settings", "Post-Processing"] }
+};
+
+export const quizzes = {
+  "1": { questions: 5, passingScore: 80 },
+  "2": { questions: 5, passingScore: 80 },
+  "3": { questions: 3, passingScore: 100 },
+  "4": { questions: 5, passingScore: 80 },
+  "5": { questions: 5, passingScore: 80 },
+  "7": { questions: 8, passingScore: 85 }
+};

@@ -121,15 +121,6 @@ export const seedDatabase = async () => {
         requiresCertification: true,
         difficulty: 'Intermediate',
         imageUrl: '/machines/woodworking.jpg'
-      },
-      {
-        name: 'Safety Course',
-        type: 'Safety Course',
-        description: 'Required safety training for all makerspace users.',
-        status: 'Available',
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: '/machines/safety.jpg'
       }
     ];
 
@@ -153,8 +144,8 @@ export const seedDatabase = async () => {
       machineMap['Laser Cutter'],
       machineMap['Ultimaker'],
       machineMap['X1 E Carbon 3D Printer'],
-      machineMap['Safety Cabinet'],
-      machineMap['Safety Course']
+      machineMap['Bambu Lab X1 E'],
+      machineMap['Safety Cabinet']
     ];
     await regularUser.save();
 

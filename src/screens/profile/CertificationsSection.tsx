@@ -21,18 +21,18 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const types: Record<string, string> = {};
       
       // Set consistent naming for special cases
-      names["6"] = "Machine Safety Course";
-      types["6"] = "Safety Course";
-      names["3"] = "Safety Cabinet";
-      types["3"] = "Safety Cabinet";
       names["1"] = "Laser Cutter";
       types["1"] = "Laser Cutter";
       names["2"] = "Ultimaker";
       types["2"] = "3D Printer";
-      names["4"] = "Bambu Lab X1 E"; // Added ID 4
-      types["4"] = "3D Printer";      // Added ID 4
-      names["5"] = "Bambu Lab X1 E";
+      names["3"] = "Safety Cabinet";
+      types["3"] = "Safety Cabinet";
+      names["4"] = "Bambu Lab X1 E";
+      types["4"] = "3D Printer";
+      names["5"] = "Bambu Lab X1 E"; 
       types["5"] = "3D Printer";
+      names["7"] = "X1 E Carbon 3D Printer";
+      types["7"] = "3D Printer";
       
       if (user.certifications && user.certifications.length > 0) {
         // First try to get all machines at once to avoid multiple API calls
@@ -51,7 +51,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Process certifications
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "7"].includes(certId)) continue;
             
             // First check our map
             if (machineMap[certId]) {
@@ -81,7 +81,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Fall back to individual fetches
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "4", "5", "6"].includes(certId)) continue;
+            if (["1", "2", "3", "4", "5", "7"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);

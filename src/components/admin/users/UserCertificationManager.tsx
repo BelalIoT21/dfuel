@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -226,7 +225,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       case "3": return "Safety Cabinet";
       case "4": return "Bambu Lab X1 E";
       case "5": return "Bambu Lab X1 E";
-      case "6": return "Machine Safety Course";
       case "7": return "X1 E Carbon 3D Printer";
       default: return `Machine ${machineId}`;
     }
@@ -254,7 +252,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       { id: "3", name: "Safety Cabinet" },
       { id: "4", name: "Bambu Lab X1 E" },
       { id: "5", name: "Bambu Lab X1 E" },
-      { id: "6", name: "Machine Safety Course" },
       { id: "7", name: "X1 E Carbon 3D Printer" },
     ];
     
