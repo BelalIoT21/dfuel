@@ -9,23 +9,8 @@ import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { apiService } from '@/services/apiService';
-import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
+import MachineForm, { MachineFormData, initialFormData } from '@/components/admin/machines/MachineForm';
 import { machineDatabaseService } from '@/services/database/machineService';
-
-const initialFormData: MachineFormData = {
-  name: '',
-  description: '',
-  type: 'Cutting',
-  status: 'Available',
-  requiresCertification: true,
-  difficulty: 'Intermediate',
-  imageUrl: '/placeholder.svg',
-  details: '',
-  specifications: '',
-  certificationInstructions: '',
-  linkedCourseId: '',
-  linkedQuizId: '',
-};
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -183,20 +168,7 @@ const AdminMachines = () => {
       );
       
       setEditingMachineId(null);
-      setFormData({
-        name: '',
-        description: '',
-        type: 'Cutting',
-        status: 'Available',
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/placeholder.svg',
-        details: '',
-        specifications: '',
-        certificationInstructions: '',
-        linkedCourseId: '',
-        linkedQuizId: '',
-      });
+      setFormData({...initialFormData});
     } catch (error) {
       console.error("Error updating machine:", error);
       toast({

@@ -46,7 +46,7 @@ interface MachineFormProps {
   submitLabel: string;
 }
 
-const initialFormData: MachineFormData = {
+export const initialFormData: MachineFormData = {
   name: '',
   description: '',
   type: 'Cutting',
@@ -103,7 +103,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleCancel = () => {
-    setFormData(initialFormData);
+    setFormData({...initialFormData});
     onCancel();
   };
 
