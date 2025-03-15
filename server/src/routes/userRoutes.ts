@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { getUsers, getUserById, updateUserProfile, updateUser, changePassword } from '../controllers/userController';
+import { getUsers, getUserById, updateUserProfile, updateUser, changePassword, deleteUser } from '../controllers/userController';
 import { protect, admin } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
 
@@ -46,5 +46,8 @@ router.put(
   ],
   changePassword
 );
+
+// Delete user (admin only)
+router.delete('/:id', protect, admin, deleteUser);
 
 export default router;

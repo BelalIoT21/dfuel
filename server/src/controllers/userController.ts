@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -141,6 +140,30 @@ export const changePassword = async (req: Request, res: Response) => {
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error in changePassword:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Delete a user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Allow deleting any user (including admins)
+    await user.deleteOne();
+    
+    res.json({ message: 'User removed' });
+  } catch (error) {
+    console.error('Error in deleteUser:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 

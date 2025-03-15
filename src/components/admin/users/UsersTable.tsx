@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -55,32 +54,24 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Helper function to get machine name by ID
   const getMachineName = (certId: string) => {
-    // Special case for Machine Safety Course
     if (certId === "6") return "Machine Safety Course";
-    // Special case for Bambu Lab X1 E
     if (certId === "5") return "Bambu Lab X1 E";
-    // Special case for Safety Cabinet
     if (certId === "3") return "Safety Cabinet";
     
-    // First try to find from fetched machines
     const machine = allMachines.find(m => m.id === certId);
     if (machine) return machine.name;
     
-    // Fallback to local data
     const localMachine = machines.find(m => m.id === certId);
     return localMachine ? localMachine.name : `Machine ${certId}`;
   };
-  
-  // Delete user
+
   const handleDeleteUser = async (userId: string) => {
     setDeletingUserId(userId);
     
     try {
       console.log(`Attempting to delete user ${userId} from UsersTable component`);
       
-      // Check if user is trying to delete themselves
       if (userId === currentUser?.id) {
         console.log(`Cannot delete current user ${userId}`);
         toast({
@@ -92,7 +83,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Try MongoDB deletion
       console.log(`Trying MongoDB deletion for user ${userId}`);
       const success = await mongoDbService.deleteUser(userId);
       console.log(`MongoDB deleteUser result: ${success}`);
@@ -103,7 +93,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           description: "User has been permanently deleted.",
         });
         
-        // Refresh the user list
         if (onUserDeleted) {
           onUserDeleted();
         }
@@ -157,7 +146,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
                       user.certifications
-                        .filter((cert: string) => cert !== "6") // Hide Machine Safety Course from the list
+                        .filter((cert: string) => cert !== "6")
                         .map((cert: string) => (
                           <span 
                             key={cert} 
@@ -185,45 +174,41 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                       onCertificationAdded={onCertificationAdded}
                     />
                     
-                    {/* Allow deleting any user except the currently logged-in user */}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-red-200 hover:bg-red-50 text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete User</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
-                            {user.isAdmin && (
-                              <p className="mt-2 text-amber-600 font-medium">
-                                Warning: You are about to delete an admin user!
-                              </p>
-                            )}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="bg-red-600 hover:bg-red-700"
+                    {!user.isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-red-200 hover:bg-red-50 text-red-700"
                           >
-                            {deletingUserId === user.id ? (
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4 mr-2" />
-                            )}
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

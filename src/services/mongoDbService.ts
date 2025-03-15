@@ -1,4 +1,3 @@
-
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoSeedService from './mongodb/seedService';
@@ -132,18 +131,7 @@ class MongoDbService {
         return false;
       }
       
-      // Don't allow deletion of admin users
-      if (user.isAdmin) {
-        console.log(`Cannot delete admin user ${userId}`);
-        toast({
-          title: "Operation Not Allowed",
-          description: "Admin users cannot be deleted",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      // Delete from users collection
+      // Delete from users collection (removed admin check to allow deleting admin users)
       const deleteResult = await mongoUserService.deleteUser(userId);
       console.log(`User ${userId} deletion result:`, deleteResult);
       return deleteResult;
