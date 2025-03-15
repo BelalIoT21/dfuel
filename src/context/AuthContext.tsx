@@ -5,6 +5,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
+import { apiService } from '@/services/apiService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -12,13 +13,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from storage on initial load
+  // Load user from tokens on initial load (web) or storage (native)
   useEffect(() => {
     const loadUser = async () => {
       try {
+        // For native, still try to get from AsyncStorage
         const storedUser = await storage.getItem('learnit_user');
+        
         if (storedUser) {
           setUser(JSON.parse(storedUser));
+        } else {
+          // For web, try to get from token
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              const response = await apiService.getCurrentUser();
+              if (response.data && response.data.user) {
+                setUser(response.data.user);
+              }
+            } catch (error) {
+              console.error('Error getting current user:', error);
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
@@ -37,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (authenticatedUser) {
         setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
         return true;
       } else {
@@ -55,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (newUser) {
         setUser(newUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(newUser));
         return true;
       } else {
@@ -69,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = async () => {
     setUser(null);
+    localStorage.removeItem('token');
     await storage.removeItem('learnit_user');
   };
 
@@ -87,6 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
@@ -108,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }

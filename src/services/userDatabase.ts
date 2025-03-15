@@ -1,7 +1,6 @@
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
-import { localStorageService } from './localStorageService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
 
@@ -12,8 +11,7 @@ class UserDatabase {
       return await userService.getAllUsers();
     } catch (error) {
       console.error('Error in getAllUsers:', error);
-      // Fallback to localStorage
-      return localStorageService.getAllUsersWithoutSensitiveInfo();
+      return [];
     }
   }
   
@@ -22,7 +20,7 @@ class UserDatabase {
       return await userService.findUserByEmail(email);
     } catch (error) {
       console.error('Error in findUserByEmail:', error);
-      return localStorageService.findUserByEmail(email);
+      return null;
     }
   }
   
@@ -31,8 +29,6 @@ class UserDatabase {
       return await userService.authenticate(email, password);
     } catch (error) {
       console.error('Error in authenticate:', error);
-      // For authentication errors, we should just return null rather than trying localStorage
-      // as localStorage would need the plaintext password which is insecure
       return null;
     }
   }
@@ -51,10 +47,6 @@ class UserDatabase {
       return await userService.updateUserProfile(userId, updates);
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
-      if (!updates.password) {
-        // Only try localStorage for non-password updates
-        return localStorageService.updateUser(userId, updates);
-      }
       return false;
     }
   }
@@ -106,38 +98,10 @@ class UserDatabase {
         return false;
       }
       
-      // Try MongoDB first
-      let success = false;
-      try {
-        console.log(`Attempting to delete user ${userId} from MongoDB`);
-        success = await mongoDbService.deleteUser(userId);
-        if (success) {
-          console.log(`Successfully deleted user ${userId} from MongoDB`);
-          return true;
-        } else {
-          console.log(`Failed to delete user ${userId} from MongoDB`);
-        }
-      } catch (mongoError) {
-        console.error(`MongoDB error deleting user ${userId}:`, mongoError);
-      }
-      
-      // Try localStorage as fallback
-      try {
-        console.log(`Attempting to delete user ${userId} from localStorage`);
-        
-        // Delete user bookings from the bookings collection
-        const allBookings = localStorageService.getBookings();
-        const updatedBookings = allBookings.filter(booking => booking.userId !== userId);
-        localStorageService.saveBookings(updatedBookings);
-        
-        // Delete the user
-        const result = localStorageService.deleteUser(userId);
-        console.log(`Delete user ${userId} from localStorage result:`, result);
-        return result;
-      } catch (storageError) {
-        console.error(`LocalStorage error deleting user ${userId}:`, storageError);
-        return false;
-      }
+      // Delete from MongoDB
+      const success = await mongoDbService.deleteUser(userId);
+      console.log(`User ${userId} deletion result:`, success);
+      return success;
     } catch (error) {
       console.error(`Error deleting user ${userId}:`, error);
       return false;
@@ -147,18 +111,8 @@ class UserDatabase {
   // Helper to find user by ID
   async findUserById(userId: string) {
     try {
-      // Try MongoDB first
-      try {
-        const user = await mongoDbService.getUserById(userId);
-        if (user) {
-          return user;
-        }
-      } catch (mongoError) {
-        console.error(`MongoDB error finding user ${userId}:`, mongoError);
-      }
-      
-      // Fallback to localStorage
-      return localStorageService.findUserById(userId);
+      const user = await mongoDbService.getUserById(userId);
+      return user;
     } catch (error) {
       console.error(`Error finding user ${userId}:`, error);
       return null;
@@ -173,45 +127,7 @@ class UserDatabase {
       // If it's machine safety course, use the specialized method
       if (machineId === "6") {
         console.log(`Adding Machine Safety Course (ID: ${machineId}) for user ${userId}`);
-        
-        // Try MongoDB first
-        try {
-          const success = await mongoDbService.updateUserCertifications(userId, machineId);
-          if (success) {
-            console.log(`MongoDB directly added Machine Safety Course for user ${userId}`);
-            return true;
-          }
-        } catch (error) {
-          console.error("MongoDB error adding safety certification:", error);
-        }
-        
-        // Then try through certification service
-        try {
-          const success = await certificationService.addMachineSafetyCertification(userId);
-          console.log(`CertificationService added Machine Safety Course for user ${userId}: ${success}`);
-          return success;
-        } catch (error) {
-          console.error("CertificationService error adding safety certification:", error);
-        }
-        
-        // Last resort - direct localStorage
-        try {
-          const user = localStorageService.findUserById(userId);
-          if (user) {
-            if (!user.certifications) user.certifications = [];
-            if (!user.certifications.includes(machineId)) {
-              user.certifications.push(machineId);
-              const success = localStorageService.updateUser(userId, { certifications: user.certifications });
-              console.log(`Direct localStorage update for safety course: ${success}`);
-              return success;
-            }
-            return true; // User already has certification
-          }
-        } catch (error) {
-          console.error("localStorage error adding safety certification:", error);
-        }
-        
-        return false;
+        return await certificationService.addMachineSafetyCertification(userId);
       }
       
       // For other certifications, use the standard method
@@ -247,53 +163,32 @@ class UserDatabase {
   async updateMachineStatus(machineId: string, status: string, note?: string) {
     try {
       console.log(`Updating machine status: ${machineId} to ${status}`);
-      // Try MongoDB first
-      try {
-        const success = await mongoDbService.updateMachineStatus(machineId, status, note);
-        if (success) {
-          console.log(`Successfully updated machine status in MongoDB`);
-          return true;
-        }
-      } catch (mongoError) {
-        console.error(`MongoDB error updating machine status:`, mongoError);
-      }
-      
-      // Fallback to localStorage
-      return databaseService.updateMachineStatus(machineId, status, note);
+      return await mongoDbService.updateMachineStatus(machineId, status, note);
     } catch (error) {
       console.error('Error in updateMachineStatus:', error);
-      // Try direct localStorage update as last resort
-      return localStorageService.updateMachineStatus(machineId, status);
+      return false;
     }
   }
   
   async getMachineStatus(machineId: string) {
     try {
       console.log(`Getting machine status for: ${machineId}`);
-      // Try MongoDB first
-      try {
-        const status = await mongoDbService.getMachineStatus(machineId);
-        if (status) {
-          console.log(`Got status from MongoDB: ${status}`);
-          return status;
-        }
-      } catch (mongoError) {
-        console.error(`MongoDB error getting machine status:`, mongoError);
+      const status = await mongoDbService.getMachineStatus(machineId);
+      if (status) {
+        console.log(`Got status from MongoDB: ${status}`);
+        return status;
       }
-      
-      // Fallback to localStorage via databaseService
-      return databaseService.getMachineStatus(machineId);
+      return 'available'; // Default status
     } catch (error) {
       console.error('Error in getMachineStatus:', error);
-      // Try direct localStorage check as last resort
-      return localStorageService.getMachineStatus(machineId) || 'available';
+      return 'available'; // Default status
     }
   }
   
   async getMachineMaintenanceNote(machineId: string) {
     try {
-      // This functionality would be in the API
-      return null;
+      // This functionality would be in the MongoDB
+      return await mongoDbService.getMachineMaintenanceNote(machineId);
     } catch (error) {
       console.error('Error in getMachineMaintenanceNote:', error);
       return null;
@@ -304,52 +199,7 @@ class UserDatabase {
   async deleteBooking(bookingId: string): Promise<boolean> {
     try {
       console.log(`Attempting to delete booking ${bookingId}`);
-      
-      // Try MongoDB first
-      try {
-        const success = await mongoDbService.deleteBooking(bookingId);
-        if (success) {
-          console.log(`Successfully deleted booking ${bookingId} from MongoDB`);
-          return true;
-        }
-      } catch (mongoError) {
-        console.error(`MongoDB error deleting booking ${bookingId}:`, mongoError);
-      }
-      
-      // Try localStorage as fallback
-      try {
-        // Get all bookings
-        const allBookings = localStorageService.getBookings();
-        
-        // Find the booking
-        const bookingIndex = allBookings.findIndex(b => b.id === bookingId);
-        if (bookingIndex === -1) {
-          console.log(`Booking ${bookingId} not found in localStorage`);
-          return false;
-        }
-        
-        // Get booking details before removing it
-        const booking = allBookings[bookingIndex];
-        
-        // Remove the booking from the bookings collection
-        allBookings.splice(bookingIndex, 1);
-        localStorageService.saveBookings(allBookings);
-        
-        // If userId is available, remove the booking from the user's bookings as well
-        if (booking && booking.userId) {
-          const user = localStorageService.findUserById(booking.userId);
-          if (user && user.bookings) {
-            const updatedBookings = user.bookings.filter(b => b.id !== bookingId);
-            localStorageService.updateUser(booking.userId, { bookings: updatedBookings });
-          }
-        }
-        
-        console.log(`Successfully deleted booking ${bookingId} from localStorage`);
-        return true;
-      } catch (storageError) {
-        console.error(`LocalStorage error deleting booking ${bookingId}:`, storageError);
-        return false;
-      }
+      return await mongoDbService.deleteBooking(bookingId);
     } catch (error) {
       console.error(`Error deleting booking ${bookingId}:`, error);
       return false;
@@ -360,40 +210,9 @@ class UserDatabase {
   async clearAllBookings(): Promise<boolean> {
     try {
       console.log("Attempting to clear all bookings across the system");
-      
-      // Try MongoDB first
-      try {
-        const count = await mongoDbService.clearAllBookings();
-        if (count > 0) {
-          console.log(`Successfully cleared ${count} bookings from MongoDB`);
-          return true;
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error clearing all bookings:", mongoError);
-      }
-      
-      // Try localStorage as fallback
-      try {
-        // Clear all bookings from all users
-        const users = localStorageService.getAllUsers();
-        let totalCleared = 0;
-        
-        for (const user of users) {
-          if (user.bookings && user.bookings.length > 0) {
-            totalCleared += user.bookings.length;
-            localStorageService.updateUser(user.id, { bookings: [] });
-          }
-        }
-        
-        // Also clear the separate bookings collection
-        localStorageService.saveBookings([]);
-        
-        console.log(`Successfully cleared ${totalCleared} bookings from localStorage`);
-        return totalCleared > 0;
-      } catch (storageError) {
-        console.error("LocalStorage error clearing all bookings:", storageError);
-        return false;
-      }
+      const count = await mongoDbService.clearAllBookings();
+      console.log(`Successfully cleared ${count} bookings from MongoDB`);
+      return count > 0;
     } catch (error) {
       console.error("Error clearing all bookings:", error);
       return false;

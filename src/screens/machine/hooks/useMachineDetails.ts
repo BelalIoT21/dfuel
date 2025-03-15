@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
-import userDatabase from '../../../services/userDatabase';
+import mongoDbService from '../../../services/mongoDbService';
 
 export const useMachineDetails = (machineId, user, navigation) => {
   const [machine, setMachine] = useState(null);
@@ -40,8 +40,17 @@ export const useMachineDetails = (machineId, user, navigation) => {
           machineData.type = "Safety Course";
         }
         
-        const status = await userDatabase.getMachineStatus(machineId);
-        setMachineStatus(status || 'available');
+        // Get machine status from MongoDB
+        let status;
+        try {
+          const statusData = await mongoDbService.getMachineStatus(machineId);
+          status = statusData ? statusData.status : 'available';
+        } catch (error) {
+          console.error('Error getting machine status:', error);
+          status = 'available';
+        }
+        
+        setMachineStatus(status);
         setMachine(machineData);
         
         // Check if user is certified for this machine

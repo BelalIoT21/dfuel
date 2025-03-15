@@ -1,6 +1,5 @@
 
 import mongoDbService from './mongoDbService';
-import { localStorageService } from './localStorageService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
 
@@ -15,18 +14,14 @@ export class MachineService {
       const isSafetyCabinet = machines.find(m => m.id === machineId && m.type === 'Safety Cabinet');
       if (isSafetyCabinet) return true;
       
-      // Try to update in MongoDB first
+      // Update in MongoDB
       const success = await mongoDbService.updateMachineStatus(machineId, status, note);
-      if (success) {
-        console.log(`Successfully updated machine status in MongoDB: ${machineId} → ${status}`);
-        return true;
-      }
+      console.log(`Machine status update result: ${success}`);
+      return success;
     } catch (error) {
-      console.error("Error updating machine status in MongoDB:", error);
-      // Continue with localStorage if MongoDB fails
+      console.error("Error updating machine status:", error);
+      return false;
     }
-    
-    return localStorageService.updateMachineStatus(machineId, status, note);
   }
 
   // Get machine status
@@ -37,17 +32,16 @@ export class MachineService {
       const isSafetyCabinet = machines.find(m => m.id === machineId && m.type === 'Safety Cabinet');
       if (isSafetyCabinet) return 'available';
       
-      // Try to get from MongoDB first
+      // Get from MongoDB
       const status = await mongoDbService.getMachineStatus(machineId);
       if (status) {
         return status.status;
       }
+      return 'available'; // Default status
     } catch (error) {
-      console.error("Error getting machine status from MongoDB:", error);
-      // Continue with localStorage if MongoDB fails
+      console.error("Error getting machine status:", error);
+      return 'available'; // Default status
     }
-    
-    return localStorageService.getMachineStatus(machineId);
   }
   
   // Get machine maintenance note
@@ -58,59 +52,55 @@ export class MachineService {
       const isSafetyCabinet = machines.find(m => m.id === machineId && m.type === 'Safety Cabinet');
       if (isSafetyCabinet) return undefined;
       
-      // Try to get from MongoDB first
+      // Get from MongoDB
       const status = await mongoDbService.getMachineStatus(machineId);
       if (status) {
         return status.note;
       }
+      return undefined;
     } catch (error) {
-      console.error("Error getting machine maintenance note from MongoDB:", error);
-      // Continue with localStorage if MongoDB fails
+      console.error("Error getting machine maintenance note:", error);
+      return undefined;
     }
-    
-    return localStorageService.getMachineMaintenanceNote(machineId);
   }
   
-  // Get machine by ID - fixed method to work with web and native environments
+  // Get machine by ID
   async getMachineById(machineId: string): Promise<any | null> {
     try {
       console.log(`Getting machine by ID: ${machineId}`);
       
-      // Try MongoDB first
-      if (!isWeb) {
-        try {
-          const mongoMachine = await mongoDbService.getMachineById(machineId);
-          if (mongoMachine) {
-            console.log(`Found machine in MongoDB: ${mongoMachine.name}`);
-            // Get the latest status
-            const status = await this.getMachineStatus(machineId);
-            return {
-              id: mongoMachine._id,
-              name: mongoMachine.name,
-              type: mongoMachine.type,
-              description: mongoMachine.description,
-              status: status || mongoMachine.status || 'available',
-              requiresCertification: mongoMachine.requiresCertification,
-              difficulty: mongoMachine.difficulty,
-              imageUrl: mongoMachine.imageUrl
-            };
-          }
-        } catch (mongoError) {
-          console.error("Failed to get machine from MongoDB:", mongoError);
+      if (isWeb) {
+        // For web, use the static machines data
+        const allMachines = machines;
+        const machine = allMachines.find(m => m.id === machineId);
+        
+        if (machine) {
+          // Get the latest status from API
+          const status = await this.getMachineStatus(machineId);
+          return {
+            ...machine,
+            status: status || 'available',
+            type: machine.type
+          };
         }
+        return null;
       }
       
-      // Fallback to local data
-      const allMachines = machines;
-      const machine = allMachines.find(m => m.id === machineId);
-      
-      if (machine) {
+      // For native, use MongoDB
+      const mongoMachine = await mongoDbService.getMachineById(machineId);
+      if (mongoMachine) {
+        console.log(`Found machine in MongoDB: ${mongoMachine.name}`);
         // Get the latest status
         const status = await this.getMachineStatus(machineId);
         return {
-          ...machine,
-          status: status || 'available',
-          type: machine.type
+          id: mongoMachine._id,
+          name: mongoMachine.name,
+          type: mongoMachine.type,
+          description: mongoMachine.description,
+          status: status || mongoMachine.status || 'available',
+          requiresCertification: mongoMachine.requiresCertification,
+          difficulty: mongoMachine.difficulty,
+          imageUrl: mongoMachine.imageUrl
         };
       }
       
@@ -122,39 +112,46 @@ export class MachineService {
     }
   }
   
-  // Helper method to get machines - now properly handles web and native environments
+  // Helper method to get machines
   async getMachines(): Promise<any[]> {
     try {
-      // First try to get machines from MongoDB (for consistency across devices)
-      if (!isWeb) {
-        try {
-          const mongoMachines = await mongoDbService.getMachines();
-          if (mongoMachines && mongoMachines.length > 0) {
-            console.log(`Retrieved ${mongoMachines.length} machines from MongoDB`);
-            return mongoMachines.map(machine => ({
-              id: machine._id.toString(),
-              name: machine.name,
-              type: machine.type,
-              description: machine.description,
-              status: machine.status.toLowerCase(),
-              requiresCertification: machine.requiresCertification,
-              difficulty: machine.difficulty,
-              imageUrl: machine.imageUrl
-            }));
-          }
-        } catch (mongoError) {
-          console.error("Failed to get machines from MongoDB:", mongoError);
-        }
+      if (isWeb) {
+        // For web, use the static machines data
+        return machines.map(machine => ({
+          ...machine,
+          type: machine.type
+        }));
       }
       
-      // Fallback to local data
+      // For native, use MongoDB
+      const mongoMachines = await mongoDbService.getMachines();
+      if (mongoMachines && mongoMachines.length > 0) {
+        console.log(`Retrieved ${mongoMachines.length} machines from MongoDB`);
+        return mongoMachines.map(machine => ({
+          id: machine._id.toString(),
+          name: machine.name,
+          type: machine.type,
+          description: machine.description,
+          status: machine.status.toLowerCase(),
+          requiresCertification: machine.requiresCertification,
+          difficulty: machine.difficulty,
+          imageUrl: machine.imageUrl
+        }));
+      }
+      
+      // Fallback to static data if MongoDB is empty
       return machines.map(machine => ({
         ...machine,
         type: machine.type
       }));
     } catch (error) {
       console.error("Error getting machines data:", error);
-      return [];
+      
+      // Fallback to static data on error
+      return machines.map(machine => ({
+        ...machine,
+        type: machine.type
+      }));
     }
   }
   
