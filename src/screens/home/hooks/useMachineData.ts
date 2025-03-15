@@ -29,19 +29,28 @@ export const useMachineData = (user, navigation) => {
       const mappedMachines = machines.map(machine => {
         const machineId = machine.id || machine._id;
         
+        // Map MongoDB IDs to simple IDs for known machines
+        if (machineId === "67d5658be9267b302f7aa015") {
+          return { ...machine, id: "1", name: "Laser Cutter", type: "Machine" };
+        } else if (machineId === "67d5658be9267b302f7aa016") {
+          return { ...machine, id: "2", name: "Ultimaker", type: "3D Printer" };
+        } else if (machineId === "67d5658be9267b302f7aa017") {
+          return { ...machine, id: "4", name: "X1 E Carbon 3D Printer", type: "3D Printer" };
+        }
+        
         // Apply special handling for machine IDs 1-6
         if (machineId === "1" || machineId === 1) {
-          return { ...machine, name: "Laser Cutter", type: "Machine" };
+          return { ...machine, id: "1", name: "Laser Cutter", type: "Machine" };
         } else if (machineId === "2" || machineId === 2) {
-          return { ...machine, name: "Ultimaker", type: "3D Printer" };
+          return { ...machine, id: "2", name: "Ultimaker", type: "3D Printer" };
         } else if (machineId === "3" || machineId === 3) {
-          return { ...machine, name: "Safety Cabinet", type: "Safety Cabinet" };
+          return { ...machine, id: "3", name: "Safety Cabinet", type: "Safety Cabinet" };
         } else if (machineId === "4" || machineId === 4) {
-          return { ...machine, name: "X1 E Carbon 3D Printer", type: "3D Printer" };
+          return { ...machine, id: "4", name: "X1 E Carbon 3D Printer", type: "3D Printer" };
         } else if (machineId === "5" || machineId === 5) {
-          return { ...machine, name: "Bambu Lab X1 E", type: "3D Printer" };
+          return { ...machine, id: "5", name: "Bambu Lab X1 E", type: "3D Printer" };
         } else if (machineId === "6" || machineId === 6) {
-          return { ...machine, name: "Machine Safety Course", type: "Safety Course" };
+          return { ...machine, id: "6", name: "Machine Safety Course", type: "Safety Course" };
         }
         
         return machine;

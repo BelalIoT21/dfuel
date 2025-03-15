@@ -56,13 +56,18 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   );
 
   const getMachineName = (certId: string) => {
-    // Handle known special cases first
-    if (certId === "6" || certId === 6) return "Machine Safety Course";
-    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
-    if (certId === "3" || certId === 3) return "Safety Cabinet";
+    // Handle specific MongoDB ID to normal ID mapping
+    if (certId === "67d5658be9267b302f7aa015") return "Laser Cutter";
+    if (certId === "67d5658be9267b302f7aa016") return "Ultimaker";
+    if (certId === "67d5658be9267b302f7aa017") return "X1 E Carbon 3D Printer";
+    
+    // Handle known special cases
     if (certId === "1" || certId === 1) return "Laser Cutter";
     if (certId === "2" || certId === 2) return "Ultimaker";
+    if (certId === "3" || certId === 3) return "Safety Cabinet";
     if (certId === "4" || certId === 4) return "X1 E Carbon 3D Printer";
+    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
+    if (certId === "6" || certId === 6) return "Machine Safety Course";
     
     // Check if it's a MongoDB ID format (24 hex chars)
     if (typeof certId === 'string' && certId.length === 24 && /^[0-9a-fA-F]{24}$/.test(certId)) {
@@ -145,7 +150,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         <TableBody>
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id || user._id}>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
@@ -203,16 +208,16 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete User</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                              This will permanently delete the user "{user.name}" ({user.id || user._id}) and all their data, including bookings and certifications. This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction 
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(user.id || user._id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
-                              {deletingUserId === user.id ? (
+                              {deletingUserId === (user.id || user._id) ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               ) : (
                                 <Trash2 className="h-4 w-4 mr-2" />
