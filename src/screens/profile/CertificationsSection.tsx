@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { List } from 'react-native-paper';
@@ -19,8 +18,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const types = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
-          // Skip fetch for Machine Safety Course and special case for Bambu X1 and Safety Cabinet
-          if (certId === "6") continue; 
+          // Handle special cases directly
+          if (certId === "6") {
+            names[certId] = "Machine Safety Course";
+            types[certId] = "Safety Course";
+            continue;
+          }
           if (certId === "5") {
             names[certId] = "Bambu Lab X1 E";
             types[certId] = "3D Printer";
@@ -50,26 +53,32 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   }, [user.certifications]);
 
-  // Filter out Machine Safety Course (ID: "6")
-  const filteredCertifications = user.certifications.filter(certId => certId !== "6");
-
-  // Helper function to get machine name with special handling for Bambu Lab X1 E
+  // Helper function to get machine name with special handling
   const getMachineName = (certId: string) => {
+    if (certId === "6") return "Machine Safety Course";
     if (certId === "5") return "Bambu Lab X1 E";
     if (certId === "3") return "Safety Cabinet";
     return machineNames[certId] || `Machine ${certId}`;
   };
 
+  // Helper function to get machine type with special handling
+  const getMachineType = (certId: string) => {
+    if (certId === "6") return "Safety Course";
+    if (certId === "5") return "3D Printer";
+    if (certId === "3") return "Safety Cabinet";
+    return machineTypes[certId] || "Machine";
+  };
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
-      {filteredCertifications && filteredCertifications.length > 0 ? (
+      {user.certifications && user.certifications.length > 0 ? (
         <List.Section>
-          {filteredCertifications.map((certId) => (
+          {user.certifications.map((certId) => (
             <List.Item
               key={certId}
               title={getMachineName(certId)}
-              description={machineTypes[certId] || "Machine"}
+              description={getMachineType(certId)}
               left={(props) => <List.Icon {...props} icon="certificate" color="#7c3aed" />}
             />
           ))}

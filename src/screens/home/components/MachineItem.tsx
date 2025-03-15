@@ -30,8 +30,14 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     }
   };
 
-  // Check if machine ID is 3 to handle Safety Cabinet specially
-  const machineType = machine.id === "3" ? "Safety Cabinet" : machine.type;
+  // Handle special machine types
+  let machineType = machine.type;
+  if (machine.id === "3") {
+    machineType = "Safety Cabinet";
+  } else if (machine.id === "6") {
+    machineType = "Safety Course";
+  }
+  
   const isCertified = userCertifications.includes(machine.id);
 
   return (

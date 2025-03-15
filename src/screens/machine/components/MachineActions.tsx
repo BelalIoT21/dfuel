@@ -28,14 +28,17 @@ const MachineActions = ({
   hasMachineSafetyCert = false,
   userId
 }: MachineActionsProps) => {
-  // Check if this machine type is bookable - Safety Cabinet is not bookable
-  const isBookable = machineType !== 'Safety Cabinet';
+  // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
+  const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
   
   // Determine if user can get certified (must have Machine Safety Course)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
   // Special handling for b.l.mishmish user
   const isSpecialUser = userId && (userId === "user-1741957466063" || userId.includes("b.l.mishmish"));
+  
+  // Is this the Machine Safety Course itself?
+  const isSafetyCourse = machineType === 'Safety Course';
 
   return (
     <View style={styles.actionContainer}>
@@ -57,7 +60,7 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {!isCertified && canGetCertified && (
+      {!isCertified && (canGetCertified || isSafetyCourse) && (
         <Button 
           mode="contained" 
           icon="certificate" 

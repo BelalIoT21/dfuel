@@ -33,6 +33,11 @@ export const useMachineDetails = (machineId, user, navigation) => {
           machineData.type = "Safety Cabinet";
         }
         
+        // Special handling for Machine Safety Course (ID: 6)
+        if (machineId === "6") {
+          machineData.type = "Safety Course";
+        }
+        
         const status = await userDatabase.getMachineStatus(machineId);
         setMachineStatus(status || 'available');
         setMachine(machineData);
