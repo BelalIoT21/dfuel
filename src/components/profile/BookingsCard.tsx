@@ -5,27 +5,29 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Mail, Calendar, Info, Trash2, RefreshCw, Loader2 } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { machineService } from '@/services/machineService';
 import { bookingService } from '@/services/bookingService';
 import mongoDbService from '@/services/mongoDbService';
+import BookingsList from './BookingsList';
+import EmptyBookingsView from './EmptyBookingsView';
 
 const BookingsCard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [bookingToDelete, setBookingToDelete] = useState<any>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [machineNames, setMachineNames] = useState({});
+  const { toast } = useToast();
   
   const fetchMachineNames = async () => {
-    const names: {[key: string]: string} = {};
+    const names = {};
     if (user?.bookings && user.bookings.length > 0) {
       for (const booking of user.bookings) {
         try {
@@ -63,12 +65,12 @@ const BookingsCard = () => {
     setSearchParams({ tab: 'certifications' });
   };
 
-  const handleViewBookingDetails = (booking: any) => {
+  const handleViewBookingDetails = (booking) => {
     setSelectedBooking(booking);
     setDialogOpen(true);
   };
 
-  const handleDeleteBooking = (booking: any) => {
+  const handleDeleteBooking = (booking) => {
     setBookingToDelete(booking);
     setDeleteDialogOpen(true);
   };
@@ -98,32 +100,17 @@ const BookingsCard = () => {
           title: "Booking Deleted",
           description: "Your booking has been deleted successfully.",
         });
+      }
+      
+      // Update user state to remove the booking
+      if (user.bookings) {
+        const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
+        // Update local storage 
+        const updatedUser = {...user, bookings: updatedBookings};
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
         
-        // Update user state to remove the booking
-        if (user.bookings) {
-          const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
-          // This is a bit hacky, but it will force a re-render
-          const updatedUser = {...user, bookings: updatedBookings};
-          localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-          // Force a page refresh to update the UI
-          window.location.reload();
-        }
-      } else {
-        // Even if database deletion failed, still remove from UI
-        if (user.bookings) {
-          const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
-          // Update local storage
-          const updatedUser = {...user, bookings: updatedBookings};
-          localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-          
-          toast({
-            title: "Booking Removed",
-            description: "The booking has been removed from your profile.",
-          });
-          
-          // Force a page refresh to update the UI
-          window.location.reload();
-        }
+        // Force a page refresh to update the UI
+        window.location.reload();
       }
     } catch (error) {
       console.error("Error deleting booking:", error);
@@ -149,20 +136,13 @@ const BookingsCard = () => {
     }
   };
 
-  const handleCancelBooking = (booking: any) => {
-    toast({
-      title: "Cancel Booking",
-      description: "Booking cancellation functionality will be implemented soon.",
-    });
-  };
-
   const handleRefreshBookings = () => {
     setIsRefreshing(true);
     // Force a page refresh to update the UI
     window.location.reload();
   };
 
-  const getMachineName = (machineId: string) => {
+  const getMachineName = (machineId) => {
     // First try to use the pre-fetched machine names
     if (machineNames[machineId]) {
       return machineNames[machineId];
@@ -180,7 +160,7 @@ const BookingsCard = () => {
     return machineMap[machineId] || `Machine ${machineId}`;
   };
 
-  const getMachineType = (machineId: string) => {
+  const getMachineType = (machineId) => {
     const machine = machines.find(m => m.id === machineId);
     return machine ? machine.type : "Unknown";
   };
@@ -191,10 +171,10 @@ const BookingsCard = () => {
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Mail size={20} className="text-purple-600" />
+              <Calendar size={20} className="text-purple-600" />
               Your Bookings
             </CardTitle>
-            <CardDescription>Recent and upcoming bookings</CardDescription>
+            <CardDescription>Recent and upcoming machine reservations</CardDescription>
           </div>
           <Button 
             variant="outline" 
@@ -213,58 +193,14 @@ const BookingsCard = () => {
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {user.bookings && user.bookings.length > 0 ? (
-            <div className="space-y-4">
-              {user.bookings.map((booking: any) => (
-                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
-                  <div>
-                    <p className="font-medium text-purple-800">{getMachineName(booking.machineId)}</p>
-                    <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      booking.status === 'Approved' 
-                        ? 'bg-green-100 text-green-800' 
-                        : booking.status === 'Canceled' || booking.status === 'Rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {booking.status}
-                    </span>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="border-purple-200 hover:bg-purple-50"
-                        onClick={() => booking.status === 'Approved' ? handleCancelBooking(booking) : handleViewBookingDetails(booking)}
-                      >
-                        {booking.status === 'Approved' ? 'Cancel' : 'View'}
-                      </Button>
-                      
-                      {/* Delete button for all bookings regardless of status */}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="border-red-200 hover:bg-red-50 text-red-700"
-                        onClick={() => handleDeleteBooking(booking)}
-                      >
-                        <Trash2 size={16} className="mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <BookingsList 
+              bookings={user.bookings}
+              getMachineName={getMachineName}
+              onViewDetails={handleViewBookingDetails}
+              onDeleteBooking={handleDeleteBooking}
+            />
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <p>You don't have any bookings yet.</p>
-              <Button 
-                className="mt-2 bg-purple-600 hover:bg-purple-700" 
-                onClick={handleBookMachine}
-              >
-                Book a Machine
-              </Button>
-            </div>
+            <EmptyBookingsView onBookMachine={handleBookMachine} />
           )}
         </CardContent>
       </Card>
