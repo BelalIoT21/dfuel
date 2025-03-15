@@ -4,20 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
-import { Mail, Calendar, Info } from 'lucide-react';
+import { Mail, Calendar, Info, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { machineService } from '@/services/machineService';
+import { bookingService } from '@/services/bookingService';
+import mongoDbService from '@/services/mongoDbService';
 
 const BookingsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   useEffect(() => {
     const fetchMachineNames = async () => {
@@ -52,6 +56,66 @@ const BookingsCard = () => {
   const handleViewBookingDetails = (booking: any) => {
     setSelectedBooking(booking);
     setDialogOpen(true);
+  };
+
+  const handleDeleteBooking = (booking: any) => {
+    setBookingToDelete(booking);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBooking = async () => {
+    if (!bookingToDelete) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Try MongoDB first for direct database deletion
+      let success = false;
+      try {
+        success = await mongoDbService.deleteBooking(bookingToDelete.id);
+        console.log(`MongoDB deleteBooking result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB delete booking error:", mongoError);
+      }
+      
+      // If MongoDB fails, try the regular service
+      if (!success) {
+        success = await bookingService.deleteBooking(bookingToDelete.id);
+      }
+      
+      if (success) {
+        toast({
+          title: "Booking Deleted",
+          description: "Your booking has been deleted successfully.",
+        });
+        
+        // Update user state to remove the booking
+        if (user.bookings) {
+          const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
+          // This is a bit hacky, but it will force a re-render
+          const updatedUser = {...user, bookings: updatedBookings};
+          localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+          // Force a page refresh to update the UI
+          window.location.reload();
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete booking. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while deleting the booking.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+      setDeleteDialogOpen(false);
+    }
   };
 
   const handleCancelBooking = (booking: any) => {
@@ -113,14 +177,27 @@ const BookingsCard = () => {
                     }`}>
                       {booking.status}
                     </span>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-purple-200 hover:bg-purple-50"
-                      onClick={() => booking.status === 'Approved' ? handleCancelBooking(booking) : handleViewBookingDetails(booking)}
-                    >
-                      {booking.status === 'Approved' ? 'Cancel' : 'View'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-purple-200 hover:bg-purple-50"
+                        onClick={() => booking.status === 'Approved' ? handleCancelBooking(booking) : handleViewBookingDetails(booking)}
+                      >
+                        {booking.status === 'Approved' ? 'Cancel' : 'View'}
+                      </Button>
+                      
+                      {/* Delete button for all bookings regardless of status */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-red-200 hover:bg-red-50 text-red-700"
+                        onClick={() => handleDeleteBooking(booking)}
+                      >
+                        <Trash2 size={16} className="mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -184,6 +261,47 @@ const BookingsCard = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Booking</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {bookingToDelete && (
+            <div className="py-4">
+              <p className="text-sm font-semibold">{getMachineName(bookingToDelete.machineId)}</p>
+              <p className="text-sm text-gray-500">{bookingToDelete.date} at {bookingToDelete.time}</p>
+              <p className="text-sm text-gray-500">Status: <span className={`
+                ${bookingToDelete.status === 'Approved' && 'text-green-600'} 
+                ${bookingToDelete.status === 'Pending' && 'text-yellow-600'}
+                ${(bookingToDelete.status === 'Rejected' || bookingToDelete.status === 'Canceled') && 'text-red-600'}
+              `}>{bookingToDelete.status}</span></p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteBooking}
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Deleting..." : "Delete Booking"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

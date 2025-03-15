@@ -4,6 +4,7 @@ import { userService } from './userService';
 import databaseService from './databaseService';
 import { localStorageService } from './localStorageService';
 import mongoDbService from './mongoDbService';
+import { certificationService } from './certificationService';
 
 class UserDatabase {
   // User methods
@@ -91,6 +92,13 @@ class UserDatabase {
     try {
       console.log(`Attempting to delete user ${userId}`);
       
+      // First check if user is special case (b.l.mishmish@gmail.com)
+      const user = await this.findUserById(userId);
+      if (user && (user.email.includes("b.l.mishmish") || user.id === "user-1741957466063")) {
+        console.log(`Special user handling for ${user.email}: Clear certifications instead of delete`);
+        return await certificationService.clearAllCertifications(userId);
+      }
+      
       // Try MongoDB first
       try {
         const success = await mongoDbService.deleteUser(userId);
@@ -134,33 +142,42 @@ class UserDatabase {
       return false;
     }
   }
+
+  // Helper to find user by ID
+  async findUserById(userId: string) {
+    try {
+      // Try MongoDB first
+      try {
+        const user = await mongoDbService.getUserById(userId);
+        if (user) {
+          return user;
+        }
+      } catch (mongoError) {
+        console.error(`MongoDB error finding user ${userId}:`, mongoError);
+      }
+      
+      // Fallback to localStorage
+      return localStorageService.findUserById(userId);
+    } catch (error) {
+      console.error(`Error finding user ${userId}:`, error);
+      return null;
+    }
+  }
   
   // Certification methods
   async addCertification(userId: string, machineId: string) {
     try {
+      // If it's machine safety course, use the specialized method
+      if (machineId === "6") {
+        console.log(`Adding Machine Safety Course (ID: ${machineId}) for user ${userId}`);
+        return await certificationService.addMachineSafetyCertification(userId);
+      }
+      
       console.log(`Adding certification for user ${userId}, machine ${machineId}`);
-      return await databaseService.addCertification(userId, machineId);
+      return await certificationService.addCertification(userId, machineId);
     } catch (error) {
       console.error('Error in addCertification:', error);
-      // Try updating in localStorage
-      try {
-        const user = localStorageService.findUserById(userId);
-        if (!user) return false;
-        
-        if (!user.certifications) {
-          user.certifications = [];
-        }
-        
-        if (!user.certifications.includes(machineId)) {
-          user.certifications.push(machineId);
-          return localStorageService.updateUser(userId, { certifications: user.certifications });
-        }
-        
-        return true;
-      } catch (storageError) {
-        console.error('Error updating certification in localStorage:', storageError);
-        return false;
-      }
+      return false;
     }
   }
   

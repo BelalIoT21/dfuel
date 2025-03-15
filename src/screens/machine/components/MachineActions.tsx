@@ -12,6 +12,8 @@ interface MachineActionsProps {
   onGetCertified: () => void;
   onBookMachine: () => void;
   isAdmin?: boolean;
+  hasMachineSafetyCert?: boolean;
+  userId?: string;
 }
 
 const MachineActions = ({ 
@@ -22,10 +24,18 @@ const MachineActions = ({
   onTakeQuiz, 
   onGetCertified, 
   onBookMachine,
-  isAdmin = false
+  isAdmin = false,
+  hasMachineSafetyCert = false,
+  userId
 }: MachineActionsProps) => {
   // Check if this machine type is bookable
   const isBookable = machineType !== 'Safety Cabinet';
+  
+  // Determine if user can get certified (must have Machine Safety Course)
+  const canGetCertified = hasMachineSafetyCert || isAdmin;
+  
+  // Special handling for b.l.mishmish user
+  const isSpecialUser = userId && (userId === "user-1741957466063" || userId.includes("b.l.mishmish"));
 
   return (
     <View style={styles.actionContainer}>
@@ -47,12 +57,13 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {!isCertified && (
+      {!isCertified && canGetCertified && (
         <Button 
           mode="contained" 
           icon="certificate" 
           style={styles.actionButton}
           onPress={onGetCertified}
+          disabled={isSpecialUser} // Disable for special users
         >
           Get Certified
         </Button>

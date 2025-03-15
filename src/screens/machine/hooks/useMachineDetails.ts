@@ -9,6 +9,7 @@ export const useMachineDetails = (machineId, user, navigation) => {
   const [machineStatus, setMachineStatus] = useState('available');
   const [loading, setLoading] = useState(true);
   const [isCertified, setIsCertified] = useState(false);
+  const [hasMachineSafetyCert, setHasMachineSafetyCert] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -35,6 +36,12 @@ export const useMachineDetails = (machineId, user, navigation) => {
         if (user.certifications && user.certifications.includes(machineId)) {
           setIsCertified(true);
         }
+        
+        // Check if user has completed Machine Safety Course
+        const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
+        if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
+          setHasMachineSafetyCert(true);
+        }
       } catch (error) {
         console.error('Error loading machine details:', error);
         Alert.alert('Error', 'Failed to load machine details');
@@ -51,6 +58,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
     machineStatus,
     loading,
     isCertified,
-    setIsCertified
+    hasMachineSafetyCert,
+    setIsCertified,
+    userId: user?.id
   };
 };
