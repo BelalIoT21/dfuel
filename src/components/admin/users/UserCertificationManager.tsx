@@ -216,9 +216,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       case "1": return "Laser Cutter";
       case "2": return "Ultimaker";
       case "3": return "Safety Cabinet";
-      case "4": return "Bambu Lab X1 E"; // Added ID 4
+      case "4": return "Bambu Lab X1 E";
       case "5": return "Bambu Lab X1 E";
       case "6": return "Machine Safety Course";
+      case "7": return "X1 E Carbon 3D Printer";
       default: return `Machine ${machineId}`;
     }
   };
@@ -234,6 +235,17 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }));
   }
 
+  // Common machines that can be added as certifications
+  const commonMachines = [
+    { id: "6", name: "Machine Safety Course" },
+    { id: "3", name: "Safety Cabinet" },
+    { id: "1", name: "Laser Cutter" },
+    { id: "2", name: "Ultimaker" },
+    { id: "4", name: "Bambu Lab X1 E" },
+    { id: "5", name: "Bambu Lab X1 E" },
+    { id: "7", name: "X1 E Carbon 3D Printer" },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -247,7 +259,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <h4 className="text-sm font-medium mb-2">Machine Certifications</h4>
+          <h4 className="text-sm font-medium mb-2">Current Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
             {/* Display all user certifications with remove buttons */}
             {getUserCertifications().map(cert => (
@@ -265,6 +277,33 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 </Button>
               </div>
             ))}
+            
+            {user?.certifications?.length === 0 && (
+              <div className="text-sm text-gray-500 italic text-center p-2">
+                User has no certifications
+              </div>
+            )}
+          </div>
+          
+          <h4 className="text-sm font-medium mt-6 mb-2">Add Certification</h4>
+          <div className="grid grid-cols-1 gap-2">
+            {commonMachines
+              .filter(machine => !user?.certifications?.includes(machine.id))
+              .map(machine => (
+                <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
+                  <span>{machine.name}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddCertification(user.id || user._id, machine.id)}
+                    disabled={loading === machine.id}
+                    className="bg-green-50 hover:bg-green-100 border-green-200"
+                  >
+                    {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add
+                  </Button>
+                </div>
+              ))}
           </div>
           
           {user?.certifications?.length > 0 && (

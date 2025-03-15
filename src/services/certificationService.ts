@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { apiService } from './apiService';
@@ -143,7 +142,7 @@ export class CertificationService {
     }
   }
   
-  // Machine Safety Course certification management - simplified without special user handling
+  // Machine Safety Course certification management
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID

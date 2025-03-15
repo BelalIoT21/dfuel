@@ -24,12 +24,13 @@ const CertificationsCard = () => {
         data["6"] = { name: "Machine Safety Course", type: "Safety Course" };
         data["5"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
         data["4"] = { name: "Bambu Lab X1 E", type: "3D Printer" }; // Added for ID 4
+        data["7"] = { name: "X1 E Carbon 3D Printer", type: "3D Printer" };
         data["3"] = { name: "Safety Cabinet", type: "Safety Cabinet" };
         
         if (user?.certifications) {
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["3", "4", "5", "6"].includes(certId)) continue;
+            if (["3", "4", "5", "6", "7"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
@@ -67,7 +68,7 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
-  // Get user certifications, but exclude Machine Safety Course (ID 6)
+  // Get user certifications, include all certifications including Machine Safety Course (ID 6)
   const userCertifications = user.certifications
     .map(certId => ({
       id: certId,
