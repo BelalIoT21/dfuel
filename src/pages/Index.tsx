@@ -5,9 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import ConnectionStatus from '@/components/api/ConnectionStatus';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -68,11 +66,6 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          
-          {/* Server Status Display */}
-          <div className="mt-4">
-            <ConnectionStatus />
-          </div>
         </div>
 
         <AnimatePresence mode="wait">
