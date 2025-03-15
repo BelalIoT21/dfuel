@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,11 +53,16 @@ const AdminMachines = () => {
     );
   }
 
-  const filteredMachines = machines.filter(
-    (machine) =>
+  // Filter out equipment and safety cabinets, only show actual machines
+  const filteredMachines = machines
+    .filter(machine => 
+      machine.type !== 'Equipment' && 
+      machine.type !== 'Safety Cabinet'
+    )
+    .filter(machine =>
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
