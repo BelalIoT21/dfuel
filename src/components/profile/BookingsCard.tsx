@@ -27,15 +27,28 @@ const BookingsCard = () => {
   const [bookings, setBookings] = useState([]);
   const { toast } = useToast();
   
-  // Load bookings from user object but ensure we have a valid array
+  // Load bookings from localStorage directly rather than user object
   useEffect(() => {
-    if (user) {
-      // Handle case where user.bookings might be undefined or null
-      const userBookings = user.bookings || [];
-      console.log("User bookings loaded:", userBookings);
-      setBookings(userBookings);
-    }
-  }, [user]);
+    const loadBookingsFromStorage = () => {
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          // Ensure bookings is an array even if it's null/undefined in storage
+          const userBookings = parsedUser.bookings || [];
+          console.log("User bookings loaded from localStorage:", userBookings);
+          setBookings(userBookings);
+        } catch (e) {
+          console.error("Error parsing user from localStorage:", e);
+          setBookings([]);
+        }
+      } else {
+        setBookings([]);
+      }
+    };
+    
+    loadBookingsFromStorage();
+  }, []);
   
   const fetchMachineNames = async () => {
     const names = {};
@@ -117,12 +130,16 @@ const BookingsCard = () => {
       const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
       setBookings(updatedBookings);
       
-      // If we have a user object with bookings, update it too
-      if (user && user.bookings) {
-        const updatedUserBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
-        // Update local storage 
-        const updatedUser = {...user, bookings: updatedUserBookings};
-        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+      // Update localStorage directly to ensure persistence
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          parsedUser.bookings = updatedBookings;
+          localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
+        } catch (e) {
+          console.error("Error updating localStorage after deletion:", e);
+        }
       }
     } catch (error) {
       console.error("Error deleting booking:", error);
@@ -130,6 +147,18 @@ const BookingsCard = () => {
       // Even if an error occurs, still remove from UI
       const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
       setBookings(updatedBookings);
+      
+      // Update localStorage directly
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          parsedUser.bookings = updatedBookings;
+          localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
+        } catch (e) {
+          console.error("Error updating localStorage after deletion error:", e);
+        }
+      }
       
       toast({
         title: "Booking Removed",
@@ -159,6 +188,7 @@ const BookingsCard = () => {
         });
       } catch (e) {
         console.error("Error parsing user from localStorage:", e);
+        setBookings([]);
       }
     } else {
       // If no user in localStorage, set empty bookings
@@ -196,28 +226,30 @@ const BookingsCard = () => {
   return (
     <>
       <Card className="border-purple-100">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar size={20} className="text-purple-600" />
-              Your Bookings
-            </CardTitle>
-            <CardDescription>Recent and upcoming machine reservations</CardDescription>
+        <CardHeader className="flex flex-col pb-2">
+          <div className="flex flex-row items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <Calendar size={24} className="text-purple-600 flex-shrink-0" />
+              <div>
+                <CardTitle className="text-xl sm:text-2xl">Your Bookings</CardTitle>
+                <CardDescription className="text-sm mt-1">Recent and upcoming machine reservations</CardDescription>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefreshBookings}
+              disabled={isRefreshing}
+              className="flex items-center gap-1 flex-shrink-0 ml-2"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefreshBookings}
-            disabled={isRefreshing}
-            className="flex items-center gap-1"
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh
-          </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {bookings && bookings.length > 0 ? (
