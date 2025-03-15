@@ -150,7 +150,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       let success = false;
       try {
-        // Try MongoDB first 
+        // Try direct MongoDB first
         try {
           success = await mongoDbService.updateUserCertifications(userId, "6");
           console.log(`MongoDB addCertification for Safety Course result: ${success}`);
@@ -160,8 +160,26 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         
         // If MongoDB fails, try certification service
         if (!success) {
+          console.log("MongoDB failed, trying certification service...");
           success = await certificationService.addMachineSafetyCertification(userId);
           console.log(`addMachineSafetyCertification result: ${success}`);
+        }
+        
+        // Last resort: add directly to localStorage
+        if (!success) {
+          console.log("Both methods failed, trying direct localStorage update...");
+          const user = localStorageService.findUserById(userId);
+          if (user) {
+            if (!user.certifications) user.certifications = [];
+            if (!user.certifications.includes("6")) {
+              user.certifications.push("6");
+              success = localStorageService.updateUser(userId, { certifications: user.certifications });
+              console.log(`Direct localStorage update result: ${success}`);
+            } else {
+              console.log("User already has certification in localStorage");
+              success = true;
+            }
+          }
         }
       } catch (error) {
         console.error("Error in addMachineSafetyCertification:", error);

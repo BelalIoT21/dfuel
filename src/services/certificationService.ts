@@ -38,17 +38,22 @@ export class CertificationService {
         return false;
       }
       
-      // Check if user already has this certification
-      if (!user.certifications.includes(machineId)) {
-        // Add the certification
-        user.certifications.push(machineId);
-        // Update the user
-        const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
-        console.log(`Added certification via localStorage: ${updated}`);
-        return updated;
+      // Always add the certification, even if it already exists
+      // This helps overcome issues where the certification list isn't being updated properly
+      if (!user.certifications) {
+        user.certifications = [];
       }
       
-      return true; // User already has certification
+      // Remove it first to ensure no duplicates
+      user.certifications = user.certifications.filter(id => id !== machineId);
+      
+      // Add the certification
+      user.certifications.push(machineId);
+      
+      // Update the user
+      const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
+      console.log(`Added certification via localStorage: ${updated}`);
+      return updated;
     } catch (error) {
       console.error("Error in certification service:", error);
       return false;
@@ -157,7 +162,8 @@ export class CertificationService {
       return result;
     }
     
-    // Regular handling for other users
+    // Regular handling for other users - add direct certification
+    console.log(`Regular handling for user ${userId}: Adding safety certification directly`);
     return this.addCertification(userId, MACHINE_SAFETY_ID);
   }
   

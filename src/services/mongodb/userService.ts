@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -114,10 +113,10 @@ class MongoUserService {
     if (!this.usersCollection) return false;
     
     try {
-      console.log(`Updating certification for user ${userId}, machine ${machineId}`);
+      console.log(`MongoDB: Updating certification for user ${userId}, machine ${machineId}`);
       const user = await this.getUserById(userId);
       if (!user) {
-        console.log(`User ${userId} not found in MongoDB`);
+        console.log(`MongoDB: User ${userId} not found`);
         return false;
       }
       
@@ -126,7 +125,7 @@ class MongoUserService {
       const isSafetyCourse = machineId === "6";
       
       if (isSafetyCourse && isSpecialUser) {
-        console.log(`Special handling for user ${userId} with Safety Course certification`);
+        console.log(`MongoDB: Special handling for user ${userId} with Safety Course certification`);
         // Clear all certifications first
         const clearResult = await this.usersCollection.updateOne(
           { id: userId },
@@ -136,30 +135,33 @@ class MongoUserService {
         // Then add just the safety course
         const addResult = await this.usersCollection.updateOne(
           { id: userId },
-          { $push: { certifications: machineId } }
+          { $addToSet: { certifications: machineId } }
         );
         
-        console.log(`Special handling results - clear: ${clearResult.modifiedCount}, add: ${addResult.modifiedCount}`);
+        console.log(`MongoDB: Special handling results - clear: ${clearResult.modifiedCount}, add: ${addResult.modifiedCount}`);
         return clearResult.modifiedCount > 0 || addResult.modifiedCount > 0;
       }
       
-      // Normal handling for other cases
-      if (!user.certifications.includes(machineId)) {
-        console.log(`Adding certification ${machineId} to user ${userId}`);
-        const result = await this.usersCollection.updateOne(
+      // Initialize certifications array if it doesn't exist
+      if (!user.certifications) {
+        await this.usersCollection.updateOne(
           { id: userId },
-          { $push: { certifications: machineId } }
+          { $set: { certifications: [] } }
         );
-        
-        console.log(`MongoDB update result: ${result.modifiedCount > 0}`);
-        return result.modifiedCount > 0;
-      } else {
-        console.log(`User ${userId} already has certification ${machineId}`);
       }
       
-      return true; // Certification already exists
+      // Use $addToSet to avoid duplicates
+      console.log(`MongoDB: Adding certification ${machineId} to user ${userId}`);
+      const result = await this.usersCollection.updateOne(
+        { id: userId },
+        { $addToSet: { certifications: machineId } }
+      );
+      
+      console.log(`MongoDB: Update result: modifiedCount=${result.modifiedCount}, matchedCount=${result.matchedCount}`);
+      return result.modifiedCount > 0 || 
+             (result.matchedCount > 0 && (user.certifications || []).includes(machineId));
     } catch (error) {
-      console.error("Error updating user certifications in MongoDB:", error);
+      console.error("MongoDB: Error updating user certifications:", error);
       return false;
     }
   }
@@ -243,7 +245,6 @@ class MongoUserService {
     }
   }
   
-  // Clear all bookings for all users (admin only)
   async clearAllUserBookings(): Promise<number> {
     await this.initCollection();
     if (!this.usersCollection) return 0;

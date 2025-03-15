@@ -1,3 +1,4 @@
+
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -166,12 +167,53 @@ class UserDatabase {
   // Certification methods
   async addCertification(userId: string, machineId: string) {
     try {
+      console.log(`UserDatabase.addCertification: userId=${userId}, machineId=${machineId}`);
+      
       // If it's machine safety course, use the specialized method
       if (machineId === "6") {
         console.log(`Adding Machine Safety Course (ID: ${machineId}) for user ${userId}`);
-        return await certificationService.addMachineSafetyCertification(userId);
+        
+        // Try MongoDB first
+        try {
+          const success = await mongoDbService.updateUserCertifications(userId, machineId);
+          if (success) {
+            console.log(`MongoDB directly added Machine Safety Course for user ${userId}`);
+            return true;
+          }
+        } catch (error) {
+          console.error("MongoDB error adding safety certification:", error);
+        }
+        
+        // Then try through certification service
+        try {
+          const success = await certificationService.addMachineSafetyCertification(userId);
+          console.log(`CertificationService added Machine Safety Course for user ${userId}: ${success}`);
+          return success;
+        } catch (error) {
+          console.error("CertificationService error adding safety certification:", error);
+        }
+        
+        // Last resort - direct localStorage
+        try {
+          const user = localStorageService.findUserById(userId);
+          if (user) {
+            if (!user.certifications) user.certifications = [];
+            if (!user.certifications.includes(machineId)) {
+              user.certifications.push(machineId);
+              const success = localStorageService.updateUser(userId, { certifications: user.certifications });
+              console.log(`Direct localStorage update for safety course: ${success}`);
+              return success;
+            }
+            return true; // User already has certification
+          }
+        } catch (error) {
+          console.error("localStorage error adding safety certification:", error);
+        }
+        
+        return false;
       }
       
+      // For other certifications, use the standard method
       console.log(`Adding certification for user ${userId}, machine ${machineId}`);
       return await certificationService.addCertification(userId, machineId);
     } catch (error) {
