@@ -1,9 +1,10 @@
+
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// API endpoints configuration with localhost as primary for local development
-// and relative path as fallback for deployed environments
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+// API endpoints configuration with relative path first for deployed environments
+// and localhost as fallback for local development
+const API_ENDPOINTS = ['/api', 'http://localhost:4000/api'];
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
