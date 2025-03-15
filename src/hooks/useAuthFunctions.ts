@@ -24,9 +24,13 @@ export const useAuthFunctions = (
         
         // Check if it's a 404 error (endpoint not found)
         if (apiResponse.status === 404) {
+          const apiUrl = apiResponse.error.includes('http') 
+            ? apiResponse.error.split('Endpoint not found:')[1]?.split('.')[0]?.trim() 
+            : 'API server';
+          
           toast({
             title: "Server connection error",
-            description: "Cannot connect to authentication server. Is your server running at http://localhost:4000?",
+            description: `Cannot connect to authentication server. Is your server running at ${apiUrl}?`,
             variant: "destructive"
           });
         } else {
@@ -44,8 +48,7 @@ export const useAuthFunctions = (
         const userData = apiResponse.data.user;
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          // Use sessionStorage for token, which is just for the current session
-          // and doesn't persist with app refresh
+          // Store token in localStorage for persistence
           localStorage.setItem('token', apiResponse.data.token);
         }
         
@@ -102,7 +105,7 @@ export const useAuthFunctions = (
         
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
@@ -134,7 +137,7 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });

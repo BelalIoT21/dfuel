@@ -1,8 +1,8 @@
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-// Use the environment variable or default to localhost for the API
-const BASE_URL = getEnv('API_URL', 'http://localhost:4000/api');
+// Use the environment variable for the API URL
+const BASE_URL = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
 
 interface ApiResponse<T> {
   data: T | null;
@@ -11,6 +11,11 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
+  // Get the current base URL
+  getBaseUrl(): string {
+    return BASE_URL;
+  }
+
   private async request<T>(
     endpoint: string, 
     method: string = 'GET', 
@@ -62,9 +67,11 @@ class ApiService {
         console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
+          const serverBaseUrl = BASE_URL.split('/api')[0];
+          
           toast({
             title: 'API Error',
-            description: `Endpoint not found: ${url}. Make sure your server is running on ${BASE_URL.split('/api')[0]}.`,
+            description: `Endpoint not found: ${url}. Please check if the server is running at ${serverBaseUrl}.`,
             variant: 'destructive'
           });
           

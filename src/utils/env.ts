@@ -6,12 +6,15 @@
 // Default values for environment variables
 const ENV_DEFAULTS = {
   MONGODB_URI: 'mongodb://localhost:27017/learnit',
-  API_URL: 'http://localhost:4000/api'
+  API_URL: 'https://learnit-server.onrender.com/api' // Default to deployed server
 };
 
 // Load environment variables into the application
 export const loadEnv = (): void => {
   console.log('Environment variables loaded');
+  // Log the current API URL
+  console.log('MongoDB connection URI:', getEnv('MONGODB_URI'));
+  console.log('API URL:', getEnv('API_URL'));
 };
 
 // Set environment variables with validation
@@ -21,7 +24,7 @@ export const setEnv = (key: string, value: string): void => {
     return;
   }
   
-  console.log(`Environment variable set: ${key}`);
+  console.log(`Environment variable set: ${key} = ${value}`);
   
   // In a web environment, we could store this in sessionStorage for the current session
   try {

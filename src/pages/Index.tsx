@@ -7,6 +7,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { setEnv } from '@/utils/env';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -26,6 +27,14 @@ const Index = () => {
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
+          });
+        } else if (response.error) {
+          console.error("Server connection error:", response.error);
+          setServerStatus('disconnected');
+          toast({
+            title: 'Server Connection Failed',
+            description: 'Could not connect to the backend server. You may want to change the API URL in settings.',
+            variant: 'destructive'
           });
         }
       } catch (error) {
@@ -63,6 +72,24 @@ const Index = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
+  
+  const handleChangeApiUrl = () => {
+    const currentUrl = apiService.getBaseUrl();
+    const newUrl = window.prompt("Enter new API URL:", currentUrl);
+    
+    if (newUrl && newUrl !== currentUrl) {
+      setEnv('API_URL', newUrl);
+      toast({
+        title: 'API URL Updated',
+        description: `API URL changed to: ${newUrl}. Please refresh the page.`,
+      });
+      
+      // Refresh the page after 2 seconds to reload with new API URL
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  };
 
   // Debug rendering
   console.log("Rendering Index component");
@@ -76,8 +103,18 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              Server status: {serverStatus}
+            <div className="mt-2 flex flex-col items-center">
+              <div className={`text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+                Server status: {serverStatus}
+              </div>
+              {serverStatus === 'disconnected' && (
+                <button 
+                  onClick={handleChangeApiUrl}
+                  className="text-xs underline text-purple-600 mt-1"
+                >
+                  Change API URL
+                </button>
+              )}
             </div>
           )}
         </div>
