@@ -19,6 +19,18 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     machine.type = 'Machine';
   });
   
+  // Calculate total certifications, including Safety Course certifications
+  const totalCertifications = allUsers.reduce((total, user) => {
+    // Count regular machine certifications
+    const machineCertCount = user.certifications ? user.certifications.length : 0;
+    
+    // Add 1 for Safety Course certification if user has any certifications
+    // (assuming if they have any certification, they've completed safety course)
+    const hasSafetyCert = machineCertCount > 0 ? 1 : 0;
+    
+    return total + machineCertCount + hasSafetyCert;
+  }, 0);
+  
   // Basic statistics for the admin dashboard
   const stats = [
     { 
@@ -37,14 +49,14 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     },
     { 
       title: 'Certifications', 
-      value: allUsers.reduce((total, user) => total + user.certifications.length, 0), 
+      value: totalCertifications, 
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
       change: '',  // Removed change indicator
       link: '/admin/users'
     },
     { 
       title: 'Active Bookings', 
-      value: allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.length : 0), 0), 
+      value: allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.filter(b => b.status === 'Approved').length : 0), 0), 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
       change: '', // Removed change indicator
       link: '/admin/bookings'
