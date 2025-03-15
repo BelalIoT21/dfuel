@@ -42,10 +42,15 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Updated CORS configuration to explicitly allow requests from the frontend origin
 app.use(cors({
-  origin: '*', // Allow all origins for testing
+  origin: ['http://localhost:8080', 'https://learnit-client.vercel.app', 'https://lovableproject.com'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
@@ -105,6 +110,7 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Available at http://localhost:${PORT}`);
 });
 
 export default app;

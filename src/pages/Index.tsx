@@ -7,7 +7,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import { setEnv, getEnv } from '@/utils/env';
+import { getEnv } from '@/utils/env';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -37,7 +37,7 @@ const Index = () => {
           setServerStatus('disconnected');
           toast({
             title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. You may want to change the API URL in settings.',
+            description: 'Could not connect to the backend server. Please ensure the server is running.',
             variant: 'destructive'
           });
         }
@@ -100,38 +100,6 @@ const Index = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
-  
-  const handleChangeApiUrl = () => {
-    const currentUrl = apiService.getBaseUrl();
-    const newUrl = window.prompt("Enter new API URL:", currentUrl);
-    
-    if (newUrl && newUrl !== currentUrl) {
-      // Validate URL format
-      try {
-        // Simple URL validation
-        if (!newUrl.startsWith('http')) {
-          throw new Error('URL must start with http:// or https://');
-        }
-        
-        setEnv('API_URL', newUrl);
-        toast({
-          title: 'API URL Updated',
-          description: `API URL changed to: ${newUrl}. Refreshing page...`,
-        });
-        
-        // Refresh the page after 2 seconds to reload with new API URL
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } catch (error) {
-        toast({
-          title: 'Invalid URL',
-          description: error instanceof Error ? error.message : 'Please enter a valid URL',
-          variant: 'destructive'
-        });
-      }
-    }
-  };
 
   // Debug rendering
   console.log("Rendering Index component");
@@ -149,14 +117,6 @@ const Index = () => {
               <div className={`text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
                 Server status: {serverStatus}
               </div>
-              {serverStatus === 'disconnected' && (
-                <button 
-                  onClick={handleChangeApiUrl}
-                  className="text-xs underline text-purple-600 mt-1"
-                >
-                  Change API URL
-                </button>
-              )}
             </div>
           )}
         </div>

@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -58,7 +57,8 @@ class ApiService {
       const options: RequestInit = {
         method,
         headers,
-        credentials: 'include',
+        credentials: 'include', // This is important for CORS with credentials
+        mode: 'cors', // Explicitly set CORS mode
       };
       
       if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
