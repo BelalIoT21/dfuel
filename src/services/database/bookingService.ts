@@ -11,7 +11,13 @@ export class BookingDatabaseService extends BaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
       console.log(`Attempting to create booking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
-      const response = await apiService.addBooking(userId, machineId, date, time);
+      // The API expects data with just machineId, date, and time (userId comes from the auth token)
+      const response = await apiService.request('bookings', 'POST', { 
+        machineId, 
+        date, 
+        time 
+      });
+      
       return response.data?.success || false;
     } catch (error) {
       console.error("API error, falling back to localStorage booking:", error);
