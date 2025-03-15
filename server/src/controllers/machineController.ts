@@ -1,6 +1,7 @@
 
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
+import { validationResult } from 'express-validator';
 
 // @desc    Get all machines
 // @route   GET /api/machines
@@ -44,6 +45,12 @@ export const getMachineById = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const createMachine = async (req: Request, res: Response) => {
   try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
     const { 
       name, 
       type, 
@@ -70,11 +77,13 @@ export const createMachine = async (req: Request, res: Response) => {
       details,
       specifications,
       certificationInstructions,
-      linkedCourseId,
-      linkedQuizId
+      linkedCourseId: linkedCourseId || undefined,
+      linkedQuizId: linkedQuizId || undefined,
+      bookedTimeSlots: []
     });
 
     const createdMachine = await machine.save();
+    console.log('Machine created successfully:', createdMachine);
     res.status(201).json(createdMachine);
   } catch (error) {
     console.error('Error in createMachine:', error);

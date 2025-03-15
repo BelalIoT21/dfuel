@@ -14,40 +14,37 @@ import { body } from 'express-validator';
 const router = express.Router();
 
 // Get all machines
-router.get('/', getMachines);
+router.route('/').get(getMachines);
 
 // Get machine by ID
-router.get('/:id', getMachineById);
+router.route('/:id').get(getMachineById);
 
 // Create machine (admin only)
-router.post(
-  '/',
+router.route('/').post(
   protect,
   admin,
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('type').notEmpty().withMessage('Type is required'),
-    body('description').notEmpty().withMessage('Description is required'),
-    body('difficulty').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Valid difficulty level is required')
+    body('description').notEmpty().withMessage('Description is required')
   ],
   createMachine
 );
 
 // Update machine (admin only)
-router.put('/:id', protect, admin, updateMachine);
+router.route('/:id').put(protect, admin, updateMachine);
 
 // Update machine status (admin only)
-router.put(
-  '/:id/status',
+router.route('/:id/status').put(
   protect,
   admin,
   [
-    body('status').isIn(['Available', 'Maintenance', 'In Use']).withMessage('Valid status is required')
+    body('status').isIn(['Available', 'Maintenance', 'Out of Order']).withMessage('Valid status is required')
   ],
   updateMachineStatus
 );
 
 // Delete machine (admin only)
-router.delete('/:id', protect, admin, deleteMachine);
+router.route('/:id').delete(protect, admin, deleteMachine);
 
 export default router;
