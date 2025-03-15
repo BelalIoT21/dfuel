@@ -45,14 +45,20 @@ export const loginUser = async (req: Request, res: Response) => {
         console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
       }
       
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        debug: { userExists: false, dbConnected: true }
+      });
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       console.log(`Password mismatch for user: ${email}`);
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        debug: { userExists: true, passwordMatch: false }
+      });
     }
 
     console.log(`Login successful for user: ${email}`);
