@@ -2,6 +2,8 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
+import { useState, useEffect } from 'react';
+import { machineService } from '@/services/machineService';
 
 interface UsersTableProps {
   users: any[];
@@ -10,11 +12,38 @@ interface UsersTableProps {
 }
 
 export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTableProps) => {
+  const [allMachines, setAllMachines] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        const fetchedMachines = await machineService.getMachines();
+        setAllMachines(fetchedMachines);
+      } catch (error) {
+        console.error('Error fetching machines:', error);
+        setAllMachines(machines); // Fallback to local data
+      }
+    };
+    
+    fetchMachines();
+  }, []);
+
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Helper function to get machine name by ID
+  const getMachineName = (certId: string) => {
+    // First try to find from fetched machines
+    const machine = allMachines.find(m => m.id === certId);
+    if (machine) return machine.name;
+    
+    // Fallback to local data
+    const localMachine = machines.find(m => m.id === certId);
+    return localMachine ? localMachine.name : `Machine ${certId}`;
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -45,18 +74,15 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
                 <TableCell>{new Date(user.lastLogin).toLocaleString()}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {user.certifications.length > 0 ? (
-                      user.certifications.map((cert: string) => {
-                        const machine = machines.find(m => m.id === cert);
-                        return (
-                          <span 
-                            key={cert} 
-                            className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                          >
-                            {machine?.name || cert}
-                          </span>
-                        );
-                      })
+                    {user.certifications && user.certifications.length > 0 ? (
+                      user.certifications.map((cert: string) => (
+                        <span 
+                          key={cert} 
+                          className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+                        >
+                          {getMachineName(cert)}
+                        </span>
+                      ))
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
                     )}

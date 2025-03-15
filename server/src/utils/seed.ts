@@ -55,45 +55,44 @@ export const seedDatabase = async () => {
       certifications: []
     });
 
-    // Create machines
+    // Create machines with specific names matching the image
     console.log('Creating machines...');
     const machines = [
       {
-        name: '3D Printer - Prusa i3',
+        name: 'Laser Cutter',
         type: '3D Printer',
-        description: 'A high-quality 3D printer for detailed models.',
+        description: 'A high-quality laser cutter for detailed cutting projects.',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/machines/laser-cutter.jpg'
+      },
+      {
+        name: 'Ultimaker',
+        type: '3D Printer',
+        description: 'Ultimaker 3D printer for precise prototyping and modeling.',
         status: 'Available',
         requiresCertification: true,
         difficulty: 'Intermediate',
         imageUrl: '/machines/3d-printer.jpg'
       },
       {
-        name: 'Laser Cutter - Glowforge',
-        type: 'Laser Cutter',
-        description: 'Precision laser cutter for various materials.',
+        name: 'X1 E Carbon 3D Printer',
+        type: '3D Printer',
+        description: 'Advanced 3D printer for carbon fiber composites.',
         status: 'Available',
         requiresCertification: true,
         difficulty: 'Advanced',
-        imageUrl: '/machines/laser-cutter.jpg'
+        imageUrl: '/machines/carbon-printer.jpg'
       },
       {
-        name: 'CNC Router - Shapeoko',
-        type: 'CNC Router',
-        description: 'CNC router for wood and soft metals.',
-        status: 'Maintenance',
-        requiresCertification: true,
-        difficulty: 'Advanced',
-        maintenanceNote: 'Replacing spindle motor. Expected back online on Friday.',
-        imageUrl: '/machines/cnc-router.jpg'
-      },
-      {
-        name: 'Sewing Machine - Industrial',
-        type: 'Sewing Machine',
-        description: 'Industrial sewing machine for heavy fabrics.',
+        name: 'Bambu Lab X1 E',
+        type: '3D Printer',
+        description: 'High-speed multi-material 3D printer with exceptional print quality.',
         status: 'Available',
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: '/machines/sewing-machine.jpg'
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/machines/bambu-printer.jpg'
       },
       {
         name: 'Soldering Station',
@@ -116,8 +115,10 @@ export const seedDatabase = async () => {
     // Add some certifications to regular user
     console.log('Adding certifications to regular user...');
     regularUser.certifications = [
-      createdMachines[0]._id.toString(), // 3D Printer
-      createdMachines[3]._id.toString()  // Sewing Machine
+      createdMachines[0]._id.toString(), // Laser Cutter
+      createdMachines[1]._id.toString(), // Ultimaker
+      createdMachines[2]._id.toString(), // X1 E Carbon 3D Printer
+      createdMachines[3]._id.toString()  // Bambu Lab X1 E
     ];
     await regularUser.save();
 

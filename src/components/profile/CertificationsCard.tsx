@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   
   if (!user) return null;
 
@@ -22,14 +22,9 @@ const CertificationsCard = () => {
     .map(machine => ({
       id: machine.id,
       name: machine.name,
-      date: new Date().toLocaleDateString(), // In a real app, this would come from the database
+      date: format(new Date(), 'dd/MM/yyyy'), // In a real app, this would come from the database
       type: machine.type
     }));
-
-  const handleTakeSafetyCourse = () => {
-    const redirectPath = user.isAdmin ? '/admin' : '/dashboard';
-    navigate(redirectPath, { replace: true });
-  };
 
   const handleBookNow = (machineId) => {
     // Navigate directly to the booking page with the machine ID
@@ -67,8 +62,8 @@ const CertificationsCard = () => {
           <div className="text-center py-8 text-gray-500">
             <p>You haven't completed any certifications yet.</p>
             <Button 
-              className="mt-2 bg-purple-600 hover:bg-purple-700" 
-              onClick={handleTakeSafetyCourse}
+              className="mt-2 bg-purple-600 hover:bg-purple-700"
+              onClick={() => navigate('/dashboard')}
             >
               Take a Safety Course
             </Button>
