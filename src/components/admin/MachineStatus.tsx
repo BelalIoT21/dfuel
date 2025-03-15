@@ -48,6 +48,14 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         maintenanceNote
       );
       
+      if (success) {
+        // Update local state
+        setMachineData(machineData.map(machine => 
+          machine.id === selectedMachine.id 
+            ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
+            : machine
+        ));
+      }
     } catch (error) {
       console.error("Error updating machine status:", error);
     } finally {

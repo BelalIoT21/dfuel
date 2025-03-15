@@ -27,21 +27,13 @@ const Index = () => {
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
-        } else {
-          console.log("Server health check failed");
-          setServerStatus('disconnected');
-          toast({
-            title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
-            variant: 'destructive'
-          });
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+          description: 'Could not connect to the backend server. Please try again later.',
           variant: 'destructive'
         });
       }
@@ -60,25 +52,20 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    const success = await login(email, password);
-    if (success) {
-      console.log("Login successful, navigating to home");
-      navigate('/home');
-    }
+    await login(email, password);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    const success = await register(email, password, name);
-    if (success) {
-      console.log("Registration successful, navigating to home");
-      navigate('/home');
-    }
+    await register(email, password, name);
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
+
+  // Debug rendering
+  console.log("Rendering Index component");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -90,9 +77,7 @@ const Index = () => {
           </p>
           {serverStatus && (
             <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              {serverStatus === 'connected' 
-                ? 'Connected to server' 
-                : 'Server connection failed. Please ensure the server is running at http://localhost:4000.'}
+              Server status: {serverStatus}
             </div>
           )}
         </div>

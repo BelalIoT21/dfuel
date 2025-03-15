@@ -6,6 +6,7 @@ import { certificationService } from '@/services/certificationService';
 import { machines } from '@/utils/data';
 import { Loader2, Trash } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
+import { localStorageService } from '@/services/localStorageService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -132,6 +133,22 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           console.log(`addCertification result: ${success}`);
         }
         
+        // Last resort: add directly to localStorage
+        if (!success) {
+          console.log("Both methods failed, trying direct localStorage update...");
+          const user = localStorageService.findUserById(userId);
+          if (user) {
+            if (!user.certifications) user.certifications = [];
+            if (!user.certifications.includes("6")) {
+              user.certifications.push("6");
+              success = localStorageService.updateUser(userId, { certifications: user.certifications });
+              console.log(`Direct localStorage update result: ${success}`);
+            } else {
+              console.log("User already has certification in localStorage");
+              success = true;
+            }
+          }
+        }
       } catch (error) {
         console.error("Error in addCertification:", error);
       }
@@ -227,6 +244,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         console.error("MongoDB error clearing certifications:", mongoError);
       }
       
+      if (!success) {
+        success = await localStorageService.updateUser(user.id, { certifications: [] });
+        console.log(`LocalStorage clearCertifications result: ${success}`);
+      }
       
       if (success) {
         toast({

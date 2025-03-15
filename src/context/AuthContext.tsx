@@ -1,59 +1,39 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
-import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
-// Create the auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const authFunctions = useAuthFunctions(user, setUser);
 
-  // Load user from API tokens on initial load
+  // Load user from tokens on initial load (web) or storage (native)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        setLoading(true);
-        console.log("Loading user from storage...");
+        // For native, still try to get from AsyncStorage
+        const storedUser = await storage.getItem('learnit_user');
         
-        // For native, try to get from AsyncStorage
-        if (!isWeb()) {
-          console.log("Native environment detected");
-          const storedUser = await storage.getItem('learnit_user');
-          
-          if (storedUser) {
-            console.log("User found in storage");
-            setUser(JSON.parse(storedUser));
-          } else {
-            console.log("No user found in storage");
-          }
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
         } else {
-          // For web, try to get from token in sessionStorage
-          console.log("Web environment detected");
-          const token = sessionStorage.getItem('token');
-          
+          // For web, try to get from token
+          const token = localStorage.getItem('token');
           if (token) {
-            console.log("Token found, attempting to get current user");
             try {
               const response = await apiService.getCurrentUser();
               if (response.data && response.data.user) {
-                console.log("User retrieved from API");
                 setUser(response.data.user);
-              } else {
-                console.log("No user data returned from API");
               }
             } catch (error) {
               console.error('Error getting current user:', error);
-              console.log("No user in storage, trying token authentication");
             }
-          } else {
-            console.log("No token found in sessionStorage");
           }
         }
       } catch (error) {
@@ -66,16 +46,151 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadUser();
   }, []);
 
-  // Helper function to check if running in web environment
-  const isWeb = () => {
-    return typeof window !== 'undefined' && typeof document !== 'undefined';
+  // Login function
+  const login = async (email: string, password: string) => {
+    try {
+      const authenticatedUser = await userDatabase.authenticate(email, password);
+      
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        return true;
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
-  // Combine auth functions with user state
+  // Register function
+  const register = async (email: string, password: string, name: string) => {
+    try {
+      const newUser = await userDatabase.registerUser(email, password, name);
+      
+      if (newUser) {
+        setUser(newUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
+        return true;
+      } else {
+        throw new Error('Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    await storage.removeItem('learnit_user');
+  };
+
+  // Add certification
+  const addCertification = async (machineId: string) => {
+    if (!user) return false;
+    
+    try {
+      const success = await userDatabase.addCertification(user.id, machineId);
+      
+      if (success) {
+        // Update local user state with new certification
+        const updatedUser = {
+          ...user,
+          certifications: [...user.certifications, machineId]
+        };
+        
+        setUser(updatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error adding certification:', error);
+      return false;
+    }
+  };
+
+  // Update profile
+  const updateProfile = async (name: string, email: string) => {
+    if (!user) return false;
+    
+    try {
+      const success = await userDatabase.updateUserProfile(user.id, { name, email });
+      
+      if (success) {
+        const updatedUser = { ...user, name, email };
+        setUser(updatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return false;
+    }
+  };
+
+  // Change password
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) return false;
+    
+    try {
+      // First verify the current password
+      const authenticatedUser = await userDatabase.authenticate(user.email, currentPassword);
+      
+      if (!authenticatedUser) {
+        throw new Error('Current password is incorrect');
+      }
+      
+      const success = await userDatabase.updateUserProfile(user.id, { password: newPassword });
+      return success;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  };
+
+  // Password reset functions
+  const requestPasswordReset = async (email: string) => {
+    try {
+      return await userDatabase.requestPasswordReset(email);
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      return false;
+    }
+  };
+
+  const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
+    try {
+      return await userDatabase.resetPassword(email, resetCode, newPassword);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
+    }
+  };
+
+  // Combine all functions into the auth context value
   const value: AuthContextType = {
     user,
     loading,
-    ...authFunctions
+    login,
+    register,
+    logout,
+    addCertification,
+    updateProfile,
+    changePassword,
+    requestPasswordReset,
+    resetPassword,
   };
 
   return (

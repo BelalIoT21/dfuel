@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
-import { storage } from '@/utils/storage';
 
 export const useAuthFunctions = (
   user: User | null, 
@@ -33,15 +32,13 @@ export const useAuthFunctions = (
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
-        // Save the token for future API requests in sessionStorage
+        // Save the token for future API requests
         if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        // Also save to storage for persistence
-        await storage.setItem('learnit_user', JSON.stringify(userData));
-        
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -49,6 +46,7 @@ export const useAuthFunctions = (
         return true;
       }
       
+      // If we get here, the API returned no data and no error, which is odd
       toast({
         title: "Login failed",
         description: "The server returned an unexpected response. Please try again.",
@@ -60,7 +58,7 @@ export const useAuthFunctions = (
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. Please ensure the server is running.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -91,12 +89,13 @@ export const useAuthFunctions = (
         console.log("API registration successful:", apiResponse.data);
         const userData = apiResponse.data.user;
         
-        // Save the token for future API requests in sessionStorage
+        // Save the token for future API requests
         if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -114,7 +113,7 @@ export const useAuthFunctions = (
       console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Please ensure the server is running.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -125,7 +124,8 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('learnit_user');
+    localStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });
