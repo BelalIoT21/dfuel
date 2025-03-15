@@ -9,6 +9,8 @@ import { UsersTable } from '../components/admin/users/UsersTable';
 import { AdminAccessRequired } from '../components/admin/users/AdminAccessRequired';
 import { UserWithoutSensitiveInfo } from '../types/database';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
+import { StatsOverview } from '@/components/admin/StatsOverview';
+import { machines } from '@/utils/data';
 
 const AdminUsers = () => {
   const { user } = useAuth();
@@ -50,6 +52,11 @@ const AdminUsers = () => {
         </div>
         
         <h1 className="text-3xl font-bold mb-6">User Management</h1>
+        
+        {/* Add Stats Overview with user count */}
+        <div className="mb-6">
+          <StatsOverview allUsers={users} machines={machines} />
+        </div>
         
         <UserSearch 
           searchTerm={searchTerm}

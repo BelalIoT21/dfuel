@@ -22,6 +22,7 @@ export const PendingBookingsCard = ({
     setProcessingBookingId(bookingId);
     
     try {
+      console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${action}`);
       const success = await bookingService.updateBookingStatus(bookingId, action);
       
       if (success) {

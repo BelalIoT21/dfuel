@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -45,7 +44,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
-      setOpen(false); // Close dialog after action
     }
   };
 
@@ -77,7 +75,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
-      setOpen(false); // Close dialog after action
     }
   };
 
@@ -85,25 +82,20 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading('machineSafety');
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
-      // Use the localStorageService directly for Machine Safety Course
-      const userCerts = [...user.certifications];
-      if (!userCerts.includes("6")) {
-        userCerts.push("6");
-        const success = await certificationService.addCertification(userId, "6");
-        
-        if (success) {
-          toast({
-            title: "Machine Safety Course Completed",
-            description: "User has completed the machine safety course."
-          });
-          onCertificationAdded();
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to add machine safety certification.",
-            variant: "destructive"
-          });
-        }
+      const success = await certificationService.addMachineSafetyCertification(userId);
+      
+      if (success) {
+        toast({
+          title: "Machine Safety Course Completed",
+          description: "User has completed the machine safety course."
+        });
+        onCertificationAdded();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add machine safety certification.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Error adding machine safety certification:", error);
@@ -114,7 +106,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
-      setOpen(false); // Close dialog after action
     }
   };
 
@@ -122,24 +113,20 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading('machineSafety');
     try {
       console.log(`Removing Machine Safety Course (ID: 6) for user ${userId}`);
-      // Use the localStorageService directly for Machine Safety Course
-      const userCerts = [...user.certifications];
-      if (userCerts.includes("6")) {
-        const success = await certificationService.removeCertification(userId, "6");
-        
-        if (success) {
-          toast({
-            title: "Machine Safety Course Removed",
-            description: "User's machine safety certification has been removed."
-          });
-          onCertificationAdded();
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to remove machine safety certification.",
-            variant: "destructive"
-          });
-        }
+      const success = await certificationService.removeMachineSafetyCertification(userId);
+      
+      if (success) {
+        toast({
+          title: "Machine Safety Course Removed",
+          description: "User's machine safety certification has been removed."
+        });
+        onCertificationAdded();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to remove machine safety certification.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Error removing machine safety certification:", error);
@@ -150,7 +137,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
-      setOpen(false); // Close dialog after action
     }
   };
 

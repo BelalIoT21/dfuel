@@ -15,10 +15,10 @@ export const PendingActions = () => {
       const allBookings = await bookingService.getAllBookings();
       console.log(`Found ${allBookings.length} total bookings`);
       
-      const pendingBookings = allBookings.filter(booking => booking.status === 'Pending');
-      console.log(`Found ${pendingBookings.length} pending bookings`);
+      const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
+      console.log(`Found ${pendingOnly.length} pending bookings`);
       
-      setPendingBookings(pendingBookings);
+      setPendingBookings(pendingOnly);
     } catch (error) {
       console.error('Error fetching pending bookings:', error);
       setPendingBookings([]);
@@ -32,10 +32,10 @@ export const PendingActions = () => {
   }, [fetchPendingBookings]);
 
   // Handle booking status change to completely refresh the list
-  const handleBookingStatusChange = () => {
+  const handleBookingStatusChange = useCallback(() => {
     // Force immediate refresh of the bookings list
     fetchPendingBookings();
-  };
+  }, [fetchPendingBookings]);
 
   return (
     <div className="mb-8">
