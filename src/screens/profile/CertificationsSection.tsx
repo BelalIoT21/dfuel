@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { List } from 'react-native-paper';
@@ -40,9 +41,28 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             if (machine) {
               names[certId] = machine.name;
               types[certId] = machine.type || 'Machine';
+            } else {
+              // MongoDB IDs handling
+              if (certId.length === 24 && /^[0-9a-f]{24}$/i.test(certId)) {
+                try {
+                  // Try to get machine by MongoDB ID
+                  const mongoMachine = await machineService.getMachineByMongoId(certId);
+                  if (mongoMachine) {
+                    names[certId] = mongoMachine.name;
+                    types[certId] = mongoMachine.type || 'Machine';
+                    continue;
+                  }
+                } catch (mongoError) {
+                  console.error(`Error fetching MongoDB machine ${certId}:`, mongoError);
+                }
+              }
+              names[certId] = `Machine ${certId}`;
+              types[certId] = 'Machine';
             }
           } catch (error) {
             console.error(`Error fetching machine ${certId}:`, error);
+            names[certId] = `Machine ${certId}`;
+            types[certId] = 'Machine';
           }
         }
       }
@@ -58,6 +78,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     if (certId === "6") return "Machine Safety Course";
     if (certId === "5") return "Bambu Lab X1 E";
     if (certId === "3") return "Safety Cabinet";
+    
+    // MongoDB ID handling
+    if (certId.length === 24 && /^[0-9a-f]{24}$/i.test(certId)) {
+      return machineNames[certId] || `Machine ${certId}`;
+    }
+    
     return machineNames[certId] || `Machine ${certId}`;
   };
 

@@ -33,15 +33,50 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   
   useEffect(() => {
     const fetchMachines = async () => {
       try {
         const fetchedMachines = await machineService.getMachines();
+        console.log('Fetched machines for UsersTable:', fetchedMachines.length);
         setAllMachines(fetchedMachines);
+        
+        // Create a map of machine IDs to names for quick lookup
+        const namesMap = {};
+        
+        // Add special cases
+        namesMap["6"] = "Machine Safety Course";
+        namesMap["5"] = "Bambu Lab X1 E";
+        namesMap["3"] = "Safety Cabinet";
+        
+        // Add all machine names
+        fetchedMachines.forEach(machine => {
+          const id = machine._id || machine.id;
+          if (id) {
+            namesMap[id] = machine.name;
+          }
+        });
+        
+        // Add local machines as fallback
+        machines.forEach(machine => {
+          if (!namesMap[machine.id]) {
+            namesMap[machine.id] = machine.name;
+          }
+        });
+        
+        console.log('Created machine name map with', Object.keys(namesMap).length, 'entries');
+        setMachineNames(namesMap);
       } catch (error) {
         console.error('Error fetching machines:', error);
         setAllMachines(machines); // Fallback to local data
+        
+        // Create a map of local machine IDs to names for quick lookup
+        const namesMap = {};
+        machines.forEach(machine => {
+          namesMap[machine.id] = machine.name;
+        });
+        setMachineNames(namesMap);
       }
     };
     
@@ -59,11 +94,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     if (certId === "5") return "Bambu Lab X1 E";
     if (certId === "3") return "Safety Cabinet";
     
-    const machine = allMachines.find(m => m.id === certId);
-    if (machine) return machine.name;
-    
-    const localMachine = machines.find(m => m.id === certId);
-    return localMachine ? localMachine.name : `Machine ${certId}`;
+    return machineNames[certId] || `Machine ${certId}`;
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -131,7 +162,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         <TableBody>
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id || user._id}>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
@@ -151,6 +182,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                           <span 
                             key={cert} 
                             className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+                            title={cert}
                           >
                             {getMachineName(cert)}
                           </span>
@@ -195,10 +227,10 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction 
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(user.id || user._id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
-                              {deletingUserId === user.id ? (
+                              {deletingUserId === (user.id || user._id) ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               ) : (
                                 <Trash2 className="h-4 w-4 mr-2" />

@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -6,25 +7,74 @@ import { machines } from '../../utils/data';
 import { Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { machineService } from '@/services/machineService';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [machineData, setMachineData] = useState<{[key: string]: {name: string, type: string}}>({});
+  
+  useEffect(() => {
+    const loadMachineData = async () => {
+      try {
+        // Load machine data for every certification
+        const data = {};
+        
+        // Add special cases
+        data["6"] = { name: "Machine Safety Course", type: "Safety Course" };
+        data["5"] = { name: "Bambu Lab X1 E", type: "3D Printer" };
+        data["3"] = { name: "Safety Cabinet", type: "Safety Cabinet" };
+        
+        if (user?.certifications) {
+          for (const certId of user.certifications) {
+            // Skip special cases we've already handled
+            if (["6", "5", "3"].includes(certId)) continue;
+            
+            try {
+              const machine = await machineService.getMachineById(certId);
+              if (machine) {
+                data[certId] = {
+                  name: machine.name,
+                  type: machine.type || 'Machine'
+                };
+              } else {
+                data[certId] = {
+                  name: `Machine ${certId}`,
+                  type: 'Machine'
+                };
+              }
+            } catch (error) {
+              console.error(`Error loading machine data for ${certId}:`, error);
+              data[certId] = {
+                name: `Machine ${certId}`,
+                type: 'Machine'
+              };
+            }
+          }
+        }
+        
+        setMachineData(data);
+      } catch (error) {
+        console.error('Error loading machine data:', error);
+      }
+    };
+    
+    if (user) {
+      loadMachineData();
+    }
+  }, [user]);
   
   if (!user) return null;
 
-  // Get only real machines - exclude Machine Safety Course (ID 6)
-  const realMachines = machines.filter(machine => machine.id !== "6");
-
   // Get user certifications, but exclude Machine Safety Course (ID 6)
-  const userCertifications = realMachines
-    .filter(machine => user?.certifications.includes(machine.id))
-    .map(machine => ({
-      id: machine.id,
-      name: machine.name,
+  const userCertifications = user.certifications
+    .filter(certId => certId !== "6")
+    .map(certId => ({
+      id: certId,
+      name: machineData[certId]?.name || `Machine ${certId}`,
       date: format(new Date(), 'dd/MM/yyyy'), // In a real app, this would come from the database
-      type: machine.id === "3" ? "Safety Cabinet" : machine.type,
-      isBookable: machine.id === "3" ? false : (machine.type !== 'Safety Cabinet')
+      type: machineData[certId]?.type || 'Machine',
+      isBookable: certId !== "3" && machineData[certId]?.type !== 'Safety Cabinet'
     }));
 
   const handleBookNow = (machineId, isSafetyCabinet) => {

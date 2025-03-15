@@ -1,218 +1,182 @@
-import mongoUserService from './mongodb/userService';
-import mongoMachineService from './mongodb/machineService';
-import mongoSeedService from './mongodb/seedService';
-import { isWeb } from '../utils/platform';
-import { toast } from '@/components/ui/use-toast';
+
+import { apiService } from './apiService';
 
 class MongoDbService {
+  // Machine methods
+  async getAllMachines() {
+    try {
+      console.log('Getting all machines from MongoDB via API');
+      const response = await apiService.getMachines();
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Got ${response.data.length} machines from MongoDB`);
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error getting all machines from MongoDB:', error);
+      return [];
+    }
+  }
+  
+  async getMachineById(id: string) {
+    try {
+      console.log(`Getting machine by ID from MongoDB: ${id}`);
+      const response = await apiService.getMachineById(id);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Error getting machine by ID ${id} from MongoDB:`, error);
+      return null;
+    }
+  }
+  
+  // Special method for MongoDB ObjectIds
+  async getMachineByMongoId(mongoId: string) {
+    try {
+      console.log(`Getting machine by MongoDB ID: ${mongoId}`);
+      const response = await apiService.getMachineById(mongoId);
+      return response.data || null;
+    } catch (error) {
+      console.error(`Error getting machine by MongoDB ID ${mongoId}:`, error);
+      return null;
+    }
+  }
+  
+  // User methods
   async getAllUsers() {
-    if (isWeb) return null;
+    try {
+      console.log('Getting all users from MongoDB via API');
+      const response = await apiService.getAllUsers();
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Got ${response.data.length} users from MongoDB`);
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error getting all users from MongoDB:', error);
+      return [];
+    }
+  }
+  
+  async getUserById(id: string) {
+    if (!id) {
+      console.error('Cannot get user: ID is undefined');
+      return null;
+    }
     
     try {
-      return await mongoUserService.getUsers();
+      console.log(`Getting user by ID from MongoDB: ${id}`);
+      const response = await apiService.getUserById(id);
+      return response.data || null;
     } catch (error) {
-      console.error("Error getting all users from MongoDB:", error);
+      console.error(`Error getting user by ID ${id} from MongoDB:`, error);
       return null;
     }
   }
   
-  async getUserById(userId: string) {
-    if (isWeb) return null;
-    
-    try {
-      return await mongoUserService.getUserById(userId);
-    } catch (error) {
-      console.error(`Error getting user ${userId} from MongoDB:`, error);
-      return null;
+  async updateUser(id: string, updates: any) {
+    if (!id) {
+      console.error('Cannot update user: ID is undefined');
+      return false;
     }
-  }
-  
-  async getUserByEmail(email: string) {
-    if (isWeb) return null;
     
     try {
-      return await mongoUserService.getUserByEmail(email);
+      console.log(`Updating user ${id} in MongoDB:`, updates);
+      const response = await apiService.updateUser(id, updates);
+      return response.success || false;
     } catch (error) {
-      console.error(`Error getting user by email ${email} from MongoDB:`, error);
-      return null;
-    }
-  }
-  
-  async createUser(user: any) {
-    if (isWeb) return null;
-    
-    try {
-      return await mongoUserService.createUser(user);
-    } catch (error) {
-      console.error("Error creating user in MongoDB:", error);
-      return null;
-    }
-  }
-  
-  async updateUser(userId: string, updates: any) {
-    if (isWeb) return false;
-    
-    try {
-      const result = await mongoUserService.updateUser(userId, updates);
-      return result;
-    } catch (error) {
-      console.error(`Error updating user ${userId} in MongoDB:`, error);
+      console.error(`Error updating user ${id} in MongoDB:`, error);
       return false;
     }
   }
   
-  async updateUserCertifications(userId: string, machineId: string) {
-    if (isWeb) return false;
+  async deleteUser(id: string) {
+    if (!id) {
+      console.error('Cannot delete user: ID is undefined');
+      return false;
+    }
     
     try {
-      return await mongoUserService.updateUserCertifications(userId, machineId);
+      console.log(`Deleting user ${id} from MongoDB`);
+      const response = await apiService.deleteUser(id);
+      return response.success || false;
+    } catch (error) {
+      console.error(`Error deleting user ${id} from MongoDB:`, error);
+      return false;
+    }
+  }
+  
+  // Certification methods
+  async updateUserCertifications(userId: string, machineId: string) {
+    if (!userId || !machineId) {
+      console.error('Cannot update certifications: User ID or Machine ID is undefined');
+      console.error(`userId=${userId}, machineId=${machineId}`);
+      return false;
+    }
+    
+    try {
+      console.log(`Updating certifications for user ${userId} in MongoDB: adding ${machineId}`);
+      const response = await apiService.addCertification(userId, machineId);
+      return response.success || false;
     } catch (error) {
       console.error(`Error updating certifications for user ${userId} in MongoDB:`, error);
       return false;
     }
   }
   
-  async getAllBookings() {
-    if (isWeb) return [];
-    
+  // Machine status methods
+  async getMachineStatus(machineId: string) {
     try {
-      const users = await mongoUserService.getUsers();
-      let allBookings = [];
-      
-      // Collect all bookings from all users
-      for (const user of users) {
-        if (user.bookings && Array.isArray(user.bookings)) {
-          const userBookings = user.bookings.map(booking => ({
-            ...booking,
-            userId: user.id,
-            userName: user.name
-          }));
-          allBookings = [...allBookings, ...userBookings];
-        }
-      }
-      
-      return allBookings;
+      console.log(`Getting status for machine ${machineId} from MongoDB`);
+      const response = await apiService.getMachineStatus(machineId);
+      return response.data || 'available';
     } catch (error) {
-      console.error("Error getting all bookings from MongoDB:", error);
-      return [];
+      console.error(`Error getting status for machine ${machineId} from MongoDB:`, error);
+      return 'available';
     }
   }
   
-  async updateBookingStatus(bookingId: string, status: string) {
-    if (isWeb) return false;
-    
+  async updateMachineStatus(machineId: string, status: string, note?: string) {
     try {
-      return await mongoUserService.updateBookingStatus(bookingId, status);
+      console.log(`Updating status for machine ${machineId} in MongoDB: ${status}`);
+      const response = await apiService.updateMachineStatus(machineId, status, note);
+      return response.success || false;
     } catch (error) {
-      console.error(`Error updating booking ${bookingId} status in MongoDB:`, error);
+      console.error(`Error updating status for machine ${machineId} in MongoDB:`, error);
       return false;
     }
   }
   
-  async addUserBooking(userId: string, booking: any) {
-    if (isWeb) return false;
-    
+  async getMachineMaintenanceNote(machineId: string) {
     try {
-      return await mongoUserService.addUserBooking(userId, booking);
+      console.log(`Getting maintenance note for machine ${machineId} from MongoDB`);
+      const response = await apiService.getMachineMaintenanceNote(machineId);
+      return response.data || null;
     } catch (error) {
-      console.error(`Error adding booking for user ${userId} in MongoDB:`, error);
-      return false;
+      console.error(`Error getting maintenance note for machine ${machineId} from MongoDB:`, error);
+      return null;
     }
   }
   
-  async deleteUser(userId: string) {
-    if (isWeb) return false;
-    
-    try {
-      // Find user first
-      const user = await mongoUserService.getUserById(userId);
-      if (!user) {
-        console.log(`User ${userId} not found in MongoDB`);
-        return false;
-      }
-      
-      // Delete from users collection (removed admin check to allow deleting admin users)
-      const deleteResult = await mongoUserService.deleteUser(userId);
-      console.log(`User ${userId} deletion result:`, deleteResult);
-      return deleteResult;
-    } catch (error) {
-      console.error(`Error deleting user ${userId} from MongoDB:`, error);
-      return false;
-    }
-  }
-  
+  // Booking methods
   async deleteBooking(bookingId: string) {
-    if (isWeb) return false;
-    
     try {
-      // Find user with this booking
-      const users = await mongoUserService.getUsers();
-      for (const user of users) {
-        if (user.bookings && Array.isArray(user.bookings)) {
-          const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
-          if (bookingIndex >= 0) {
-            // Remove booking from user
-            user.bookings.splice(bookingIndex, 1);
-            const updateResult = await mongoUserService.updateUser(user.id, { bookings: user.bookings });
-            console.log(`Booking ${bookingId} deletion result:`, updateResult);
-            return updateResult;
-          }
-        }
-      }
-      
-      console.log(`Booking ${bookingId} not found in any user`);
-      return false;
+      console.log(`Deleting booking ${bookingId} from MongoDB`);
+      const response = await apiService.deleteBooking(bookingId);
+      return response.success || false;
     } catch (error) {
       console.error(`Error deleting booking ${bookingId} from MongoDB:`, error);
       return false;
     }
   }
   
-  // Clear all bookings (admin function)
-  async clearAllBookings(): Promise<number> {
-    if (isWeb) return 0;
-    
+  async clearAllBookings() {
     try {
-      console.log("Attempting to clear all bookings across the system");
-      const count = await mongoUserService.clearAllUserBookings();
-      console.log(`Cleared ${count} bookings from all users`);
-      return count;
+      console.log('Clearing all bookings from MongoDB');
+      const response = await apiService.clearAllBookings();
+      return response.count || 0;
     } catch (error) {
-      console.error("Error clearing all bookings from MongoDB:", error);
+      console.error('Error clearing all bookings from MongoDB:', error);
       return 0;
-    }
-  }
-  
-  async getAllMachines() {
-    if (isWeb) return [];
-    
-    try {
-      return await mongoMachineService.getMachines();
-    } catch (error) {
-      console.error("Error getting all machines from MongoDB:", error);
-      return [];
-    }
-  }
-  
-  async updateMachine(machineId: string, updates: any) {
-    if (isWeb) return false;
-    
-    try {
-      return await mongoMachineService.updateMachine(machineId, updates);
-    } catch (error) {
-      console.error(`Error updating machine ${machineId} in MongoDB:`, error);
-      return false;
-    }
-  }
-  
-  async seedDatabase() {
-    if (isWeb) return false;
-    
-    try {
-      return await mongoSeedService.seed();
-    } catch (error) {
-      console.error("Error seeding MongoDB:", error);
-      return false;
     }
   }
 }

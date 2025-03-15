@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,6 +8,7 @@ import { machines } from '@/utils/data';
 import { Loader2, Trash } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
 import { localStorageService } from '@/services/localStorageService';
+import { machineService } from '@/services/machineService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -18,8 +20,32 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [allMachines, setAllMachines] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadMachines = async () => {
+      try {
+        const machines = await machineService.getMachines();
+        setAllMachines(machines);
+      } catch (error) {
+        console.error("Error loading machines:", error);
+      }
+    };
+    
+    loadMachines();
+  }, []);
 
   const handleAddCertification = async (userId: string, machineId: string) => {
+    if (!userId) {
+      console.error("Cannot add certification: user ID is undefined");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Cannot add certification.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(machineId);
     try {
       console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
@@ -112,6 +138,16 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const handleMachineSafetyCourse = async (userId: string) => {
+    if (!userId) {
+      console.error("Cannot add safety course: user ID is undefined");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Cannot add safety course.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading('machineSafety');
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
@@ -275,6 +311,19 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   const hasMachineSafetyCourse = user?.certifications?.includes("6");
+  
+  // Helper function to get MongoDB machine names
+  const getMachineName = (machineId: string) => {
+    if (machineId === "6") return "Machine Safety Course";
+    if (machineId === "5") return "Bambu Lab X1 E";
+    if (machineId === "3") return "Safety Cabinet";
+    
+    const machine = allMachines.find(m => m.id === machineId || m._id === machineId);
+    if (machine) return machine.name;
+    
+    const localMachine = machines.find(m => m.id === machineId);
+    return localMachine ? localMachine.name : `Machine ${machineId}`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -380,36 +429,73 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               </div>
             </div>
             
-            {machines.filter(m => m.id !== "5" && m.id !== "6" && m.id !== "3").map(machine => (
-              <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
-                <span>{machine.name}</span>
-                <div>
-                  {user.certifications?.includes(machine.id) ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveCertification(user.id, machine.id)}
-                      disabled={loading === machine.id}
-                      className="bg-red-50 hover:bg-red-100 border-red-200"
-                    >
-                      {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Remove
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddCertification(user.id, machine.id)}
-                      disabled={loading === machine.id || !hasMachineSafetyCourse}
-                      className={!hasMachineSafetyCourse ? "opacity-50" : ""}
-                    >
-                      {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
-                    </Button>
-                  )}
+            {/* MongoDB machines */}
+            {allMachines
+              .filter(m => m._id && m._id !== "5" && m._id !== "6" && m._id !== "3")
+              .map(machine => (
+                <div key={machine._id} className="flex justify-between items-center border p-2 rounded">
+                  <span>{machine.name}</span>
+                  <div>
+                    {user.certifications?.includes(machine._id) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveCertification(user.id, machine._id)}
+                        disabled={loading === machine._id}
+                        className="bg-red-50 hover:bg-red-100 border-red-200"
+                      >
+                        {loading === machine._id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Remove
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddCertification(user.id, machine._id)}
+                        disabled={loading === machine._id || !hasMachineSafetyCourse}
+                        className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                      >
+                        {loading === machine._id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            
+            {/* Local machines */}
+            {machines
+              .filter(m => m.id !== "5" && m.id !== "6" && m.id !== "3")
+              .map(machine => (
+                <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
+                  <span>{machine.name}</span>
+                  <div>
+                    {user.certifications?.includes(machine.id) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveCertification(user.id, machine.id)}
+                        disabled={loading === machine.id}
+                        className="bg-red-50 hover:bg-red-100 border-red-200"
+                      >
+                        {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Remove
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddCertification(user.id, machine.id)}
+                        disabled={loading === machine.id || !hasMachineSafetyCourse}
+                        className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                      >
+                        {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
           </div>
           
           {user.certifications?.length > 0 && (
