@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -156,6 +157,11 @@ export const deleteUser = async (req: Request, res: Response) => {
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if the user is trying to delete themselves
+    if (req.user._id.toString() === req.params.id) {
+      return res.status(400).json({ message: 'You cannot delete your own account while logged in' });
     }
     
     // Allow deleting any user (including admins)

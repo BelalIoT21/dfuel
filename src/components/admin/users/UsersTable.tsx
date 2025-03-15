@@ -1,10 +1,11 @@
+
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
 import { useState, useEffect } from 'react';
 import { machineService } from '@/services/machineService';
 import { Button } from "@/components/ui/button";
-import { Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -99,7 +100,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete user. They may have special permissions.",
+          description: "Failed to delete user. Please try again.",
           variant: "destructive"
         });
       }
@@ -133,7 +134,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
             filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.email || "Unknown Email"}</TableCell>
                 <TableCell>
                   <span className={`text-xs px-2 py-1 rounded ${
                     user.isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
@@ -174,41 +175,42 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                       onCertificationAdded={onCertificationAdded}
                     />
                     
-                    {!user.isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="border-red-200 hover:bg-red-50 text-red-700"
+                    {/* Allow deletion of any user, including admins, except the currently logged-in user */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="border-red-200 hover:bg-red-50 text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete User</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {user.isAdmin 
+                              ? "WARNING: You are about to delete an admin user. This will permanently delete the user and all their data. This action cannot be undone."
+                              : "This will permanently delete the user and all their data, including bookings and certifications. This action cannot be undone."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="bg-red-600 hover:bg-red-700"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              {deletingUserId === user.id ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4 mr-2" />
-                              )}
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                            {deletingUserId === user.id ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 mr-2" />
+                            )}
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
