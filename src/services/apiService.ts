@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { authUtils } from './authUtils';
 
@@ -11,6 +10,13 @@ class ApiService {
   
   constructor() {
     this.baseURL = 'http://localhost:4000/api';
+  }
+  
+  /**
+   * Set the authentication token
+   */
+  setToken(token: string | null): void {
+    authUtils.setToken(token);
   }
   
   /**
@@ -86,6 +92,13 @@ class ApiService {
   }
   
   /**
+   * Get the current user
+   */
+  async getCurrentUser(): Promise<any> {
+    return this.request('auth/me', 'GET', undefined, true);
+  }
+  
+  /**
    * Update user profile
    */
   async updateUserProfile(updates: any): Promise<any> {
@@ -135,6 +148,13 @@ class ApiService {
    * Create a booking
    */
   async createBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
+    return this.request('bookings', 'POST', { userId, machineId, date, time }, true);
+  }
+  
+  /**
+   * Add a booking
+   */
+  async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
     return this.request('bookings', 'POST', { userId, machineId, date, time }, true);
   }
   
