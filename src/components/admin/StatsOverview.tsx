@@ -18,10 +18,13 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   useEffect(() => {
     const fetchBookingsCount = async () => {
       try {
+        // Try fetching all bookings including pending ones
         const bookings = await bookingService.getAllBookings();
+        console.log("Fetched bookings:", bookings);
         setBookingsCount(bookings.length);
       } catch (error) {
         console.error("Error fetching bookings count:", error);
+        setBookingsCount(0);
       }
     };
     
@@ -36,7 +39,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       // For each user, count their machine certifications (excluding machine safety course)
       allUsers.forEach(user => {
         if (user.certifications) {
-          // Only filter out Machine Safety Course (ID: "6")
+          // Filter out Machine Safety Course (ID: "6")
           const machineCerts = user.certifications.filter(certId => 
             certId !== "6"
           );
@@ -70,7 +73,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       link: '/admin/machines'
     },
     { 
-      title: 'Certifications', 
+      title: 'Machine Certifications', 
       value: totalCertifications,
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
       change: '',  // Removed change indicator
