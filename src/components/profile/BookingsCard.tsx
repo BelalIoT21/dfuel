@@ -24,12 +24,23 @@ const BookingsCard = () => {
   const [bookingToDelete, setBookingToDelete] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [machineNames, setMachineNames] = useState({});
+  const [bookings, setBookings] = useState([]);
   const { toast } = useToast();
+  
+  // Load bookings from user object but ensure we have a valid array
+  useEffect(() => {
+    if (user) {
+      // Handle case where user.bookings might be undefined or null
+      const userBookings = user.bookings || [];
+      console.log("User bookings loaded:", userBookings);
+      setBookings(userBookings);
+    }
+  }, [user]);
   
   const fetchMachineNames = async () => {
     const names = {};
-    if (user?.bookings && user.bookings.length > 0) {
-      for (const booking of user.bookings) {
+    if (bookings && bookings.length > 0) {
+      for (const booking of bookings) {
         try {
           // Try to get the name from the machines array first (avoid API calls)
           const machineFromData = machines.find(m => m.id === booking.machineId);
@@ -53,10 +64,10 @@ const BookingsCard = () => {
   };
   
   useEffect(() => {
-    if (user) {
+    if (bookings.length > 0) {
       fetchMachineNames();
     }
-  }, [user]);
+  }, [bookings]);
   
   if (!user) return null;
 
@@ -102,34 +113,28 @@ const BookingsCard = () => {
         });
       }
       
-      // Update user state to remove the booking
-      if (user.bookings) {
-        const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
+      // Update local state to remove the booking regardless of API success
+      const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
+      setBookings(updatedBookings);
+      
+      // If we have a user object with bookings, update it too
+      if (user && user.bookings) {
+        const updatedUserBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
         // Update local storage 
-        const updatedUser = {...user, bookings: updatedBookings};
+        const updatedUser = {...user, bookings: updatedUserBookings};
         localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-        
-        // Force a page refresh to update the UI
-        window.location.reload();
       }
     } catch (error) {
       console.error("Error deleting booking:", error);
       
       // Even if an error occurs, still remove from UI
-      if (user.bookings) {
-        const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
-        // Update local storage
-        const updatedUser = {...user, bookings: updatedBookings};
-        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-        
-        toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from your profile.",
-        });
-        
-        // Force a page refresh to update the UI
-        window.location.reload();
-      }
+      const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
+      setBookings(updatedBookings);
+      
+      toast({
+        title: "Booking Removed",
+        description: "The booking has been removed from your profile.",
+      });
     } finally {
       setIsProcessing(false);
       setDeleteDialogOpen(false);
@@ -138,8 +143,31 @@ const BookingsCard = () => {
 
   const handleRefreshBookings = () => {
     setIsRefreshing(true);
-    // Force a page refresh to update the UI
-    window.location.reload();
+    
+    // Force a refresh of data from localStorage
+    const storedUser = localStorage.getItem('learnit_user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        // Ensure bookings is an array even if it's null/undefined in storage
+        const refreshedBookings = parsedUser.bookings || [];
+        setBookings(refreshedBookings);
+        
+        toast({
+          title: "Bookings Refreshed",
+          description: `Found ${refreshedBookings.length} bookings.`,
+        });
+      } catch (e) {
+        console.error("Error parsing user from localStorage:", e);
+      }
+    } else {
+      // If no user in localStorage, set empty bookings
+      setBookings([]);
+    }
+    
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
   };
 
   const getMachineName = (machineId) => {
@@ -192,9 +220,9 @@ const BookingsCard = () => {
           </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          {user.bookings && user.bookings.length > 0 ? (
+          {bookings && bookings.length > 0 ? (
             <BookingsList 
-              bookings={user.bookings}
+              bookings={bookings}
               getMachineName={getMachineName}
               onViewDetails={handleViewBookingDetails}
               onDeleteBooking={handleDeleteBooking}
