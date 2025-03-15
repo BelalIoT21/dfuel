@@ -78,7 +78,8 @@ userSchema.pre('save', async function (next) {
     next();
   } catch (error) {
     console.error(`Error hashing password: ${error}`);
-    next(error);
+    // Fix: Convert unknown error to appropriate type for next()
+    next(error instanceof Error ? error : new Error(String(error)));
   }
 });
 
