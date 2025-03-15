@@ -34,11 +34,12 @@ export const useAuthFunctions = (
         const userData = apiResponse.data.user;
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          localStorage.setItem('token', apiResponse.data.token);
+          // Use sessionStorage for token, which is just for the current session
+          // and doesn't persist with app refresh
+          sessionStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -91,11 +92,10 @@ export const useAuthFunctions = (
         
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          localStorage.setItem('token', apiResponse.data.token);
+          sessionStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -124,8 +124,7 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('learnit_user');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });

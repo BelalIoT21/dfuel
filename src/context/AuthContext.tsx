@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { User } from '@/types/database';
@@ -13,31 +12,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from tokens on initial load (web) or storage (native)
+  // Load user from token on initial load (using MongoDB via API)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // For native, still try to get from AsyncStorage
-        const storedUser = await storage.getItem('learnit_user');
-        
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        // Try to get current user from API
+        const response = await apiService.getCurrentUser();
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
         } else {
-          // For web, try to get from token
-          const token = localStorage.getItem('token');
-          if (token) {
-            try {
-              const response = await apiService.getCurrentUser();
-              if (response.data && response.data.user) {
-                setUser(response.data.user);
-              }
-            } catch (error) {
-              console.error('Error getting current user:', error);
-            }
-          }
+          // If no current user, user is not logged in
+          console.log("No active user session found");
         }
       } catch (error) {
-        console.error('Error loading user from storage:', error);
+        console.error('Error loading user session:', error);
       } finally {
         setLoading(false);
       }
@@ -53,8 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (authenticatedUser) {
         setUser(authenticatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
         return true;
       } else {
         throw new Error('Invalid credentials');
@@ -72,8 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (newUser) {
         setUser(newUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
         return true;
       } else {
         throw new Error('Registration failed');
@@ -87,8 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = async () => {
     setUser(null);
-    localStorage.removeItem('token');
-    await storage.removeItem('learnit_user');
+    // No need to clear localStorage anymore
   };
 
   // Add certification
@@ -106,8 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
@@ -128,8 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       

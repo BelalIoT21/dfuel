@@ -19,7 +19,7 @@ class MongoConnectionService {
   }
   
   async connect(): Promise<any | null> {
-    // In web environment, we don't need to connect directly to MongoDB
+    // In web environment, we don't connect directly to MongoDB - this is handled by the server
     console.log("Running in browser environment, using server API for MongoDB access");
     return null;
   }
@@ -30,7 +30,7 @@ class MongoConnectionService {
   }
 
   async getDb(): Promise<any | null> {
-    // In web environment, we don't need to access the DB directly
+    // In web environment, we don't access the DB directly
     console.log("Web environment - using API for MongoDB access");
     return null;
   }

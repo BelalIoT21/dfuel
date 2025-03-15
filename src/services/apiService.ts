@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -301,6 +300,29 @@ class ApiService {
   
   async deleteMachine(machineId: string) {
     return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
+  }
+  
+  // Storage-related API methods
+  async getStorageItem(key: string) {
+    return this.request<{ value: string }>(
+      `storage/${key}`,
+      'GET'
+    );
+  }
+  
+  async setStorageItem(key: string, value: string) {
+    return this.request<{ success: boolean }>(
+      'storage',
+      'POST',
+      { key, value }
+    );
+  }
+  
+  async removeStorageItem(key: string) {
+    return this.request<{ success: boolean }>(
+      `storage/${key}`,
+      'DELETE'
+    );
   }
 }
 
