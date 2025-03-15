@@ -12,8 +12,6 @@ import { apiConnection } from '@/services/api/apiConnection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { setEnv, getEnv } from '@/utils/env';
-import { Badge } from '@/components/ui/badge';
-import { Server } from 'lucide-react';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,7 +19,6 @@ const Index = () => {
   const navigate = useNavigate();
   const [customApiUrl, setCustomApiUrl] = useState('');
   const [showApiConfig, setShowApiConfig] = useState(false);
-  const currentApiUrl = getEnv('API_URL');
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -33,13 +30,7 @@ const Index = () => {
 
   // Load the current API URL
   useEffect(() => {
-    setCustomApiUrl(currentApiUrl);
-    
-    // Initialize connection with current API URL
-    apiConnection.setBaseUrl(currentApiUrl);
-    
-    // Check connection on component mount
-    checkServer();
+    setCustomApiUrl(getEnv('API_URL'));
   }, []);
 
   const handleLogin = async (email: string, password: string) => {
@@ -78,19 +69,6 @@ const Index = () => {
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-  };
-
-  const checkServer = async () => {
-    try {
-      console.log("Checking server health...");
-      const connected = await apiConnection.checkConnection(true);
-      
-      if (!connected) {
-        console.error("API connection failed");
-      }
-    } catch (error) {
-      console.error("Error checking server:", error);
-    }
   };
 
   const updateApiUrl = () => {
@@ -138,20 +116,6 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           
-          {/* API URL Banner */}
-          <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Server size={16} className="text-blue-500" />
-              <span className="font-medium">Using API:</span>
-            </div>
-            <Badge variant="outline" className="bg-white px-3 py-1 font-mono text-xs">
-              {currentApiUrl}
-            </Badge>
-            <p className="mt-2 text-xs text-gray-500">
-              Running locally? Make sure your server is started with <code>npm run server</code>
-            </p>
-          </div>
-          
           {/* Server Status Display */}
           <div className="mt-4">
             <ConnectionStatus />
@@ -170,7 +134,7 @@ const Index = () => {
             {showApiConfig && (
               <div className="mt-2 p-3 bg-gray-50 rounded">
                 <p className="text-xs text-gray-500 mb-2">
-                  You can configure a custom API URL below:
+                  The server might not be available. You can configure a custom API URL below:
                 </p>
                 <div className="flex gap-2">
                   <Input
@@ -187,23 +151,9 @@ const Index = () => {
                     Update
                   </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost" 
-                  className="mt-2 text-xs"
-                  onClick={() => {
-                    setCustomApiUrl('http://localhost:4000/api');
-                    setEnv('API_URL', 'http://localhost:4000/api');
-                    apiConnection.setBaseUrl('http://localhost:4000/api');
-                    checkServer();
-                    toast({
-                      title: "Default API URL Restored",
-                      description: "Using http://localhost:4000/api"
-                    });
-                  }}
-                >
-                  Reset to Default
-                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Make sure to start your local server with <code>npm run server</code> if using localhost.
+                </p>
               </div>
             )}
           </div>

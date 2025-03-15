@@ -32,7 +32,7 @@ export function ConnectionStatus() {
         
         toast({
           title: 'Server Connection Failed',
-          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Make sure your server is running.`,
+          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Please configure the API URL if needed.`,
           variant: 'destructive'
         });
         return;
@@ -71,7 +71,7 @@ export function ConnectionStatus() {
       
       toast({
         title: 'Server Connection Failed',
-        description: 'Could not connect to the backend server. Please check if the server is running.',
+        description: 'Could not connect to the backend server. Please try again later.',
         variant: 'destructive'
       });
     } finally {
@@ -111,10 +111,15 @@ export function ConnectionStatus() {
             <p className="max-w-xs text-xs">
               {serverStatus === 'connected' 
                 ? 'Connected to the backend server successfully.' 
-                : 'Unable to connect to the server. Make sure your server is running with "npm run server" in the server directory.'}
+                : 'Unable to connect to the server. You may need to start the server locally or configure the API URL.'}
             </p>
           </Tooltip.Content>
         </Tooltip>
+      </div>
+      
+      {/* Display API URL */}
+      <div className="mt-2 text-xs text-gray-500">
+        API URL: {apiConnection.getBaseUrl()}
       </div>
       
       {connectionDetails && connectionDetails.database && (
@@ -129,7 +134,7 @@ export function ConnectionStatus() {
       
       {serverStatus === 'disconnected' && (
         <div className="mt-2 text-xs text-red-500 max-w-xs text-center">
-          <p>The server is not running or not accessible. Make sure to start your server with <code>npm run server</code> in the server directory.</p>
+          <p>The server is not running or not accessible. If using localhost, make sure to start your server with <code>npm run server</code> in the server directory.</p>
         </div>
       )}
       
@@ -166,8 +171,8 @@ export function ConnectionStatus() {
           ) : (
             <div>
               <p>No connection details available.</p>
-              <p className="mt-2">Current API URL: {apiConnection.getBaseUrl()}</p>
-              <p className="mt-1">Default API URL: {getEnv('API_URL')}</p>
+              <p className="mt-2">Default API URL: {getEnv('API_URL')}</p>
+              <p className="mt-1">Current API URL: {apiConnection.getBaseUrl()}</p>
               <p className="mt-1">Connection Status: {serverStatus}</p>
               <p className="mt-1">Connection Checked: {apiConnection.hasConnectionBeenChecked() ? 'Yes' : 'No'}</p>
             </div>
