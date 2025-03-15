@@ -2,7 +2,7 @@
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import { userDatabaseService } from './userService';
-import mongoDbService from '../mongoDbService';
+import mongoUserService from '../mongodb/userService';
 
 /**
  * Service that handles all booking-related database operations.
@@ -26,15 +26,12 @@ export class BookingDatabaseService extends BaseService {
           return true;
         }
       } catch (apiError) {
-        console.error("API error, falling back to MongoDB:", apiError);
+        console.error("API error, falling back to direct MongoDB:", apiError);
       }
       
-      // If API fails, fall back to MongoDB
-      console.log("Using MongoDB fallback for booking");
-      
+      // If API fails, fall back to direct MongoDB service
       try {
-        // Connect to MongoDB first
-        await mongoDbService.connect();
+        console.log("Using direct MongoDB service for booking");
         
         // Create the booking object
         const booking = {
@@ -45,15 +42,32 @@ export class BookingDatabaseService extends BaseService {
           status: 'Pending' as const
         };
         
-        // Add booking to the user's bookings
-        const success = await mongoDbService.addUserBooking(userId, booking);
+        // Add booking directly with MongoDB user service
+        const success = await mongoUserService.addUserBooking(userId, booking);
         
-        console.log("Booking created via MongoDB:", success);
-        return success;
-      } catch (mongoError) {
-        console.error("MongoDB error:", mongoError);
-        // Even if MongoDB fails, we should update the user object in memory
-        // so at least the booking appears in the UI
+        if (success) {
+          console.log("Booking created via MongoDB service:", success);
+          return true;
+        } else {
+          console.error("MongoDB service failed to create booking");
+          
+          // Last resort: update the user object in memory
+          const user = await userDatabaseService.findUserById(userId);
+          if (user) {
+            if (!user.bookings) {
+              user.bookings = [];
+            }
+            
+            user.bookings.push(booking);
+            console.log("Booking saved in memory as last resort");
+            return true;
+          }
+        }
+        
+        return false;
+      } catch (error) {
+        console.error("Error with MongoDB service:", error);
+        // Memory fallback
         const user = await userDatabaseService.findUserById(userId);
         if (user) {
           if (!user.bookings) {
@@ -82,9 +96,8 @@ export class BookingDatabaseService extends BaseService {
 
   async getUserBookings(userId: string) {
     try {
-      // First try to get bookings from MongoDB
-      await mongoDbService.connect();
-      const user = await mongoDbService.getUserById(userId);
+      // First try to get bookings from MongoDB user service
+      const user = await mongoUserService.getUserById(userId);
       if (user?.bookings && user.bookings.length > 0) {
         return user.bookings;
       }
