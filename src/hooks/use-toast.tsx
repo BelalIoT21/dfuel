@@ -1,7 +1,8 @@
+
 import * as React from "react";
-import {
-  type ToastActionElement,
-  type ToastProps,
+import type {
+  ToastActionElement,
+  ToastProps,
 } from "../server/src/components/ui/toast";
 
 const TOAST_LIMIT = 5;
@@ -154,7 +155,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
-      onOpenChange: (open) => {
+      onOpenChange: (open: boolean) => {
         if (!open) dismiss();
       },
     },

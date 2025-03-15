@@ -1,35 +1,35 @@
 
-/**
- * This file provides platform detection utilities
- * to help with conditional rendering and functionality
- */
+// Platform detection utility
 
-export const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+// Check if running in a browser environment
+export const isBrowser = typeof window !== "undefined";
 
-export const isPlatformNative = (): boolean => {
-  if (typeof navigator !== 'undefined') {
-    return navigator.product === 'ReactNative';
-  }
-  return false;
-};
+// Basic check for native platforms
+export const isNative = false; // Simplified since we're targeting web
 
-export const isIOS = (): boolean => {
-  if (!isWeb) {
-    return false;
-  }
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-};
+// For web usage, we'll just define isWeb as true
+export const isWeb = true;
 
-export const isAndroid = (): boolean => {
-  if (!isWeb) {
-    return false;
-  }
-  return /Android/.test(navigator.userAgent);
-};
+// Helper function to detect iOS
+export function isIOS() {
+  if (!isBrowser) return false;
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+}
 
-export const isMobile = (): boolean => {
-  if (!isWeb) {
-    return true; // If not web, assume mobile
-  }
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
+// Helper function to detect Android
+export function isAndroid() {
+  if (!isBrowser) return false;
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /android/.test(userAgent);
+}
+
+// General mobile detection
+export function isMobile() {
+  if (!isBrowser) return false;
+  
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod|android|mobile/.test(userAgent);
+}
