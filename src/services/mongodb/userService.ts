@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -100,9 +99,6 @@ class MongoUserService {
         console.log(`MongoDB: User ${id} not found`);
         return false;
       }
-      
-      // No special handling for admin users - allow deletion of any user
-      console.log(`MongoDB: Deleting user ${id} (${user.isAdmin ? 'admin' : 'regular'} user)`);
       
       // Delete the user
       const result = await this.usersCollection.deleteOne({ id });

@@ -92,7 +92,7 @@ class UserDatabase {
         return false;
       }
       
-      // Delete from MongoDB - allow deletion of any user type
+      // Delete from MongoDB
       const success = await mongoDbService.deleteUser(userId);
       console.log(`User ${userId} deletion result:`, success);
       return success;
