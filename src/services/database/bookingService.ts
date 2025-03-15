@@ -250,9 +250,9 @@ export class BookingDatabaseService extends BaseService {
   private getMachineName(machineId: string): string {
     const machines = [
       { id: '1', name: 'Laser Cutter' },
-      { id: '2', name: '3D Printer' },
-      { id: '3', name: 'CNC Router' },
-      { id: '4', name: 'Vinyl Cutter' },
+      { id: '2', name: 'Ultimaker' },
+      { id: '3', name: 'X1 E Carbon 3D Printer' },
+      { id: '4', name: 'Bambu Lab X1 E' },
       { id: '5', name: 'Soldering Station' }
     ];
     
@@ -265,8 +265,8 @@ export class BookingDatabaseService extends BaseService {
     const machines = [
       { id: '1', type: 'Cutting' },
       { id: '2', type: 'Printing' },
-      { id: '3', type: 'Cutting' },
-      { id: '4', type: 'Cutting' },
+      { id: '3', type: 'Printing' },
+      { id: '4', type: 'Printing' },
       { id: '5', type: 'Electronics' }
     ];
     

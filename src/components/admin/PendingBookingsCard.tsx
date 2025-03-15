@@ -9,11 +9,13 @@ import { toast } from "@/components/ui/use-toast";
 import { apiService } from '@/services/apiService';
 import { userDatabaseService } from '@/services/database/userService';
 import { bookingService } from '@/services/bookingService';
+import { machineService } from '@/services/machineService';
 
 export const PendingBookingsCard = () => {
   const [pendingBookings, setPendingBookings] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
 
   // Load pending bookings
   useEffect(() => {
@@ -27,6 +29,23 @@ export const PendingBookingsCard = () => {
         const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
         console.log('Pending bookings found:', pendingOnly.length);
         setPendingBookings(pendingOnly);
+        
+        // Fetch machine names for display
+        const names: {[key: string]: string} = {};
+        for (const booking of pendingOnly) {
+          const machineId = booking.machineId || booking.machine;
+          if (!names[machineId]) {
+            try {
+              const machine = await machineService.getMachineById(machineId);
+              if (machine) {
+                names[machineId] = machine.name;
+              }
+            } catch (error) {
+              console.error(`Error fetching machine ${machineId}:`, error);
+            }
+          }
+        }
+        setMachineNames(names);
       } catch (error) {
         console.error('Error fetching pending bookings:', error);
         toast({
@@ -107,11 +126,17 @@ export const PendingBookingsCard = () => {
   
   // Get machine name by ID for better display
   const getMachineName = (machineId) => {
+    // First try to use the pre-fetched machine names
+    if (machineNames[machineId]) {
+      return machineNames[machineId];
+    }
+    
+    // Fall back to hardcoded map if needed
     const machines = {
       '1': 'Laser Cutter',
-      '2': '3D Printer',
-      '3': 'CNC Router',
-      '4': 'Vinyl Cutter',
+      '2': 'Ultimaker',
+      '3': 'X1 E Carbon 3D Printer',
+      '4': 'Bambu Lab X1 E',
       '5': 'Soldering Station'
     };
     
@@ -139,7 +164,7 @@ export const PendingBookingsCard = () => {
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-medium text-sm">
-                      {booking.machineName || getMachineName(booking.machineId)}
+                      {getMachineName(booking.machineId || booking.machine)}
                     </h4>
                     <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                       <User className="h-3 w-3" />
@@ -180,7 +205,7 @@ export const PendingBookingsCard = () => {
                           <div className="py-4">
                             <h3 className="font-semibold mb-2">Machine</h3>
                             <p className="text-gray-700 mb-4">
-                              {selectedBooking.machineName || getMachineName(selectedBooking.machineId)}
+                              {getMachineName(selectedBooking.machineId || selectedBooking.machine)}
                             </p>
                             
                             <h3 className="font-semibold mb-2">User</h3>

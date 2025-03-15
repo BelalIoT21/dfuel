@@ -194,9 +194,9 @@ export class BookingService {
   private getMachineName(machineId: string): string {
     const machineMap = {
       '1': 'Laser Cutter',
-      '2': '3D Printer',
-      '3': 'CNC Router',
-      '4': 'Vinyl Cutter',
+      '2': 'Ultimaker',
+      '3': 'X1 E Carbon 3D Printer',
+      '4': 'Bambu Lab X1 E',
       '5': 'Soldering Station'
     };
     

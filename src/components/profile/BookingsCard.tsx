@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,7 @@ import { Mail, Calendar, Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { machineService } from '@/services/machineService';
 
 const BookingsCard = () => {
   const { user } = useAuth();
@@ -16,6 +17,30 @@ const BookingsCard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
+  
+  useEffect(() => {
+    const fetchMachineNames = async () => {
+      const names: {[key: string]: string} = {};
+      if (user?.bookings && user.bookings.length > 0) {
+        for (const booking of user.bookings) {
+          try {
+            const machine = await machineService.getMachineById(booking.machineId);
+            if (machine) {
+              names[booking.machineId] = machine.name;
+            }
+          } catch (error) {
+            console.error(`Error fetching machine ${booking.machineId}:`, error);
+          }
+        }
+      }
+      setMachineNames(names);
+    };
+    
+    if (user) {
+      fetchMachineNames();
+    }
+  }, [user]);
   
   if (!user) return null;
 
@@ -37,8 +62,21 @@ const BookingsCard = () => {
   };
 
   const getMachineName = (machineId: string) => {
-    const machine = machines.find(m => m.id === machineId);
-    return machine ? machine.name : "Unknown Machine";
+    // First try to use the pre-fetched machine names
+    if (machineNames[machineId]) {
+      return machineNames[machineId];
+    }
+    
+    // Fall back to map if needed
+    const machineMap = {
+      '1': 'Laser Cutter',
+      '2': 'Ultimaker',
+      '3': 'X1 E Carbon 3D Printer',
+      '4': 'Bambu Lab X1 E',
+      '5': 'Soldering Station'
+    };
+    
+    return machineMap[machineId] || `Machine ${machineId}`;
   };
 
   const getMachineType = (machineId: string) => {
@@ -59,36 +97,33 @@ const BookingsCard = () => {
         <CardContent className="overflow-x-auto">
           {user.bookings && user.bookings.length > 0 ? (
             <div className="space-y-4">
-              {user.bookings.map((booking: any) => {
-                const machine = machines.find(m => m.id === booking.machineId);
-                return (
-                  <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
-                    <div>
-                      <p className="font-medium text-purple-800">{machine?.name}</p>
-                      <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        booking.status === 'Approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : booking.status === 'Canceled' || booking.status === 'Rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.status}
-                      </span>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="border-purple-200 hover:bg-purple-50"
-                        onClick={() => booking.status === 'Approved' ? handleCancelBooking(booking) : handleViewBookingDetails(booking)}
-                      >
-                        {booking.status === 'Approved' ? 'Cancel' : 'View'}
-                      </Button>
-                    </div>
+              {user.bookings.map((booking: any) => (
+                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+                  <div>
+                    <p className="font-medium text-purple-800">{getMachineName(booking.machineId)}</p>
+                    <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      booking.status === 'Approved' 
+                        ? 'bg-green-100 text-green-800' 
+                        : booking.status === 'Canceled' || booking.status === 'Rejected'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {booking.status}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-purple-200 hover:bg-purple-50"
+                      onClick={() => booking.status === 'Approved' ? handleCancelBooking(booking) : handleViewBookingDetails(booking)}
+                    >
+                      {booking.status === 'Approved' ? 'Cancel' : 'View'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
