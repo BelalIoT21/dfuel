@@ -1,5 +1,5 @@
 
-// Import directly using a relative path instead of aliased path
+// Import from the correct location
 import { useToast, toast } from "../../../../src/hooks/use-toast";
 
 export { useToast, toast };
