@@ -2,25 +2,29 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 
-// Health check controller
+// @desc    Get server health status
+// @route   GET /api/health
+// @access  Public
 export const healthCheck = (req: Request, res: Response) => {
+  console.log('Health check request received');
+  
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   
-  console.log(`Health check request received. DB Status: ${dbStatus}`);
-  
-  res.status(200).json({ 
-    status: 'success',
-    message: 'Server is up and running',
+  res.status(200).json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    database: {
-      status: dbStatus,
-      host: mongoose.connection.host || 'not connected'
-    },
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: dbStatus,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version
   });
 };
 
-// Simple ping endpoint for connectivity testing
+// @desc    Simple ping endpoint
+// @route   GET /api/health/ping
+// @access  Public
 export const ping = (req: Request, res: Response) => {
-  res.status(200).json({ pong: true });
+  console.log('Ping request received from:', req.ip);
+  res.status(200).json({ pong: true, time: new Date().toISOString() });
 };

@@ -19,23 +19,37 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        const response = await apiService.checkHealth();
-        if (response.data) {
-          console.log("Server health check:", response.data);
+        const response = await fetch('http://localhost:4000/health');
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Server health check:", data);
           setServerStatus('connected');
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
+        } else {
+          throw new Error(`Server returned ${response.status}`);
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please try again later.',
+          description: 'Could not connect to the backend server at localhost:4000. Please ensure the server is running.',
           variant: 'destructive'
         });
+        
+        // Try API service as fallback
+        try {
+          const apiResponse = await apiService.ping();
+          if (apiResponse.data && apiResponse.data.pong) {
+            setServerStatus('connected via API');
+          }
+        } catch (apiError) {
+          console.error("API service connection also failed:", apiError);
+        }
       }
     };
     
@@ -76,7 +90,7 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`mt-2 text-sm ${serverStatus.includes('connected') ? 'text-green-600' : 'text-red-600'}`}>
               Server status: {serverStatus}
             </div>
           )}

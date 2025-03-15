@@ -1,7 +1,8 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-const BASE_URL = '/api'; // This will be proxied to our backend server
+const BASE_URL = 'http://localhost:4000/api'; // Updated to explicitly use localhost:4000
 
 interface ApiResponse<T> {
   data: T | null;

@@ -43,14 +43,22 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: '*', // Allow all origins for testing
-  credentials: true
+  origin: ['http://localhost:3000', 'http://localhost:5173', '*'], // Allow frontend origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} from ${req.ip}`);
+  next();
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -105,6 +113,7 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`API available at http://localhost:${PORT}/api`);
 });
 
 export default app;

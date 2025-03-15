@@ -17,7 +17,9 @@ export const useAuthFunctions = (
       console.log("Login attempt for:", email);
       
       // API login
+      console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
+      console.log("API login response:", apiResponse);
       
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
@@ -35,6 +37,7 @@ export const useAuthFunctions = (
         // Save the token for future API requests
         if (apiResponse.data.token) {
           localStorage.setItem('token', apiResponse.data.token);
+          console.log("Token saved to localStorage");
         }
         
         setUser(userData as User);
