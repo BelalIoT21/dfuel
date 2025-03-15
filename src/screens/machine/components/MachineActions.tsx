@@ -34,8 +34,8 @@ const MachineActions = ({
   // Determine if user can get certified (must have Machine Safety Course)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
-  // Special handling for b.l.mishmish user
-  const isSpecialUser = userId && (userId === "user-1741957466063" || userId.includes("b.l.mishmish"));
+  // Special handling for special users
+  const isSpecialUser = userId && (userId === "user-1741957466063" || (userId && userId.includes("b.l.mishmish")));
   
   // Is this the Machine Safety Course itself?
   const isSafetyCourse = machineType === 'Safety Course';
@@ -60,13 +60,13 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {!isCertified && (canGetCertified || isSafetyCourse) && (
+      {(!isCertified && (canGetCertified || isSafetyCourse)) && (
         <Button 
           mode="contained" 
           icon="certificate" 
           style={styles.actionButton}
           onPress={onGetCertified}
-          disabled={isSpecialUser} // Disable for special users
+          disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
         >
           Get Certified
         </Button>

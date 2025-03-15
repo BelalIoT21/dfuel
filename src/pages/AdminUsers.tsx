@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '../context/AuthContext';
 import userDatabase from '../services/userDatabase';
 import { UserSearch } from '../components/admin/users/UserSearch';
 import { UsersTable } from '../components/admin/users/UsersTable';
@@ -12,11 +11,32 @@ import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { StatsOverview } from '@/components/admin/StatsOverview';
 import { machines } from '@/utils/data';
 
+// Use localStorage to check admin status instead of AuthContext
+import { storage } from '@/utils/storage';
+
 const AdminUsers = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserWithoutSensitiveInfo[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if current user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const storedUser = await storage.getItem('learnit_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setIsAdmin(user.isAdmin || false);
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+  }, []);
   
   const fetchUsers = async () => {
     try {
@@ -36,7 +56,7 @@ const AdminUsers = () => {
     fetchUsers();
   }, [toast]);
 
-  if (!user?.isAdmin) {
+  if (!isAdmin) {
     return <AdminAccessRequired />;
   }
 
