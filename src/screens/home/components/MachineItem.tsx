@@ -36,6 +36,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     machineType = "Safety Cabinet";
   } else if (machine.id === "6") {
     machineType = "Safety Course";
+  } else if (!machineType || machineType.trim() === '') {
+    machineType = "Machine";
   }
   
   // Only display machineType chip if there's an actual value

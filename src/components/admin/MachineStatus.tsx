@@ -58,8 +58,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       return "Safety Course";
     }
     
-    // Return machine type or "Unknown" if it's empty/undefined
-    return machine.type || "Unknown";
+    // Return machine type or "Machine" if it's empty/undefined
+    return machine.type || "Machine";
   };
 
   return (
@@ -85,7 +85,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                         {machine.name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {machineType && `Type: ${machineType}`}
+                        Type: {machineType}
                         {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
                       </div>
                     </div>
