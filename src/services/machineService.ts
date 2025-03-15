@@ -52,6 +52,16 @@ export class MachineService {
         console.error('Error getting machines from API:', apiError);
       }
       
+      // Use static mappings for certain IDs
+      const staticMachineMap = {
+        "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
+        "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
+        "3": { id: "3", name: "Safety Course", type: "Safety Course" },
+        "5": { id: "5", name: "X1 E Carbon 3D Printer", type: "3D Printer" },
+        "6": { id: "6", name: "Soldering Station", type: "Electronics" },
+        "8": { id: "8", name: "Safety Cabinet", type: "Workshop" }
+      };
+      
       // Fall back to local data
       console.log('Using local machine data:', machines.length);
       return machines;
@@ -63,6 +73,21 @@ export class MachineService {
   
   async getMachineById(id: string) {
     if (!id) return null;
+    
+    // Check for static machine mapping first for consistent names
+    const staticMachineMap: Record<string, any> = {
+      "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
+      "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
+      "3": { id: "3", name: "Safety Course", type: "Safety Course" },
+      "5": { id: "5", name: "X1 E Carbon 3D Printer", type: "3D Printer" },
+      "6": { id: "6", name: "Soldering Station", type: "Electronics" },
+      "8": { id: "8", name: "Safety Cabinet", type: "Workshop" }
+    };
+    
+    if (staticMachineMap[id]) {
+      console.log('Using static machine mapping for ID:', id);
+      return staticMachineMap[id];
+    }
     
     try {
       // Check if it's a MongoDB ID
