@@ -78,12 +78,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                       <div className="font-medium text-sm flex items-center">
                         {getMachineIcon(machine.type)}
                         {machine.name}
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                          {machine.type}
-                        </span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {!isEquipment && machine.maintenanceNote ? `Note: ${machine.maintenanceNote}` : ''}
+                        Type: {machine.type}
+                        {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
                       </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
