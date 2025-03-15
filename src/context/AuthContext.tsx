@@ -12,64 +12,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   console.log("AuthProvider initializing");
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // Start with loading true until we check auth state
-  
-  // Check for existing user session on mount
-  useEffect(() => {
-    console.log("AuthProvider useEffect running to check auth state");
-    
-    // Simulate checking for session - immediately resolve for now
-    // Later you can implement actual MongoDB session checking here
-    const checkAuthState = async () => {
-      try {
-        console.log("Checking auth state...");
-        
-        // TODO: Implement actual session check with MongoDB
-        // For now, we'll just set loading to false to unblock rendering
-        
-        setLoading(false);
-        console.log("Auth state check complete, loading set to false");
-      } catch (error) {
-        console.error("Error checking auth state:", error);
-        setLoading(false);
-      }
-    };
-    
-    checkAuthState();
-  }, []);
+  const [loading, setLoading] = useState(false); // Start with loading false to prevent blocking render
   
   // Get auth functions
   const { login: authLogin, register: authRegister, logout: authLogout } = useAuthFunctions(user, setUser);
 
+  console.log("Auth provider rendering with state:", { user, loading });
+
   // Login function
   const login = async (email: string, password: string) => {
-    setLoading(true);
+    console.log("AuthContext: login called");
     try {
       const result = await authLogin(email, password);
       return result;
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error during login in context:", error);
+      return false;
     }
   };
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
-    setLoading(true);
+    console.log("AuthContext: register called");
     try {
       const result = await authRegister(email, password, name);
       return result;
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error during registration in context:", error);
+      return false;
     }
   };
 
   // Logout function
   const logout = async () => {
-    setLoading(true);
+    console.log("AuthContext: logout called");
     try {
       authLogout();
-    } finally {
-      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error during logout in context:", error);
+      return false;
     }
   };
 
@@ -186,7 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     resetPassword,
   };
 
-  console.log("Auth context value:", { user, loading });
+  console.log("Auth context value created:", { user: !!user, loading });
 
   return (
     <AuthContext.Provider value={value}>

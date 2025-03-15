@@ -47,16 +47,11 @@ const Index = () => {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (loading) {
-      console.log("Auth is still loading, waiting before redirect check");
-      return;
-    }
+    console.log("Auth state in redirect effect:", { user, loading });
     
     if (user) {
       console.log("User is logged in, redirecting to home:", user);
       navigate('/home');
-    } else {
-      console.log("No user found, staying on login page");
     }
   }, [user, navigate, loading]);
 
@@ -112,23 +107,11 @@ const Index = () => {
     setIsLogin(!isLogin);
   };
 
-  // If loading, show a loading indicator
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-t-purple-600 border-purple-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-purple-800">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  console.log("Rendering Index component, login mode:", isLogin);
+  console.log("Rendering Index component UI, login mode:", isLogin);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
-      <div className="w-full max-w-md space-y-6 animate-fade-up">
+      <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
@@ -141,35 +124,17 @@ const Index = () => {
           )}
         </div>
 
-        <AnimatePresence mode="wait">
-          {isLogin ? (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <LoginForm 
-                onLogin={handleLogin} 
-                onToggleMode={toggleMode} 
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="register"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <RegisterForm 
-                onRegister={handleRegister} 
-                onToggleMode={toggleMode} 
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isLogin ? (
+          <LoginForm 
+            onLogin={handleLogin} 
+            onToggleMode={toggleMode} 
+          />
+        ) : (
+          <RegisterForm 
+            onRegister={handleRegister} 
+            onToggleMode={toggleMode} 
+          />
+        )}
       </div>
     </div>
   );
