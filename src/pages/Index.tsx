@@ -1,15 +1,15 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { toast } from '@/components/ui/use-toast';
 import { checkServerHealth } from '@/utils/serverConnection';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connected');
+  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -24,27 +24,10 @@ const Index = () => {
         
         if (healthStatus.serverRunning) {
           setServerStatus('connected');
-          
-          // Only show toast for database issues if needed for user action
-          if (!healthStatus.databaseConnected) {
-            console.log("Database connection issue detected");
-            // Only show the toast if we're sure there's a database issue
-            // (not just unable to verify)
-            if (healthStatus.message.includes('database connection failed')) {
-              toast({
-                title: 'Database Connection Issue',
-                description: 'The server is running but there might be database connection issues.',
-                variant: 'destructive'
-              });
-            }
-          }
+          console.log("Server connection successful");
         } else {
-          // Quietly set the status without toast notifications
           setServerStatus('disconnected');
-          console.error("Basic server connection failed");
-          
-          // Only show a console message, not a toast
-          console.log("Server connection failed. Please ensure the server is running on port 4000.");
+          console.log("Server connection failed");
         }
       } catch (error) {
         console.error("Server connection error:", error);
@@ -64,10 +47,7 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       console.log("User is already logged in, redirecting to home:", user);
-      // Use setTimeout to ensure this runs after component mount
-      setTimeout(() => {
-        navigate('/home');
-      }, 0);
+      navigate('/home');
     }
   }, [user, navigate]);
 

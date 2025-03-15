@@ -17,7 +17,12 @@ export interface ServerStatus {
 export const checkServerHealth = async (): Promise<ServerStatus> => {
   try {
     // First check if basic server is running (just HTTP ping)
-    const response = await fetch('http://localhost:4000/');
+    const response = await fetch('http://localhost:4000/', { 
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      // Add shorter timeout to fail faster
+      signal: AbortSignal.timeout(5000)
+    });
     
     if (!response.ok) {
       return {
@@ -32,14 +37,8 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
       const healthResponse = await apiService.checkHealth();
       console.log("Health check response:", healthResponse);
       
-      // Check directly for database connection status from the health endpoint
-      let dbConnected = true;
-      
-      if (healthResponse.data && 
-          healthResponse.data.database !== undefined) {
-        // Use explicit database connection status if available
-        dbConnected = healthResponse.data.database.connected === true;
-      }
+      // Explicitly check database connection status
+      const dbConnected = healthResponse?.data?.database?.connected === true;
       
       return {
         serverRunning: true,
@@ -60,6 +59,7 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
     }
   } catch (error) {
     console.error("Server connection failed:", error);
+    // Return a simple status that allows the UI to render
     return {
       serverRunning: false,
       databaseConnected: false,
