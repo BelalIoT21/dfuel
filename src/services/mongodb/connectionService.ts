@@ -1,5 +1,4 @@
 
-import { isWeb } from '../../utils/platform';
 import { getEnv } from '../../utils/env';
 import { MongoClient, Db } from 'mongodb';
 
@@ -12,8 +11,8 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // Get MongoDB URI from environment variables
-    this.uri = getEnv('MONGODB_URI', 'mongodb://localhost:27017/learnit');
+    // Always use a direct MongoDB connection to localhost
+    this.uri = 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
@@ -41,8 +40,13 @@ class MongoConnectionService {
     try {
       console.log(`Connecting to MongoDB at: ${this.uri}`);
       
-      // Create a new MongoDB client and connect
-      this.client = new MongoClient(this.uri);
+      // Create a new MongoDB client with connection options for reliability
+      this.client = new MongoClient(this.uri, {
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 30000,
+        // Add more options as needed for your specific environment
+      });
+      
       await this.client.connect();
       
       // Get the database
@@ -64,6 +68,8 @@ class MongoConnectionService {
       return this.db;
     } catch (error) {
       console.error('Error connecting to MongoDB:', error);
+      // Better error handling with specific messages
+      console.error('Make sure MongoDB is running on localhost:27017');
       this.db = null;
       this.client = null;
       return null;

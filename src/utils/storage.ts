@@ -1,17 +1,22 @@
 
-import { isWeb } from './platform';
 import mongoConnectionService from '../services/mongodb/connectionService';
 
 /**
- * Platform-agnostic storage implementation using MongoDB
+ * Storage implementation using MongoDB directly for web and native platforms
  */
 class StorageService {
   private async getStorageCollection() {
-    const db = await mongoConnectionService.connect();
-    if (!db) {
-      throw new Error('Could not connect to MongoDB');
+    try {
+      const db = await mongoConnectionService.connect();
+      if (!db) {
+        console.error('Could not connect to MongoDB');
+        throw new Error('Could not connect to MongoDB');
+      }
+      return db.collection('storage');
+    } catch (error) {
+      console.error('Error getting storage collection:', error);
+      throw error;
     }
-    return db.collection('storage');
   }
 
   async getItem(key: string): Promise<string | null> {

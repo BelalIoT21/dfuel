@@ -10,10 +10,10 @@ export const loadEnv = (): void => {
 
 // Get environment variables with fallback
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // For MongoDB URI, use environment variable or fallback
+  // For MongoDB URI, use environment variable or fallback to local MongoDB
   if (key === 'MONGODB_URI') {
-    const envValue = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
-    return envValue;
+    // Always return a local MongoDB connection string
+    return 'mongodb://localhost:27017/learnit';
   }
   
   // For other variables use process.env or default value
