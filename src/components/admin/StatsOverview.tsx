@@ -1,8 +1,11 @@
+
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
 import { bookingService } from "@/services/bookingService";
 import userDatabase from "@/services/userDatabase";
+import { apiService } from "@/services/apiService";
+import { isWeb } from "@/utils/platform";
 
 interface StatsOverviewProps {
   allUsers?: any[];
@@ -34,22 +37,36 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchBookingsCount();
   }, []);
   
-  // Ensure user count is fetched if not provided via props
+  // Ensure user count is fetched consistently from API first, then fallback to props or userDatabase
   useEffect(() => {
     const fetchUsers = async () => {
-      if (allUsers && allUsers.length > 0) {
-        // Use provided users if available
-        setUserCount(allUsers.length);
-      } else {
-        try {
-          // Otherwise fetch from database
-          console.log("Fetching users for stats overview");
-          const users = await userDatabase.getAllUsers();
-          setUserCount(users.length);
-        } catch (error) {
-          console.error("Error fetching users:", error);
-          setUserCount(0);
+      try {
+        console.log("Fetching users for stats overview");
+        
+        // Always try the API first for consistency between web and native
+        const response = await apiService.getAllUsers();
+        if (response.success && response.data && response.data.length > 0) {
+          console.log(`Retrieved ${response.data.length} users from API`);
+          setUserCount(response.data.length);
+          return;
         }
+        
+        // If API fails but allUsers prop is provided, use it
+        if (allUsers && allUsers.length > 0) {
+          console.log(`Using provided users list: ${allUsers.length} users`);
+          setUserCount(allUsers.length);
+          return;
+        }
+        
+        // Last resort - fetch directly from database
+        console.log("Falling back to userDatabase for user count");
+        const users = await userDatabase.getAllUsers();
+        console.log(`Retrieved ${users.length} users from userDatabase`);
+        setUserCount(users.length);
+      } catch (error) {
+        console.error("Error fetching users for stats:", error);
+        // If all else fails, use the provided users or show 0
+        setUserCount(allUsers?.length || 0);
       }
     };
     
