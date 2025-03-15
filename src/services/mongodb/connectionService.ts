@@ -1,9 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService';
-import { toast } from '@/components/ui/use-toast';
-import { getEnv } from '@/utils/env';
+import mongoSeedService from './seedService'; // New import
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -14,12 +12,18 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // Try to get URI from environment or use default
-    this.uri = getEnv('MONGODB_URI') || 'mongodb://localhost:27017/learnit';
+    // In a real application, this would come from environment variables
+    this.uri = 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
   async connect(): Promise<any | null> {
+    // Skip MongoDB connection in browser environment
+    if (isWeb) {
+      console.log("Running in browser environment, skipping MongoDB connection");
+      return null;
+    }
+    
     // If we're already connecting, return the existing promise
     if (this.isConnecting && this.connectionPromise) {
       console.log("MongoDB connection already in progress, waiting...");
@@ -34,14 +38,7 @@ class MongoConnectionService {
         // Create a new connection promise
         this.connectionPromise = new Promise(async (resolve, reject) => {
           try {
-            // In web environment, we'll use the API endpoints instead of direct connection
-            if (isWeb) {
-              console.log("Web environment - using API for MongoDB access");
-              this.isConnecting = false;
-              resolve(null);
-              return;
-            }
-            
+            // Only import MongoDB in non-web environments
             const { MongoClient, ServerApiVersion } = await import('mongodb');
             
             this.client = new MongoClient(this.uri, {
@@ -49,9 +46,7 @@ class MongoConnectionService {
                 version: ServerApiVersion.v1,
                 strict: true,
                 deprecationErrors: true,
-              },
-              connectTimeoutMS: 5000,
-              socketTimeoutMS: 30000
+              }
             });
             
             await this.client.connect();
@@ -134,10 +129,7 @@ class MongoConnectionService {
   
   // Check if the database connection is active
   async isConnected(): Promise<boolean> {
-    if (isWeb) {
-      console.log("Web environment - using API for MongoDB access");
-      return true; // Always consider API access available in web environment
-    }
+    if (isWeb) return false;
     
     try {
       if (!this.client) {

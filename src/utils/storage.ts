@@ -3,8 +3,8 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we rely on MongoDB accessed via API
- * For native environments, we use AsyncStorage directly
+ * For web, we don't use localStorage anymore since we're using MongoDB exclusively
+ * For native environments, we still use AsyncStorage for session persistence
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
