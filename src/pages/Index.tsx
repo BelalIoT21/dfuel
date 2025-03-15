@@ -32,7 +32,7 @@ const Index = () => {
           setServerStatus('disconnected');
           toast({
             title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000/api.',
             variant: 'destructive'
           });
         }
@@ -41,7 +41,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000/api.',
           variant: 'destructive'
         });
       }
@@ -92,7 +92,7 @@ const Index = () => {
             <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
               {serverStatus === 'connected' 
                 ? 'Connected to server' 
-                : 'Server connection failed. Please ensure the server is running at http://localhost:4000.'}
+                : 'Server connection failed. Please ensure the server is running at http://localhost:4000/api.'}
             </div>
           )}
         </div>
