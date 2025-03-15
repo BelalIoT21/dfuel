@@ -12,6 +12,21 @@ import { apiService } from '@/services/apiService';
 import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
 import { machineDatabaseService } from '@/services/database/machineService';
 
+const initialFormData: MachineFormData = {
+  name: '',
+  description: '',
+  type: 'Cutting',
+  status: 'Available',
+  requiresCertification: true,
+  difficulty: 'Intermediate',
+  imageUrl: '/placeholder.svg',
+  details: '',
+  specifications: '',
+  certificationInstructions: '',
+  linkedCourseId: '',
+  linkedQuizId: '',
+};
+
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -23,20 +38,7 @@ const AdminMachines = () => {
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  const [formData, setFormData] = useState<MachineFormData>({
-    name: '',
-    description: '',
-    type: 'Cutting',
-    status: 'Available',
-    requiresCertification: true,
-    difficulty: 'Intermediate',
-    imageUrl: '/placeholder.svg',
-    details: '',
-    specifications: '',
-    certificationInstructions: '',
-    linkedCourseId: '',
-    linkedQuizId: '',
-  });
+  const [formData, setFormData] = useState<MachineFormData>({...initialFormData});
 
   useEffect(() => {
     const fetchMachines = async () => {
@@ -96,6 +98,7 @@ const AdminMachines = () => {
     try {
       setIsSubmitting(true);
       
+      console.log("Creating machine with data:", formData);
       const newMachine = await machineDatabaseService.createMachine(formData);
       
       if (!newMachine) {
@@ -110,20 +113,7 @@ const AdminMachines = () => {
       setMachinesList(prev => [...prev, newMachine]);
       
       setIsAddingMachine(false);
-      setFormData({
-        name: '',
-        description: '',
-        type: 'Cutting',
-        status: 'Available',
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/placeholder.svg',
-        details: '',
-        specifications: '',
-        certificationInstructions: '',
-        linkedCourseId: '',
-        linkedQuizId: '',
-      });
+      setFormData({...initialFormData});
     } catch (error) {
       console.error("Error adding machine:", error);
       toast({
@@ -134,6 +124,11 @@ const AdminMachines = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCancelAdd = () => {
+    setIsAddingMachine(false);
+    setFormData({...initialFormData});
   };
 
   const handleEditMachine = (id: string) => {
@@ -155,6 +150,11 @@ const AdminMachines = () => {
         linkedQuizId: machine.linkedQuizId || '',
       });
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMachineId(null);
+    setFormData({...initialFormData});
   };
 
   const handleSaveEdit = async () => {
@@ -292,7 +292,7 @@ const AdminMachines = () => {
             setFormData={setFormData}
             isSubmitting={isSubmitting}
             onSubmit={handleAddMachine}
-            onCancel={() => setIsAddingMachine(false)}
+            onCancel={handleCancelAdd}
             title="Add New Machine"
             description="Enter the details for the new machine"
             submitLabel="Add Machine"
@@ -305,7 +305,7 @@ const AdminMachines = () => {
             setFormData={setFormData}
             isSubmitting={isSubmitting}
             onSubmit={handleSaveEdit}
-            onCancel={() => setEditingMachineId(null)}
+            onCancel={handleCancelEdit}
             title="Edit Machine"
             description="Update the details for this machine"
             submitLabel="Save Changes"

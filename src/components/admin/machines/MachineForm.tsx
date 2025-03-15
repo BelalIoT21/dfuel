@@ -46,6 +46,21 @@ interface MachineFormProps {
   submitLabel: string;
 }
 
+const initialFormData: MachineFormData = {
+  name: '',
+  description: '',
+  type: 'Cutting',
+  status: 'Available',
+  requiresCertification: true,
+  difficulty: 'Intermediate',
+  imageUrl: '/placeholder.svg',
+  details: '',
+  specifications: '',
+  certificationInstructions: '',
+  linkedCourseId: '',
+  linkedQuizId: '',
+};
+
 const MachineForm: React.FC<MachineFormProps> = ({
   formData,
   setFormData,
@@ -80,11 +95,16 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }));
+    setFormData((prev) => ({ ...prev, [id]: value === 'none' ? '' : value }));
   };
 
   const handleSwitchChange = (id: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [id]: checked }));
+  };
+
+  const handleCancel = () => {
+    setFormData(initialFormData);
+    onCancel();
   };
 
   return (
@@ -237,7 +257,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
               <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
               <Select
                 value={formData.linkedCourseId || 'none'}
-                onValueChange={(value) => handleSelectChange('linkedCourseId', value === 'none' ? '' : value)}
+                onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a course" />
@@ -258,7 +278,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
               <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
               <Select
                 value={formData.linkedQuizId || 'none'}
-                onValueChange={(value) => handleSelectChange('linkedQuizId', value === 'none' ? '' : value)}
+                onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a quiz" />
@@ -281,7 +301,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
           <Button onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : submitLabel}
           </Button>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="outline" onClick={handleCancel}>Cancel</Button>
         </div>
       </CardContent>
     </Card>
