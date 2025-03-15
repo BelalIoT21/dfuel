@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,24 @@ const timeSlots = [
   '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', 
   '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'
 ];
+
+const idMapping: Record<string, string> = {
+  "67d5fd3c50bbb3312ae0fb1e": "1", // Laser Cutter
+  "67d5fd3c50bbb3312ae0fb1f": "5", // Bambu Lab
+  "67d5fd3c50bbb3312ae0fb20": "2", // Ultimaker
+  "67d5fd3c50bbb3312ae0fb21": "3", // Safety Cabinet
+  "67d5fd3c50bbb3312ae0fb22": "6", // Safety Course
+  "67d5fd3c50bbb3312ae0fb23": "4", // Another Bambu Lab
+};
+
+const reverseIdMapping: Record<string, string> = {
+  "1": "67d5fd3c50bbb3312ae0fb1e", // Laser Cutter
+  "5": "67d5fd3c50bbb3312ae0fb1f", // Bambu Lab
+  "2": "67d5fd3c50bbb3312ae0fb20", // Ultimaker
+  "3": "67d5fd3c50bbb3312ae0fb21", // Safety Cabinet
+  "6": "67d5fd3c50bbb3312ae0fb22", // Safety Course
+  "4": "67d5fd3c50bbb3312ae0fb23", // Another Bambu Lab
+};
 
 const BookingPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,30 +58,100 @@ const BookingPage = () => {
         if (!id) return;
         setLoading(true);
         setError(null);
-        console.log(`Attempting to load machine with ID: ${id}`);
-        const foundMachine = await machineService.getMachineById(id);
+        
+        // Check if the ID is a long MongoDB ID or a short ID
+        let machineId = id;
+        
+        // Try to convert short ID to MongoDB ID if needed
+        if (id.length <= 2 && reverseIdMapping[id]) {
+          machineId = reverseIdMapping[id];
+          console.log(`Using mapped ID: ${id} -> ${machineId}`);
+        }
+        
+        // Try to convert MongoDB ID to short ID if needed
+        if (id.length > 10 && idMapping[id]) {
+          machineId = idMapping[id];
+          console.log(`Using mapped ID: ${id} -> ${machineId}`);
+        }
+        
+        console.log(`Attempting to load machine with ID: ${machineId}`);
+        
+        // First try with the given ID
+        let foundMachine = await machineService.getMachineById(machineId);
+        
+        // If not found, try with the short ID (1, 2, etc.)
+        if (!foundMachine && machineId.length > 2) {
+          // Try to find by short ID
+          const shortId = idMapping[machineId] || machineId.slice(-1); // Use last digit as fallback
+          console.log(`Trying with short ID: ${shortId}`);
+          foundMachine = await machineService.getMachineById(shortId);
+        }
+        
+        // If still not found and using short ID, try with MongoDB ID format
+        if (!foundMachine && machineId.length <= 2) {
+          const longId = reverseIdMapping[machineId];
+          console.log(`Trying with long ID: ${longId}`);
+          foundMachine = await machineService.getMachineById(longId);
+        }
+        
+        // If still not found, try using hardcoded machines
+        if (!foundMachine) {
+          console.log("Falling back to hardcoded machines");
+          const hardcodedMachines = {
+            "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
+            "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
+            "3": { id: "3", name: "Safety Cabinet", type: "Safety Cabinet" },
+            "4": { id: "4", name: "Bambu Lab X1 E", type: "3D Printer" },
+            "5": { id: "5", name: "Bambu Lab X1 E", type: "3D Printer" },
+            "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" }
+          };
+          
+          foundMachine = hardcodedMachines[machineId] || hardcodedMachines[id];
+          console.log("Using hardcoded machine:", foundMachine);
+        }
+        
         if (foundMachine) {
           console.log(`Successfully loaded machine:`, foundMachine);
+          
+          // Check if it's a non-bookable machine type
+          if (foundMachine.type === 'Safety Cabinet' || foundMachine.type === 'Safety Course') {
+            setError(`${foundMachine.name} is not bookable. Please select a different machine.`);
+            setMachine(foundMachine);
+            setLoading(false);
+            return;
+          }
+          
           setMachine(foundMachine);
           
           // Fetch existing bookings to determine availability
-          const allBookings = await bookingService.getAllBookings();
-          const machineBookings = allBookings.filter(
-            booking => booking.machineId === id && 
-            (booking.status === 'Approved' || booking.status === 'Pending')
-          );
-          
-          // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
-          const bookedDateTimeSlots = machineBookings.map(booking => 
-            `${booking.date}-${booking.time}`
-          );
-          setBookedSlots(bookedDateTimeSlots);
-          
-          // Update available time slots when date changes
-          updateAvailableTimeSlots(selectedDate);
+          try {
+            const allBookings = await bookingService.getAllBookings();
+            console.log(`Retrieved ${allBookings.length} bookings`);
+            
+            const machineBookings = allBookings.filter(
+              booking => 
+                (booking.machineId === id || 
+                 booking.machineId === machineId || 
+                 booking.machineId === foundMachine.id) && 
+                (booking.status === 'Approved' || booking.status === 'Pending')
+            );
+            
+            // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
+            const bookedDateTimeSlots = machineBookings.map(booking => 
+              `${booking.date}-${booking.time}`
+            );
+            setBookedSlots(bookedDateTimeSlots);
+            
+            // Update available time slots when date changes
+            updateAvailableTimeSlots(selectedDate);
+          } catch (bookingError) {
+            console.error("Error loading bookings:", bookingError);
+            // Continue with empty bookings
+            setBookedSlots([]);
+          }
         } else {
           console.error(`Machine not found with ID: ${id}`);
-          setError('Machine not found');
+          setError('Machine not found or is not bookable');
         }
       } catch (err) {
         console.error('Error loading machine:', err);
@@ -129,9 +216,18 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       console.log('Submitting booking...');
+      
+      // Use short machine ID (1, 2, etc.) for booking when available
+      let bookingMachineId = machine.id || id;
+      
+      // Prefer short IDs for better compatibility
+      if (bookingMachineId.length > 5 && idMapping[bookingMachineId]) {
+        bookingMachineId = idMapping[bookingMachineId];
+      }
+      
       const success = await bookingService.createBooking(
         user.id,
-        machine.id,
+        bookingMachineId,
         formattedDate,
         selectedTime
       );
@@ -190,6 +286,16 @@ const BookingPage = () => {
     }, 1000);
   };
 
+  useEffect(() => {
+    if (machine && (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course')) {
+      const timeout = setTimeout(() => {
+        navigate(`/machine/${machine.id || id}`);
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [machine, navigate, id]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
@@ -226,6 +332,22 @@ const BookingPage = () => {
           <p className="text-gray-600 mb-4">We couldn't find the machine you're looking for.</p>
           <Button onClick={() => navigate('/home')}>
             Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-orange-600 mb-2">Not Bookable</h1>
+          <p className="text-gray-600 mb-4">
+            {machine.name} is not a bookable resource. You will be redirected to the machine details page.
+          </p>
+          <Button onClick={() => navigate(`/machine/${machine.id || id}`)}>
+            Go to Machine Details
           </Button>
         </div>
       </div>
