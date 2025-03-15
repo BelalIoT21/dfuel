@@ -114,8 +114,12 @@ class MongoUserService {
     if (!this.usersCollection) return false;
     
     try {
+      console.log(`Updating certification for user ${userId}, machine ${machineId}`);
       const user = await this.getUserById(userId);
-      if (!user) return false;
+      if (!user) {
+        console.log(`User ${userId} not found in MongoDB`);
+        return false;
+      }
       
       // Special handling for Machine Safety Course (ID: 6) and special users
       const isSpecialUser = userId === "user-1741957466063" || (user.email && user.email.includes("b.l.mishmish"));
@@ -135,17 +139,22 @@ class MongoUserService {
           { $push: { certifications: machineId } }
         );
         
+        console.log(`Special handling results - clear: ${clearResult.modifiedCount}, add: ${addResult.modifiedCount}`);
         return clearResult.modifiedCount > 0 || addResult.modifiedCount > 0;
       }
       
       // Normal handling for other cases
       if (!user.certifications.includes(machineId)) {
+        console.log(`Adding certification ${machineId} to user ${userId}`);
         const result = await this.usersCollection.updateOne(
           { id: userId },
           { $push: { certifications: machineId } }
         );
         
+        console.log(`MongoDB update result: ${result.modifiedCount > 0}`);
         return result.modifiedCount > 0;
+      } else {
+        console.log(`User ${userId} already has certification ${machineId}`);
       }
       
       return true; // Certification already exists

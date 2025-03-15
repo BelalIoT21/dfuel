@@ -2,7 +2,6 @@
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { apiService } from './apiService';
-import { useToast } from '@/hooks/use-toast';
 
 export class CertificationService {
   // Update user certifications
@@ -145,7 +144,10 @@ export class CertificationService {
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
     // Special handling for specific users
-    if (userId === "user-1741957466063" || userId.includes("b.l.mishmish")) {
+    const user = await mongoDbService.getUserById(userId) || localStorageService.findUserById(userId);
+    const isSpecialUser = userId === "user-1741957466063" || (user?.email && user.email.includes("b.l.mishmish"));
+    
+    if (isSpecialUser) {
       console.log(`Special handling for user ${userId}: Using clear all certifications first`);
       await this.clearAllCertifications(userId);
       
@@ -164,7 +166,10 @@ export class CertificationService {
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
     // Special handling for specific users
-    if (userId === "user-1741957466063" || userId.includes("b.l.mishmish")) {
+    const user = await mongoDbService.getUserById(userId) || localStorageService.findUserById(userId);
+    const isSpecialUser = userId === "user-1741957466063" || (user?.email && user.email.includes("b.l.mishmish"));
+    
+    if (isSpecialUser) {
       console.log(`Special handling for user ${userId}: Clearing all certifications`);
       return this.clearAllCertifications(userId);
     }

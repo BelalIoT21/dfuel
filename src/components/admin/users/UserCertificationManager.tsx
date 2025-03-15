@@ -56,6 +56,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
       
+      // First try MongoDB directly
       let success = false;
       try {
         success = await mongoDbService.updateUserCertifications(userId, machineId);
@@ -64,8 +65,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         console.error("MongoDB certification error:", mongoError);
       }
       
+      // If MongoDB direct call fails, try certification service (which tries all options)
       if (!success) {
         success = await certificationService.addCertification(userId, machineId);
+        console.log(`CertificationService addCertification result: ${success}`);
       }
       
       if (success) {
@@ -112,6 +115,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       if (!success) {
         success = await certificationService.removeCertification(userId, machineId);
+        console.log(`CertificationService removeCertification result: ${success}`);
       }
       
       if (success) {
@@ -146,8 +150,19 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       let success = false;
       try {
-        success = await certificationService.addMachineSafetyCertification(userId);
-        console.log(`addMachineSafetyCertification result: ${success}`);
+        // Try MongoDB first 
+        try {
+          success = await mongoDbService.updateUserCertifications(userId, "6");
+          console.log(`MongoDB addCertification for Safety Course result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB error adding safety certification:", mongoError);
+        }
+        
+        // If MongoDB fails, try certification service
+        if (!success) {
+          success = await certificationService.addMachineSafetyCertification(userId);
+          console.log(`addMachineSafetyCertification result: ${success}`);
+        }
       } catch (error) {
         console.error("Error in addMachineSafetyCertification:", error);
       }
@@ -184,8 +199,23 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       let success = false;
       try {
-        success = await certificationService.removeMachineSafetyCertification(userId);
-        console.log(`removeMachineSafetyCertification result: ${success}`);
+        // Try MongoDB first
+        try {
+          const userDoc = await mongoDbService.getUserById(userId);
+          if (userDoc) {
+            const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
+            success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
+            console.log(`MongoDB removeCertification for Safety Course result: ${success}`);
+          }
+        } catch (mongoError) {
+          console.error("MongoDB remove certification error:", mongoError);
+        }
+        
+        // If MongoDB fails, use certification service
+        if (!success) {
+          success = await certificationService.removeMachineSafetyCertification(userId);
+          console.log(`removeMachineSafetyCertification result: ${success}`);
+        }
       } catch (error) {
         console.error("Error in removeMachineSafetyCertification:", error);
       }
