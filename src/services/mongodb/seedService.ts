@@ -53,30 +53,20 @@ class MongoSeedService {
           email: 'admin@learnit.com',
           password: adminPassword,
           isAdmin: true,
-          certifications: ['1', '2', '3', '4', '5', '6', '7', '8'], // All machines by default
+          certifications: ['1', '2', '3', '4', '5', '6'], // All machines by default
           bookings: [],
           lastLogin: new Date().toISOString()
         },
         {
           id: '2',
-          name: 'John Doe',
-          email: 'john@example.com',
+          name: 'Bilal Mishmish',
+          email: 'b.l.mishmish@gmail.com',
           password: userPassword,
           isAdmin: false,
-          certifications: ['1', '2', '3', '5'], // Laser Cutter, Ultimaker, Safety Course, X1 E Carbon
+          certifications: ['1', '2', '3', '5', '6'],
           bookings: [],
           lastLogin: new Date().toISOString()
         },
-        {
-          id: '3',
-          name: 'Jane Smith',
-          email: 'jane@example.com',
-          password: userPassword,
-          isAdmin: false,
-          certifications: ['3', '6', '8'], // Safety Course, Soldering, Safety Cabinet
-          bookings: [],
-          lastLogin: new Date().toISOString()
-        }
       ];
       
       // Insert users into database
@@ -132,12 +122,10 @@ class MongoSeedService {
       const machineMap: Record<string, string> = {
         'Laser Cutter': '1',
         'Ultimaker': '2',
-        'Safety Course': '3',
-        'CNC Mill': '4',
-        'X1 E Carbon 3D Printer': '5',
-        'Soldering Station': '6',
-        'Vinyl Cutter': '7',
-        'Safety Cabinet': '8'
+        'X1 E Carbon 3D Printer': '3',
+        'Bambu Lab X1 E': '4',
+        'Safety Cabinet': '5',
+        'Safety Course': '6',
       };
       
       // Create sample bookings and assign to users
@@ -148,44 +136,7 @@ class MongoSeedService {
         }
         
         const bookings = [];
-        
-        // Create bookings for user "John Doe"
-        if (user.id === '2') {
-          bookings.push({
-            id: `booking-${user.id}-1`,
-            machineId: machineMap['Laser Cutter'],
-            date: today,
-            time: '10:00 - 12:00',
-            status: 'Approved'
-          });
-          
-          bookings.push({
-            id: `booking-${user.id}-2`,
-            machineId: machineMap['Ultimaker'],
-            date: tomorrowStr,
-            time: '14:00 - 16:00',
-            status: 'Pending'
-          });
-        }
-        
-        // Create bookings for user "Jane Smith"
-        if (user.id === '3') {
-          bookings.push({
-            id: `booking-${user.id}-1`,
-            machineId: machineMap['Soldering Station'],
-            date: today,
-            time: '13:00 - 15:00',
-            status: 'Approved'
-          });
-          
-          bookings.push({
-            id: `booking-${user.id}-2`,
-            machineId: machineMap['X1 E Carbon 3D Printer'],
-            date: nextWeekStr,
-            time: '09:00 - 11:00',
-            status: 'Pending'
-          });
-        }
+
         
         // Add bookings to user
         user.bookings = bookings;
@@ -246,27 +197,6 @@ class MongoSeedService {
         },
         {
           _id: '3',
-          name: 'Safety Course',
-          type: 'Safety Course',
-          description: 'Required safety training for all makerspace users.',
-          status: 'Available',
-          requiresCertification: false,
-          difficulty: 'Beginner',
-          imageUrl: '/machines/safety.jpg'
-        },
-        {
-          _id: '4',
-          name: 'CNC Mill',
-          type: 'CNC Machine',
-          description: 'Industrial CNC milling machine for precision metalworking.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Advanced',
-          imageUrl: '/machines/cnc-mill.jpg',
-          specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
-        },
-        {
-          _id: '5',
           name: 'X1 E Carbon 3D Printer',
           type: '3D Printer',
           description: 'High-speed multi-material 3D printer with exceptional print quality.',
@@ -277,30 +207,18 @@ class MongoSeedService {
           specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS'
         },
         {
-          _id: '6',
-          name: 'Soldering Station',
-          type: 'Electronics',
-          description: 'Professional soldering station for electronics work.',
+          _id: '4',
+          name: 'Bambu Lab X1 E',
+          type: '3D Printer',
+          description: 'Next-generation 3D printing technology',
           status: 'Available',
           requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/soldering-station.jpg',
-          specifications: 'Temperature range: 200°C-450°C, Digital control, ESD safe'
+          difficulty: 'Advanced',
+          imageUrl: '/machines/cnc-mill.jpg',
+          specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
         },
         {
-          _id: '7',
-          name: 'Vinyl Cutter',
-          type: 'Cutting',
-          description: 'Precision vinyl cutter for signs, stickers, and heat transfers.',
-          status: 'Maintenance',
-          requiresCertification: false,
-          difficulty: 'Beginner',
-          imageUrl: '/machines/vinyl-cutter.jpg',
-          maintenanceNote: 'Replacing cutting blade, available next week.',
-          specifications: 'Cutting width: 24", Materials: Vinyl, Paper, Heat Transfer Vinyl'
-        },
-        {
-          _id: '8',
+          _id: '5',
           name: 'Safety Cabinet',
           type: 'Workshop',
           description: 'Full suite of safety equipment and protective gear.',
@@ -308,6 +226,16 @@ class MongoSeedService {
           requiresCertification: true,
           difficulty: 'Intermediate',
           imageUrl: '/machines/woodworking.jpg'
+        },
+        {
+          _id: '6',
+          name: 'Safety Course',
+          type: 'Safety Course',
+          description: 'Required safety training for all makerspace users.',
+          status: 'Available',
+          requiresCertification: false,
+          difficulty: 'Beginner',
+          imageUrl: '/machines/safety.jpg'
         }
       ];
       
