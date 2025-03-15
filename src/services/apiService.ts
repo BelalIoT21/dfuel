@@ -1,7 +1,9 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-const BASE_URL = '/api'; // This will be proxied to our backend server
+// Use the environment variable or default to localhost for the API
+const BASE_URL = getEnv('API_URL', 'http://localhost:4000/api');
 
 interface ApiResponse<T> {
   data: T | null;
@@ -17,6 +19,7 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
+      // Use the full URL including the BASE_URL prefix
       const url = `${BASE_URL}/${endpoint}`;
       const token = localStorage.getItem('token');
       
