@@ -38,7 +38,14 @@ export const useAuthFunctions = (
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        // Store minimal user data in localStorage just for session persistence
+        localStorage.setItem('learnit_user', JSON.stringify({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          isAdmin: userData.isAdmin
+        }));
+        
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -95,7 +102,14 @@ export const useAuthFunctions = (
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
+        // Store minimal user data in localStorage just for session persistence
+        localStorage.setItem('learnit_user', JSON.stringify({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          isAdmin: userData.isAdmin
+        }));
+        
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`

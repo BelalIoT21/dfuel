@@ -1,11 +1,10 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
-import userDatabase from '@/services/userDatabase';
-import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
+import { storage } from '@/utils/storage';
+import { Platform } from 'react-native';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -49,12 +48,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
-      const authenticatedUser = await userDatabase.authenticate(email, password);
+      const response = await apiService.login(email, password);
       
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      if (response.data && response.data.user) {
+        const userData = response.data.user;
+        
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+        }
+        
+        setUser(userData);
+        
+        // For native platforms, still store in AsyncStorage
+        if (Platform.OS !== 'web') {
+          await storage.setItem('learnit_user', JSON.stringify(userData));
+        } else {
+          // For web, just store basic info for session restoration
+          localStorage.setItem('learnit_user', JSON.stringify({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            isAdmin: userData.isAdmin
+          }));
+        }
+        
         return true;
       } else {
         throw new Error('Invalid credentials');
@@ -68,12 +89,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Register function
   const register = async (email: string, password: string, name: string) => {
     try {
-      const newUser = await userDatabase.registerUser(email, password, name);
+      const response = await apiService.register({ email, password, name });
       
-      if (newUser) {
-        setUser(newUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      if (response.data && response.data.user) {
+        const userData = response.data.user;
+        
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+        }
+        
+        setUser(userData);
+        
+        // For native platforms, still store in AsyncStorage
+        if (Platform.OS !== 'web') {
+          await storage.setItem('learnit_user', JSON.stringify(userData));
+        } else {
+          // For web, just store basic info for session restoration
+          localStorage.setItem('learnit_user', JSON.stringify({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            isAdmin: userData.isAdmin
+          }));
+        }
+        
         return true;
       } else {
         throw new Error('Registration failed');
@@ -88,7 +131,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setUser(null);
     localStorage.removeItem('token');
-    await storage.removeItem('learnit_user');
+    localStorage.removeItem('learnit_user');
+    
+    // For native platforms
+    if (Platform.OS !== 'web') {
+      await storage.removeItem('learnit_user');
+    }
   };
 
   // Add certification
@@ -96,9 +144,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.addCertification(user.id, machineId);
+      const response = await apiService.addCertification(user.id, machineId);
       
-      if (success) {
+      if (response.data?.success) {
         // Update local user state with new certification
         const updatedUser = {
           ...user,
@@ -106,8 +154,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        
+        // For native platforms, update AsyncStorage
+        if (Platform.OS !== 'web') {
+          await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        }
+        
         return true;
       }
       
@@ -123,13 +175,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.updateUserProfile(user.id, { name, email });
+      const response = await apiService.updateProfile(user.id, { name, email });
       
-      if (success) {
+      if (response.data?.success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        
+        // For native platforms, update AsyncStorage
+        if (Platform.OS !== 'web') {
+          await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        } else {
+          // For web, update minimal session data
+          const storedUser = localStorage.getItem('learnit_user');
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            localStorage.setItem('learnit_user', JSON.stringify({
+              ...parsedUser,
+              name,
+              email
+            }));
+          }
+        }
+        
         return true;
       }
       
@@ -145,15 +212,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      // First verify the current password
-      const authenticatedUser = await userDatabase.authenticate(user.email, currentPassword);
+      // Verify current password first
+      const loginResponse = await apiService.login(user.email, currentPassword);
       
-      if (!authenticatedUser) {
+      if (loginResponse.error) {
         throw new Error('Current password is incorrect');
       }
       
-      const success = await userDatabase.updateUserProfile(user.id, { password: newPassword });
-      return success;
+      // If verification succeeded, update password
+      const response = await apiService.updateProfile(user.id, { password: newPassword });
+      return response.data?.success || false;
     } catch (error) {
       console.error('Error changing password:', error);
       throw error;
@@ -163,7 +231,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Password reset functions
   const requestPasswordReset = async (email: string) => {
     try {
-      return await userDatabase.requestPasswordReset(email);
+      const response = await apiService.requestPasswordReset(email);
+      return response.data?.success || false;
     } catch (error) {
       console.error('Error requesting password reset:', error);
       return false;
@@ -172,7 +241,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
     try {
-      return await userDatabase.resetPassword(email, resetCode, newPassword);
+      const response = await apiService.resetPassword(email, resetCode, newPassword);
+      return response.data?.success || false;
     } catch (error) {
       console.error('Error resetting password:', error);
       return false;
