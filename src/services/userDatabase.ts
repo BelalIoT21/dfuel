@@ -83,18 +83,12 @@ class UserDatabase {
     try {
       console.log(`Attempting to delete user ${userId}`);
       
-      // Get user details first for admin check
+      // Get user details first
       const user = await this.findUserById(userId);
       
       // Check if user exists
       if (!user) {
         console.log(`User ${userId} not found`);
-        return false;
-      }
-      
-      // Check if user is admin - only protection we keep
-      if (user.isAdmin) {
-        console.log(`Cannot delete admin user ${userId}`);
         return false;
       }
       

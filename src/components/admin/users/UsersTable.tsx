@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -19,6 +20,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import userDatabase from '@/services/userDatabase';
 import mongoDbService from '@/services/mongoDbService';
+import { useAuth } from '@/context/AuthContext';
 
 interface UsersTableProps {
   users: any[];
@@ -31,6 +33,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   const [allMachines, setAllMachines] = useState<any[]>([]);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -77,46 +80,22 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     try {
       console.log(`Attempting to delete user ${userId} from UsersTable component`);
       
-      // Check if user is admin
-      const userToDelete = users.find(u => u.id === userId);
-      if (userToDelete?.isAdmin) {
-        console.log(`Cannot delete admin user ${userId}`);
+      // Check if user is trying to delete themselves
+      if (userId === currentUser?.id) {
+        console.log(`Cannot delete current user ${userId}`);
         toast({
-          title: "Cannot Delete Admin",
-          description: "Admin users cannot be deleted for security reasons.",
+          title: "Cannot Delete Yourself",
+          description: "You cannot delete your own account while logged in.",
           variant: "destructive"
         });
         setDeletingUserId(null);
         return;
       }
       
-      // Try MongoDB first
-      try {
-        console.log(`Trying MongoDB deletion for user ${userId}`);
-        const success = await mongoDbService.deleteUser(userId);
-        console.log(`MongoDB deleteUser result: ${success}`);
-        
-        if (success) {
-          toast({
-            title: "User Deleted",
-            description: "User has been permanently deleted from MongoDB.",
-          });
-          
-          // Refresh the user list
-          if (onUserDeleted) {
-            onUserDeleted();
-          }
-          setDeletingUserId(null);
-          return;
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error deleting user:", mongoError);
-      }
-      
-      // If MongoDB fails or is unavailable, use local storage
-      console.log(`Trying localStorage deletion for user ${userId}`);
-      const success = await userDatabase.deleteUser(userId);
-      console.log(`localStorage deleteUser result: ${success}`);
+      // Try MongoDB deletion
+      console.log(`Trying MongoDB deletion for user ${userId}`);
+      const success = await mongoDbService.deleteUser(userId);
+      console.log(`MongoDB deleteUser result: ${success}`);
       
       if (success) {
         toast({
@@ -131,7 +110,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete user. They may be an admin or have special permissions.",
+          description: "Failed to delete user. They may have special permissions.",
           variant: "destructive"
         });
       }
@@ -206,41 +185,45 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                       onCertificationAdded={onCertificationAdded}
                     />
                     
-                    {!user.isAdmin && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="border-red-200 hover:bg-red-50 text-red-700"
+                    {/* Allow deleting any user except the currently logged-in user */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="border-red-200 hover:bg-red-50 text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete User</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                            {user.isAdmin && (
+                              <p className="mt-2 text-amber-600 font-medium">
+                                Warning: You are about to delete an admin user!
+                              </p>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="bg-red-600 hover:bg-red-700"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              {deletingUserId === user.id ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4 mr-2" />
-                              )}
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                            {deletingUserId === user.id ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 mr-2" />
+                            )}
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>

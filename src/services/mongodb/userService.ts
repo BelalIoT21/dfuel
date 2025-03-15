@@ -93,16 +93,10 @@ class MongoUserService {
     try {
       console.log(`MongoDB: Attempting to delete user ${id}`);
       
-      // First check if user exists and is not an admin
+      // First check if user exists
       const user = await this.getUserById(id);
       if (!user) {
         console.log(`MongoDB: User ${id} not found`);
-        return false;
-      }
-      
-      // Check if user is admin - only protection we keep
-      if (user.isAdmin) {
-        console.error("MongoDB: Cannot delete admin user");
         return false;
       }
       

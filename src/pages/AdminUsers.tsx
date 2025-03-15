@@ -12,37 +12,17 @@ import { StatsOverview } from '@/components/admin/StatsOverview';
 import { machines } from '@/utils/data';
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-
-// Use localStorage to check admin status instead of AuthContext
-import { storage } from '@/utils/storage';
+import { useAuth } from '@/context/AuthContext';
 
 const AdminUsers = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserWithoutSensitiveInfo[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user } = useAuth(); // Get user from AuthContext instead of localStorage
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Check if current user is admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const storedUser = await storage.getItem('learnit_user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          setIsAdmin(user.isAdmin || false);
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkAdminStatus();
-  }, []);
+  const isAdmin = user?.isAdmin || false;
   
   const fetchUsers = async () => {
     setRefreshing(true);
@@ -60,6 +40,7 @@ const AdminUsers = () => {
       });
     } finally {
       setRefreshing(false);
+      setLoading(false);
     }
   };
   
