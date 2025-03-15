@@ -29,12 +29,6 @@ export const loginUser = async (req: Request, res: Response) => {
       const userCount = await User.countDocuments({});
       console.log(`Total users in database: ${userCount}`);
       
-      // List all collections if no users found
-      if (userCount === 0) {
-        const collections = await mongoose.connection.db.listCollections().toArray();
-        console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
-      }
-      
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
