@@ -43,17 +43,28 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Enhanced CORS configuration
+// CORS configuration with explicit options
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow any origin
-    console.log('Request origin:', origin);
-    callback(null, true);
-  },
+  origin: '*', // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
+
+// Add CORS headers to all responses as a fallback
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
@@ -82,6 +93,8 @@ app.use('/api/health', healthRoutes);
 
 // Health check endpoint (root level)
 app.get('/health', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
