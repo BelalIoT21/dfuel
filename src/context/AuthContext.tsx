@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
@@ -47,52 +48,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Login function
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, offlineMode: boolean = false) => {
     try {
       console.log("Login attempt for:", email);
       
-      // First try API login
-      const apiResponse = await apiService.login(email, password);
-      
-      if (apiResponse.data && apiResponse.data.token) {
-        // Successfully authenticated via API
-        console.log("Login successful via API");
-        const userData = apiResponse.data;
+      // Create admin user for offline mode
+      if (offlineMode && email === "admin@learnit.com" && password === "admin123") {
+        console.log("Creating offline admin user");
+        const adminUser = {
+          id: "admin-offline",
+          _id: "admin-offline",
+          name: "Administrator",
+          email: "admin@learnit.com",
+          isAdmin: true,
+          certifications: ["1", "2", "3", "4", "5", "6"],
+          bookings: [],
+          lastLogin: new Date().toISOString()
+        };
         
-        // Save the token for future API requests
-        localStorage.setItem('token', userData.token);
-        
-        // Store user data
-        const userToStore = userData.user || userData;
-        setUser(userToStore);
-        localStorage.setItem('learnit_user', JSON.stringify(userToStore));
+        setUser(adminUser);
+        localStorage.setItem('learnit_user', JSON.stringify(adminUser));
         
         toast({
-          title: "Login successful",
-          description: `Welcome back, ${userToStore.name || 'User'}!`
+          title: "Login successful (Offline mode)",
+          description: "Welcome back, Administrator!"
         });
         
         return true;
       }
       
-      // If API login fails, fallback to local authentication
-      if (apiResponse.error) {
-        console.warn("API login failed, falling back to local auth:", apiResponse.error);
+      if (!offlineMode) {
+        // First try API login
+        const apiResponse = await apiService.login(email, password);
         
-        const authenticatedUser = await userDatabase.authenticate(email, password);
-        
-        if (authenticatedUser) {
-          setUser(authenticatedUser);
-          // For native, still store in AsyncStorage
-          await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        if (apiResponse.data && apiResponse.data.token) {
+          // Successfully authenticated via API
+          console.log("Login successful via API");
+          const userData = apiResponse.data;
+          
+          // Save the token for future API requests
+          localStorage.setItem('token', userData.token);
+          
+          // Store user data
+          const userToStore = userData.user || userData;
+          setUser(userToStore);
+          localStorage.setItem('learnit_user', JSON.stringify(userToStore));
           
           toast({
             title: "Login successful",
-            description: `Welcome back, ${authenticatedUser.name || 'User'}!`
+            description: `Welcome back, ${userToStore.name || 'User'}!`
           });
           
           return true;
         }
+        
+        // If API login fails, fallback to local authentication
+        if (apiResponse.error) {
+          console.warn("API login failed, falling back to local auth:", apiResponse.error);
+        }
+      }
+      
+      // Local authentication
+      console.log("Attempting local authentication");
+      const authenticatedUser = await userDatabase.authenticate(email, password);
+      
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${authenticatedUser.name || 'User'}!`
+        });
+        
+        return true;
       }
       
       toast({
@@ -102,6 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       throw new Error("Invalid credentials");
+      
     } catch (error) {
       console.error('Login error:', error);
       
@@ -116,66 +147,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Register function
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string, offlineMode: boolean = false) => {
     try {
       console.log("Registration attempt for:", email);
       
-      // First try API registration
-      const apiResponse = await apiService.register({ email, password, name });
-      
-      if (apiResponse.data && apiResponse.data.token) {
-        // Successfully registered via API
-        console.log("Registration successful via API");
-        const userData = apiResponse.data;
+      if (!offlineMode) {
+        // First try API registration
+        const apiResponse = await apiService.register({ email, password, name });
         
-        // Ensure we have both user data and token
-        if (userData) {
-          // Store token for future API requests
-          localStorage.setItem('token', userData.token);
+        if (apiResponse.data && apiResponse.data.token) {
+          // Successfully registered via API
+          console.log("Registration successful via API");
+          const userData = apiResponse.data;
           
-          // Store user data without sensitive info
-          const userToStore = userData;
-          setUser(userToStore);
-          localStorage.setItem('learnit_user', JSON.stringify(userToStore));
+          // Ensure we have both user data and token
+          if (userData) {
+            // Store token for future API requests
+            localStorage.setItem('token', userData.token);
+            
+            // Store user data without sensitive info
+            const userToStore = userData;
+            setUser(userToStore);
+            localStorage.setItem('learnit_user', JSON.stringify(userToStore));
+            
+            toast({
+              title: "Registration successful",
+              description: `Welcome, ${userToStore.name || 'User'}!`
+            });
+            
+            return true;
+          }
+        }
+        
+        // If API registration fails with a specific error, show it
+        if (apiResponse.error) {
+          console.warn("API registration failed:", apiResponse.error);
           
-          toast({
-            title: "Registration successful",
-            description: `Welcome, ${userToStore.name || 'User'}!`
-          });
-          
-          return true;
+          // Check if it's a "user already exists" error from API
+          if (apiResponse.error.includes("already exists")) {
+            toast({
+              title: "Registration failed",
+              description: "A user with this email already exists",
+              variant: "destructive"
+            });
+            throw new Error("User already exists");
+          }
         }
       }
       
-      // If API registration fails with a specific error, show it
-      if (apiResponse.error) {
-        console.warn("API registration failed:", apiResponse.error);
+      // Fallback to local registration
+      console.log("Performing local registration");
+      const newUser = await userDatabase.registerUser(email, password, name);
+      
+      if (newUser) {
+        setUser(newUser);
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
         
-        // Check if it's a "user already exists" error from API
-        if (apiResponse.error.includes("already exists")) {
-          toast({
-            title: "Registration failed",
-            description: "A user with this email already exists",
-            variant: "destructive"
-          });
-          throw new Error("User already exists");
-        }
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${newUser.name || 'User'}!`
+        });
         
-        // Fallback to local registration
-        console.log("Falling back to local registration");
-        const newUser = await userDatabase.registerUser(email, password, name);
-        
-        if (newUser) {
-          setUser(newUser);
-          await storage.setItem('learnit_user', JSON.stringify(newUser));
-          
-          toast({
-            title: "Registration successful",
-            description: `Welcome, ${newUser.name || 'User'}!`
-          });
-          
-          return true;
-        }
+        return true;
       }
       
       toast({

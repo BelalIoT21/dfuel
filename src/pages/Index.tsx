@@ -5,13 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { connectionManager } from '@/services/api/connectionManager';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [offlineMode, setOfflineMode] = useState(false);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -23,14 +23,23 @@ const Index = () => {
         setIsLoading(true);
         
         // Force a connection check
-        await connectionManager.checkConnection();
+        const isConnected = await connectionManager.checkConnection();
+        if (!isConnected) {
+          setOfflineMode(true);
+          toast({
+            title: 'Offline Mode',
+            description: 'Using local authentication. Some features may be limited.',
+            variant: 'default'
+          });
+        }
         setIsLoading(false);
       } catch (error) {
         console.error("Server connection error:", error);
+        setOfflineMode(true);
         toast({
-          title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please check the connection settings.',
-          variant: 'destructive'
+          title: 'Offline Mode',
+          description: 'Using local authentication. Some features may be limited.',
+          variant: 'default'
         });
         setIsLoading(false);
       }
@@ -54,15 +63,35 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    await login(email, password);
+    try {
+      if (offlineMode && email === "admin@learnit.com" && password === "admin123") {
+        // Special handling for admin in offline mode
+        await login(email, password, true);
+      } else {
+        await login(email, password, offlineMode);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: 'Login Failed',
+        description: error instanceof Error ? error.message : 'Invalid credentials',
+        variant: 'destructive'
+      });
+      throw error;
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
     try {
-      await register(email, password, name);
+      await register(email, password, name, offlineMode);
     } catch (error) {
       console.error("Registration error:", error);
+      toast({
+        title: 'Registration Failed',
+        description: error instanceof Error ? error.message : 'Could not create account',
+        variant: 'destructive'
+      });
       throw error; // Rethrow so the form can handle it
     }
   };
