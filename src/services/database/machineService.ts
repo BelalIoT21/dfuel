@@ -23,7 +23,8 @@ export interface MachineData {
 export class MachineDatabaseService extends BaseService {
   async getMachineStatus(machineId: string): Promise<string> {
     try {
-      const response = await apiService.getMachineStatus(machineId);
+      console.log(`Getting machine status for ID: ${machineId}`);
+      const response = await apiService.request(`machines/${machineId}`, 'GET');
       if (response.data) {
         return response.data.status;
       }
@@ -32,13 +33,14 @@ export class MachineDatabaseService extends BaseService {
     }
     
     // Default to available if API fails
-    return 'available';
+    return 'Available';
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      const response = await apiService.updateMachineStatus(machineId, status, note);
-      return response.data?.success || false;
+      console.log(`Updating machine status: ID=${machineId}, status=${status}`);
+      const response = await apiService.request(`machines/${machineId}/status`, 'PUT', { status, note }, true);
+      return !response.error;
     } catch (error) {
       console.error("API error, could not update machine status:", error);
       return false;
@@ -47,26 +49,30 @@ export class MachineDatabaseService extends BaseService {
 
   async createMachine(machineData: MachineData): Promise<any> {
     try {
+      console.log("Creating new machine with data:", machineData);
       const response = await apiService.request('machines', 'POST', machineData, true);
+      console.log("Machine creation response:", response);
       return response.data;
     } catch (error) {
       console.error("API error, could not create machine:", error);
-      return null;
+      throw new Error("Failed to create machine: " + (error instanceof Error ? error.message : "Unknown error"));
     }
   }
 
   async updateMachine(machineId: string, machineData: Partial<MachineData>): Promise<any> {
     try {
+      console.log(`Updating machine ${machineId} with data:`, machineData);
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
       return response.data;
     } catch (error) {
       console.error(`API error, could not update machine ${machineId}:`, error);
-      return null;
+      throw new Error("Failed to update machine: " + (error instanceof Error ? error.message : "Unknown error"));
     }
   }
 
   async deleteMachine(machineId: string): Promise<boolean> {
     try {
+      console.log(`Deleting machine: ${machineId}`);
       const response = await apiService.request(`machines/${machineId}`, 'DELETE', undefined, true);
       return !response.error;
     } catch (error) {
@@ -77,7 +83,9 @@ export class MachineDatabaseService extends BaseService {
 
   async getAllMachines(): Promise<any[]> {
     try {
-      const response = await apiService.request('machines', 'GET', undefined, true);
+      console.log("Fetching all machines");
+      const response = await apiService.request('machines', 'GET');
+      console.log(`Fetched ${response.data?.length || 0} machines`);
       return response.data || [];
     } catch (error) {
       console.error("API error, could not get all machines:", error);
@@ -87,7 +95,8 @@ export class MachineDatabaseService extends BaseService {
 
   async getMachineById(machineId: string): Promise<any> {
     try {
-      const response = await apiService.request(`machines/${machineId}`, 'GET', undefined, true);
+      console.log(`Fetching machine details for ID: ${machineId}`);
+      const response = await apiService.request(`machines/${machineId}`, 'GET');
       return response.data;
     } catch (error) {
       console.error(`API error, could not get machine ${machineId}:`, error);

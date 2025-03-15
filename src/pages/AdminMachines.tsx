@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,10 +29,13 @@ const AdminMachines = () => {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
+        console.log('Fetching machines from API...');
         const fetchedMachines = await machineDatabaseService.getAllMachines();
         if (fetchedMachines && fetchedMachines.length > 0) {
+          console.log(`Successfully fetched ${fetchedMachines.length} machines`);
           setMachinesList(fetchedMachines);
         } else {
+          console.log('No machines found, using demo data');
           setMachinesList(machines);
         }
         setInitialLoadComplete(true);
@@ -95,8 +99,10 @@ const AdminMachines = () => {
         description: `${formData.name} has been added successfully.`
       });
       
+      // Add the new machine to the list
       setMachinesList(prev => [...prev, newMachine]);
       
+      // Reset form and state
       setIsAddingMachine(false);
       setFormData({...initialFormData});
     } catch (error) {

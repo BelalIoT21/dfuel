@@ -8,7 +8,9 @@ import { validationResult } from 'express-validator';
 // @access  Public
 export const getMachines = async (req: Request, res: Response) => {
   try {
+    console.log('Fetching all machines from MongoDB');
     const machines = await Machine.find({});
+    console.log(`Found ${machines.length} machines`);
     res.json(machines);
   } catch (error) {
     console.error('Error in getMachines:', error);
@@ -24,11 +26,14 @@ export const getMachines = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
+    console.log(`Fetching machine with ID: ${req.params.id}`);
     const machine = await Machine.findById(req.params.id);
     
     if (machine) {
+      console.log(`Found machine: ${machine.name}`);
       res.json(machine);
     } else {
+      console.log(`Machine not found with ID: ${req.params.id}`);
       res.status(404).json({ message: 'Machine not found' });
     }
   } catch (error) {
@@ -48,8 +53,11 @@ export const createMachine = async (req: Request, res: Response) => {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
+    
+    console.log('Received machine data:', req.body);
     
     const { 
       name, 
@@ -100,10 +108,12 @@ export const createMachine = async (req: Request, res: Response) => {
 export const updateMachineStatus = async (req: Request, res: Response) => {
   try {
     const { status, maintenanceNote } = req.body;
+    console.log(`Updating machine status: ID=${req.params.id}, status=${status}`);
     
     const machine = await Machine.findById(req.params.id);
     
     if (!machine) {
+      console.log(`Machine not found with ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
@@ -113,6 +123,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
     
     const updatedMachine = await machine.save();
+    console.log(`Machine status updated: ${updatedMachine.name} -> ${updatedMachine.status}`);
     res.json(updatedMachine);
   } catch (error) {
     console.error('Error in updateMachineStatus:', error);
@@ -128,9 +139,12 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateMachine = async (req: Request, res: Response) => {
   try {
+    console.log(`Updating machine: ID=${req.params.id}`);
+    
     const machine = await Machine.findById(req.params.id);
     
     if (!machine) {
+      console.log(`Machine not found with ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
@@ -166,6 +180,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (linkedQuizId !== undefined) machine.linkedQuizId = linkedQuizId;
     
     const updatedMachine = await machine.save();
+    console.log(`Machine updated successfully: ${updatedMachine.name}`);
     res.json(updatedMachine);
   } catch (error) {
     console.error('Error in updateMachine:', error);
@@ -181,13 +196,17 @@ export const updateMachine = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteMachine = async (req: Request, res: Response) => {
   try {
+    console.log(`Deleting machine: ID=${req.params.id}`);
+    
     const machine = await Machine.findById(req.params.id);
     
     if (!machine) {
+      console.log(`Machine not found with ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
     await machine.deleteOne();
+    console.log(`Machine deleted: ${machine.name}`);
     res.json({ message: 'Machine removed' });
   } catch (error) {
     console.error('Error in deleteMachine:', error);
