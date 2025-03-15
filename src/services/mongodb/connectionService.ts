@@ -1,7 +1,8 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService'; // New import
+import mongoSeedService from './seedService';
+import { toast } from '@/components/ui/use-toast';
+import { getEnv } from '@/utils/env';
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -12,18 +13,13 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // In a real application, this would come from environment variables
-    this.uri = 'mongodb://localhost:27017/learnit';
+    // Try to get URI from environment or use default
+    // Use getEnv helper instead of directly accessing process.env
+    this.uri = getEnv('MONGODB_URI') || 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
   async connect(): Promise<any | null> {
-    // Skip MongoDB connection in browser environment
-    if (isWeb) {
-      console.log("Running in browser environment, skipping MongoDB connection");
-      return null;
-    }
-    
     // If we're already connecting, return the existing promise
     if (this.isConnecting && this.connectionPromise) {
       console.log("MongoDB connection already in progress, waiting...");
@@ -39,6 +35,19 @@ class MongoConnectionService {
         this.connectionPromise = new Promise(async (resolve, reject) => {
           try {
             // Only import MongoDB in non-web environments
+            if (isWeb) {
+              console.error("Cannot directly connect to MongoDB in web environment");
+              // Instead of failing silently, show a toast for web users
+              toast({
+                title: "Database Connection Error",
+                description: "Cannot connect directly to MongoDB in web environment. Please ensure the server is running.",
+                variant: "destructive"
+              });
+              this.isConnecting = false;
+              reject(new Error("Cannot connect to MongoDB in web environment"));
+              return;
+            }
+            
             const { MongoClient, ServerApiVersion } = await import('mongodb');
             
             this.client = new MongoClient(this.uri, {
@@ -68,6 +77,12 @@ class MongoConnectionService {
             resolve(this.db);
           } catch (error) {
             console.error("Error connecting to MongoDB:", error);
+            // Show a toast for connection errors
+            toast({
+              title: "Database Connection Error",
+              description: "Failed to connect to MongoDB. Please check your connection and try again.",
+              variant: "destructive"
+            });
             this.isConnecting = false;
             this.connectionPromise = null;
             reject(error);
@@ -103,6 +118,11 @@ class MongoConnectionService {
       console.log("Seed data initialization complete");
     } catch (error) {
       console.error("Error initializing seed data:", error);
+      toast({
+        title: "Data Initialization Error",
+        description: "Failed to initialize seed data in MongoDB",
+        variant: "destructive"
+      });
     }
   }
   
@@ -129,7 +149,10 @@ class MongoConnectionService {
   
   // Check if the database connection is active
   async isConnected(): Promise<boolean> {
-    if (isWeb) return false;
+    if (isWeb) {
+      console.log("Web environment - using API for MongoDB access");
+      return false;
+    }
     
     try {
       if (!this.client) {

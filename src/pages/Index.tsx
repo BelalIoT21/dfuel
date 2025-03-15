@@ -33,7 +33,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Using local storage instead.',
+          description: 'Could not connect to the backend server. Please try again later.',
           variant: 'destructive'
         });
       }
@@ -45,19 +45,32 @@ const Index = () => {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      console.log("User is logged in, redirecting:", user);
-      navigate(user.isAdmin ? '/admin' : '/home');
+      console.log("User is already logged in, redirecting to home:", user);
+      // Use setTimeout to ensure this runs after component mount
+      setTimeout(() => {
+        navigate('/home');
+      }, 0);
     }
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    await login(email, password);
+    try {
+      await login(email, password);
+      // Navigation will happen automatically in the useEffect
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    try {
+      await register(email, password, name);
+      // Navigation will happen automatically in the useEffect
+    } catch (error) {
+      console.error("Registration failed:", error);
+    }
   };
 
   const toggleMode = () => {
@@ -65,7 +78,7 @@ const Index = () => {
   };
 
   // Debug rendering
-  console.log("Rendering Index component");
+  console.log("Rendering Index component, user:", user ? "logged in" : "not logged in");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
