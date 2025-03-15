@@ -219,6 +219,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       case "4": return "Bambu Lab X1 E"; // Added ID 4
       case "5": return "Bambu Lab X1 E";
       case "6": return "Machine Safety Course";
+      case "7": return "X1 E Carbon 3D Printer";
       default: return `Machine ${machineId}`;
     }
   };
