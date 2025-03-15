@@ -75,12 +75,12 @@ const ActiveBookings = () => {
       
       // Update the local state to reflect the change
       setBookings(bookings.map((booking: any) => 
-        booking.id === bookingId ? { ...booking, status: newStatus } : booking
+        booking._id === bookingId ? { ...booking, status: newStatus } : booking
       ));
       
       toast({
         title: `Booking ${newStatus}`,
-        description: `You have ${newStatus.toLowerCase()} booking #${bookingId}`,
+        description: `You have ${newStatus.toLowerCase()} booking #${bookingId.slice(0, 6)}...`,
         variant: newStatus === 'Approved' ? 'default' : 'destructive',
       });
     } catch (error) {
@@ -98,21 +98,22 @@ const ActiveBookings = () => {
     <div className="space-y-4">
       {filteredBookings.length > 0 ? (
         filteredBookings.map((booking: any) => (
-          <Card key={booking.id} className="overflow-hidden">
+          <Card key={booking._id} className="overflow-hidden">
             <CardHeader className="p-4 pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">{booking.machineName}</CardTitle>
+                <CardTitle className="text-lg">{booking.machine?.name || 'Unknown Machine'}</CardTitle>
                 <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
                       className={`
                         ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
                         ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
                         ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                        ${booking.status === 'Canceled' && 'bg-gray-500 hover:bg-gray-600'}
                       `}>
                   {booking.status}
                 </Badge>
               </div>
               <CardDescription>
-                <span className="font-medium">User:</span> {booking.userName}
+                <span className="font-medium">User:</span> {booking.user?.name || 'Unknown User'}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0">
@@ -125,7 +126,7 @@ const ActiveBookings = () => {
                   <Button 
                     size="sm" 
                     className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-1 w-full"
-                    onClick={() => handleStatusChange(booking.id, 'Approved')}
+                    onClick={() => handleStatusChange(booking._id, 'Approved')}
                   >
                     <CheckCircle size={16} />
                     Approve
@@ -134,7 +135,7 @@ const ActiveBookings = () => {
                     size="sm" 
                     variant="destructive"
                     className="flex items-center justify-center gap-1 w-full"
-                    onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                    onClick={() => handleStatusChange(booking._id, 'Rejected')}
                   >
                     <XCircle size={16} />
                     Reject
@@ -179,9 +180,9 @@ const ActiveBookings = () => {
         <TableBody>
           {filteredBookings.length > 0 ? (
             filteredBookings.map((booking: any) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">{booking.machineName}</TableCell>
-                <TableCell>{booking.userName}</TableCell>
+              <TableRow key={booking._id}>
+                <TableCell className="font-medium">{booking.machine?.name || 'Unknown Machine'}</TableCell>
+                <TableCell>{booking.user?.name || 'Unknown User'}</TableCell>
                 <TableCell>
                   {booking.date} at {booking.time}
                 </TableCell>
@@ -191,6 +192,7 @@ const ActiveBookings = () => {
                           ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
                           ${booking.status === 'Pending' && 'bg-yellow-500 hover:bg-yellow-600'} 
                           ${booking.status === 'Rejected' && 'bg-red-500 hover:bg-red-600'}
+                          ${booking.status === 'Canceled' && 'bg-gray-500 hover:bg-gray-600'}
                         `}>
                     {booking.status}
                   </Badge>
@@ -201,7 +203,7 @@ const ActiveBookings = () => {
                       <Button 
                         size="sm" 
                         className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
-                        onClick={() => handleStatusChange(booking.id, 'Approved')}
+                        onClick={() => handleStatusChange(booking._id, 'Approved')}
                       >
                         <CheckCircle size={16} />
                         Approve
@@ -210,7 +212,7 @@ const ActiveBookings = () => {
                         size="sm" 
                         variant="destructive"
                         className="flex items-center gap-1"
-                        onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                        onClick={() => handleStatusChange(booking._id, 'Rejected')}
                       >
                         <XCircle size={16} />
                         Reject
@@ -264,6 +266,7 @@ const ActiveBookings = () => {
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="canceled">Canceled</SelectItem>
                 </SelectContent>
               </Select>
             </div>

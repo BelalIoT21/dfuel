@@ -1,123 +1,218 @@
-
-import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 import { User, UserWithoutSensitiveInfo } from '../../types/database';
+import databaseService from '../databaseService';
+import { getAdminCredentials, setAdminCredentials } from '../../utils/adminCredentials';
 import { BaseService } from './baseService';
+import { localStorageService } from '../localStorageService';
+import { isWeb } from '../../utils/platform';
+import mongoDbService from '../mongoDbService';
+import { apiService } from '../apiService';
 
-/**
- * Service that handles all user-related database operations.
- */
 export class UserDatabaseService extends BaseService {
+  private usersStorageKey = 'learnit_users';
+
   async getAllUsers(): Promise<UserWithoutSensitiveInfo[]> {
-    return this.apiRequest<UserWithoutSensitiveInfo[]>(
-      () => apiService.getAllUsers(),
-      () => localStorageService.getUsers().map(({ password, resetCode, ...user }) => user),
-      "API error in getAllUsers"
-    ) || [];
+    try {
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users: User[] = JSON.parse(usersData);
+      return users.map(user => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+        certifications: user.certifications,
+        bookings: user.bookings,
+        lastLogin: user.lastLogin
+      }));
+    } catch (error) {
+      console.error("Error getting all users:", error);
+      return [];
+    }
   }
-  
+
   async findUserByEmail(email: string): Promise<User | undefined> {
-    return this.apiRequest<User>(
-      () => apiService.getUserByEmail(email),
-      () => localStorageService.findUserByEmail(email),
-      "API error in findUserByEmail"
-    );
-  }
-  
-  async findUserById(id: string): Promise<User | undefined> {
-    return this.apiRequest<User>(
-      () => apiService.getUserById(id),
-      () => localStorageService.findUserById(id),
-      "API error in findUserById"
-    );
-  }
-  
-  async authenticate(email: string, password: string): Promise<UserWithoutSensitiveInfo | null> {
     try {
-      console.log("Authenticating via API:", email);
-      const response = await apiService.login(email, password);
-      if (response.data && response.data.user) {
-        console.log("API authentication successful");
-        // Store the token for future API requests
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
+      // First try API
+      try {
+        const response = await apiService.getUserByEmail(email);
+        if (response.data) {
+          return response.data;
         }
-        return response.data.user;
+      } catch (apiError) {
+        console.error("API error when finding user by email:", apiError);
       }
-    } catch (error) {
-      console.error("API error, falling back to localStorage auth:", error);
-    }
-    
-    // Fallback to localStorage
-    console.log("Falling back to localStorage authentication");
-    const user = localStorageService.findUserByEmail(email);
-    if (user && user.password === password) {
-      console.log("LocalStorage authentication successful");
-      // Update last login time
-      user.lastLogin = new Date().toISOString();
-      localStorageService.updateUser(user.id, { lastLogin: user.lastLogin });
       
-      const { password: _, resetCode: __, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    } else {
-      console.log("LocalStorage authentication failed");
-    }
-    
-    return null;
-  }
-  
-  async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
-    try {
-      console.log("Registering via API:", email);
-      const response = await apiService.register({ email, password, name });
-      if (response.data && response.data.user) {
-        console.log("API registration successful");
-        // Store the token for future API requests
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-        }
-        return response.data.user;
-      }
+      // Fallback to localStorage
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users: User[] = JSON.parse(usersData);
+      return users.find(user => user.email === email);
     } catch (error) {
-      console.error("API error, falling back to localStorage registration:", error);
+      console.error("Error finding user by email:", error);
+      return undefined;
     }
-    
-    // Fallback to localStorage
-    console.log("Falling back to localStorage registration");
-    // Check if user already exists
-    const existingUser = localStorageService.findUserByEmail(email);
-    if (existingUser) {
-      console.log("User already exists in localStorage");
+  }
+
+  async findUserById(id: string) {
+    try {
+      // First try MongoDB if not in web environment
+      if (!isWeb) {
+        try {
+          const mongoUser = await mongoDbService.getUserById(id);
+          if (mongoUser) {
+            return mongoUser;
+          }
+        } catch (mongoError) {
+          console.error("MongoDB error when finding user by ID:", mongoError);
+        }
+      }
+      
+      // Try API
+      try {
+        const response = await apiService.getUserById(id);
+        if (response.data) {
+          return response.data;
+        }
+      } catch (apiError) {
+        console.error("API error when finding user by ID:", apiError);
+      }
+      
+      // Fallback to localStorage
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users = JSON.parse(usersData);
+      return users.find((user: User) => user.id === id);
+    } catch (error) {
+      console.error("Error finding user by ID:", error);
       return null;
     }
-    
-    // Create new user
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      password,
-      name,
-      isAdmin: false,
-      certifications: [],
-      bookings: [],
-      lastLogin: new Date().toISOString(),
-    };
-    
-    localStorageService.addUser(newUser);
-    console.log("User added to localStorage");
-    
-    const { password: _, resetCode: __, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
   }
-  
-  async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
+
+  async authenticate(email: string, password: string): Promise<UserWithoutSensitiveInfo | null> {
     try {
-      const response = await apiService.updateProfile(userId, updates);
-      return response.data?.success || false;
+      const user = await this.findUserByEmail(email);
+      if (user && user.password === password) {
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin,
+          certifications: user.certifications,
+          bookings: user.bookings,
+          lastLogin: user.lastLogin
+        };
+      }
+      return null;
     } catch (error) {
-      console.error("API error, falling back to localStorage update:", error);
-      // Fallback to localStorage
-      return localStorageService.updateUser(userId, updates);
+      console.error("Error authenticating user:", error);
+      return null;
+    }
+  }
+
+  async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
+    try {
+      if (await this.findUserByEmail(email)) {
+        console.log("Email already in use:", email);
+        return null;
+      }
+
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        email,
+        password,
+        name,
+        isAdmin: false,
+        certifications: [],
+        bookings: [],
+        lastLogin: new Date().toISOString(),
+        resetCode: undefined
+      };
+
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users: User[] = JSON.parse(usersData);
+      users.push(newUser);
+
+      await localStorageService.setItem(this.usersStorageKey, JSON.stringify(users));
+
+      return {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        isAdmin: newUser.isAdmin,
+        certifications: newUser.certifications,
+        bookings: newUser.bookings,
+        lastLogin: newUser.lastLogin
+      };
+    } catch (error) {
+      console.error("Error registering user:", error);
+      return null;
+    }
+  }
+
+  async updateUserProfile(userId: string, updates: {name?: string, email?: string}): Promise<boolean> {
+    try {
+      const user = await this.findUserById(userId);
+      if (!user) return false;
+
+      const updatedUser = { ...user, ...updates };
+
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users: User[] = JSON.parse(usersData);
+      const userIndex = users.findIndex(u => u.id === userId);
+
+      if (userIndex === -1) return false;
+
+      users[userIndex] = updatedUser;
+      await localStorageService.setItem(this.usersStorageKey, JSON.stringify(users));
+
+      return true;
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      return false;
+    }
+  }
+
+  async updateUser(userId: string, updatedUser: User): Promise<boolean> {
+    try {
+      const usersData = await localStorageService.getItem(this.usersStorageKey) || '[]';
+      const users: User[] = JSON.parse(usersData);
+      const userIndex = users.findIndex(u => u.id === userId);
+
+      if (userIndex === -1) return false;
+
+      users[userIndex] = updatedUser;
+      await localStorageService.setItem(this.usersStorageKey, JSON.stringify(users));
+
+      return true;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return false;
+    }
+  }
+
+  // Update a user's booking status
+  async updateBookingStatus(userId: string, bookingId: string, status: string): Promise<boolean> {
+    try {
+      // Get the user
+      const user = await this.findUserById(userId);
+      if (!user) {
+        console.error("User not found when updating booking status");
+        return false;
+      }
+      
+      // Find the booking
+      const bookingIndex = user.bookings?.findIndex((b: any) => b.id === bookingId);
+      if (bookingIndex === undefined || bookingIndex === -1) {
+        console.error("Booking not found when updating status");
+        return false;
+      }
+      
+      // Update the booking status
+      user.bookings[bookingIndex].status = status;
+      
+      // Save the updated user
+      const success = await this.updateUser(userId, user);
+      return success;
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+      return false;
     }
   }
 }
