@@ -1,3 +1,4 @@
+
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService'; 
@@ -16,7 +17,7 @@ class MongoConnectionService {
     // Use an environment-aware MongoDB connection string
     // For web environments, we'll default to a relative path
     if (isWeb) {
-      this.uri = '/api/mongodb';
+      this.uri = 'http://localhost:4000/api/mongodb';
     } else {
       // For Node.js environments (server-side), use process.env
       // @ts-ignore - process.env may not exist in browser but this code only runs in Node
