@@ -106,13 +106,13 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       return;
     }
     
+    console.log(`Attempting to remove certification: userId=${userId}, machineId=${machineId}`);
     setLoading(machineId);
+    
     try {
-      console.log(`Removing certification for machine ID: ${machineId} from user ID: ${userId}`);
-      
+      // First try direct MongoDB
       let success = false;
       try {
-        // Try direct MongoDB first
         const userDoc = await mongoDbService.getUserById(userId);
         if (userDoc) {
           const updatedCertifications = userDoc.certifications.filter(id => id !== machineId);
@@ -204,23 +204,23 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       setIsClearing(false);
     }
   };
-
-  const hasMachineSafetyCourse = user?.certifications?.includes("6");
   
-  // Helper function to get MongoDB machine names
+  // Helper function to get MongoDB machine names with correct ID mapping
   const getMachineName = (machineId: string) => {
-    if (machineId === "6") return "Safety Course";
-    if (machineId === "5") return "Safety Cabinet";
-    if (machineId === "3") return "X1 E Carbon 3D Printer";
-    if (machineId === "1") return "Laser Cutter";
-    if (machineId === "2") return "Ultimaker";
-    if (machineId === "4") return "Bambu Lab X1 E";
-    
+    // First check the dynamically loaded machines
     const machine = allMachines.find(m => m.id === machineId || m._id === machineId);
     if (machine) return machine.name;
     
-    const localMachine = machines.find(m => m.id === machineId);
-    return localMachine ? localMachine.name : `Machine ${machineId}`;
+    // Fallback to hardcoded mapping for known machines
+    switch (machineId) {
+      case "1": return "Laser Cutter";
+      case "2": return "Ultimaker";
+      case "3": return "X1 E Carbon 3D Printer";
+      case "4": return "Bambu Lab X1 E";
+      case "5": return "Safety Cabinet";
+      case "6": return "Safety Course";
+      default: return `Machine ${machineId}`;
+    }
   };
 
   // Get list of user certifications to display
