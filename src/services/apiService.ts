@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
@@ -113,12 +112,8 @@ class ApiService {
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        const { toast } = useToast();
-        toast({
-          title: `API Error`,
-          description: "Could not connect to server. Using local storage fallback.",
-          variant: 'destructive'
-        });
+        // Don't use the hook directly here - it's not inside a component
+        console.error('API error - would show toast in component');
       }
       
       return {
