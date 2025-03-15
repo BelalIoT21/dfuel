@@ -15,21 +15,25 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   
   useEffect(() => {
     const fetchMachineNames = async () => {
-      const names = {};
-      const types = {};
+      const names: Record<string, string> = {};
+      const types: Record<string, string> = {};
       
-      // Set special cases first
-      names["6"] = "Machine Safety Course";
-      types["6"] = "Safety Course";
-      names["5"] = "Bambu Lab X1 Carbon";
+      // Set special cases first with consistent naming
+      names["3"] = "Safety Course";
+      types["3"] = "Safety Course";
+      names["5"] = "X1 E Carbon 3D Printer";
       types["5"] = "3D Printer";
-      names["3"] = "Safety Cabinet";
-      types["3"] = "Safety Cabinet";
+      names["8"] = "Safety Cabinet";
+      types["8"] = "Safety Cabinet";
+      names["1"] = "Laser Cutter";
+      types["1"] = "Laser Cutter";
+      names["2"] = "Ultimaker";
+      types["2"] = "3D Printer";
       
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
           // Skip special cases we've already handled
-          if (["6", "5", "3"].includes(certId)) continue;
+          if (["1", "2", "3", "5", "8"].includes(certId)) continue;
           
           try {
             const machine = await machineService.getMachineById(certId);

@@ -63,7 +63,7 @@ class MongoSeedService {
           email: 'john@example.com',
           password: userPassword,
           isAdmin: false,
-          certifications: ['1', '2', '3', '5'], // Laser Cutter, 3D Printer, Safety Course, Bambu
+          certifications: ['1', '2', '3', '5'], // Laser Cutter, Ultimaker, Safety Course, X1 E Carbon
           bookings: [],
           lastLogin: new Date().toISOString()
         },
@@ -73,7 +73,7 @@ class MongoSeedService {
           email: 'jane@example.com',
           password: userPassword,
           isAdmin: false,
-          certifications: ['3', '6', '8'], // Safety Course, Soldering, Woodworking
+          certifications: ['3', '6', '8'], // Safety Course, Soldering, Safety Cabinet
           bookings: [],
           lastLogin: new Date().toISOString()
         }
@@ -129,15 +129,15 @@ class MongoSeedService {
       const nextWeekStr = nextWeek.toISOString().split('T')[0];
       
       // Machine names mapped to consistent IDs 
-      const machineMap = {
-        'Epilog Laser Cutter': '1',
-        'Ultimaker S5': '2',
-        'Machine Safety Course': '3',
-        'HAAS CNC Mill': '4',
-        'Bambu Lab X1 Carbon': '5',
+      const machineMap: Record<string, string> = {
+        'Laser Cutter': '1',
+        'Ultimaker': '2',
+        'Safety Course': '3',
+        'CNC Mill': '4',
+        'X1 E Carbon 3D Printer': '5',
         'Soldering Station': '6',
         'Vinyl Cutter': '7',
-        'Woodworking Tools': '8'
+        'Safety Cabinet': '8'
       };
       
       // Create sample bookings and assign to users
@@ -153,7 +153,7 @@ class MongoSeedService {
         if (user.id === '2') {
           bookings.push({
             id: `booking-${user.id}-1`,
-            machineId: machineMap['Epilog Laser Cutter'],
+            machineId: machineMap['Laser Cutter'],
             date: today,
             time: '10:00 - 12:00',
             status: 'Approved'
@@ -161,7 +161,7 @@ class MongoSeedService {
           
           bookings.push({
             id: `booking-${user.id}-2`,
-            machineId: machineMap['Ultimaker S5'],
+            machineId: machineMap['Ultimaker'],
             date: tomorrowStr,
             time: '14:00 - 16:00',
             status: 'Pending'
@@ -180,7 +180,7 @@ class MongoSeedService {
           
           bookings.push({
             id: `booking-${user.id}-2`,
-            machineId: machineMap['Bambu Lab X1 Carbon'],
+            machineId: machineMap['X1 E Carbon 3D Printer'],
             date: nextWeekStr,
             time: '09:00 - 11:00',
             status: 'Pending'
@@ -224,7 +224,7 @@ class MongoSeedService {
       const machines: MongoMachine[] = [
         {
           _id: '1',
-          name: 'Epilog Laser Cutter',
+          name: 'Laser Cutter',
           type: 'Laser Cutter',
           description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.',
           status: 'Available',
@@ -235,7 +235,7 @@ class MongoSeedService {
         },
         {
           _id: '2',
-          name: 'Ultimaker S5',
+          name: 'Ultimaker',
           type: '3D Printer',
           description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
           status: 'Available',
@@ -246,7 +246,7 @@ class MongoSeedService {
         },
         {
           _id: '3',
-          name: 'Machine Safety Course',
+          name: 'Safety Course',
           type: 'Safety Course',
           description: 'Required safety training for all makerspace users.',
           status: 'Available',
@@ -256,7 +256,7 @@ class MongoSeedService {
         },
         {
           _id: '4',
-          name: 'HAAS CNC Mill',
+          name: 'CNC Mill',
           type: 'CNC Machine',
           description: 'Industrial CNC milling machine for precision metalworking.',
           status: 'Available',
@@ -267,7 +267,7 @@ class MongoSeedService {
         },
         {
           _id: '5',
-          name: 'Bambu Lab X1 Carbon',
+          name: 'X1 E Carbon 3D Printer',
           type: '3D Printer',
           description: 'High-speed multi-material 3D printer with exceptional print quality.',
           status: 'Available',
@@ -301,9 +301,9 @@ class MongoSeedService {
         },
         {
           _id: '8',
-          name: 'Woodworking Tools',
+          name: 'Safety Cabinet',
           type: 'Workshop',
-          description: 'Full suite of woodworking hand tools and power tools.',
+          description: 'Full suite of safety equipment and protective gear.',
           status: 'Available',
           requiresCertification: true,
           difficulty: 'Intermediate',
