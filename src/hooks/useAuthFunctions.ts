@@ -34,10 +34,13 @@ export const useAuthFunctions = (
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
+        
         // Save the token for future API requests
         if (apiResponse.data.token) {
+          console.log("Saving token to localStorage");
           localStorage.setItem('token', apiResponse.data.token);
-          console.log("Token saved to localStorage");
+        } else {
+          console.error("No token received from API");
         }
         
         // Transform MongoDB _id to id if needed
@@ -46,9 +49,14 @@ export const useAuthFunctions = (
           id: userData._id || userData.id
         };
         
+        console.log("Setting user data in state:", normalizedUser);
         setUser(normalizedUser as User);
-        // Only store the token in localStorage, not the user data
-        console.log("User data set in state:", normalizedUser);
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${normalizedUser.name}!`
+        });
+        
         return true;
       }
       
@@ -97,7 +105,10 @@ export const useAuthFunctions = (
         
         // Save the token for future API requests
         if (apiResponse.data.token) {
+          console.log("Saving token to localStorage");
           localStorage.setItem('token', apiResponse.data.token);
+        } else {
+          console.error("No token received from API");
         }
         
         // Transform MongoDB _id to id if needed
@@ -106,9 +117,8 @@ export const useAuthFunctions = (
           id: userData._id || userData.id
         };
         
+        console.log("Setting user data in state after registration:", normalizedUser);
         setUser(normalizedUser as User);
-        // Only store the token in localStorage, not the user data
-        console.log("User data set in state after registration:", normalizedUser);
         
         toast({
           title: "Registration successful",
@@ -137,9 +147,11 @@ export const useAuthFunctions = (
   };
 
   const logout = () => {
+    console.log("Logging out user");
     setUser(null);
-    // Only remove the token from localStorage
+    // Remove all auth data
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     toast({
       description: "Logged out successfully."
     });

@@ -4,6 +4,7 @@ import { registerUser, forgotPassword, resetPassword, getUserProfile } from '../
 import { loginUser } from '../controllers/auth/loginController';
 import { protect } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
+import { User } from '../models/User';
 
 const router = express.Router();
 
@@ -56,5 +57,16 @@ router.post(
 
 // Get user profile
 router.get('/me', protect, getUserProfile);
+
+// Get user count - public endpoint for the login screen
+router.get('/user-count', async (req, res) => {
+  try {
+    const count = await User.countDocuments({});
+    res.json({ count });
+  } catch (error) {
+    console.error('Error getting user count:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
 
 export default router;

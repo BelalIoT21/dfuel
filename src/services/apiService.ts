@@ -1,13 +1,13 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
-const BASE_URL = 'http://localhost:4000/api'; // Updated to explicitly use localhost:4000
+const BASE_URL = 'http://localhost:4000/api'; // Using localhost:4000 explicitly
 
 interface ApiResponse<T> {
   data: T | null;
   error: string | null;
   status: number;
+  success?: boolean;
 }
 
 class ApiService {
@@ -19,7 +19,12 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${BASE_URL}/${endpoint}`;
+      // Get token from localStorage
       const token = localStorage.getItem('token');
+      
+      console.log(`Making API request: ${method} ${url}`, 
+        data ? `with data: ${JSON.stringify(data)}` : '',
+        authRequired ? (token ? 'with token' : 'token required but not found') : 'no auth required');
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
@@ -39,7 +44,6 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       const response = await fetch(url, options);
       
       // Handle empty responses gracefully
@@ -56,11 +60,18 @@ class ApiService {
         const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
         console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
+        // If we get 401 and we have a token, it might be expired
+        if (response.status === 401 && token && authRequired) {
+          console.warn('Token might be expired, consider clearing it');
+          // We don't automatically clear the token here to avoid logout loops
+        }
+        
         if (response.status === 404) {
           return {
             data: null,
             error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
-            status: response.status
+            status: response.status,
+            success: false
           };
         }
         
@@ -70,7 +81,8 @@ class ApiService {
       return {
         data: responseData,
         error: null,
-        status: response.status
+        status: response.status,
+        success: true
       };
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -87,7 +99,8 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        status: 500,
+        success: false
       };
     }
   }
@@ -99,7 +112,7 @@ class ApiService {
       'auth/login', 
       'POST', 
       { email, password },
-      false
+      false // No auth required for login
     );
   }
   
@@ -109,7 +122,7 @@ class ApiService {
       'auth/register', 
       'POST', 
       userData,
-      false
+      false // No auth required for registration
     );
   }
   
@@ -121,7 +134,7 @@ class ApiService {
         'health',
         'GET',
         undefined,
-        false
+        false // No auth required for health check
       );
       
       console.log('Health check response:', response);
@@ -131,7 +144,8 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        status: 500,
+        success: false
       };
     }
   }
@@ -144,7 +158,7 @@ class ApiService {
         'health/ping',
         'GET',
         undefined,
-        false
+        false // No auth required for ping
       );
       
       console.log('Ping response:', response);
@@ -154,14 +168,16 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        status: 500,
+        success: false
       };
     }
   }
   
   // User endpoints
   async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+    console.log('Getting current user from API...');
+    return this.request<any>('auth/me', 'GET');
   }
   
   async updateUser(userId: string, updates: any) {
@@ -187,6 +203,38 @@ class ApiService {
   
   async updateProfile(userId: string, updates: any) {
     return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
+  }
+  
+  // User count and users list
+  async getAllUsers() {
+    console.log('Getting all users from API...');
+    return this.request<any[]>('users', 'GET');
+  }
+  
+  async getUserCount() {
+    console.log('Getting user count from API...');
+    return this.request<{ count: number }>('users/count', 'GET', undefined, false);
+  }
+  
+  // Machine endpoints
+  async getAllMachines() {
+    return this.request<any[]>('machines', 'GET', undefined, false);
+  }
+  
+  async getMachineById(machineId: string) {
+    return this.request<any>(`machines/${machineId}`, 'GET', undefined, false);
+  }
+  
+  async getMachineStatus(machineId: string) {
+    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET', undefined, false);
+  }
+  
+  async updateMachineStatus(machineId: string, status: string, note?: string) {
+    return this.request<{ success: boolean }>(
+      `machines/${machineId}/status`, 
+      'PUT', 
+      { status, note }
+    );
   }
   
   // Certification endpoints
@@ -317,14 +365,6 @@ class ApiService {
       { status, maintenanceNote: note }, 
       true
     );
-  }
-  
-  async getAllMachines() {
-    return this.request<any[]>('machines', 'GET', undefined, true);
-  }
-  
-  async getMachineById(machineId: string) {
-    return this.request<any>(`machines/${machineId}`, 'GET', undefined, true);
   }
   
   async createMachine(machineData: any) {
