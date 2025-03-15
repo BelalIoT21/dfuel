@@ -1,17 +1,18 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
+import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { login, register, logout } = useAuthFunctions(user, setUser);
 
   // Debug render
   console.log("Rendering AuthProvider");
@@ -56,46 +57,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     loadUser();
   }, []);
-
-  const login = async (email: string, password: string) => {
-    try {
-      const authenticatedUser = await userDatabase.authenticate(email, password);
-      
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
-        return true;
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  };
-
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      const newUser = await userDatabase.registerUser(email, password, name);
-      
-      if (newUser) {
-        setUser(newUser);
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
-        return true;
-      } else {
-        throw new Error('Registration failed');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    setUser(null);
-    localStorage.removeItem('token');
-    await storage.removeItem('learnit_user');
-  };
 
   const addCertification = async (machineId: string) => {
     if (!user) return false;
