@@ -5,7 +5,7 @@
 // Default values for environment variables
 const ENV_DEFAULTS = {
   // Default API URL with fallbacks for different environments
-  API_URL: 'http://localhost:4000/api',
+  API_URL: 'https://learnit-server.onrender.com/api',
   // Keep MongoDB URI for reference only in client
   MONGODB_URI: 'mongodb://localhost:27017/learnit'
 };
