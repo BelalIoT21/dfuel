@@ -6,6 +6,8 @@ import { toast } from '@/components/ui/use-toast';
 
 class MongoDbService {
   async getAllUsers() {
+    if (isWeb) return null;
+    
     try {
       return await mongoUserService.getUsers();
     } catch (error) {
@@ -15,6 +17,8 @@ class MongoDbService {
   }
   
   async getUserById(userId: string) {
+    if (isWeb) return null;
+    
     try {
       return await mongoUserService.getUserById(userId);
     } catch (error) {
@@ -24,6 +28,8 @@ class MongoDbService {
   }
   
   async getUserByEmail(email: string) {
+    if (isWeb) return null;
+    
     try {
       return await mongoUserService.getUserByEmail(email);
     } catch (error) {
@@ -115,6 +121,8 @@ class MongoDbService {
   }
   
   async deleteUser(userId: string) {
+    if (isWeb) return false;
+    
     try {
       // Find user first
       const user = await mongoUserService.getUserById(userId);
@@ -160,6 +168,7 @@ class MongoDbService {
     }
   }
   
+  // Clear all bookings (admin function)
   async clearAllBookings(): Promise<number> {
     if (isWeb) return 0;
     
