@@ -24,13 +24,13 @@ const Index = () => {
         console.log("Server health check result:", healthStatus);
         
         if (healthStatus.serverRunning) {
-          // If the server is running, assume we can connect to the database too
-          // This matches the server logs showing MongoDB is connected
           setServerStatus('connected');
           console.log("Server is running and database is assumed connected");
           
           // Only show error toast if there's a real database issue and we need user action
-          if (!healthStatus.databaseConnected && healthStatus.message.includes('database connection failed')) {
+          // and we're sure the database is actually disconnected
+          if (!healthStatus.databaseConnected && 
+              healthStatus.message.includes('database connection failed')) {
             toast({
               title: 'Database Connection Issue',
               description: 'The server is running but there might be database connection issues.',
@@ -38,8 +38,11 @@ const Index = () => {
             });
           }
         } else {
+          // Only change to disconnected if server is actually not running
           setServerStatus('disconnected');
           console.error("Basic server connection failed");
+          
+          // Only show the toast notification, no longer displaying message in the UI
           toast({
             title: 'Server Connection Failed',
             description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',

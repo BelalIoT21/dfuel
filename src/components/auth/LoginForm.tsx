@@ -69,11 +69,6 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
     
     if (!validateForm()) return;
     
-    if (serverStatus === 'disconnected') {
-      setFormError('Cannot connect to server. Please ensure the backend server is running.');
-      return;
-    }
-    
     try {
       await onLogin(email, password);
       console.log("Login successful");
@@ -96,15 +91,6 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{formError}</AlertDescription>
-          </Alert>
-        )}
-        
-        {serverStatus === 'disconnected' && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Server disconnected. Please check if the backend server is running.
-            </AlertDescription>
           </Alert>
         )}
         
@@ -172,7 +158,6 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
             <Button 
               type="submit" 
               className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={serverStatus === 'disconnected'}
             >
               Sign In
             </Button>
