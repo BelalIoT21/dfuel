@@ -38,6 +38,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
   const getMachineName = (certId: string) => {
     // Special case for Machine Safety Course
     if (certId === "6") return "Machine Safety Course";
+    // Special case for Safety Cabinet
+    if (certId === "5") return "Bambu Lab X1 E";
     
     // First try to find from fetched machines
     const machine = allMachines.find(m => m.id === certId);
@@ -114,4 +116,3 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
     </div>
   );
 };
-

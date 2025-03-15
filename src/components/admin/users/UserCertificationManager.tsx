@@ -204,10 +204,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddCertification(user.id, "5")}
-                    disabled={loading === "5"}
+                    disabled={loading === "5" || !user.certifications.includes("6")}
+                    className={!user.certifications.includes("6") ? "opacity-50" : ""}
                   >
                     {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Add
+                    {!user.certifications.includes("6") ? "Requires Safety Course" : "Add"}
                   </Button>
                 )}
               </div>
