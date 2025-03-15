@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,7 @@ const timeSlots = [
   '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'
 ];
 
+// Use short IDs for easier handling
 const idMapping: Record<string, string> = {
   "67d5fd3c50bbb3312ae0fb1e": "1", // Laser Cutter
   "67d5fd3c50bbb3312ae0fb1f": "5", // Bambu Lab
@@ -25,6 +27,7 @@ const idMapping: Record<string, string> = {
   "67d5fd3c50bbb3312ae0fb23": "4", // Another Bambu Lab
 };
 
+// Reverse mapping for converting short IDs to MongoDB IDs
 const reverseIdMapping: Record<string, string> = {
   "1": "67d5fd3c50bbb3312ae0fb1e", // Laser Cutter
   "5": "67d5fd3c50bbb3312ae0fb1f", // Bambu Lab
@@ -32,6 +35,26 @@ const reverseIdMapping: Record<string, string> = {
   "3": "67d5fd3c50bbb3312ae0fb21", // Safety Cabinet
   "6": "67d5fd3c50bbb3312ae0fb22", // Safety Course
   "4": "67d5fd3c50bbb3312ae0fb23", // Another Bambu Lab
+};
+
+// Define machine types for consistent identification
+const machineTypeMapping: Record<string, string> = {
+  "1": "Laser Cutter",
+  "2": "3D Printer", // Ultimaker
+  "3": "Safety Cabinet",
+  "4": "3D Printer", // Bambu Lab
+  "5": "3D Printer", // Bambu Lab
+  "6": "Safety Course",
+};
+
+// Hardcoded machines data for fallback
+const hardcodedMachines = {
+  "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
+  "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
+  "3": { id: "3", name: "Safety Cabinet", type: "Safety Cabinet" },
+  "4": { id: "4", name: "Bambu Lab X1 E", type: "3D Printer" },
+  "5": { id: "5", name: "Bambu Lab X1 E", type: "3D Printer" },
+  "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" }
 };
 
 const BookingPage = () => {
@@ -59,57 +82,52 @@ const BookingPage = () => {
         setLoading(true);
         setError(null);
         
-        // Check if the ID is a long MongoDB ID or a short ID
+        console.log(`Starting to load machine with ID: ${id}`);
+        
+        // First try a direct lookup with the given ID (could be short or long)
+        let foundMachine = null;
         let machineId = id;
         
-        // Try to convert short ID to MongoDB ID if needed
-        if (id.length <= 2 && reverseIdMapping[id]) {
-          machineId = reverseIdMapping[id];
-          console.log(`Using mapped ID: ${id} -> ${machineId}`);
-        }
-        
-        // Try to convert MongoDB ID to short ID if needed
-        if (id.length > 10 && idMapping[id]) {
+        // For simple numeric IDs, try directly with hardcoded data first
+        if (id.length <= 2 && hardcodedMachines[id]) {
+          console.log(`Found machine in hardcoded data with ID: ${id}`);
+          foundMachine = hardcodedMachines[id];
+        } 
+        // For long MongoDB IDs, try to get the short version
+        else if (id.length > 10 && idMapping[id]) {
           machineId = idMapping[id];
-          console.log(`Using mapped ID: ${id} -> ${machineId}`);
+          console.log(`Converted long ID ${id} to short ID ${machineId}`);
+          foundMachine = hardcodedMachines[machineId];
         }
         
-        console.log(`Attempting to load machine with ID: ${machineId}`);
-        
-        // First try with the given ID
-        let foundMachine = await machineService.getMachineById(machineId);
-        
-        // If not found, try with the short ID (1, 2, etc.)
-        if (!foundMachine && machineId.length > 2) {
-          // Try to find by short ID
-          const shortId = idMapping[machineId] || machineId.slice(-1); // Use last digit as fallback
-          console.log(`Trying with short ID: ${shortId}`);
-          foundMachine = await machineService.getMachineById(shortId);
-        }
-        
-        // If still not found and using short ID, try with MongoDB ID format
-        if (!foundMachine && machineId.length <= 2) {
-          const longId = reverseIdMapping[machineId];
-          console.log(`Trying with long ID: ${longId}`);
-          foundMachine = await machineService.getMachineById(longId);
-        }
-        
-        // If still not found, try using hardcoded machines
+        // If we don't have a machine yet, try the API
         if (!foundMachine) {
-          console.log("Falling back to hardcoded machines");
-          const hardcodedMachines = {
-            "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
-            "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
-            "3": { id: "3", name: "Safety Cabinet", type: "Safety Cabinet" },
-            "4": { id: "4", name: "Bambu Lab X1 E", type: "3D Printer" },
-            "5": { id: "5", name: "Bambu Lab X1 E", type: "3D Printer" },
-            "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" }
-          };
-          
-          foundMachine = hardcodedMachines[machineId] || hardcodedMachines[id];
-          console.log("Using hardcoded machine:", foundMachine);
+          console.log(`Trying API fetch for machine ID: ${machineId}`);
+          try {
+            // Try with current ID
+            foundMachine = await machineService.getMachineById(machineId);
+            
+            // If that fails and we have a short ID, try with the long version
+            if (!foundMachine && machineId.length <= 2 && reverseIdMapping[machineId]) {
+              const longId = reverseIdMapping[machineId];
+              console.log(`Trying API fetch with long ID: ${longId}`);
+              foundMachine = await machineService.getMachineById(longId);
+            }
+          } catch (apiError) {
+            console.error(`API fetch error:`, apiError);
+            // Fall back to hardcoded data if API fails
+            foundMachine = hardcodedMachines[machineId] || hardcodedMachines[id];
+            console.log(`Falling back to hardcoded data: ${foundMachine ? 'success' : 'failed'}`);
+          }
         }
         
+        // If we still don't have a machine, try one last fallback to hardcoded data
+        if (!foundMachine) {
+          console.log(`Last resort: trying hardcoded machines for ID: ${id}`);
+          foundMachine = hardcodedMachines[id];
+        }
+        
+        // If we found a machine, process it
         if (foundMachine) {
           console.log(`Successfully loaded machine:`, foundMachine);
           
@@ -128,13 +146,19 @@ const BookingPage = () => {
             const allBookings = await bookingService.getAllBookings();
             console.log(`Retrieved ${allBookings.length} bookings`);
             
-            const machineBookings = allBookings.filter(
-              booking => 
-                (booking.machineId === id || 
-                 booking.machineId === machineId || 
-                 booking.machineId === foundMachine.id) && 
-                (booking.status === 'Approved' || booking.status === 'Pending')
-            );
+            // Match bookings to this machine (using both short and long IDs)
+            const machineBookings = allBookings.filter(booking => {
+              const bookingMachineId = booking.machineId;
+              return (
+                bookingMachineId === id || 
+                bookingMachineId === machineId || 
+                bookingMachineId === foundMachine.id ||
+                (idMapping[bookingMachineId] && idMapping[bookingMachineId] === machineId) ||
+                (reverseIdMapping[bookingMachineId] && reverseIdMapping[bookingMachineId] === machineId)
+              ) && (
+                booking.status === 'Approved' || booking.status === 'Pending'
+              );
+            });
             
             // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
             const bookedDateTimeSlots = machineBookings.map(booking => 
@@ -220,10 +244,12 @@ const BookingPage = () => {
       // Use short machine ID (1, 2, etc.) for booking when available
       let bookingMachineId = machine.id || id;
       
-      // Prefer short IDs for better compatibility
+      // Ensure we're using a short ID format for consistency
       if (bookingMachineId.length > 5 && idMapping[bookingMachineId]) {
         bookingMachineId = idMapping[bookingMachineId];
       }
+      
+      console.log(`Creating booking with machine ID: ${bookingMachineId}`);
       
       const success = await bookingService.createBooking(
         user.id,
@@ -266,23 +292,7 @@ const BookingPage = () => {
     setError(null);
     setLoading(true);
     setTimeout(() => {
-      if (id) {
-        machineService.getMachineById(id)
-          .then(data => {
-            if (data) {
-              setMachine(data);
-              setLoading(false);
-            } else {
-              setError('Machine not found');
-              setLoading(false);
-            }
-          })
-          .catch((error) => {
-            console.error("Error in retry:", error);
-            setError('Failed to load machine details');
-            setLoading(false);
-          });
-      }
+      window.location.reload(); // Simple reload approach to retry
     }, 1000);
   };
 

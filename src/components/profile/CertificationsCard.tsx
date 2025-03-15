@@ -120,7 +120,17 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{cert.name}</div>
                 <div className="text-sm text-gray-500 mb-1">Certified on: {cert.date}</div>
                 <div className="text-xs text-gray-400 mb-2">{cert.type || 'Machine'}</div>
-                {cert.isBookable ? (
+                
+                {cert.type === 'Safety Cabinet' || cert.type === 'Safety Course' ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 border-purple-200 hover:bg-purple-100"
+                    onClick={() => navigate(`/machine/${cert.id}`)}
+                  >
+                    View Details
+                  </Button>
+                ) : cert.isBookable ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
