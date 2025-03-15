@@ -2,12 +2,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
+import { Button } from '../ui/button';
+import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClearing, setIsClearing] = useState(false);
   
   const fetchPendingBookings = useCallback(async () => {
     try {
@@ -61,9 +75,69 @@ export const PendingActions = () => {
     await fetchPendingBookings();
   }, [fetchPendingBookings]);
 
+  // Handle clearing all bookings
+  const handleClearAllBookings = async () => {
+    setIsClearing(true);
+    try {
+      const success = await bookingService.clearAllBookings();
+      if (success) {
+        console.log("All bookings cleared successfully");
+        fetchPendingBookings(); // Refresh the list
+      } else {
+        console.log("No bookings were cleared or operation failed");
+      }
+    } catch (error) {
+      console.error("Error clearing all bookings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear all bookings. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Pending Actions</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Pending Actions</h2>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              Reset All Bookings
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset All Bookings</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete ALL bookings in the system for ALL users. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleClearAllBookings}
+                className="bg-red-600 hover:bg-red-700 flex items-center gap-1"
+              >
+                {isClearing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                {isClearing ? "Clearing..." : "Reset All Bookings"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
       <div className="space-y-4">
         {isLoading ? (
           <div className="text-center p-4 bg-white rounded-lg shadow flex flex-col items-center">

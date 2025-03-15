@@ -91,4 +91,16 @@ bookingSchema.statics.deleteBookingById = async function(bookingId: string) {
   }
 };
 
+// Add a method to clear all bookings (admin only)
+bookingSchema.statics.clearAllBookings = async function() {
+  try {
+    const result = await this.deleteMany({});
+    console.log(`Cleared all bookings, deleted count: ${result.deletedCount}`);
+    return result.deletedCount;
+  } catch (error) {
+    console.error('Error in Booking.clearAllBookings:', error);
+    return 0;
+  }
+};
+
 export const Booking = mongoose.model<IBooking>('Booking', bookingSchema);

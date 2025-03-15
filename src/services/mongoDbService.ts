@@ -180,6 +180,21 @@ class MongoDbService {
     }
   }
   
+  // Clear all bookings (admin function)
+  async clearAllBookings(): Promise<number> {
+    if (isWeb) return 0;
+    
+    try {
+      console.log("Attempting to clear all bookings across the system");
+      const count = await mongoUserService.clearAllUserBookings();
+      console.log(`Cleared ${count} bookings from all users`);
+      return count;
+    } catch (error) {
+      console.error("Error clearing all bookings from MongoDB:", error);
+      return 0;
+    }
+  }
+  
   async getAllMachines() {
     if (isWeb) return [];
     

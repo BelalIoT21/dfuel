@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -208,6 +209,41 @@ class MongoUserService {
     } catch (error) {
       console.error("Error deleting booking in MongoDB:", error);
       return false;
+    }
+  }
+  
+  // Clear all bookings for all users (admin only)
+  async clearAllUserBookings(): Promise<number> {
+    await this.initCollection();
+    if (!this.usersCollection) return 0;
+    
+    try {
+      console.log("Attempting to clear all bookings for all users in MongoDB");
+      
+      // Get all users
+      const users = await this.getUsers();
+      let totalCleared = 0;
+      
+      // Clear bookings for each user
+      for (const user of users) {
+        if (user.bookings && user.bookings.length > 0) {
+          const result = await this.usersCollection.updateOne(
+            { id: user.id },
+            { $set: { bookings: [] } }
+          );
+          
+          if (result.modifiedCount > 0) {
+            totalCleared += user.bookings.length;
+            console.log(`Cleared ${user.bookings.length} bookings for user ${user.id}`);
+          }
+        }
+      }
+      
+      console.log(`Total bookings cleared: ${totalCleared}`);
+      return totalCleared;
+    } catch (error) {
+      console.error("Error clearing all user bookings in MongoDB:", error);
+      return 0;
     }
   }
 }

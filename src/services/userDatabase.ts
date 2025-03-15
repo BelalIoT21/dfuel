@@ -312,6 +312,50 @@ class UserDatabase {
       return false;
     }
   }
+  
+  // Clear all bookings in the system (admin only)
+  async clearAllBookings(): Promise<boolean> {
+    try {
+      console.log("Attempting to clear all bookings across the system");
+      
+      // Try MongoDB first
+      try {
+        const count = await mongoDbService.clearAllBookings();
+        if (count > 0) {
+          console.log(`Successfully cleared ${count} bookings from MongoDB`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error clearing all bookings:", mongoError);
+      }
+      
+      // Try localStorage as fallback
+      try {
+        // Clear all bookings from all users
+        const users = localStorageService.getAllUsers();
+        let totalCleared = 0;
+        
+        for (const user of users) {
+          if (user.bookings && user.bookings.length > 0) {
+            totalCleared += user.bookings.length;
+            localStorageService.updateUser(user.id, { bookings: [] });
+          }
+        }
+        
+        // Also clear the separate bookings collection
+        localStorageService.saveBookings([]);
+        
+        console.log(`Successfully cleared ${totalCleared} bookings from localStorage`);
+        return totalCleared > 0;
+      } catch (storageError) {
+        console.error("LocalStorage error clearing all bookings:", storageError);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error clearing all bookings:", error);
+      return false;
+    }
+  }
 }
 
 // Create a singleton instance

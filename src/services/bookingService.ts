@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -377,6 +376,67 @@ export class BookingService {
       return false;
     } catch (error) {
       console.error("Error clearing user bookings:", error);
+      return false;
+    }
+  }
+  
+  // Clear all bookings in the system (admin only)
+  async clearAllBookings(): Promise<boolean> {
+    console.log(`BookingService.clearAllBookings: Attempting to clear all bookings`);
+    try {
+      // Try MongoDB first
+      let success = false;
+      let count = 0;
+      
+      try {
+        count = await mongoDbService.clearAllBookings();
+        success = count > 0;
+        console.log(`MongoDB clearAllBookings result: ${count} bookings cleared`);
+      } catch (mongoError) {
+        console.error("MongoDB error clearing all bookings:", mongoError);
+      }
+      
+      // If MongoDB fails or is not available, try localStorage
+      if (!success) {
+        // Get all users and clear their bookings
+        const users = localStorageService.getAllUsers();
+        let totalCleared = 0;
+        
+        for (const user of users) {
+          if (user.bookings && user.bookings.length > 0) {
+            totalCleared += user.bookings.length;
+            user.bookings = [];
+            await localStorageService.updateUser(user.id, { bookings: [] });
+          }
+        }
+        
+        // Also clear the separate bookings collection
+        localStorageService.saveBookings([]);
+        
+        console.log(`Cleared ${totalCleared} bookings from localStorage`);
+        success = totalCleared > 0;
+      }
+      
+      if (success) {
+        toast({
+          title: "All Bookings Cleared",
+          description: `Successfully cleared all bookings from the system. Total: ${count || 'all'}`,
+        });
+      } else {
+        toast({
+          title: "No Bookings to Clear",
+          description: "There were no bookings to clear in the system.",
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error("Error clearing all bookings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear all bookings. Please try again.",
+        variant: "destructive"
+      });
       return false;
     }
   }
