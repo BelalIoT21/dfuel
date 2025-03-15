@@ -17,15 +17,14 @@ export const seedDatabase = async () => {
     // Check if data already exists
     const userCount = await User.countDocuments();
     const machineCount = await Machine.countDocuments();
-    const bookingCount = await Booking.countDocuments();
     
-    if (userCount > 0 && machineCount > 0 && bookingCount > 0) {
-      console.log(`Database already contains ${userCount} users, ${machineCount} machines, and ${bookingCount} bookings. Skipping seed.`);
+    if (userCount > 0 && machineCount > 0) {
+      console.log(`Database already contains ${userCount} users and ${machineCount} machines. Skipping seed.`);
       return;
     }
 
     // Clear existing data if only partial data exists
-    if (userCount === 0 || machineCount === 0 || bookingCount === 0) {
+    if (userCount === 0 || machineCount === 0) {
       console.log('Clearing existing data to ensure consistent seeding...');
       await User.deleteMany({});
       await Machine.deleteMany({});
@@ -44,19 +43,6 @@ export const seedDatabase = async () => {
       isAdmin: true,
       certifications: []
     });
-
-    // Create regular user
-    console.log('Creating regular user...');
-    // COMMENTED OUT - Join feature removed
-    /*
-    const regularUser = await User.create({
-      name: 'John Doe',
-      email: 'user@example.com',
-      password: 'password123',
-      isAdmin: false,
-      certifications: []
-    });
-    */
 
     // Create machines with specific types
     console.log('Creating machines...');
@@ -124,68 +110,7 @@ export const seedDatabase = async () => {
     adminUser.certifications = createdMachines.map(machine => machine._id.toString());
     await adminUser.save();
 
-    // COMMENTED OUT - Regular user certifications removed
-    /*
-    // Add some certifications to regular user
-    console.log('Adding certifications to regular user...');
-    regularUser.certifications = [
-      createdMachines[0]._id.toString(), // Laser Cutter
-      createdMachines[1]._id.toString(), // Ultimaker
-      createdMachines[2]._id.toString(), // X1 E Carbon 3D Printer
-      createdMachines[3]._id.toString()  // Bambu Lab X1 E
-    ];
-    await regularUser.save();
-    */
-
-    // COMMENTED OUT - Booking creation removed
-    /*
-    // Create some bookings
-    console.log('Creating sample bookings...');
-    
-    // Get today and future dates
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    // Format dates as YYYY-MM-DD with proper type annotation
-    const formatDate = (date: Date): string => {
-      return date.toISOString().split('T')[0];
-    };
-    
-    // Create bookings using the Booking model with clientId field
-    const bookings = [
-      {
-        user: regularUser._id,
-        machine: createdMachines[0]._id,
-        date: today,
-        time: '10:00 - 12:00',
-        status: 'Approved',
-        clientId: `booking-${Date.now() - 100000}` // Add a clientId for client compatibility
-      },
-      {
-        user: regularUser._id,
-        machine: createdMachines[1]._id,
-        date: tomorrow,
-        time: '14:00 - 16:00',
-        status: 'Pending',
-        clientId: `booking-${Date.now() - 50000}` // Add a clientId for client compatibility
-      },
-      {
-        user: regularUser._id,
-        machine: createdMachines[2]._id,
-        date: nextWeek,
-        time: '09:00 - 11:00',
-        status: 'Pending',
-        clientId: `booking-${Date.now()}` // Add a clientId for client compatibility
-      }
-    ];
-    
-    // Insert bookings
-    await Booking.insertMany(bookings);
-    */
+    // All bookings and regular users are now removed from seeding
     
     console.log('Database seeded successfully!');
   } catch (error) {

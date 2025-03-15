@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -76,7 +75,6 @@ class MongoMachineService {
     }
   }
   
-  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) return [];
@@ -135,11 +133,9 @@ class MongoMachineService {
     if (!this.machinesCollection) return false;
     
     try {
-      // Check if the machine already exists
       const exists = await this.machineExists(machine._id);
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
-        // Update the machine to ensure it has all properties
         const result = await this.machinesCollection.updateOne(
           { _id: machine._id },
           { $set: machine }
@@ -147,7 +143,6 @@ class MongoMachineService {
         return result.acknowledged;
       }
       
-      // Add the machine to the collection
       const result = await this.machinesCollection.insertOne(machine);
       console.log(`Machine with ID ${machine._id} added to MongoDB: ${machine.name}`);
       return result.acknowledged;
@@ -157,7 +152,6 @@ class MongoMachineService {
     }
   }
   
-  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) return;
@@ -211,21 +205,29 @@ class MongoMachineService {
           },
           { 
             _id: '5', 
-            name: 'Soldering Station', 
-            type: 'Electronics', 
+            name: 'Safety Cabinet', 
+            type: 'Safety', 
             status: 'Available', 
-            description: 'Professional-grade soldering equipment for electronics work and repairs.', 
+            description: 'Safety equipment storage cabinet.', 
             requiresCertification: false,
-            difficulty: 'Intermediate',
-            imageUrl: '/machines/soldering-station.jpg'
+            difficulty: 'Beginner',
+            imageUrl: '/machines/safety-cabinet.jpg'
+          },
+          { 
+            _id: '6', 
+            name: 'Machine Safety Course', 
+            type: 'Course', 
+            status: 'Available', 
+            description: 'Required safety training for using machines.', 
+            requiresCertification: false,
+            difficulty: 'Beginner',
+            imageUrl: '/machines/safety-course.jpg'
           }
         ];
         
-        // Also create machine statuses
         for (const machine of defaultMachines) {
           await this.addMachine(machine);
           
-          // Add corresponding machine status
           await this.updateMachineStatus(
             machine._id, 
             machine.status, 
@@ -243,6 +245,5 @@ class MongoMachineService {
   }
 }
 
-// Create a singleton instance
 const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;
