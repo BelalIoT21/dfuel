@@ -99,15 +99,6 @@ const AdminUsers = () => {
         
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">User Management</h1>
-          <Button 
-            onClick={fetchUsers} 
-            variant="outline" 
-            disabled={refreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh Users'}
-          </Button>
         </div>
         
         {/* Add Stats Overview with user count */}
@@ -133,6 +124,19 @@ const AdminUsers = () => {
               onCertificationAdded={fetchUsers}
               onUserDeleted={handleUserDeleted}
             />
+            
+            {/* Moved refresh button below the users table */}
+            <div className="mt-6 flex justify-end">
+              <Button 
+                onClick={fetchUsers} 
+                variant="outline" 
+                disabled={refreshing}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh Users'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
