@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -170,6 +169,45 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.json({ message: 'User removed' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Toggle admin status of a user
+// @route   PUT /api/users/:id/toggle-admin
+// @access  Private/Admin
+export const toggleAdminStatus = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is trying to remove their own admin privileges
+    if (req.user._id.toString() === req.params.id && user.isAdmin) {
+      return res.status(400).json({ 
+        message: 'You cannot remove your own admin privileges while logged in' 
+      });
+    }
+    
+    // Toggle the admin status
+    user.isAdmin = !user.isAdmin;
+    
+    const updatedUser = await user.save();
+    
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      isAdmin: updatedUser.isAdmin,
+      message: `User is now ${updatedUser.isAdmin ? 'an admin' : 'a regular user'}`
+    });
+  } catch (error) {
+    console.error('Error in toggleAdminStatus:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
