@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,13 +37,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Set default admin credentials for development convenience
-  const setAdminCredentials = () => {
-    setEmail('admin@learnit.com');
-    setPassword('admin123');
-  };
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -76,18 +68,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     if (!validateForm()) return;
     
     try {
-      setIsLoading(true);
       await onLogin(email, password);
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError(
-        error instanceof Error 
-          ? error.message 
-          : 'Authentication failed. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
+      setFormError('Authentication failed. Please try again.');
     }
   };
 
@@ -168,12 +153,8 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button 
-              type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
+            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+              Sign In
             </Button>
           </motion.div>
         </motion.form>
