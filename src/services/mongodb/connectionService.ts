@@ -138,6 +138,7 @@ class MongoConnectionService {
         return false;
       }
       
+      // Simple ping to check connection
       await this.db.command({ ping: 1 });
       console.log("MongoDB connection is active");
       return true;
