@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Calendar, Loader2 } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
+import mongoDbService from '@/services/mongoDbService';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -23,7 +24,20 @@ export const PendingBookingsCard = ({
     
     try {
       console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${action}`);
-      const success = await bookingService.updateBookingStatus(bookingId, action);
+      
+      // Try MongoDB first (direct database access)
+      let success = false;
+      try {
+        success = await mongoDbService.updateBookingStatus(bookingId, action);
+        console.log(`MongoDB updateBookingStatus result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB update booking error:", mongoError);
+      }
+      
+      // If MongoDB fails, try the regular service
+      if (!success) {
+        success = await bookingService.updateBookingStatus(bookingId, action);
+      }
       
       if (success) {
         toast({

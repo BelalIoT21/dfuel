@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
 import { Loader2 } from 'lucide-react';
+import mongoDbService from '@/services/mongoDbService';
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
@@ -11,9 +12,23 @@ export const PendingActions = () => {
   const fetchPendingBookings = useCallback(async () => {
     try {
       setIsLoading(true);
-      // Get all bookings and filter for pending ones
-      const allBookings = await bookingService.getAllBookings();
-      console.log(`Found ${allBookings.length} total bookings`);
+      
+      // Try MongoDB first for direct database access
+      let allBookings = [];
+      try {
+        console.log("Fetching bookings directly from MongoDB");
+        allBookings = await mongoDbService.getAllBookings();
+        console.log(`Found ${allBookings.length} bookings in MongoDB`);
+      } catch (mongoError) {
+        console.error("MongoDB booking fetch error:", mongoError);
+      }
+      
+      // If MongoDB fails or returns empty, use the service
+      if (!allBookings || allBookings.length === 0) {
+        console.log("Falling back to bookingService");
+        allBookings = await bookingService.getAllBookings();
+        console.log(`Found ${allBookings.length} total bookings via bookingService`);
+      }
       
       const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
       console.log(`Found ${pendingOnly.length} pending bookings`);
@@ -29,6 +44,14 @@ export const PendingActions = () => {
   
   useEffect(() => {
     fetchPendingBookings();
+    
+    // Set up polling to refresh pending bookings every 10 seconds
+    const intervalId = setInterval(() => {
+      console.log("Auto-refreshing pending bookings");
+      fetchPendingBookings();
+    }, 10000);
+    
+    return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
 
   // Handle booking status change to completely refresh the list
