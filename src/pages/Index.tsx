@@ -27,14 +27,22 @@ const Index = () => {
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
+        } else {
+          console.log("Server health check failed, but no error");
+          setServerStatus('disconnected');
+          toast({
+            title: 'Running in Demo Mode',
+            description: 'Could not connect to the backend server. Using mock data.',
+            variant: 'default'
+          });
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
-          title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Using local storage.',
-          variant: 'destructive'
+          title: 'Running in Demo Mode',
+          description: 'Could not connect to the backend server. Using mock data.',
+          variant: 'default'
         });
       }
     };
@@ -52,12 +60,20 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    await login(email, password);
+    const success = await login(email, password);
+    if (success) {
+      console.log("Login successful, navigating to home");
+      navigate('/home');
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    const success = await register(email, password, name);
+    if (success) {
+      console.log("Registration successful, navigating to home");
+      navigate('/home');
+    }
   };
 
   const toggleMode = () => {
@@ -73,8 +89,10 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              Server status: {serverStatus}
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-amber-600'}`}>
+              {serverStatus === 'connected' 
+                ? 'Connected to server' 
+                : 'Running in demo mode (offline)'}
             </div>
           )}
         </div>
