@@ -43,12 +43,16 @@ const App = () => {
     document.title = "Learnit - Your Learning Platform";
   }, []);
 
-  // Display toast message when app loads
+  // Display toast message only on first load
   useEffect(() => {
-    toast({
-      title: "Welcome to Learnit",
-      description: "Please log in to continue",
-    });
+    const hasShownWelcome = sessionStorage.getItem('welcomeShown');
+    if (!hasShownWelcome) {
+      toast({
+        title: "Welcome to Learnit",
+        description: "Please log in to continue",
+      });
+      sessionStorage.setItem('welcomeShown', 'true');
+    }
   }, []);
 
   console.log("Rendering App component");
