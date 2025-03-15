@@ -8,7 +8,16 @@ import { Machine } from '../models/Machine';
 export const getMachines = async (req: Request, res: Response) => {
   try {
     const machines = await Machine.find({});
-    res.json(machines);
+    
+    // Ensure all machines have 'Machine' as their type
+    const machinesWithFixedType = machines.map(machine => {
+      return {
+        ...machine.toObject(),
+        type: 'Machine'
+      };
+    });
+    
+    res.json(machinesWithFixedType);
   } catch (error) {
     console.error('Error in getMachines:', error);
     res.status(500).json({ 
@@ -26,58 +35,18 @@ export const getMachineById = async (req: Request, res: Response) => {
     const machine = await Machine.findById(req.params.id);
     
     if (machine) {
-      res.json(machine);
+      // Ensure machine has 'Machine' as its type
+      const machineWithFixedType = {
+        ...machine.toObject(),
+        type: 'Machine'
+      };
+      
+      res.json(machineWithFixedType);
     } else {
       res.status(404).json({ message: 'Machine not found' });
     }
   } catch (error) {
     console.error('Error in getMachineById:', error);
-    res.status(500).json({ 
-      message: 'Server error', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
-  }
-};
-
-// @desc    Create a new machine
-// @route   POST /api/machines
-// @access  Private/Admin
-export const createMachine = async (req: Request, res: Response) => {
-  try {
-    const { 
-      name, 
-      type, 
-      description, 
-      status, 
-      requiresCertification, 
-      difficulty, 
-      imageUrl,
-      details,
-      specifications,
-      certificationInstructions,
-      linkedCourseId,
-      linkedQuizId
-    } = req.body;
-
-    const machine = new Machine({
-      name,
-      type,
-      description,
-      status: status || 'Available',
-      requiresCertification: requiresCertification !== undefined ? requiresCertification : true,
-      difficulty,
-      imageUrl,
-      details,
-      specifications,
-      certificationInstructions,
-      linkedCourseId,
-      linkedQuizId
-    });
-
-    const createdMachine = await machine.save();
-    res.status(201).json(createdMachine);
-  } catch (error) {
-    console.error('Error in createMachine:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -104,7 +73,14 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
     
     const updatedMachine = await machine.save();
-    res.json(updatedMachine);
+    
+    // Ensure machine has 'Machine' as its type in the response
+    const machineWithFixedType = {
+      ...updatedMachine.toObject(),
+      type: 'Machine'
+    };
+    
+    res.json(machineWithFixedType);
   } catch (error) {
     console.error('Error in updateMachineStatus:', error);
     res.status(500).json({ 
@@ -127,7 +103,6 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     const { 
       name, 
-      type, 
       description, 
       status, 
       maintenanceNote,
@@ -141,9 +116,9 @@ export const updateMachine = async (req: Request, res: Response) => {
       linkedQuizId
     } = req.body;
     
-    // Update fields if provided
+    // Update fields if provided, but always set type to 'Machine'
     if (name) machine.name = name;
-    if (type) machine.type = type;
+    machine.type = 'Machine'; // Always set type to 'Machine'
     if (description) machine.description = description;
     if (status) machine.status = status;
     if (maintenanceNote !== undefined) machine.maintenanceNote = maintenanceNote;
@@ -157,7 +132,14 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (linkedQuizId !== undefined) machine.linkedQuizId = linkedQuizId;
     
     const updatedMachine = await machine.save();
-    res.json(updatedMachine);
+    
+    // Ensure machine has 'Machine' as its type in the response
+    const machineWithFixedType = {
+      ...updatedMachine.toObject(),
+      type: 'Machine'
+    };
+    
+    res.json(machineWithFixedType);
   } catch (error) {
     console.error('Error in updateMachine:', error);
     res.status(500).json({ 

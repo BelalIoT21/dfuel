@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +20,10 @@ const AdminMachines = () => {
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  // Form state for edit machine
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'Cutting',
+    type: 'Machine',
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Intermediate',
@@ -37,7 +35,6 @@ const AdminMachines = () => {
     linkedQuizId: '',
   });
   
-  // Fetch machines and users on component mount
   useEffect(() => {
     const fetchMachines = async () => {
       try {
@@ -45,7 +42,6 @@ const AdminMachines = () => {
         if (fetchedMachines && fetchedMachines.length > 0) {
           setMachinesList(fetchedMachines);
         } else {
-          // Fallback to mock data if API fails
           setMachinesList(machines);
         }
         setInitialLoadComplete(true);
@@ -83,12 +79,8 @@ const AdminMachines = () => {
     );
   }
 
-  // Filter machines based on search term
   const filteredMachines = machinesList
-    .filter(machine => 
-      machine.type !== 'Equipment' && 
-      machine.type !== 'Safety Cabinet'
-    )
+    .filter(machine => true)
     .filter(machine =>
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -101,7 +93,7 @@ const AdminMachines = () => {
       setFormData({
         name: machine.name,
         description: machine.description || '',
-        type: machine.type || 'Cutting',
+        type: 'Machine',
         status: machine.status || 'Available',
         requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
         difficulty: machine.difficulty || 'Intermediate',
@@ -121,7 +113,6 @@ const AdminMachines = () => {
     try {
       setIsSubmitting(true);
       
-      // Call the API to update the machine
       const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
       
       if (!updatedMachine) {
@@ -133,7 +124,6 @@ const AdminMachines = () => {
         description: `${formData.name} has been updated successfully.`
       });
       
-      // Update the machines list
       setMachinesList(prev => 
         prev.map(m => 
           (m.id === editingMachineId || m._id === editingMachineId) 
@@ -142,12 +132,11 @@ const AdminMachines = () => {
         )
       );
       
-      // Reset form and state
       setEditingMachineId(null);
       setFormData({
         name: '',
         description: '',
-        type: 'Cutting',
+        type: 'Machine',
         status: 'Available',
         requiresCertification: true,
         difficulty: 'Intermediate',
@@ -183,7 +172,6 @@ const AdminMachines = () => {
         description: "The machine has been deleted successfully."
       });
       
-      // Update the machines list
       setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
     } catch (error) {
       console.error("Error deleting machine:", error);
@@ -195,7 +183,6 @@ const AdminMachines = () => {
     }
   };
 
-  // Calculate real stats for each machine
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
       user.certifications && user.certifications.includes(machineId)
@@ -270,7 +257,7 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Type: {machine.type || 'Unknown'}
+                          Type: Machine
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
                           Difficulty: {machine.difficulty || 'Beginner'}
