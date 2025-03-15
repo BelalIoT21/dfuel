@@ -1,129 +1,226 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { motion } from 'framer-motion';
+import { toast } from '@/components/ui/use-toast';
 
 interface RegisterFormProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
   onToggleMode: () => void;
 }
 
+const formAnimation = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
+
 export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) => {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validateEmail = (email: string) => {
+    if (!email) return 'Email is required';
+    if (!/\S+@\S+\.\S+/.test(email)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return '';
+  };
+
+  const validateName = (name: string) => {
+    if (!name) return 'Name is required';
+    if (name.length < 2) return 'Name must be at least 2 characters';
+    return '';
+  };
+
+  const validateForm = () => {
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    const nameErr = validateName(name);
+    
+    setEmailError(emailErr);
+    setPasswordError(passwordErr);
+    setNameError(nameErr);
+    
+    return !emailErr && !passwordErr && !nameErr;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!name) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!email) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!password) {
-      setError('Password is required');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
+    console.log("Registration form submitted", { email, password, name });
+    setFormError('');
+    
+    if (!validateForm()) return;
+    
     try {
       setLoading(true);
       await onRegister(email, password, name);
-    } catch (err) {
-      console.error('Registration error in form:', err);
-      setError(err instanceof Error ? err.message : 'Failed to register');
+      console.log("Registration successful");
+      
+      // Clear form fields on success
+      setEmail('');
+      setPassword('');
+      setName('');
+      
+      // Success feedback
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully!"
+      });
+      
+    } catch (error) {
+      console.error("Authentication error:", error);
+      
+      // Extract appropriate error message
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Check if it's a "user exists" error
+      if (errorMessage.toLowerCase().includes('already exists')) {
+        setEmailError('This email is already registered');
+        setFormError('An account with this email already exists.');
+      } else {
+        setFormError(errorMessage);
+      }
+      
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="shadow-lg border-purple-100">
+      <CardHeader className="pb-2">
         <CardTitle>Register</CardTitle>
-        <CardDescription>Create a new account to get started</CardDescription>
+        <CardDescription>
+          Fill in your details to create a new account
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        {formError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+        
+        <motion.form 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+          variants={formAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="name">Full Name</Label>
             <Input
               id="name"
-              type="text"
-              placeholder="John Doe"
+              placeholder="Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
+              className={`w-full ${nameError ? 'border-red-500' : ''}`}
+              disabled={loading}
             />
-          </div>
-          <div className="space-y-2">
+            {nameError && <p className="text-sm text-red-500">{nameError}</p>}
+          </motion.div>
+          
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              className={`w-full ${emailError ? 'border-red-500' : ''}`}
+              disabled={loading}
             />
-          </div>
-          <div className="space-y-2">
+            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+          </motion.div>
+          
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="bg-destructive/10 text-destructive text-sm p-2 rounded-md flex items-center gap-2">
-              <AlertCircle size={16} />
-              <span>{error}</span>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                disabled={loading}
+              />
+              <button 
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
-          )}
+            {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+          </motion.div>
+          
+          <motion.div variants={itemAnimation}>
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
+            </Button>
+          </motion.div>
+        </motion.form>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Register'}
-          </Button>
-        </form>
+        <motion.div 
+          className="mt-4 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <button
+            onClick={onToggleMode}
+            className="text-sm text-purple-600 hover:underline"
+            type="button"
+            disabled={loading}
+          >
+            Already have an account? Sign In
+          </button>
+        </motion.div>
       </CardContent>
-      <CardFooter>
-        <Button variant="ghost" className="w-full" onClick={onToggleMode}>
-          Already have an account? Login
-        </Button>
-      </CardFooter>
     </Card>
   );
 };

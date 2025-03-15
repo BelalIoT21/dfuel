@@ -1,257 +1,219 @@
-import { User, UserWithoutSensitiveInfo } from '@/types/database';
-import { storage } from '@/utils/storage';
+// Facade for all database services
+import { userService } from './userService';
+import databaseService from './databaseService';
+import mongoDbService from './mongoDbService';
+import { certificationService } from './certificationService';
 
-// In-memory user database for offline mode
-const users: User[] = [
-  {
-    id: "admin-offline",
-    _id: "admin-offline",
-    name: "Administrator",
-    email: "admin@learnit.com",
-    password: "admin123",
-    isAdmin: true,
-    certifications: ["1", "2", "3", "4", "5", "6"],
-    bookings: [],
-    lastLogin: new Date().toISOString()
-  }
-];
-
-/**
- * User database service for managing users in local storage
- */
-const userDatabase = {
-  /**
-   * Get all users (without sensitive information)
-   */
-  getAllUsersWithoutSensitiveInfo: async (): Promise<UserWithoutSensitiveInfo[]> => {
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users };
-    
-    return db.users.map(({ password, resetCode, ...user }: User) => user);
-  },
-  
-  /**
-   * Find a user by email
-   */
-  findUserByEmail: async (email: string): Promise<User | undefined> => {
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users };
-    
-    return db.users.find((user: User) => user.email.toLowerCase() === email.toLowerCase());
-  },
-  
-  /**
-   * Authenticate a user
-   */
-  authenticate: async (email: string, password: string): Promise<UserWithoutSensitiveInfo | null> => {
-    console.log("Authenticating user:", email);
-    
-    // First check predefined users
-    const predefinedUser = users.find(u => 
-      u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-    
-    if (predefinedUser) {
-      console.log("Found predefined user:", predefinedUser.email);
-      const { password, resetCode, ...userWithoutPassword } = predefinedUser;
-      return userWithoutPassword;
+class UserDatabase {
+  // User methods
+  async getAllUsers() {
+    try {
+      return await userService.getAllUsers();
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      return [];
     }
-    
-    // Then check stored users
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    const user = db.users.find((u: User) => 
-      u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-    
-    if (user) {
-      console.log("Found stored user:", user.email);
-      // Update last login
-      user.lastLogin = new Date().toISOString();
-      await storage.setItem('userDb', JSON.stringify(db));
+  }
+  
+  async findUserByEmail(email: string) {
+    try {
+      return await userService.findUserByEmail(email);
+    } catch (error) {
+      console.error('Error in findUserByEmail:', error);
+      return null;
+    }
+  }
+  
+  async authenticate(email: string, password: string) {
+    try {
+      return await userService.authenticate(email, password);
+    } catch (error) {
+      console.error('Error in authenticate:', error);
+      return null;
+    }
+  }
+  
+  async registerUser(email: string, password: string, name: string) {
+    try {
+      return await userService.registerUser(email, password, name);
+    } catch (error) {
+      console.error('Error in registerUser:', error);
+      return null;
+    }
+  }
+  
+  async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}) {
+    try {
+      return await userService.updateUserProfile(userId, updates);
+    } catch (error) {
+      console.error('Error in updateUserProfile:', error);
+      return false;
+    }
+  }
+  
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    try {
+      return await userService.changePassword(userId, currentPassword, newPassword);
+    } catch (error) {
+      console.error('Error in changePassword:', error);
+      return false;
+    }
+  }
+  
+  async requestPasswordReset(email: string) {
+    try {
+      return await userService.requestPasswordReset(email);
+    } catch (error) {
+      console.error('Error in requestPasswordReset:', error);
+      return false;
+    }
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string) {
+    try {
+      return await userService.resetPassword(email, resetCode, newPassword);
+    } catch (error) {
+      console.error('Error in resetPassword:', error);
+      return false;
+    }
+  }
+  
+  // Delete user
+  async deleteUser(userId: string) {
+    try {
+      console.log(`Attempting to delete user ${userId}`);
       
-      const { password, resetCode, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    }
-    
-    console.log("Authentication failed");
-    return null;
-  },
-  
-  /**
-   * Register a new user
-   */
-  registerUser: async (email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> => {
-    // Check predefined users first
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      console.log("User already exists in predefined users");
-      return null;
-    }
-    
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    // Check if user already exists
-    if (db.users.some((u: User) => u.email.toLowerCase() === email.toLowerCase())) {
-      console.log("User already exists in database");
-      return null;
-    }
-    
-    // Create new user
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      _id: `user-${Date.now()}`,
-      email,
-      password,
-      name,
-      isAdmin: false,
-      certifications: [],
-      bookings: [],
-      lastLogin: new Date().toISOString(),
-    };
-    
-    // Add to database
-    db.users.push(newUser);
-    await storage.setItem('userDb', JSON.stringify(db));
-    
-    // Return without sensitive info
-    const { password: _, resetCode, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
-  },
-  
-  /**
-   * Add certification to user
-   */
-  addCertification: async (userId: string, machineId: string): Promise<boolean> => {
-    // Always succeed for admin users
-    if (userId === "admin-offline") {
-      console.log("Admin user already has all certifications");
-      return true;
-    }
-    
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    const userIndex = db.users.findIndex((u: User) => u.id === userId);
-    if (userIndex === -1) {
-      console.log("User not found");
+      // Get user details first
+      const user = await this.findUserById(userId);
+      
+      // Check if user exists
+      if (!user) {
+        console.log(`User ${userId} not found`);
+        return false;
+      }
+      
+      // Delete from MongoDB
+      const success = await mongoDbService.deleteUser(userId);
+      console.log(`User ${userId} deletion result:`, success);
+      return success;
+    } catch (error) {
+      console.error(`Error deleting user ${userId}:`, error);
       return false;
     }
-    
-    // Add certification if not already present
-    if (!db.users[userIndex].certifications) {
-      db.users[userIndex].certifications = [];
-    }
-    
-    if (!db.users[userIndex].certifications.includes(machineId)) {
-      db.users[userIndex].certifications.push(machineId);
-      await storage.setItem('userDb', JSON.stringify(db));
-    }
-    
-    return true;
-  },
-  
-  /**
-   * Update user profile
-   */
-  updateUserProfile: async (userId: string, updates: Partial<User>): Promise<boolean> => {
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    const userIndex = db.users.findIndex((u: User) => u.id === userId);
-    if (userIndex === -1) {
-      console.log("User not found");
-      return false;
-    }
-    
-    // Update user
-    db.users[userIndex] = { ...db.users[userIndex], ...updates };
-    await storage.setItem('userDb', JSON.stringify(db));
-    
-    return true;
-  },
-  
-  /**
-   * Request password reset
-   */
-  requestPasswordReset: async (email: string): Promise<boolean> => {
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    const userIndex = db.users.findIndex((u: User) => u.email.toLowerCase() === email.toLowerCase());
-    if (userIndex === -1) {
-      console.log("User not found");
-      return false;
-    }
-    
-    // Generate reset code
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date();
-    expiry.setHours(expiry.getHours() + 1);
-    
-    db.users[userIndex].resetCode = {
-      code: resetCode,
-      expiry: expiry.toISOString()
-    };
-    
-    await storage.setItem('userDb', JSON.stringify(db));
-    
-    // In a real app, this would send an email
-    console.log(`
-==== Password Reset Email ====
-To: ${email}
-Subject: Learnit Password Reset
-
-Dear ${db.users[userIndex].name},
-
-We received a request to reset your password for your Learnit account.
-
-Your password reset code is: ${resetCode}
-
-This code will expire in 1 hour.
-
-If you did not request a password reset, please ignore this email or contact our support team if you have any concerns.
-
-Thank you,
-The Learnit Team
-==========================
-    `);
-    
-    return true;
-  },
-  
-  /**
-   * Reset password
-   */
-  resetPassword: async (email: string, resetCode: string, newPassword: string): Promise<boolean> => {
-    const dbString = await storage.getItem('userDb');
-    const db = dbString ? JSON.parse(dbString) : { users: [] };
-    
-    const userIndex = db.users.findIndex((u: User) => u.email.toLowerCase() === email.toLowerCase());
-    if (userIndex === -1) {
-      console.log("User not found");
-      return false;
-    }
-    
-    if (!db.users[userIndex].resetCode || db.users[userIndex].resetCode?.code !== resetCode) {
-      console.log("Invalid reset code");
-      return false;
-    }
-    
-    if (new Date() > new Date(db.users[userIndex].resetCode.expiry)) {
-      console.log("Reset code expired");
-      return false;
-    }
-    
-    // Update password and clear reset code
-    db.users[userIndex].password = newPassword;
-    db.users[userIndex].resetCode = undefined;
-    
-    await storage.setItem('userDb', JSON.stringify(db));
-    
-    return true;
   }
-};
 
+  // Helper to find user by ID
+  async findUserById(userId: string) {
+    try {
+      const user = await mongoDbService.getUserById(userId);
+      return user;
+    } catch (error) {
+      console.error(`Error finding user ${userId}:`, error);
+      return null;
+    }
+  }
+  
+  // Certification methods
+  async addCertification(userId: string, machineId: string) {
+    try {
+      console.log(`UserDatabase.addCertification: userId=${userId}, machineId=${machineId}`);
+      
+      // If it's machine safety course, use the specialized method
+      if (machineId === "6") {
+        console.log(`Adding Machine Safety Course (ID: ${machineId}) for user ${userId}`);
+        return await certificationService.addMachineSafetyCertification(userId);
+      }
+      
+      // For other certifications, use the standard method
+      console.log(`Adding certification for user ${userId}, machine ${machineId}`);
+      return await certificationService.addCertification(userId, machineId);
+    } catch (error) {
+      console.error('Error in addCertification:', error);
+      return false;
+    }
+  }
+  
+  // Booking methods
+  async addBooking(userId: string, machineId: string, date: string, time: string) {
+    try {
+      return await databaseService.addBooking(userId, machineId, date, time);
+    } catch (error) {
+      console.error('Error in addBooking:', error);
+      return false;
+    }
+  }
+  
+  async getUserBookings(userId: string) {
+    try {
+      const user = await databaseService.findUserById(userId);
+      return user?.bookings || [];
+    } catch (error) {
+      console.error('Error in getUserBookings:', error);
+      return [];
+    }
+  }
+  
+  // Machine methods
+  async updateMachineStatus(machineId: string, status: string, note?: string) {
+    try {
+      console.log(`Updating machine status: ${machineId} to ${status}`);
+      return await mongoDbService.updateMachineStatus(machineId, status, note);
+    } catch (error) {
+      console.error('Error in updateMachineStatus:', error);
+      return false;
+    }
+  }
+  
+  async getMachineStatus(machineId: string) {
+    try {
+      console.log(`Getting machine status for: ${machineId}`);
+      const status = await mongoDbService.getMachineStatus(machineId);
+      if (status) {
+        console.log(`Got status from MongoDB: ${status}`);
+        return status;
+      }
+      return 'available'; // Default status
+    } catch (error) {
+      console.error('Error in getMachineStatus:', error);
+      return 'available'; // Default status
+    }
+  }
+  
+  async getMachineMaintenanceNote(machineId: string) {
+    try {
+      // This functionality would be in the MongoDB
+      return await mongoDbService.getMachineMaintenanceNote(machineId);
+    } catch (error) {
+      console.error('Error in getMachineMaintenanceNote:', error);
+      return null;
+    }
+  }
+  
+  // Delete booking method
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    try {
+      console.log(`Attempting to delete booking ${bookingId}`);
+      return await mongoDbService.deleteBooking(bookingId);
+    } catch (error) {
+      console.error(`Error deleting booking ${bookingId}:`, error);
+      return false;
+    }
+  }
+  
+  // Clear all bookings in the system (admin only)
+  async clearAllBookings(): Promise<boolean> {
+    try {
+      console.log("Attempting to clear all bookings across the system");
+      const count = await mongoDbService.clearAllBookings();
+      console.log(`Successfully cleared ${count} bookings from MongoDB`);
+      return count > 0;
+    } catch (error) {
+      console.error("Error clearing all bookings:", error);
+      return false;
+    }
+  }
+}
+
+// Create a singleton instance
+const userDatabase = new UserDatabase();
 export default userDatabase;

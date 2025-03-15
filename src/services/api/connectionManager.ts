@@ -1,148 +1,233 @@
 
-interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  status: number;
+import { toast } from "@/components/ui/use-toast";
+
+interface ConnectionConfig {
+  apiUrl: string;
+  timeout: number;
+  retryAttempts: number;
+  retryDelay: number;
 }
 
+// Default configuration
+const defaultConfig: ConnectionConfig = {
+  apiUrl: 'http://localhost:4000/api',
+  timeout: 10000,
+  retryAttempts: 2,
+  retryDelay: 1000
+};
+
 class ConnectionManager {
-  private baseUrl: string = '';
-  private connectionStatus: 'connected' | 'disconnected' | 'checking' = 'checking';
-  private maxRetries: number = 2;
-  private lastConnectionCheck: number = 0;
-  private connectionCheckInterval: number = 10000; // 10 seconds
-
+  private config: ConnectionConfig;
+  private isConnected: boolean = false;
+  private connectionListeners: ((status: boolean) => void)[] = [];
+  
   constructor() {
-    // Use the API URL from environment or fall back to a default
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-    console.log('API URL:', this.baseUrl);
+    // Load config from localStorage if available, otherwise use defaults
+    const savedConfig = localStorage.getItem('api_connection_config');
+    this.config = savedConfig ? JSON.parse(savedConfig) : { ...defaultConfig };
     
-    // Initial connection check
-    this.checkConnection().catch(() => {
-      console.log('Initial connection check failed');
-      this.connectionStatus = 'disconnected';
-    });
+    // Initialize with a connection check
+    this.checkConnection();
   }
-
-  /**
-   * Check the connection to the API server
-   */
+  
+  // Get the current connection status
+  public getConnectionStatus(): boolean {
+    return this.isConnected;
+  }
+  
+  // Get the current API URL
+  public getApiUrl(): string {
+    return this.config.apiUrl;
+  }
+  
+  // Update the API URL
+  public setApiUrl(url: string): void {
+    this.config.apiUrl = url;
+    this.saveConfig();
+    this.checkConnection();
+  }
+  
+  // Reset to default configuration
+  public resetToDefault(): void {
+    this.config = { ...defaultConfig };
+    this.saveConfig();
+    this.checkConnection();
+  }
+  
+  // Save configuration to localStorage
+  private saveConfig(): void {
+    localStorage.setItem('api_connection_config', JSON.stringify(this.config));
+  }
+  
+  // Add a connection status listener
+  public addConnectionListener(listener: (status: boolean) => void): () => void {
+    this.connectionListeners.push(listener);
+    // Return a function to remove this listener
+    return () => {
+      this.connectionListeners = this.connectionListeners.filter(l => l !== listener);
+    };
+  }
+  
+  // Notify all listeners about connection status changes
+  private notifyListeners(): void {
+    this.connectionListeners.forEach(listener => listener(this.isConnected));
+  }
+  
+  // Check the server connection
   public async checkConnection(): Promise<boolean> {
     try {
-      // Only check if we haven't checked in the last interval
-      const now = Date.now();
-      if (now - this.lastConnectionCheck < this.connectionCheckInterval) {
-        return this.connectionStatus === 'connected';
-      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
       
-      this.lastConnectionCheck = now;
-      this.connectionStatus = 'checking';
-      console.log(`Checking connection to: ${this.baseUrl}/health`);
+      console.log(`Checking connection to: ${this.config.apiUrl}/health`);
       
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const response = await fetch(`${this.config.apiUrl.replace(/\/api\/?$/, '')}/health`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        // Add a timeout to the fetch request
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        signal: controller.signal
       });
       
-      const data = await response.json();
+      clearTimeout(timeoutId);
       
-      this.connectionStatus = response.ok ? 'connected' : 'disconnected';
+      const wasConnected = this.isConnected;
+      this.isConnected = response.ok;
       
-      console.log(`Connection check result: ${response.ok ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
-      console.log(`Health check response data:`, data);
+      console.log(`Connection check result: ${this.isConnected ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
       
-      return response.ok;
+      // Parse the response JSON for better logging
+      let responseData = null;
+      try {
+        responseData = await response.clone().json();
+        console.log('Health check response data:', responseData);
+      } catch (e) {
+        console.log('Could not parse health check response as JSON');
+      }
+      
+      // Only notify if the status changed
+      if (wasConnected !== this.isConnected) {
+        this.notifyListeners();
+        
+        if (this.isConnected) {
+          toast({
+            title: "Server Connected",
+            description: `Successfully connected to ${this.config.apiUrl}`,
+          });
+        } else {
+          toast({
+            title: "Server Connection Issue",
+            description: `Server responded with status ${response.status}`,
+            variant: "destructive"
+          });
+        }
+      }
+      
+      return this.isConnected;
     } catch (error) {
-      console.error('Connection check failed:', error);
-      this.connectionStatus = 'disconnected';
+      console.error("Connection check failed:", error);
+      
+      const wasConnected = this.isConnected;
+      this.isConnected = false;
+      
+      // Only notify if the status changed
+      if (wasConnected !== this.isConnected) {
+        this.notifyListeners();
+        
+        toast({
+          title: "Server Connection Failed",
+          description: error instanceof Error ? error.message : "Could not connect to the server",
+          variant: "destructive"
+        });
+      }
+      
       return false;
     }
   }
-
-  /**
-   * Get the current connection status
-   */
-  public getConnectionStatus(): 'connected' | 'disconnected' | 'checking' {
-    return this.connectionStatus;
-  }
-
-  /**
-   * Make an API request with retries
-   */
-  public async request<T>(endpoint: string, options: RequestInit, retryCount = 0): Promise<ApiResponse<T>> {
+  
+  // Make an API request with the current configuration
+  public async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    retryCount: number = 0
+  ): Promise<{ data: T | null; error: string | null; status: number }> {
     try {
-      // Prepare the full URL
-      const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}/${endpoint.startsWith('/') ? endpoint.substring(1) : endpoint}`;
+      const url = `${this.config.apiUrl}/${endpoint.replace(/^\//, '')}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
       
-      console.log(`API Request: ${options.method} ${url}`);
+      console.log(`API Request: ${options.method || 'GET'} ${url}`);
       
-      // Add timeout to the request
-      options.signal = options.signal || AbortSignal.timeout(10000); // 10 second timeout
-      
-      // Make the request
-      const response = await fetch(url, options);
-      
-      // Check if the response is ok
-      if (response.ok) {
-        // Parse the response as JSON
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          return {
-            data,
-            error: null,
-            status: response.status
-          };
-        } else {
-          // Return a successful response but with null data
-          return {
-            data: null,
-            error: null,
-            status: response.status
-          };
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
         }
-      } else {
-        // Try to parse the error as JSON
-        try {
-          const errorData = await response.json();
-          return {
-            data: null,
-            error: errorData.message || 'API request failed',
-            status: response.status
-          };
-        } catch (e) {
-          return {
-            data: null,
-            error: `API request failed with status ${response.status}`,
-            status: response.status
-          };
-        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Parse response based on content type
+      let data: T | null = null;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json') && response.status !== 204) {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : null;
       }
+      
+      // Update connection status based on this request
+      const wasConnected = this.isConnected;
+      this.isConnected = true;
+      if (!wasConnected) {
+        this.notifyListeners();
+      }
+      
+      // Handle error responses
+      if (!response.ok) {
+        const errorMessage = data && typeof data === 'object' && 'message' in data 
+          ? String(data.message) 
+          : `Error ${response.status}: ${response.statusText}`;
+          
+        console.error(`API error for ${url}: ${errorMessage}`);
+        
+        return {
+          data: null,
+          error: errorMessage,
+          status: response.status
+        };
+      }
+      
+      return {
+        data,
+        error: null,
+        status: response.status
+      };
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
       
-      // Retry the request if we haven't reached the maximum number of retries
-      if (retryCount < this.maxRetries) {
-        console.log(`Retrying API request (${retryCount + 1}/${this.maxRetries})...`);
+      // Handle retry logic
+      if (retryCount < this.config.retryAttempts) {
+        console.log(`Retrying API request (${retryCount + 1}/${this.config.retryAttempts})...`);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
+        
         return this.request<T>(endpoint, options, retryCount + 1);
+      }
+      
+      // Update connection status if all retries failed
+      const wasConnected = this.isConnected;
+      this.isConnected = false;
+      if (wasConnected) {
+        this.notifyListeners();
       }
       
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error occurred",
         status: 0
       };
     }
-  }
-  
-  // Get the base URL
-  public getBaseUrl(): string {
-    return this.baseUrl;
   }
 }
 

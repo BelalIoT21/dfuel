@@ -1,121 +1,180 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { PasswordResetDialog } from './PasswordResetDialog';
+import { motion } from 'framer-motion';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
 }
 
+const formAnimation = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
+
 export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+
+  const validateEmail = (email: string) => {
+    if (!email) return 'Email is required';
+    if (!/\S+@\S+\.\S+/.test(email)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return '';
+  };
+
+  const validateForm = () => {
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    
+    setEmailError(emailErr);
+    setPasswordError(passwordErr);
+    
+    return !emailErr && !passwordErr;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (!email) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!password) {
-      setError('Password is required');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await onLogin(email, password);
-    } catch (err) {
-      console.error('Login error in form:', err);
-      setError(err instanceof Error ? err.message : 'Failed to login');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAdminLogin = async () => {
-    setEmail('admin@learnit.com');
-    setPassword('admin123');
+    console.log("Login form submitted", { email, password });
+    setFormError('');
     
-    // Show toast
-    toast({
-      title: 'Admin Credentials Set',
-      description: 'Click Login to continue as admin',
-    });
+    if (!validateForm()) return;
+    
+    try {
+      await onLogin(email, password);
+      console.log("Login successful");
+    } catch (error) {
+      console.error("Authentication error:", error);
+      setFormError('Authentication failed. Please try again.');
+    }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Enter your credentials to access your account</CardDescription>
+    <Card className="shadow-lg border-purple-100">
+      <CardHeader className="pb-2">
+        <CardTitle>Sign In</CardTitle>
+        <CardDescription>
+          Enter your credentials to access your account
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        {formError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+        
+        <motion.form 
+          onSubmit={handleSubmit} 
+          className="space-y-4"
+          variants={formAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div className="space-y-2" variants={itemAnimation}>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              className={`w-full ${emailError ? 'border-red-500' : ''}`}
             />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Button type="button" variant="link" className="p-0 h-auto text-xs">
-                Forgot password?
-              </Button>
+            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+          </motion.div>
+          
+          <motion.div className="space-y-2" variants={itemAnimation}>
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+              />
+              <button 
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+            {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+          </motion.div>
+          
+          <motion.div className="text-right" variants={itemAnimation}>
+            <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-sm text-purple-600 hover:underline"
+                >
+                  Forgot your password?
+                </button>
+              </DialogTrigger>
+              <PasswordResetDialog 
+                isOpen={isForgotPasswordOpen} 
+                onOpenChange={setIsForgotPasswordOpen}
+              />
+            </Dialog>
+          </motion.div>
+          
+          <motion.div variants={itemAnimation}>
+            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+              Sign In
+            </Button>
+          </motion.div>
+        </motion.form>
 
-          {error && (
-            <div className="bg-destructive/10 text-destructive text-sm p-2 rounded-md flex items-center gap-2">
-              <AlertCircle size={16} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleAdminLogin}
+        <motion.div 
+          className="mt-4 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <button
+            onClick={onToggleMode}
+            className="text-sm text-purple-600 hover:underline"
+            type="button"
           >
-            Use Admin Credentials
-          </Button>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </Button>
-        </form>
+            Don't have an account? Register
+          </button>
+        </motion.div>
       </CardContent>
-      <CardFooter>
-        <Button variant="ghost" className="w-full" onClick={onToggleMode}>
-          Don't have an account? Register
-        </Button>
-      </CardFooter>
     </Card>
   );
 };

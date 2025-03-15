@@ -58,7 +58,7 @@ export const loginUser = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
-        certifications: user.certifications || [],
+        certifications: user.certifications,
       },
       token: token,
     });

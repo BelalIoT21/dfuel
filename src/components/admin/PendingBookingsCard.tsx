@@ -19,7 +19,6 @@ export const PendingBookingsCard = ({
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Handle booking approval, rejection, or deletion
   const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
     if (!bookingId) {
       toast({
@@ -35,34 +34,50 @@ export const PendingBookingsCard = ({
     try {
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
-      let success = false;
-      
       if (action === 'Deleted') {
-        // Delete booking
-        success = await bookingService.deleteBooking(bookingId);
-        console.log(`BookingService deleteBooking result: ${success}`);
-      } else {
-        // Handle approval/rejection
-        success = await bookingService.updateBookingStatus(bookingId, action);
-        console.log(`BookingService updateBookingStatus result: ${success}`);
-      }
-      
-      if (success) {
-        toast({
-          title: `Booking ${action}`,
-          description: `The booking has been ${action.toLowerCase()} successfully.`
-        });
+        // Try MongoDB to delete the booking
+        const success = await bookingService.deleteBooking(bookingId);
+        console.log(`MongoDB deleteBooking result: ${success}`);
         
-        // After action, trigger refresh of the bookings list
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
+        if (success) {
+          toast({
+            title: "Booking Removed",
+            description: "The booking has been removed from the system."
+          });
+          
+          // After deleting, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Delete Failed",
+            description: "Could not delete booking. Please try again.",
+            variant: "destructive"
+          });
         }
       } else {
-        toast({
-          title: "Action Failed",
-          description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-          variant: "destructive"
-        });
+        // Handle approval/rejection through BookingService
+        const success = await bookingService.updateBookingStatus(bookingId, action);
+        console.log(`BookingService updateBookingStatus result: ${success}`);
+        
+        if (success) {
+          toast({
+            title: `Booking ${action}`,
+            description: `The booking has been ${action.toLowerCase()} successfully.`
+          });
+          
+          // After updating, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Action Failed",
+            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error(`Error processing booking action:`, error);
@@ -113,61 +128,66 @@ export const PendingBookingsCard = ({
               machineName = "Laser Cutter";
             } else if (machineId === "2" || machineId === 2 || machineId === "67d5658be9267b302f7aa016") {
               machineName = "Ultimaker";
+            } else if (machineId === "3" || machineId === 3) {
+              machineName = "Safety Cabinet";
             } else if (machineId === "4" || machineId === 4 || machineId === "67d5658be9267b302f7aa017") {
               machineName = "X1 E Carbon 3D Printer";
-            } else if (machineId === "5" || machineId === 5 || machineId === "67d5658be9267b302f7aa018") {
+            } else if (machineId === "5" || machineId === 5) {
               machineName = "Bambu Lab X1 E";
-            } else if (machineId === "6" || machineId === 6 || machineId === "67d5658be9267b302f7aa019") {
+            } else if (machineId === "6" || machineId === 6) {
               machineName = "Machine Safety Course";
+            } else if (booking.machineId && booking.machineId.name) {
+              // If we still have a machine object with name
+              machineName = booking.machineId.name;
             }
             
-            // Get user name from booking
-            const userName = booking.userName || (booking.user && booking.user.name) || "Unknown User";
+            // Get the user info
+            const userName = booking.userName || (booking.user && booking.user.name) || 'User';
+            const userId = booking.userId || (booking.user && (booking.user._id || booking.user.id)) || '';
             
             return (
-              <div key={bookingId} className="border rounded-lg p-3 bg-white space-y-2">
-                <div className="flex justify-between">
-                  <div>
-                    <h4 className="font-medium text-sm">{machineName}</h4>
-                    <p className="text-xs text-gray-500">{userName}</p>
-                  </div>
-                  <div className="text-xs text-right">
-                    <p className="font-medium">{booking.date}</p>
-                    <p className="text-gray-500">{booking.time}</p>
-                  </div>
+              <div 
+                key={bookingId} 
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2"
+              >
+                <div>
+                  <p className="font-medium text-purple-800">
+                    {machineName}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {userName} ({userId}) • {booking.date} at {booking.time}
+                  </p>
                 </div>
-                
-                <div className="flex justify-between space-x-2 pt-1">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 flex-1"
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-green-200 hover:bg-green-50 text-green-700"
                     onClick={() => handleBookingAction(bookingId, 'Approved')}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                    {isProcessing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                     Approve
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex-1"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 hover:bg-red-50 text-red-700"
                     onClick={() => handleBookingAction(bookingId, 'Rejected')}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                    {isProcessing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                     Reject
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-200 hover:bg-gray-50 text-gray-700"
                     onClick={() => handleBookingAction(bookingId, 'Deleted')}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+                    {isProcessing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                    Delete
                   </Button>
                 </div>
               </div>

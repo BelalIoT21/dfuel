@@ -5,7 +5,7 @@ import { machines } from '../../../utils/data';
 import { useState, useEffect } from 'react';
 import { machineService } from '@/services/machineService';
 import { Button } from "@/components/ui/button";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import userDatabase from '@/services/userDatabase';
+import mongoDbService from '@/services/mongoDbService';
 import { useAuth } from '@/context/AuthContext';
 
 interface UsersTableProps {
@@ -55,40 +56,33 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   );
 
   const getMachineName = (certId: string) => {
-    // Known machine IDs mapping with proper names for all machines and safety course
-    const knownMachines = {
-      "1": "Laser Cutter",
-      "2": "Ultimaker",
-      "3": "Safety Cabinet",
-      "4": "X1 E Carbon 3D Printer",
-      "5": "Bambu Lab X1 E",
-      "6": "Machine Safety Course",
-      "67d5658be9267b302f7aa015": "Laser Cutter",
-      "67d5658be9267b302f7aa016": "Ultimaker",
-      "67d5658be9267b302f7aa017": "X1 E Carbon 3D Printer",
-      "67d5658be9267b302f7aa018": "Safety Cabinet",
-      "67d5658be9267b302f7aa019": "Bambu Lab X1 E",
-    };
+    // Handle specific MongoDB ID to normal ID mapping
+    if (certId === "67d5658be9267b302f7aa015") return "Laser Cutter";
+    if (certId === "67d5658be9267b302f7aa016") return "Ultimaker";
+    if (certId === "67d5658be9267b302f7aa017") return "X1 E Carbon 3D Printer";
     
-    // First check if it's a known ID
-    if (knownMachines[certId]) {
-      return knownMachines[certId];
+    // Handle known special cases
+    if (certId === "1" || certId === 1) return "Laser Cutter";
+    if (certId === "2" || certId === 2) return "Ultimaker";
+    if (certId === "3" || certId === 3) return "Safety Cabinet";
+    if (certId === "4" || certId === 4) return "X1 E Carbon 3D Printer";
+    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
+    if (certId === "6" || certId === 6) return "Machine Safety Course";
+    
+    // Check if it's a MongoDB ID format (24 hex chars)
+    if (typeof certId === 'string' && certId.length === 24 && /^[0-9a-fA-F]{24}$/.test(certId)) {
+      // Try to find in allMachines
+      const machine = allMachines.find(m => m._id === certId || m.id === certId);
+      if (machine) return machine.name;
     }
     
-    // Try to find in allMachines by id or _id
-    const machine = allMachines.find(m => 
-      m.id === certId || 
-      m._id === certId || 
-      m.id?.toString() === certId || 
-      (m._id && m._id.toString() === certId)
-    );
+    // Try to find by regular ID in all machines
+    const machine = allMachines.find(m => m.id === certId || m._id === certId);
+    if (machine) return machine.name;
     
-    if (machine) {
-      return machine.name;
-    }
-    
-    // If we couldn't find a match, return a fallback
-    return `Machine ${certId}`;
+    // Fallback to find in hardcoded machines
+    const localMachine = machines.find(m => m.id === certId);
+    return localMachine ? localMachine.name : `Machine ${certId}`;
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -97,7 +91,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     try {
       console.log(`Attempting to delete user ${userId} from UsersTable component`);
       
-      if (userId === currentUser?.id || userId === currentUser?._id) {
+      if (userId === currentUser?.id) {
         console.log(`Cannot delete current user ${userId}`);
         toast({
           title: "Cannot Delete Yourself",
@@ -108,9 +102,9 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Delete user
-      const success = await userDatabase.deleteUser(userId);
-      console.log(`User deletion result for ${userId}: ${success}`);
+      console.log(`Trying MongoDB deletion for user ${userId}`);
+      const success = await mongoDbService.deleteUser(userId);
+      console.log(`MongoDB deleteUser result: ${success}`);
       
       if (success) {
         toast({
@@ -124,7 +118,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete user. Please try again.",
+          description: "Failed to delete user. They may have special permissions.",
           variant: "destructive"
         });
       }
@@ -145,7 +139,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
@@ -158,7 +151,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
               <TableRow key={user.id || user._id}>
-                <TableCell className="text-xs text-gray-500">{user.id || user._id}</TableCell>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
@@ -168,51 +160,30 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                     {user.isAdmin ? 'Admin' : 'User'}
                   </span>
                 </TableCell>
-                <TableCell>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</TableCell>
+                <TableCell>{new Date(user.lastLogin).toLocaleString()}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      <>
-                        {/* Display non-safety-course certifications */}
-                        {user.certifications
-                          .filter((cert: string | number) => 
-                            cert !== "6" && cert !== 6 && 
-                            cert !== "3" && cert !== 3)
-                          .map((cert: string | number) => (
-                            <span 
-                              key={cert.toString()} 
-                              className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                              title={`Certification ID: ${cert}`}
-                            >
-                              {getMachineName(cert.toString())}
-                            </span>
-                          ))
-                        }
-                        
-                        {/* Display Safety Cabinet certification separately */}
-                        {(user.certifications?.includes("3") || 
-                         user.certifications?.includes(3) || 
-                         user.certifications?.some((c: any) => c.toString().includes("67d5658be9267b302f7aa018"))) && (
+                      user.certifications
+                        .filter((cert: string | number) => cert !== "6" && cert !== 6)
+                        .map((cert: string | number) => (
                           <span 
-                            className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded"
+                            key={cert.toString()} 
+                            className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
                           >
-                            Safety Cabinet
+                            {getMachineName(cert.toString())}
                           </span>
-                        )}
-                        
-                        {/* Display Safety Course certification separately */}
-                        {(user.certifications?.includes("6") || 
-                         user.certifications?.includes(6)) && (
-                          <span 
-                            className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
-                          >
-                            Safety Course
-                          </span>
-                        )}
-                      </>
+                        ))
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
                     )}
+                    {user.certifications?.includes("6") || user.certifications?.includes(6) ? (
+                      <span 
+                        className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                      >
+                        Safety Course
+                      </span>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -237,7 +208,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete User</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                              This will permanently delete the user "{user.name}" ({user.id || user._id}) and all their data, including bookings and certifications. This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -263,7 +234,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-4 text-gray-500">
+              <TableCell colSpan={6} className="text-center py-4 text-gray-500">
                 No users found matching your search criteria.
               </TableCell>
             </TableRow>

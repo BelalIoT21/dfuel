@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -117,19 +116,7 @@ class MongoUserService {
     
     try {
       console.log(`MongoDB: Updating certification for user ${userId}, machine ${machineId}`);
-      
-      // Try to find user by both MongoDB _id and custom id field
-      let user = await this.getUserById(userId);
-      
-      // If not found directly, try MongoDB's ObjectId
-      if (!user && userId.length === 24) {
-        try {
-          user = await this.usersCollection.findOne({ _id: userId });
-        } catch (err) {
-          console.error("Error finding user by ObjectId:", err);
-        }
-      }
-      
+      const user = await this.getUserById(userId);
       if (!user) {
         console.log(`MongoDB: User ${userId} not found`);
         return false;
@@ -139,7 +126,7 @@ class MongoUserService {
       const isSpecialUser = userId === "user-1741957466063" || (user.email && user.email.includes("b.l.mishmish"));
       const isSafetyCourse = machineId === "6";
       
-      if (isSafetyCourse && isSpecialUser && !user.isAdmin) {
+      if (isSafetyCourse && isSpecialUser) {
         console.log(`MongoDB: Special handling for user ${userId} with Safety Course certification`);
         // Clear all certifications first
         const clearResult = await this.usersCollection.updateOne(
@@ -167,17 +154,8 @@ class MongoUserService {
       
       // Use $addToSet to avoid duplicates
       console.log(`MongoDB: Adding certification ${machineId} to user ${userId}`);
-      
-      // Check if we need to match on id or _id
-      let updateFilter = {};
-      if (user.id) {
-        updateFilter = { id: userId };
-      } else {
-        updateFilter = { _id: userId };
-      }
-      
       const result = await this.usersCollection.updateOne(
-        updateFilter,
+        { id: userId },
         { $addToSet: { certifications: machineId } }
       );
       

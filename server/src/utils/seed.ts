@@ -17,14 +17,15 @@ export const seedDatabase = async () => {
     // Check if data already exists
     const userCount = await User.countDocuments();
     const machineCount = await Machine.countDocuments();
+    const bookingCount = await Booking.countDocuments();
     
-    if (userCount > 0 && machineCount > 0) {
-      console.log(`Database already contains ${userCount} users and ${machineCount} machines. Skipping seed.`);
+    if (userCount > 0 && machineCount > 0 && bookingCount > 0) {
+      console.log(`Database already contains ${userCount} users, ${machineCount} machines, and ${bookingCount} bookings. Skipping seed.`);
       return;
     }
 
     // Clear existing data if only partial data exists
-    if (userCount === 0 || machineCount === 0) {
+    if (userCount === 0 || machineCount === 0 || bookingCount === 0) {
       console.log('Clearing existing data to ensure consistent seeding...');
       await User.deleteMany({});
       await Machine.deleteMany({});
@@ -44,6 +45,16 @@ export const seedDatabase = async () => {
       certifications: []
     });
 
+    // Create regular user
+    console.log('Creating regular user...');
+    const regularUser = await User.create({
+      name: 'John Doe',
+      email: 'user@example.com',
+      password: 'password123',
+      isAdmin: false,
+      certifications: []
+    });
+
     // Create machines with specific types
     console.log('Creating machines...');
     const machines = [
@@ -58,7 +69,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Ultimaker',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'Ultimaker 3D printer for precise prototyping and modeling.',
         status: 'Available',
         requiresCertification: true,
@@ -66,17 +77,8 @@ export const seedDatabase = async () => {
         imageUrl: '/machines/3d-printer.jpg'
       },
       {
-        name: 'Safety Cabinet',
-        type: 'Safety Cabinet',
-        description: 'Safety equipment storage cabinet.',
-        status: 'Available',
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: '/machines/safety-cabinet.jpg'
-      },
-      {
         name: 'X1 E Carbon 3D Printer',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'Advanced 3D printer for carbon fiber composites.',
         status: 'Available',
         requiresCertification: true,
@@ -85,7 +87,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Bambu Lab X1 E',
-        type: '3D Printer',
+        type: 'Machine',
         description: 'High-speed multi-material 3D printer with exceptional print quality.',
         status: 'Available',
         requiresCertification: true,
@@ -93,13 +95,13 @@ export const seedDatabase = async () => {
         imageUrl: '/machines/bambu-printer.jpg'
       },
       {
-        name: 'Machine Safety Course',
-        type: 'Safety Course',
-        description: 'Required safety training for using machines.',
+        name: 'Soldering Station',
+        type: 'Machine',
+        description: 'Professional soldering station for electronics work.',
         status: 'Available',
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: '/machines/safety-course.jpg'
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/machines/soldering-station.jpg'
       }
     ];
 
@@ -109,6 +111,63 @@ export const seedDatabase = async () => {
     console.log('Adding certifications to admin...');
     adminUser.certifications = createdMachines.map(machine => machine._id.toString());
     await adminUser.save();
+
+    // Add some certifications to regular user
+    console.log('Adding certifications to regular user...');
+    regularUser.certifications = [
+      createdMachines[0]._id.toString(), // Laser Cutter
+      createdMachines[1]._id.toString(), // Ultimaker
+      createdMachines[2]._id.toString(), // X1 E Carbon 3D Printer
+      createdMachines[3]._id.toString()  // Bambu Lab X1 E
+    ];
+    await regularUser.save();
+
+    // Create some bookings
+    console.log('Creating sample bookings...');
+    
+    // Get today and future dates
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Format dates as YYYY-MM-DD with proper type annotation
+    const formatDate = (date: Date): string => {
+      return date.toISOString().split('T')[0];
+    };
+    
+    // Create bookings using the Booking model with clientId field
+    const bookings = [
+      {
+        user: regularUser._id,
+        machine: createdMachines[0]._id,
+        date: today,
+        time: '10:00 - 12:00',
+        status: 'Approved',
+        clientId: `booking-${Date.now() - 100000}` // Add a clientId for client compatibility
+      },
+      {
+        user: regularUser._id,
+        machine: createdMachines[1]._id,
+        date: tomorrow,
+        time: '14:00 - 16:00',
+        status: 'Pending',
+        clientId: `booking-${Date.now() - 50000}` // Add a clientId for client compatibility
+      },
+      {
+        user: regularUser._id,
+        machine: createdMachines[2]._id,
+        date: nextWeek,
+        time: '09:00 - 11:00',
+        status: 'Pending',
+        clientId: `booking-${Date.now()}` // Add a clientId for client compatibility
+      }
+    ];
+    
+    // Insert bookings
+    await Booking.insertMany(bookings);
     
     console.log('Database seeded successfully!');
   } catch (error) {

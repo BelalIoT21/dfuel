@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -59,7 +58,6 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     
     res.json({
       _id: updatedUser._id,
-      id: updatedUser._id, // Add id field for compatibility
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
@@ -94,7 +92,6 @@ export const updateUser = async (req: Request, res: Response) => {
     
     res.json({
       _id: updatedUser._id,
-      id: updatedUser._id, // Add id field for compatibility
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
@@ -155,33 +152,16 @@ export const changePassword = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const userId = req.params.id;
-    console.log(`Attempting to delete user with ID: ${userId}`);
-    
-    // Find user by ID - try both direct MongoDB ID and custom ID format
-    let user = await User.findById(userId);
-    
-    // If not found by MongoDB ID, check if it's a custom ID format
-    if (!user && userId.startsWith('user-')) {
-      user = await User.findOne({ id: userId });
-    }
+    const user = await User.findById(req.params.id);
     
     if (!user) {
-      console.log(`User with ID ${userId} not found`);
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Check if user is an admin
-    if (user.isAdmin) {
-      console.log(`Cannot delete admin user ${userId}`);
-      return res.status(403).json({ message: 'Cannot delete admin users' });
-    }
+    // Allow deleting any user (including admins)
+    await user.deleteOne();
     
-    // Delete user
-    await User.deleteOne({ _id: user._id });
-    console.log(`User ${userId} deleted successfully`);
-    
-    res.status(200).json({ message: 'User removed successfully' });
+    res.json({ message: 'User removed' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
     res.status(500).json({ 
