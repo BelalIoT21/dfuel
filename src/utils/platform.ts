@@ -26,10 +26,27 @@ export function isAndroid() {
   return /android/.test(userAgent);
 }
 
+// Export the function directly to check whether the platform is iOS
+export const isPlatformIOS = isIOS();
+
+// Export the function directly to check whether the platform is Android
+export const isPlatformAndroid = isAndroid();
+
+// Export the function to check whether this is a native platform
+export const isPlatformNative = isNative;
+
 // General mobile detection
 export function isMobile() {
   if (!isBrowser) return false;
   
   const userAgent = window.navigator.userAgent.toLowerCase();
   return /iphone|ipad|ipod|android|mobile/.test(userAgent);
+}
+
+// Check IE browser's compatibility - empty function since we're not targeting IE
+export function isIEBrowser() {
+  if (!isBrowser) return false;
+  
+  // Check for IE-specific properties (in real implementation, this would be more complex)
+  return false;
 }
