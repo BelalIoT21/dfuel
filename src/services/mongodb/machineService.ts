@@ -9,6 +9,7 @@ class MongoMachineService {
   
   async initCollections(): Promise<void> {
     try {
+      console.log("Initializing MongoDB collections for machines");
       if (!this.machineStatusesCollection || !this.machinesCollection) {
         const db = await mongoConnectionService.connect();
         if (db) {
@@ -28,6 +29,8 @@ class MongoMachineService {
         } else {
           console.error("Failed to connect to MongoDB database");
         }
+      } else {
+        console.log("MongoDB collections for machines already initialized");
       }
     } catch (error) {
       console.error("Error initializing MongoDB collections:", error);
@@ -68,6 +71,15 @@ class MongoMachineService {
         { $set: { machineId, status, note } },
         { upsert: true }
       );
+      
+      // Also update the machine document if it exists
+      if (this.machinesCollection) {
+        await this.machinesCollection.updateOne(
+          { _id: machineId },
+          { $set: { status, maintenanceNote: note } },
+          { upsert: false } // Don't create a new machine if it doesn't exist
+        );
+      }
       
       return result.acknowledged;
     } catch (error) {
@@ -135,15 +147,18 @@ class MongoMachineService {
     if (!this.machinesCollection) return false;
     
     try {
+      console.log(`Attempting to add/update machine in MongoDB: ${machine.name} (ID: ${machine._id})`);
+      
       // Check if the machine already exists
       const exists = await this.machineExists(machine._id);
       if (exists) {
-        console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
+        console.log(`Machine with ID ${machine._id} already exists in MongoDB, updating`);
         // Update the machine to ensure it has all properties
         const result = await this.machinesCollection.updateOne(
           { _id: machine._id },
           { $set: machine }
         );
+        console.log(`Machine update result: ${result.modifiedCount} modified`);
         return result.acknowledged;
       }
       
@@ -153,6 +168,20 @@ class MongoMachineService {
       return result.acknowledged;
     } catch (error) {
       console.error("Error adding machine to MongoDB:", error);
+      return false;
+    }
+  }
+  
+  async deleteMachine(machineId: string): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection) return false;
+    
+    try {
+      const result = await this.machinesCollection.deleteOne({ _id: machineId });
+      console.log(`Machine with ID ${machineId} deleted from MongoDB: ${result.deletedCount} documents`);
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error("Error deleting machine from MongoDB:", error);
       return false;
     }
   }
