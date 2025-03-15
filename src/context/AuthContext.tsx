@@ -1,11 +1,11 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
+import { toast } from '@/components/ui/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -15,30 +15,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Load user from tokens on initial load (web) or storage (native)
   useEffect(() => {
+    console.log("AuthProvider: Loading user data");
     const loadUser = async () => {
       try {
-        // For native, still try to get from AsyncStorage
-        const storedUser = await storage.getItem('learnit_user');
+        setLoading(true);
         
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        // For web - try to get from localStorage first
+        const storedUserStr = localStorage.getItem('learnit_user');
+        if (storedUserStr) {
+          try {
+            const storedUser = JSON.parse(storedUserStr);
+            console.log("Found user in localStorage:", storedUser.name);
+            setUser(storedUser);
+          } catch (e) {
+            console.error("Error parsing stored user:", e);
+            localStorage.removeItem('learnit_user');
+          }
         } else {
-          // For web, try to get from token
+          // Try to get from token if no user in localStorage
+          console.log("No user in localStorage, checking token");
           const token = localStorage.getItem('token');
           if (token) {
             try {
+              console.log("Found token, fetching current user");
               const response = await apiService.getCurrentUser();
               if (response.data && response.data.user) {
+                console.log("Got user from API:", response.data.user.name);
                 setUser(response.data.user);
+                localStorage.setItem('learnit_user', JSON.stringify(response.data.user));
               }
             } catch (error) {
               console.error('Error getting current user:', error);
+              localStorage.removeItem('token');
             }
+          } else {
+            console.log("No token found");
           }
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
       } finally {
+        console.log("Auth loading complete");
         setLoading(false);
       }
     };
@@ -49,46 +66,95 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
+      setLoading(true);
+      console.log("Authenticating user:", email);
+      
       const authenticatedUser = await userDatabase.authenticate(email, password);
       
       if (authenticatedUser) {
+        console.log("Authentication successful for:", authenticatedUser.name);
         setUser(authenticatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        localStorage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${authenticatedUser.name}!`
+        });
+        
         return true;
       } else {
+        console.log("Authentication failed");
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password",
+          variant: "destructive"
+        });
         throw new Error('Invalid credentials');
       }
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
     try {
+      setLoading(true);
+      console.log("Registering new user:", email);
+      
       const newUser = await userDatabase.registerUser(email, password, name);
       
       if (newUser) {
+        console.log("Registration successful for:", newUser.name);
         setUser(newUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
+        localStorage.setItem('learnit_user', JSON.stringify(newUser));
+        
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${newUser.name}!`
+        });
+        
         return true;
       } else {
+        console.log("Registration failed");
+        toast({
+          title: "Registration failed",
+          description: "Could not create user account",
+          variant: "destructive"
+        });
         throw new Error('Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Logout function
   const logout = async () => {
+    console.log("Logging out user");
     setUser(null);
     localStorage.removeItem('token');
-    await storage.removeItem('learnit_user');
+    localStorage.removeItem('learnit_user');
+    
+    toast({
+      description: "You have been logged out successfully."
+    });
   };
 
   // Add certification
@@ -195,7 +261,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
