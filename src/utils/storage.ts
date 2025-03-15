@@ -3,14 +3,14 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we use MongoDB exclusively
- * For native environments, we still use AsyncStorage for session persistence
+ * For web, we use sessionStorage for session persistence
+ * For native environments, we still use AsyncStorage
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
-      return null;
+      console.log('Web environment - using sessionStorage for temporary persistence');
+      return sessionStorage.getItem(key);
     } else {
       try {
         // Use a safer approach to access AsyncStorage in native environments
@@ -28,7 +28,8 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
+      console.log('Web environment - using sessionStorage for temporary persistence');
+      sessionStorage.setItem(key, value);
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -43,7 +44,8 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only');
+      console.log('Web environment - using sessionStorage for temporary persistence');
+      sessionStorage.removeItem(key);
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();

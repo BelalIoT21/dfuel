@@ -33,7 +33,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please try again later.',
+          description: 'Could not connect to the backend server. Using local storage.',
           variant: 'destructive'
         });
       }
@@ -63,9 +63,6 @@ const Index = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
-
-  // Debug rendering
-  console.log("Rendering Index component");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
