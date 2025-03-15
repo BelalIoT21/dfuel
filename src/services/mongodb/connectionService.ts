@@ -17,6 +17,12 @@ class MongoConnectionService {
   }
   
   async connect(): Promise<Db | null> {
+    // In browser environment, return null immediately
+    if (typeof window !== 'undefined') {
+      console.log('Browser environment detected, skipping MongoDB connection');
+      return null;
+    }
+    
     console.log('Attempting to connect to MongoDB...');
     // If already connected, return the db
     if (this.db) {
@@ -96,6 +102,12 @@ class MongoConnectionService {
   }
   
   async isConnected(): Promise<boolean> {
+    // In browser environment, always return false
+    if (typeof window !== 'undefined') {
+      console.log('Browser environment detected, MongoDB connection not available');
+      return false;
+    }
+    
     try {
       console.log('Testing MongoDB connection...');
       

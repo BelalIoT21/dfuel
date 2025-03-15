@@ -6,6 +6,11 @@ import mongoConnectionService from '../services/mongodb/connectionService';
  */
 class StorageService {
   private async getStorageCollection() {
+    // In browser environment, throw an error that will be caught
+    if (typeof window !== 'undefined') {
+      throw new Error('MongoDB not available in browser');
+    }
+    
     try {
       console.log('Getting storage collection from MongoDB...');
       const db = await mongoConnectionService.connect();
@@ -23,6 +28,14 @@ class StorageService {
   async getItem(key: string): Promise<string | null> {
     try {
       console.log(`Storage: Getting item with key: ${key}`);
+      
+      // In browser environment, use sessionStorage
+      if (typeof window !== 'undefined') {
+        const value = sessionStorage.getItem(key);
+        console.log(`Using sessionStorage for key ${key}:`, value ? 'found' : 'not found');
+        return value;
+      }
+      
       const collection = await this.getStorageCollection();
       const item = await collection.findOne({ key });
       console.log(`Storage: Retrieved item for key ${key}:`, item ? 'found' : 'not found');
@@ -46,6 +59,14 @@ class StorageService {
   async setItem(key: string, value: string): Promise<void> {
     try {
       console.log(`Storage: Setting item with key: ${key}`);
+      
+      // In browser environment, use sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(key, value);
+        console.log(`Using sessionStorage for setting key ${key}`);
+        return;
+      }
+      
       const collection = await this.getStorageCollection();
       await collection.updateOne(
         { key },
@@ -53,14 +74,6 @@ class StorageService {
         { upsert: true }
       );
       console.log(`Storage: Successfully set item with key: ${key}`);
-      // Also set in session storage as backup for web
-      if (typeof window !== 'undefined') {
-        try {
-          sessionStorage.setItem(key, value);
-        } catch (e) {
-          console.error('Failed to set backup in session storage:', e);
-        }
-      }
     } catch (error) {
       console.error(`Storage error in setItem for key ${key}:`, error);
       // Fall back to session storage for web
@@ -78,19 +91,27 @@ class StorageService {
   async removeItem(key: string): Promise<void> {
     try {
       console.log(`Storage: Removing item with key: ${key}`);
+      
+      // In browser environment, use sessionStorage
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(key);
+        console.log(`Using sessionStorage for removing key ${key}`);
+        return;
+      }
+      
       const collection = await this.getStorageCollection();
       await collection.deleteOne({ key });
       console.log(`Storage: Successfully removed item with key: ${key}`);
+    } catch (error) {
+      console.error(`Storage error in removeItem for key ${key}:`, error);
       // Also remove from session storage for web
       if (typeof window !== 'undefined') {
         try {
           sessionStorage.removeItem(key);
         } catch (e) {
-          console.error('Failed to remove backup from session storage:', e);
+          console.error('Failed to remove from session storage:', e);
         }
       }
-    } catch (error) {
-      console.error(`Storage error in removeItem for key ${key}:`, error);
     }
   }
 }

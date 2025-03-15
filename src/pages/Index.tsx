@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
@@ -16,29 +15,18 @@ const Index = () => {
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
   
-  // Check server connection
+  // Check server connection - always mark as connected in browser
   useEffect(() => {
-    const checkServer = async () => {
-      try {
-        console.log("Checking server health...");
-        // Skip API calls, we're going direct to MongoDB
-        setServerStatus('connected');
-        toast({
-          title: 'MongoDB Connection',
-          description: 'Using direct MongoDB connection on localhost',
-        });
-      } catch (error) {
-        console.error("Connection error:", error);
-        setServerStatus('disconnected');
-        toast({
-          title: 'MongoDB Connection Failed',
-          description: 'Could not connect to MongoDB on localhost. Please ensure MongoDB is running.',
-          variant: 'destructive'
-        });
-      }
-    };
+    console.log("Setting up Index component");
+    setServerStatus('connected');
     
-    checkServer();
+    // Always use session storage in browser
+    if (typeof window !== 'undefined') {
+      toast({
+        title: 'Storage Mode',
+        description: 'Using browser session storage',
+      });
+    }
   }, []);
 
   // Redirect if user is already logged in
@@ -57,7 +45,7 @@ const Index = () => {
       console.error("Login failed:", error);
       toast({
         title: 'Login Failed',
-        description: 'Please check your credentials and ensure MongoDB is running.',
+        description: 'Please check your credentials.',
         variant: 'destructive'
       });
     }
@@ -71,7 +59,7 @@ const Index = () => {
       console.error("Registration failed:", error);
       toast({
         title: 'Registration Failed',
-        description: 'Please ensure MongoDB is running on localhost.',
+        description: 'Please try again or contact support.',
         variant: 'destructive'
       });
     }
@@ -94,7 +82,7 @@ const Index = () => {
           </p>
           {serverStatus && (
             <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              MongoDB status: {serverStatus}
+              Storage mode: {typeof window !== 'undefined' ? 'Browser Session Storage' : 'MongoDB'}
             </div>
           )}
         </div>
