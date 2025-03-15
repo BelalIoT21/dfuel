@@ -12,14 +12,7 @@ export const connectDB = async () => {
   try {
     console.log(`Attempting to connect to MongoDB at ${MONGODB_URI}...`);
     
-    const options = {
-      // Add connection options to improve reliability
-      connectTimeoutMS: 10000, // 10 seconds
-      socketTimeoutMS: 45000,  // 45 seconds
-      serverSelectionTimeoutMS: 10000, // 10 seconds
-    };
-
-    const conn = await mongoose.connect(MONGODB_URI, options);
+    const conn = await mongoose.connect(MONGODB_URI);
     
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     console.log(`Database: ${MONGODB_DB_NAME}`);
@@ -37,14 +30,9 @@ export const connectDB = async () => {
       console.warn('Mongoose disconnected from MongoDB');
     });
     
-    mongoose.connection.on('reconnected', () => {
-      console.log('Mongoose reconnected to MongoDB');
-    });
-    
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error('Check if MongoDB is running locally or update your MONGODB_URI in .env');
     process.exit(1);
   }
 };
