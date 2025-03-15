@@ -10,6 +10,16 @@ import bcrypt from 'bcryptjs';
 // Load environment variables
 dotenv.config();
 
+// Define a type for the booking objects to avoid implicit any arrays
+interface BookingSeed {
+  user: mongoose.Types.ObjectId;
+  machine: mongoose.Types.ObjectId;
+  date: Date;
+  time: string;
+  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
+  clientId?: string;
+}
+
 // Function to seed the database with initial data
 export const seedDatabase = async () => {
   try {
@@ -160,7 +170,7 @@ export const seedDatabase = async () => {
     nextWeek.setDate(nextWeek.getDate() + 7);
     
     // Create bookings using the Booking model with clientId field
-    const bookings = [];
+    const bookings: BookingSeed[] = [];
     
     // Insert bookings if there are any
     if (bookings.length > 0) {
