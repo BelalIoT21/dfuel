@@ -3,12 +3,12 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
 import { seedDatabase } from './utils/seed';  // Import the seed utility
 import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
+import { requestLogger, apiLogger } from './utils/logger'; // Import our new logger
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -49,8 +49,9 @@ app.use(cors({
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
-app.use(morgan('dev'));
+app.use(requestLogger); // Use our custom request logger
 app.use(cookieParser());
+app.use(apiLogger); // Add detailed API logging
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -105,6 +106,8 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Health check available at: http://localhost:${PORT}/health`);
+  console.log(`API base URL: http://localhost:${PORT}/api`);
 });
 
 export default app;

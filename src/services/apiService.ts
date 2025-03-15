@@ -1,8 +1,5 @@
-
-import { getEnv } from '../utils/env';
+import { connectionManager } from './api/connectionManager';
 import { toast } from '../components/ui/use-toast';
-
-const BASE_URL = '/api'; // This will be proxied to our backend server
 
 interface ApiResponse<T> {
   data: T | null;
@@ -11,14 +8,13 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
-  private async request<T>(
+  async request<T>(
     endpoint: string, 
     method: string = 'GET', 
     data?: any,
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${BASE_URL}/${endpoint}`;
       const token = localStorage.getItem('token');
       
       const headers: HeadersInit = {
@@ -39,43 +35,14 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
-      const response = await fetch(url, options);
+      console.log(`Making API request: ${method} ${endpoint}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
-      }
-      
-      if (!response.ok) {
-        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
-        
-        if (response.status === 404) {
-          return {
-            data: null,
-            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
-            status: response.status
-          };
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      return {
-        data: responseData,
-        error: null,
-        status: response.status
-      };
+      // Use the connection manager to make the request
+      return await connectionManager.request<T>(endpoint, options);
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
-      // Don't show toast for health check failures, they're expected when backend is not running
+      // Don't show toast for health check failures
       if (!endpoint.includes('health')) {
         toast({
           title: `API Error (${endpoint})`,
@@ -115,7 +82,7 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    return this.request<{ status: string, message: string }>(
+    return this.request<{ status: string, message: string, database: any, server: any }>(
       'health',
       'GET',
       undefined,

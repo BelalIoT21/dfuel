@@ -7,10 +7,15 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { ConnectionStatus } from '@/components/common/ConnectionStatus';
+import { AlertCircle, Database, HardDrive, Server } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { connectionManager } from '@/services/api/connectionManager';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -19,10 +24,16 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
+        setIsLoading(true);
+        
+        // Force a connection check first
+        await connectionManager.checkConnection();
+        
+        // Then get detailed server health
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check:", response.data);
-          setServerStatus('connected');
+          setServerStatus(response.data);
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
@@ -30,12 +41,13 @@ const Index = () => {
         }
       } catch (error) {
         console.error("Server connection error:", error);
-        setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please try again later.',
+          description: 'Could not connect to the backend server. Please check the connection settings.',
           variant: 'destructive'
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -75,11 +87,6 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              Server status: {serverStatus}
-            </div>
-          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -111,6 +118,58 @@ const Index = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        <div className="mt-8">
+          <ConnectionStatus />
+          
+          {serverStatus && serverStatus.database && (
+            <div className="mt-4 p-4 border rounded-md">
+              <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                <Server className="h-4 w-4" />
+                Server Information
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <HardDrive className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-gray-500">Environment:</span>
+                </div>
+                <div className="font-medium">{serverStatus.environment}</div>
+                
+                <div className="flex items-center gap-1.5">
+                  <Database className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-gray-500">Database:</span>
+                </div>
+                <div className="font-medium flex items-center">
+                  {serverStatus.database.connected ? (
+                    <span className="text-green-600">Connected</span>
+                  ) : (
+                    <span className="text-red-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Disconnected
+                    </span>
+                  )}
+                </div>
+                
+                {serverStatus.database.connected && (
+                  <>
+                    <div className="text-gray-500">Host:</div>
+                    <div className="font-medium">{serverStatus.database.host}</div>
+                    
+                    <div className="text-gray-500">Database:</div>
+                    <div className="font-medium">{serverStatus.database.database}</div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {isLoading && (
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-500">Checking server status...</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
