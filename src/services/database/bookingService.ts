@@ -95,7 +95,20 @@ export class BookingDatabaseService extends BaseService {
 
   async getUserBookings(userId: string) {
     try {
-      // First try to get bookings from MongoDB if not in web environment
+      console.log(`Getting bookings for user ${userId}`);
+      
+      // First try API
+      try {
+        const response = await apiService.request('bookings', 'GET');
+        if (response && response.data) {
+          console.log("Retrieved bookings from API:", response.data.length);
+          return response.data;
+        }
+      } catch (apiError) {
+        console.error("API error when getting bookings:", apiError);
+      }
+      
+      // Then try to get bookings from MongoDB if not in web environment
       if (!isWeb) {
         try {
           const user = await mongoDbService.getUserById(userId);
@@ -110,6 +123,7 @@ export class BookingDatabaseService extends BaseService {
       
       // For web environment or as fallback, use memory store
       const user = await userDatabaseService.findUserById(userId);
+      console.log("Retrieved bookings from memory:", user?.bookings?.length || 0);
       return user?.bookings || [];
     } catch (error) {
       console.error("Error getting user bookings:", error);
@@ -119,10 +133,12 @@ export class BookingDatabaseService extends BaseService {
   
   async updateBookingStatus(bookingId: string, status: 'Approved' | 'Rejected' | 'Completed' | 'Canceled'): Promise<boolean> {
     try {
+      console.log(`Updating booking ${bookingId} status to ${status}`);
+      
       // Try API first
       try {
-        const response = await apiService.updateBookingStatus(bookingId, status);
-        if (response.data) {
+        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status });
+        if (response && response.data) {
           console.log("Booking status updated via API:", response.data);
           return true;
         }
@@ -145,6 +161,8 @@ export class BookingDatabaseService extends BaseService {
       
       // Finally try local storage - find the booking in all users
       const allUsers = await userDatabaseService.getAllUsers();
+      
+      let updated = false;
       for (const user of allUsers) {
         if (user.bookings) {
           const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
@@ -152,16 +170,64 @@ export class BookingDatabaseService extends BaseService {
             user.bookings[bookingIndex].status = status;
             await userDatabaseService.updateUser(user.id, user);
             console.log("Booking status updated in local storage");
-            return true;
+            updated = true;
+            break;
           }
         }
       }
       
-      console.error("Could not find booking to update status");
-      return false;
+      if (!updated) {
+        console.error("Could not find booking to update status");
+        return false;
+      }
+      
+      return true;
     } catch (error) {
       console.error("Error updating booking status:", error);
       return false;
+    }
+  }
+  
+  async getAllPendingBookings(): Promise<any[]> {
+    try {
+      console.log("Getting all pending bookings");
+      
+      // Try API first
+      try {
+        const response = await apiService.request('bookings/all', 'GET');
+        if (response && response.data) {
+          const pendingBookings = response.data.filter(booking => booking.status === 'Pending');
+          console.log("Retrieved pending bookings from API:", pendingBookings.length);
+          return pendingBookings;
+        }
+      } catch (apiError) {
+        console.error("API error when getting all bookings:", apiError);
+      }
+      
+      // Fall back to local users and their bookings
+      const allUsers = await userDatabaseService.getAllUsers();
+      const pendingBookings = [];
+      
+      for (const user of allUsers) {
+        if (user.bookings && user.bookings.length > 0) {
+          for (const booking of user.bookings) {
+            if (booking.status === 'Pending') {
+              pendingBookings.push({
+                ...booking,
+                userName: user.name,
+                userEmail: user.email,
+                userId: user.id
+              });
+            }
+          }
+        }
+      }
+      
+      console.log("Retrieved pending bookings from local storage:", pendingBookings.length);
+      return pendingBookings;
+    } catch (error) {
+      console.error("Error getting pending bookings:", error);
+      return [];
     }
   }
 }

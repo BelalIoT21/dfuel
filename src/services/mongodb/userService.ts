@@ -127,6 +127,37 @@ class MongoUserService {
       return false;
     }
   }
+  
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    await this.initCollection();
+    if (!this.usersCollection) return false;
+    
+    try {
+      console.log(`Attempting to update booking ${bookingId} to status ${status} in MongoDB`);
+      
+      // Find the user with this booking
+      const user = await this.usersCollection.findOne({
+        "bookings.id": bookingId
+      });
+      
+      if (!user) {
+        console.error(`No user found with booking ${bookingId}`);
+        return false;
+      }
+      
+      // Update the booking status
+      const result = await this.usersCollection.updateOne(
+        { "bookings.id": bookingId },
+        { $set: { "bookings.$.status": status } }
+      );
+      
+      console.log(`MongoDB update result: ${JSON.stringify(result)}`);
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error updating booking status in MongoDB:", error);
+      return false;
+    }
+  }
 }
 
 // Create a singleton instance

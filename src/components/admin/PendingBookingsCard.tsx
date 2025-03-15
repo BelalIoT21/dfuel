@@ -3,14 +3,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Calendar, Clock, User } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-
-// Import mock data service for now
-import { localStorageService } from '@/services/localStorageService';
+import { apiService } from '@/services/apiService';
+import { userDatabaseService } from '@/services/database/userService';
+import { bookingDatabaseService } from '@/services/database/bookingService';
 
 export const PendingBookingsCard = () => {
   const [pendingBookings, setPendingBookings] = useState<any[]>([]);
@@ -21,14 +19,32 @@ export const PendingBookingsCard = () => {
   useEffect(() => {
     const fetchPendingBookings = async () => {
       try {
-        // In a real app, this would be an API call to get pending bookings
-        const users = localStorageService.getAllUsers();
+        setLoading(true);
+        console.log('Fetching pending bookings...');
+        
+        // First, try to get pending bookings via API
+        try {
+          const response = await apiService.request('bookings/all', 'GET');
+          if (response && response.data) {
+            const allBookings = response.data;
+            const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
+            console.log('Pending bookings found via API:', pendingOnly.length);
+            setPendingBookings(pendingOnly);
+            setLoading(false);
+            return;
+          }
+        } catch (apiError) {
+          console.error('API error, falling back to database service:', apiError);
+        }
+        
+        // If API fails, fall back to direct database access
+        const users = await userDatabaseService.getAllUsers();
         const allBookings = [];
         
         // Collect all bookings with their user info
-        users.forEach(user => {
+        for (const user of users) {
           if (user.bookings && user.bookings.length > 0) {
-            user.bookings.forEach(booking => {
+            for (const booking of user.bookings) {
               if (booking.status === 'Pending') {
                 allBookings.push({
                   ...booking,
@@ -37,11 +53,11 @@ export const PendingBookingsCard = () => {
                   userId: user.id
                 });
               }
-            });
+            }
           }
-        });
+        }
         
-        console.log('Pending bookings found:', allBookings.length);
+        console.log('Pending bookings found via database service:', allBookings.length);
         setPendingBookings(allBookings);
       } catch (error) {
         console.error('Error fetching pending bookings:', error);
@@ -61,8 +77,26 @@ export const PendingBookingsCard = () => {
   // Handle booking approval
   const handleApproveBooking = async (bookingId, userId) => {
     try {
-      // Update the booking status in local storage
-      const success = localStorageService.updateBookingStatus(userId, bookingId, 'Approved');
+      console.log(`Approving booking: ${bookingId} for user: ${userId}`);
+      
+      // First try API
+      try {
+        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status: 'Approved' });
+        if (response && response.success) {
+          // Update local state on success
+          setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
+          toast({
+            title: "Booking Approved",
+            description: "The booking has been approved successfully",
+          });
+          return;
+        }
+      } catch (apiError) {
+        console.error('API error when approving booking, falling back to database service:', apiError);
+      }
+      
+      // If API fails, use direct database update
+      const success = await bookingDatabaseService.updateBookingStatus(bookingId, 'Approved');
       
       if (success) {
         // Update the local state
@@ -72,7 +106,7 @@ export const PendingBookingsCard = () => {
           description: "The booking has been approved successfully",
         });
       } else {
-        throw new Error("Failed to update booking");
+        throw new Error("Failed to update booking status");
       }
     } catch (error) {
       console.error('Error approving booking:', error);
@@ -87,8 +121,26 @@ export const PendingBookingsCard = () => {
   // Handle booking rejection
   const handleRejectBooking = async (bookingId, userId) => {
     try {
-      // Update the booking status in local storage
-      const success = localStorageService.updateBookingStatus(userId, bookingId, 'Rejected');
+      console.log(`Rejecting booking: ${bookingId} for user: ${userId}`);
+      
+      // First try API
+      try {
+        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status: 'Rejected' });
+        if (response && response.success) {
+          // Update local state on success
+          setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
+          toast({
+            title: "Booking Rejected",
+            description: "The booking has been rejected",
+          });
+          return;
+        }
+      } catch (apiError) {
+        console.error('API error when rejecting booking, falling back to database service:', apiError);
+      }
+      
+      // If API fails, use direct database update
+      const success = await bookingDatabaseService.updateBookingStatus(bookingId, 'Rejected');
       
       if (success) {
         // Update the local state
@@ -98,7 +150,7 @@ export const PendingBookingsCard = () => {
           description: "The booking has been rejected",
         });
       } else {
-        throw new Error("Failed to update booking");
+        throw new Error("Failed to update booking status");
       }
     } catch (error) {
       console.error('Error rejecting booking:', error);
@@ -111,10 +163,15 @@ export const PendingBookingsCard = () => {
   };
 
   // Get machine name
-  const getMachineName = (machineId) => {
-    const machines = localStorageService.getAllMachines();
-    const machine = machines.find(m => m.id === machineId);
-    return machine ? machine.name : 'Unknown Machine';
+  const getMachineName = async (machineId) => {
+    try {
+      const machines = await userDatabaseService.getAllMachines();
+      const machine = machines.find(m => m.id === machineId);
+      return machine ? machine.name : 'Unknown Machine';
+    } catch (error) {
+      console.error('Error getting machine name:', error);
+      return 'Unknown Machine';
+    }
   };
 
   return (
@@ -137,7 +194,7 @@ export const PendingBookingsCard = () => {
               <div key={booking.id} className="p-3 bg-gray-50 rounded-md">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <h4 className="font-medium text-sm">{getMachineName(booking.machineId)}</h4>
+                    <h4 className="font-medium text-sm">{booking.machineName || `Machine ID: ${booking.machineId}`}</h4>
                     <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                       <User className="h-3 w-3" />
                       <span>{booking.userName}</span>
@@ -176,7 +233,7 @@ export const PendingBookingsCard = () => {
                           </DialogHeader>
                           <div className="py-4">
                             <h3 className="font-semibold mb-2">Machine</h3>
-                            <p className="text-gray-700 mb-4">{getMachineName(selectedBooking.machineId)}</p>
+                            <p className="text-gray-700 mb-4">{selectedBooking.machineName || `Machine ID: ${selectedBooking.machineId}`}</p>
                             
                             <h3 className="font-semibold mb-2">User</h3>
                             <p className="text-gray-700">{selectedBooking.userName}</p>

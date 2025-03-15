@@ -77,8 +77,9 @@ export const createBooking = async (req: Request, res: Response) => {
     });
     
     const createdBooking = await booking.save();
+    console.log('Created booking in MongoDB:', createdBooking);
     
-    // Add booking to user's bookings array
+    // Add booking reference to user's bookings array
     await User.findByIdAndUpdate(
       req.user._id,
       { $push: { bookings: createdBooking._id } }
@@ -99,10 +100,12 @@ export const createBooking = async (req: Request, res: Response) => {
 // @access  Private
 export const getUserBookings = async (req: Request, res: Response) => {
   try {
+    console.log('Fetching bookings for user:', req.user._id);
     const bookings = await Booking.find({ user: req.user._id })
       .populate('machine', 'name type')
       .sort({ date: -1 });
     
+    console.log('Found bookings:', bookings.length);
     res.json(bookings);
   } catch (error) {
     console.error('Error in getUserBookings:', error);
@@ -152,6 +155,13 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Status is required' });
     }
     
+    console.log(`Updating booking ${req.params.id} status to ${status}`);
+    
+    // Validate status value
+    if (!['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+    
     const booking = await Booking.findById(req.params.id);
     
     if (!booking) {
@@ -161,6 +171,7 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
     booking.status = status;
     const updatedBooking = await booking.save();
     
+    console.log('Updated booking status in MongoDB:', updatedBooking);
     res.json(updatedBooking);
   } catch (error) {
     console.error('Error in updateBookingStatus:', error);
@@ -212,11 +223,13 @@ export const cancelBooking = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getAllBookings = async (req: Request, res: Response) => {
   try {
+    console.log('Fetching all bookings for admin');
     const bookings = await Booking.find({})
       .populate('machine', 'name type')
       .populate('user', 'name email')
       .sort({ date: -1 });
     
+    console.log('Found total bookings:', bookings.length);
     res.json(bookings);
   } catch (error) {
     console.error('Error in getAllBookings:', error);

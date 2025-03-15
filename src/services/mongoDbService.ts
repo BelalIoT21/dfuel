@@ -44,6 +44,11 @@ class MongoDbService {
     return mongoUserService.addUserBooking(userId, booking);
   }
   
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    if (isWeb) return false;
+    return mongoUserService.updateBookingStatus(bookingId, status);
+  }
+  
   // Machine methods
   async getMachineStatuses(): Promise<MongoMachineStatus[]> {
     if (isWeb) return [];
