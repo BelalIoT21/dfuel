@@ -1,8 +1,21 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Set the API URL directly to the known working endpoint
-const API_URL = 'http://localhost:4000/api';
+// Configuration for API endpoints
+// When running in production or with API_URL env set, use that value
+// Otherwise, try multiple options with a preference for the local server
+const API_URL = (() => {
+  // Check for environment variables first
+  const envApiUrl = getEnv('API_URL');
+  if (envApiUrl) return envApiUrl;
+  
+  // When running in development, try connecting to the server
+  // Default to localhost:4000 which is the typical server port
+  return 'http://localhost:4000/api';
+})();
+
+// Export for debugging
+console.log('API service configured with base URL:', API_URL);
 let BASE_URL = API_URL;
 
 interface ApiResponse<T> {
@@ -34,9 +47,10 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
+        mode: 'cors', // Add explicit CORS mode
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
+      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
         options.body = JSON.stringify(data);
       }
       
@@ -48,6 +62,15 @@ class ApiService {
         response = await fetch(url, options);
       } catch (fetchError) {
         console.error(`API fetch failed: ${url}`, fetchError);
+        
+        // For health check endpoints, provide more debugging info
+        if (endpoint.includes('health')) {
+          console.log('Server connection issue - please verify:');
+          console.log('1. Server is running on port 4000');
+          console.log('2. No CORS issues (check browser console)');
+          console.log('3. Network connectivity between client and server');
+        }
+        
         throw fetchError;
       }
       

@@ -1,4 +1,5 @@
-import { isWeb } from '../../utils/platform';
+
+import { isWeb } from '../../utils/env';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService'; 
 
@@ -13,14 +14,17 @@ class MongoConnectionService {
   private maxConnectionAttempts: number = 3;
   
   constructor() {
-    // Use the correct hardcoded MongoDB connection URL
+    // Use the correct MongoDB connection URL based on environment
     if (isWeb) {
+      // For browser environments, connect through the API
       this.uri = 'http://localhost:4000/api/mongodb';
+      console.log('MongoDB: Using browser API endpoint');
     } else {
-      // For Node.js environments (server-side), use process.env
+      // For Node.js environments (server-side), use direct MongoDB connection
       // @ts-ignore - process.env may not exist in browser but this code only runs in Node
       this.uri = (typeof process !== 'undefined' && process.env && process.env.MONGODB_URI) || 
                 'mongodb://localhost:27017/learnit';
+      console.log('MongoDB: Using direct connection');
     }
     
     console.log(`MongoDB connection URI: ${this.uri}`);
