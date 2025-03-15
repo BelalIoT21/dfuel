@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +6,7 @@ import { certificationService } from '@/services/certificationService';
 import { machines } from '@/utils/data';
 import { Loader2, Trash } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
+import { localStorageService } from '@/services/localStorageService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -118,17 +119,38 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       let success = false;
       try {
         // Try direct MongoDB first
-        success = await mongoDbService.updateUserCertifications(userId, "6");
-        console.log(`MongoDB addCertification for Safety Course result: ${success}`);
-      } catch (mongoError) {
-        console.error("MongoDB error adding safety certification:", mongoError);
-      }
-      
-      // If MongoDB fails, try certification service
-      if (!success) {
-        console.log("MongoDB failed, trying certification service...");
-        success = await certificationService.addCertification(userId, "6");
-        console.log(`addCertification result: ${success}`);
+        try {
+          success = await mongoDbService.updateUserCertifications(userId, "6");
+          console.log(`MongoDB addCertification for Safety Course result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB error adding safety certification:", mongoError);
+        }
+        
+        // If MongoDB fails, try certification service
+        if (!success) {
+          console.log("MongoDB failed, trying certification service...");
+          success = await certificationService.addCertification(userId, "6");
+          console.log(`addCertification result: ${success}`);
+        }
+        
+        // Last resort: add directly to localStorage
+        if (!success) {
+          console.log("Both methods failed, trying direct localStorage update...");
+          const user = localStorageService.findUserById(userId);
+          if (user) {
+            if (!user.certifications) user.certifications = [];
+            if (!user.certifications.includes("6")) {
+              user.certifications.push("6");
+              success = localStorageService.updateUser(userId, { certifications: user.certifications });
+              console.log(`Direct localStorage update result: ${success}`);
+            } else {
+              console.log("User already has certification in localStorage");
+              success = true;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error in addCertification:", error);
       }
       
       if (success) {
@@ -164,20 +186,24 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       let success = false;
       try {
         // Try MongoDB first
-        const userDoc = await mongoDbService.getUserById(userId);
-        if (userDoc) {
-          const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
-          success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
-          console.log(`MongoDB removeCertification for Safety Course result: ${success}`);
+        try {
+          const userDoc = await mongoDbService.getUserById(userId);
+          if (userDoc) {
+            const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
+            success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
+            console.log(`MongoDB removeCertification for Safety Course result: ${success}`);
+          }
+        } catch (mongoError) {
+          console.error("MongoDB remove certification error:", mongoError);
         }
-      } catch (mongoError) {
-        console.error("MongoDB remove certification error:", mongoError);
-      }
-      
-      // If MongoDB fails, use certification service
-      if (!success) {
-        success = await certificationService.removeCertification(userId, "6");
-        console.log(`removeCertification result: ${success}`);
+        
+        // If MongoDB fails, use certification service
+        if (!success) {
+          success = await certificationService.removeCertification(userId, "6");
+          console.log(`removeCertification result: ${success}`);
+        }
+      } catch (error) {
+        console.error("Error in removeCertification:", error);
       }
       
       if (success) {
@@ -216,6 +242,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         console.log(`MongoDB clearCertifications result: ${success}`);
       } catch (mongoError) {
         console.error("MongoDB error clearing certifications:", mongoError);
+      }
+      
+      if (!success) {
+        success = await localStorageService.updateUser(user.id, { certifications: [] });
+        console.log(`LocalStorage clearCertifications result: ${success}`);
       }
       
       if (success) {

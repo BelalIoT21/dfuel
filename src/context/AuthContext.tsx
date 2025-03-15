@@ -1,58 +1,94 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
-import { apiService } from '@/services/apiService';
+import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
-import { Platform, isWeb } from '@/utils/platform';
-import mongoDbService from '@/services/mongoDbService';
-import { useAuthFunctions } from '@/hooks/useAuthFunctions';
+import { apiService } from '@/services/apiService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  console.log("AuthProvider initializing");
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Start with loading false to prevent blocking render
-  
-  // Get auth functions
-  const { login: authLogin, register: authRegister, logout: authLogout } = useAuthFunctions(user, setUser);
+  const [loading, setLoading] = useState(true);
 
-  console.log("Auth provider rendering with state:", { user, loading });
+  // Load user from tokens on initial load (web) or storage (native)
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        // For native, still try to get from AsyncStorage
+        const storedUser = await storage.getItem('learnit_user');
+        
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          // For web, try to get from token
+          const token = localStorage.getItem('token');
+          if (token) {
+            try {
+              const response = await apiService.getCurrentUser();
+              if (response.data && response.data.user) {
+                setUser(response.data.user);
+              }
+            } catch (error) {
+              console.error('Error getting current user:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user from storage:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUser();
+  }, []);
 
   // Login function
   const login = async (email: string, password: string) => {
-    console.log("AuthContext: login called");
     try {
-      const result = await authLogin(email, password);
-      return result;
+      const authenticatedUser = await userDatabase.authenticate(email, password);
+      
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        return true;
+      } else {
+        throw new Error('Invalid credentials');
+      }
     } catch (error) {
-      console.error("Error during login in context:", error);
-      return false;
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
-    console.log("AuthContext: register called");
     try {
-      const result = await authRegister(email, password, name);
-      return result;
+      const newUser = await userDatabase.registerUser(email, password, name);
+      
+      if (newUser) {
+        setUser(newUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
+        return true;
+      } else {
+        throw new Error('Registration failed');
+      }
     } catch (error) {
-      console.error("Error during registration in context:", error);
-      return false;
+      console.error('Registration error:', error);
+      throw error;
     }
   };
 
   // Logout function
   const logout = async () => {
-    console.log("AuthContext: logout called");
-    try {
-      authLogout();
-      return true;
-    } catch (error) {
-      console.error("Error during logout in context:", error);
-      return false;
-    }
+    setUser(null);
+    localStorage.removeItem('token');
+    await storage.removeItem('learnit_user');
   };
 
   // Add certification
@@ -60,9 +96,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      const response = await apiService.addCertification(user.id, machineId);
+      const success = await userDatabase.addCertification(user.id, machineId);
       
-      if (response.data?.success) {
+      if (success) {
         // Update local user state with new certification
         const updatedUser = {
           ...user,
@@ -70,12 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
-        
-        // For native platforms, update AsyncStorage
-        if (Platform.OS !== 'web') {
-          await storage.setItem('learnit_user', JSON.stringify(updatedUser));
-        }
-        
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
@@ -91,17 +123,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      const response = await apiService.updateProfile(user.id, { name, email });
+      const success = await userDatabase.updateUserProfile(user.id, { name, email });
       
-      if (response.data?.success) {
+      if (success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
-        
-        // For native platforms, update AsyncStorage
-        if (Platform.OS !== 'web') {
-          await storage.setItem('learnit_user', JSON.stringify(updatedUser));
-        }
-        
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
@@ -117,16 +145,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      // Verify current password first
-      const loginResponse = await apiService.login(user.email, currentPassword);
+      // First verify the current password
+      const authenticatedUser = await userDatabase.authenticate(user.email, currentPassword);
       
-      if (loginResponse.error) {
+      if (!authenticatedUser) {
         throw new Error('Current password is incorrect');
       }
       
-      // If verification succeeded, update password
-      const response = await apiService.updateProfile(user.id, { password: newPassword });
-      return response.data?.success || false;
+      const success = await userDatabase.updateUserProfile(user.id, { password: newPassword });
+      return success;
     } catch (error) {
       console.error('Error changing password:', error);
       throw error;
@@ -136,8 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Password reset functions
   const requestPasswordReset = async (email: string) => {
     try {
-      const response = await apiService.requestPasswordReset(email);
-      return response.data?.success || false;
+      return await userDatabase.requestPasswordReset(email);
     } catch (error) {
       console.error('Error requesting password reset:', error);
       return false;
@@ -146,8 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
     try {
-      const response = await apiService.resetPassword(email, resetCode, newPassword);
-      return response.data?.success || false;
+      return await userDatabase.resetPassword(email, resetCode, newPassword);
     } catch (error) {
       console.error('Error resetting password:', error);
       return false;
@@ -168,11 +193,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     resetPassword,
   };
 
-  console.log("Auth context value created:", { user: !!user, loading });
-
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

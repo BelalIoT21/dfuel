@@ -19,42 +19,20 @@ interface ExtendedMachine {
 }
 
 const Home = () => {
-  console.log("Home component rendering");
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  console.log("Auth state in Home:", { user, loading });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If auth is still loading, wait
-    if (loading) {
-      console.log("Auth is still loading, waiting...");
-      return;
-    }
-    
-    // If no user after auth is loaded, redirect to login
-    if (!user && !loading) {
-      console.log("No user found, redirecting to login page");
-      navigate('/');
-      return;
-    }
-
     if (user?.isAdmin) {
-      console.log("User is admin, redirecting to admin dashboard");
       navigate('/admin');
       return;
     }
     
-    // Load machine data
     async function loadMachineData() {
       try {
-        console.log("Loading machine data...");
-        setIsLoading(true);
-        setError(null);
-        
+        setLoading(true);
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
             const status = await userDatabase.getMachineStatus(machine.id);
@@ -70,47 +48,30 @@ const Home = () => {
             };
           }
         }));
-        
-        console.log("Machine data loaded:", extendedMachines);
         setMachineData(extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
-        setError("Failed to load machine data. Please try again.");
         toast({
           title: "Error",
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        // Still set default machine data to avoid blank screen
         setMachineData(machines.map(machine => ({
           ...machine,
           status: 'available' as const
         })));
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
     
     if (user) {
       loadMachineData();
     }
-  }, [user, loading, navigate]);
+  }, [user, navigate]);
 
-  // Show an explicit loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-t-purple-600 border-purple-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-purple-800">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Guard against no user (should redirect, but just in case)
-  if (!user && !loading) {
-    console.log("No user found in render phase, returning null");
+  if (!user) {
+    navigate('/');
     return null;
   }
 
@@ -121,7 +82,6 @@ const Home = () => {
           <div>
             <h1 className="text-3xl font-bold text-purple-800">Dashboard</h1>
             <p className="text-gray-600 mt-1">Select a machine to get started</p>
-            {error && <p className="text-red-500 mt-1">{error}</p>}
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button 
@@ -134,7 +94,7 @@ const Home = () => {
           </div>
         </div>
 
-        {isLoading ? (
+        {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
           </div>

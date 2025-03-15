@@ -3,14 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode, Suspense } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
-import { loadEnv } from './utils/env';
-import App from './App';
+import { loadEnv, setEnv } from './utils/env';
+import App from './App'; // Move the import to the top level
 
-// Add more debug logs
+// Add console log for debugging
 console.log("Initializing application");
 console.log("Is web environment:", isWeb);
 console.log("Is native platform:", isPlatformNative());
-console.log("Document root element:", document.getElementById("root"));
 
 // Load environment variables immediately
 loadEnv();
@@ -40,23 +39,12 @@ const LoadingFallback = () => (
 
 // For web environment, use the normal React app
 if (isWeb) {
-  try {
-    const rootElement = document.getElementById("root");
+  const rootElement = document.getElementById("root");
 
-    if (!rootElement) {
-      console.error("Failed to find the root element");
-      // Create a fallback root element if needed
-      const fallbackRoot = document.createElement('div');
-      fallbackRoot.id = 'root';
-      document.body.appendChild(fallbackRoot);
-      console.log("Created fallback root element");
-    }
-    
-    const root = createRoot(rootElement || document.body);
-    
-    // Add additional console logs for debugging
-    console.log("Creating root and rendering app");
-    
+  if (!rootElement) {
+    console.error("Failed to find the root element");
+  } else {
+    const root = createRoot(rootElement);
     root.render(
       <StrictMode>
         <Suspense fallback={<LoadingFallback />}>
@@ -65,17 +53,9 @@ if (isWeb) {
       </StrictMode>
     );
     console.log("App rendered successfully");
-  } catch (error) {
-    console.error("Error during app rendering:", error);
-    // Display error on page
-    document.body.innerHTML = `
-      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-        <h1 style="color: red;">Application Error</h1>
-        <p>${error instanceof Error ? error.message : 'Unknown error'}</p>
-      </div>
-    `;
   }
 } else {
   // For React Native, this file is not the entry point
-  console.log("React Native environment detected - deferring to native entry point");
+  // The entry point is App.native.tsx which is handled by Expo
+  console.log("React Native environment detected");
 }

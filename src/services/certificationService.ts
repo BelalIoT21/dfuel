@@ -1,5 +1,6 @@
 
 import mongoDbService from './mongoDbService';
+import { localStorageService } from './localStorageService';
 import { apiService } from './apiService';
 
 export class CertificationService {
@@ -7,7 +8,7 @@ export class CertificationService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.addCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      // Try MongoDB first
+      // Try MongoDB first - ALWAYS PRIORITIZE MONGODB
       try {
         // Direct MongoDB connection is preferred
         const success = await mongoDbService.updateUserCertifications(userId, machineId);
@@ -30,7 +31,29 @@ export class CertificationService {
         console.error("Error adding certification via API:", apiErr);
       }
       
-      return false;
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      if (!user) {
+        console.error("User not found in localStorage");
+        return false;
+      }
+      
+      // Always add the certification, even if it already exists
+      // This helps overcome issues where the certification list isn't being updated properly
+      if (!user.certifications) {
+        user.certifications = [];
+      }
+      
+      // Remove it first to ensure no duplicates
+      user.certifications = user.certifications.filter(id => id !== machineId);
+      
+      // Add the certification
+      user.certifications.push(machineId);
+      
+      // Update the user
+      const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
+      console.log(`Added certification via localStorage: ${updated}`);
+      return updated;
     } catch (error) {
       console.error("Error in certification service:", error);
       return false;
@@ -41,7 +64,7 @@ export class CertificationService {
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.removeCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      // Try MongoDB first
+      // Try MongoDB first - ALWAYS PRIORITIZE MONGODB
       try {
         // For MongoDB, we need a special remove certification method
         const user = await mongoDbService.getUserById(userId);
@@ -70,7 +93,17 @@ export class CertificationService {
         console.error("Error removing certification via API:", apiErr);
       }
       
-      return false;
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      if (!user) return false;
+      
+      if (user.certifications.includes(machineId)) {
+        user.certifications = user.certifications.filter(id => id !== machineId);
+        const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
+        console.log(`Removed certification via localStorage: ${updated}`);
+        return updated;
+      }
+      return true; // Already not certified
     } catch (error) {
       console.error("Error removing certification:", error);
       return false;
@@ -96,23 +129,36 @@ export class CertificationService {
         console.error("MongoDB error clearing certifications:", mongoErr);
       }
       
-      return false;
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      if (!user) return false;
+      
+      // Clear all certifications
+      const updated = localStorageService.updateUser(userId, { certifications: [] });
+      console.log(`Cleared all certifications via localStorage: ${updated}`);
+      return updated;
     } catch (error) {
       console.error("Error clearing certifications:", error);
       return false;
     }
   }
   
-  // Machine Safety Course certification management
+  // Machine Safety Course certification management - simplified without special user handling
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
+    
+    // Remove special handling for specific users
+    // Just add the certification directly for all users
     return this.addCertification(userId, MACHINE_SAFETY_ID);
   }
   
   async removeMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Removing machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
+    
+    // Remove special handling for specific users
+    // Just remove the certification directly for all users
     return this.removeCertification(userId, MACHINE_SAFETY_ID);
   }
   
@@ -152,7 +198,9 @@ export class CertificationService {
         console.error("Error checking certification via API:", apiErr);
       }
       
-      return false;
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      return user ? user.certifications.includes(machineId) : false;
     } catch (error) {
       console.error("Error checking certification:", error);
       return false;
