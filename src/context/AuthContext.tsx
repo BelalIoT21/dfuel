@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { User } from '@/types/database';
@@ -144,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Stub functions for password reset to maintain interface compatibility
   const requestPasswordReset = async () => false;
   const resetPassword = async () => false;
 
