@@ -157,7 +157,7 @@ const ActiveBookings = () => {
       if (success) {
         // Update the local state to remove the booking
         setBookings(prevBookings => prevBookings.filter((b: any) => 
-          ((b._id !== bookingId) && (b.id !== bookingId))
+          !((b._id === bookingId) || (b.id === bookingId))
         ));
         
         toast({
@@ -167,6 +167,11 @@ const ActiveBookings = () => {
         
         // Close dialog if open
         setIsDialogOpen(false);
+        
+        // Force refresh to ensure everything is consistent
+        setTimeout(() => {
+          loadBookings();
+        }, 1000);
       } else {
         throw new Error("Failed to delete booking");
       }
@@ -317,15 +322,25 @@ const ActiveBookings = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="border-purple-200"
-                      onClick={() => handleViewDetails(booking)}
-                    >
-                      <Info className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-purple-200"
+                        onClick={() => handleViewDetails(booking)}
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-red-200 text-red-600 hover:bg-red-50"
+                        onClick={() => handleDeleteBooking(booking)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
