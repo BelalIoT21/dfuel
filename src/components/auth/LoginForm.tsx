@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,12 +39,15 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [apiUrl, setApiUrl] = useState<string>('');
 
   // Check server connection
   useEffect(() => {
     const checkServer = async () => {
       try {
         console.log("Checking server health from login form...");
+        setApiUrl('http://localhost:4000/api');
+        
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check from login form:", response.data);
@@ -124,6 +126,10 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               serverStatus === 'connected' ? 'Connected' : 'Disconnected'
             }
           </span>
+        </div>
+        {/* Display API URL */}
+        <div className="mt-1 text-xs text-gray-500">
+          API URL: {apiUrl}
         </div>
       </CardHeader>
       <CardContent>
