@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 import { User } from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
 import { ensureAdminUser } from './adminController';
+import bcrypt from 'bcryptjs';
 
 // @desc    Authenticate user & get token
 // @route   POST /api/auth/login
@@ -46,11 +47,19 @@ export const loginUser = async (req: Request, res: Response) => {
     // Check password
     console.log(`Checking password for user: ${email}`);
     const isMatch = await user.matchPassword(password);
+    
+    console.log(`Password match result: ${isMatch}`);
+    
     if (!isMatch) {
       console.log(`Password mismatch for user: ${email}`);
-      // Log the password hash for debugging in development (NEVER do this in production)
+      // Log more details for debugging in development
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Stored password hash: ${user.password.substring(0, 10)}...`);
+        console.log(`Input password: ${password}`);
+        console.log(`Stored password hash: ${user.password.substring(0, 20)}...`);
+        
+        // Directly compare using bcrypt for debugging
+        const directBcryptCompare = await bcrypt.compare(password, user.password);
+        console.log(`Direct bcrypt compare result: ${directBcryptCompare}`);
       }
       return res.status(401).json({ message: 'Invalid email or password' });
     }
