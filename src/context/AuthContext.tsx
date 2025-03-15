@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
@@ -11,29 +10,66 @@ import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  console.log("AuthProvider initializing");
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false); // Start with loading false
+  const [loading, setLoading] = useState(true); // Start with loading true until we check auth state
+  
+  // Check for existing user session on mount
+  useEffect(() => {
+    console.log("AuthProvider useEffect running to check auth state");
+    
+    // Simulate checking for session - immediately resolve for now
+    // Later you can implement actual MongoDB session checking here
+    const checkAuthState = async () => {
+      try {
+        console.log("Checking auth state...");
+        
+        // TODO: Implement actual session check with MongoDB
+        // For now, we'll just set loading to false to unblock rendering
+        
+        setLoading(false);
+        console.log("Auth state check complete, loading set to false");
+      } catch (error) {
+        console.error("Error checking auth state:", error);
+        setLoading(false);
+      }
+    };
+    
+    checkAuthState();
+  }, []);
   
   // Get auth functions
   const { login: authLogin, register: authRegister, logout: authLogout } = useAuthFunctions(user, setUser);
 
   // Login function
   const login = async (email: string, password: string) => {
-    return await authLogin(email, password);
+    setLoading(true);
+    try {
+      const result = await authLogin(email, password);
+      return result;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
-    return await authRegister(email, password, name);
+    setLoading(true);
+    try {
+      const result = await authRegister(email, password, name);
+      return result;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Logout function
   const logout = async () => {
-    authLogout();
-    
-    // For native platforms
-    if (Platform.OS !== 'web') {
-      await storage.removeItem('learnit_user');
+    setLoading(true);
+    try {
+      authLogout();
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -9,12 +9,13 @@ import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
+  console.log("Index component initializing");
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const { user, login, register } = useAuth();
+  const { user, login, register, loading } = useAuth();
   const navigate = useNavigate();
 
-  console.log("Index component running with user:", user);
+  console.log("Index render with auth state:", { user, loading });
 
   // Check server connection
   useEffect(() => {
@@ -46,17 +47,27 @@ const Index = () => {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
-      console.log("User is logged in, redirecting:", user);
-      navigate('/home');
+    if (loading) {
+      console.log("Auth is still loading, waiting before redirect check");
+      return;
     }
-  }, [user, navigate]);
+    
+    if (user) {
+      console.log("User is logged in, redirecting to home:", user);
+      navigate('/home');
+    } else {
+      console.log("No user found, staying on login page");
+    }
+  }, [user, navigate, loading]);
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
     try {
       const success = await login(email, password);
-      if (!success) {
+      if (success) {
+        console.log("Login successful, should redirect soon");
+      } else {
+        console.log("Login failed");
         toast({
           title: "Login failed",
           description: "Invalid credentials or server error",
@@ -77,7 +88,10 @@ const Index = () => {
     console.log("Attempting registration for:", email);
     try {
       const success = await register(email, password, name);
-      if (!success) {
+      if (success) {
+        console.log("Registration successful, should redirect soon");
+      } else {
+        console.log("Registration failed");
         toast({
           title: "Registration failed",
           description: "Email may already be in use or server error",
@@ -97,6 +111,18 @@ const Index = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
   };
+
+  // If loading, show a loading indicator
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-t-purple-600 border-purple-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-purple-800">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   console.log("Rendering Index component, login mode:", isLogin);
 
