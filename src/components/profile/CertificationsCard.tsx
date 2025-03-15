@@ -23,12 +23,12 @@ const CertificationsCard = () => {
       id: machine.id,
       name: machine.name,
       date: format(new Date(), 'dd/MM/yyyy'), // In a real app, this would come from the database
-      type: machine.type,
-      isBookable: machine.type !== 'Safety Cabinet'
+      type: machine.id === "3" ? "Safety Cabinet" : machine.type,
+      isBookable: machine.id === "3" ? false : (machine.type !== 'Safety Cabinet')
     }));
 
   const handleBookNow = (machineId, isSafetyCabinet) => {
-    if (isSafetyCabinet) {
+    if (isSafetyCabinet || machineId === "3") {
       // For Safety Cabinet, just show info
       navigate(`/machine/${machineId}`);
     } else {

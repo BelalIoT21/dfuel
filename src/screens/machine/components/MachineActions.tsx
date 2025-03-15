@@ -28,7 +28,7 @@ const MachineActions = ({
   hasMachineSafetyCert = false,
   userId
 }: MachineActionsProps) => {
-  // Check if this machine type is bookable
+  // Check if this machine type is bookable - Safety Cabinet is not bookable
   const isBookable = machineType !== 'Safety Cabinet';
   
   // Determine if user can get certified (must have Machine Safety Course)

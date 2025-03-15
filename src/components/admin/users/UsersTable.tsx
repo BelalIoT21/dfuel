@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -59,6 +58,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     if (certId === "6") return "Machine Safety Course";
     // Special case for Bambu Lab X1 E
     if (certId === "5") return "Bambu Lab X1 E";
+    // Special case for Safety Cabinet
+    if (certId === "3") return "Safety Cabinet";
     
     // First try to find from fetched machines
     const machine = allMachines.find(m => m.id === certId);

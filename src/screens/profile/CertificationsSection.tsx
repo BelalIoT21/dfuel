@@ -19,7 +19,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const types = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
-          // Skip fetch for Machine Safety Course and special case for Bambu X1
+          // Skip fetch for Machine Safety Course and special case for Bambu X1 and Safety Cabinet
           if (certId === "6") continue; 
           if (certId === "5") {
             names[certId] = "Bambu Lab X1 E";

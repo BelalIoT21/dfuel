@@ -30,6 +30,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     }
   };
 
+  // Check if machine ID is 3 to handle Safety Cabinet specially
+  const machineType = machine.id === "3" ? "Safety Cabinet" : machine.type;
   const isCertified = userCertifications.includes(machine.id);
 
   return (
@@ -52,12 +54,12 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
               {getStatusLabel(machine.status)}
             </Chip>
             
-            {machine.type && (
+            {machineType && (
               <Chip 
                 style={{backgroundColor: '#3b82f620'}}
                 textStyle={{color: '#3b82f6'}}
               >
-                {machine.type}
+                {machineType}
               </Chip>
             )}
             
