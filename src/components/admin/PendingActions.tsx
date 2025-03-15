@@ -2,32 +2,33 @@
 import { useState, useEffect } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
+import { Loader2 } from 'lucide-react';
 
 export const PendingActions = () => {
-  const [hasPendingBookings, setHasPendingBookings] = useState(false);
+  const [pendingBookings, setPendingBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const checkPendingBookings = async () => {
+    const fetchPendingBookings = async () => {
       try {
         setIsLoading(true);
-        // Get all bookings and check if any are pending
+        // Get all bookings and filter for pending ones
         const allBookings = await bookingService.getAllBookings();
         console.log(`Found ${allBookings.length} total bookings`);
         
         const pendingBookings = allBookings.filter(booking => booking.status === 'Pending');
         console.log(`Found ${pendingBookings.length} pending bookings`);
         
-        setHasPendingBookings(pendingBookings.length > 0);
+        setPendingBookings(pendingBookings);
       } catch (error) {
-        console.error('Error checking pending bookings:', error);
-        setHasPendingBookings(false);
+        console.error('Error fetching pending bookings:', error);
+        setPendingBookings([]);
       } finally {
         setIsLoading(false);
       }
     };
     
-    checkPendingBookings();
+    fetchPendingBookings();
   }, []);
 
   return (
@@ -35,11 +36,16 @@ export const PendingActions = () => {
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Pending Actions</h2>
       <div className="space-y-4">
         {isLoading ? (
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            Loading pending bookings...
+          <div className="text-center p-4 bg-white rounded-lg shadow flex flex-col items-center">
+            <Loader2 className="h-6 w-6 text-purple-600 animate-spin mb-2" />
+            <p>Loading pending bookings...</p>
           </div>
+        ) : pendingBookings.length > 0 ? (
+          <PendingBookingsCard pendingBookings={pendingBookings} />
         ) : (
-          <PendingBookingsCard />
+          <div className="text-center p-4 bg-white rounded-lg shadow">
+            <p className="text-gray-500">No pending bookings to approve</p>
+          </div>
         )}
       </div>
     </div>

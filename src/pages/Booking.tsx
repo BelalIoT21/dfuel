@@ -27,6 +27,8 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
 
   useEffect(() => {
     // Ensure machines are in MongoDB (for server versions)
@@ -44,6 +46,22 @@ const BookingPage = () => {
         if (foundMachine) {
           console.log(`Successfully loaded machine:`, foundMachine);
           setMachine(foundMachine);
+          
+          // Fetch existing bookings to determine availability
+          const allBookings = await bookingService.getAllBookings();
+          const machineBookings = allBookings.filter(
+            booking => booking.machineId === id && 
+            (booking.status === 'Approved' || booking.status === 'Pending')
+          );
+          
+          // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
+          const bookedDateTimeSlots = machineBookings.map(booking => 
+            `${booking.date}-${booking.time}`
+          );
+          setBookedSlots(bookedDateTimeSlots);
+          
+          // Update available time slots when date changes
+          updateAvailableTimeSlots(selectedDate);
         } else {
           console.error(`Machine not found with ID: ${id}`);
           setError('Machine not found');
@@ -59,6 +77,30 @@ const BookingPage = () => {
     loadMachine();
   }, [id]);
 
+  // Update available time slots when date changes
+  useEffect(() => {
+    updateAvailableTimeSlots(selectedDate);
+  }, [selectedDate, bookedSlots]);
+  
+  const updateAvailableTimeSlots = (date: Date | undefined) => {
+    if (!date) return;
+    
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    
+    // Filter out already booked time slots for this date
+    const available = timeSlots.filter(time => {
+      const dateTimeSlot = `${formattedDate}-${time}`;
+      return !bookedSlots.includes(dateTimeSlot);
+    });
+    
+    setAvailableTimeSlots(available);
+    
+    // If currently selected time is no longer available, reset it
+    if (selectedTime && !available.includes(selectedTime)) {
+      setSelectedTime('');
+    }
+  };
+
   const handleBooking = async () => {
     if (!user || !machine || !selectedDate || !selectedTime) {
       toast({
@@ -70,6 +112,19 @@ const BookingPage = () => {
     }
     
     const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    const dateTimeSlot = `${formattedDate}-${selectedTime}`;
+    
+    // Double-check if the slot is still available
+    if (bookedSlots.includes(dateTimeSlot)) {
+      toast({
+        title: 'Time slot unavailable',
+        description: 'This time slot has just been booked. Please select another time.',
+        variant: 'destructive'
+      });
+      // Refresh available time slots
+      updateAvailableTimeSlots(selectedDate);
+      return;
+    }
     
     try {
       setSubmitting(true);
@@ -82,6 +137,9 @@ const BookingPage = () => {
       );
       
       if (success) {
+        // Add the newly booked slot to the list
+        setBookedSlots(prev => [...prev, dateTimeSlot]);
+        
         toast({
           title: 'Booking Successful',
           description: `You have booked ${machine.name} on ${formattedDate} at ${selectedTime}`,
@@ -211,18 +269,24 @@ const BookingPage = () => {
             
             <div>
               <h3 className="font-medium text-gray-700 mb-2">Select Time</h3>
-              <Select value={selectedTime} onValueChange={setSelectedTime}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a time slot" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {availableTimeSlots.length > 0 ? (
+                <Select value={selectedTime} onValueChange={setSelectedTime}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a time slot" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="p-3 bg-gray-50 rounded-md text-center">
+                  <p className="text-gray-500">No available time slots for this date</p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -230,7 +294,7 @@ const BookingPage = () => {
           <Button 
             className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto" 
             onClick={handleBooking}
-            disabled={!selectedDate || !selectedTime || submitting}
+            disabled={!selectedDate || !selectedTime || submitting || availableTimeSlots.length === 0}
           >
             {submitting ? (
               <>

@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -12,6 +13,24 @@ export class BookingService {
     console.log(`BookingService.createBooking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
     
     try {
+      // Check if this time slot is already booked
+      const allBookings = await this.getAllBookings();
+      const hasConflict = allBookings.some(booking => 
+        booking.machineId === machineId && 
+        booking.date === date && 
+        booking.time === time &&
+        (booking.status === 'Approved' || booking.status === 'Pending')
+      );
+      
+      if (hasConflict) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       // Use the bookingDatabaseService which has proper fallback mechanisms
       const success = await bookingDatabaseService.addBooking(userId, machineId, date, time);
       
@@ -67,6 +86,23 @@ export class BookingService {
     try {
       // First check if this is a client-generated ID (usually has "booking-" prefix)
       const isClientId = bookingId.startsWith('booking-');
+      
+      // Get booking details first to handle availability updates
+      let bookingDetails;
+      
+      // Try to get all bookings and find the one we're updating
+      const allBookings = await this.getAllBookings();
+      bookingDetails = allBookings.find(b => b.id === bookingId);
+      
+      if (!bookingDetails) {
+        console.error(`Booking not found with ID: ${bookingId}`);
+        toast({
+          title: "Error",
+          description: "Booking not found",
+          variant: "destructive"
+        });
+        return false;
+      }
       
       // Try direct API call first (most reliable)
       try {
@@ -241,10 +277,37 @@ export class BookingService {
       '2': 'Ultimaker',
       '3': 'X1 E Carbon 3D Printer',
       '4': 'Bambu Lab X1 E',
-      '5': 'Soldering Station'
+      '5': 'Soldering Station',
+      '6': 'Machine Safety Course'
     };
     
     return machineMap[machineId] || `Machine ${machineId}`;
+  }
+  
+  // Clear all bookings for a specific user (for resetting)
+  async clearUserBookings(userId: string): Promise<boolean> {
+    console.log(`BookingService.clearUserBookings: userId=${userId}`);
+    try {
+      // Try clearing from local storage first
+      const user = await localStorageService.findUserById(userId);
+      if (user) {
+        user.bookings = [];
+        const success = await localStorageService.updateUser(userId, user);
+        
+        if (success) {
+          toast({
+            title: "Bookings Reset",
+            description: "All bookings have been cleared for this user",
+          });
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error clearing user bookings:", error);
+      return false;
+    }
   }
 }
 
