@@ -32,15 +32,13 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
       const healthResponse = await apiService.checkHealth();
       console.log("Health check response:", healthResponse);
       
-      // If server is running, assume database is connected unless explicitly told otherwise
-      // This better handles scenarios where database info might not be complete
+      // Check directly for database connection status from the health endpoint
       let dbConnected = true;
       
-      // Only mark as disconnected if we explicitly receive a false connected status
       if (healthResponse.data && 
-          healthResponse.data.database && 
-          healthResponse.data.database.connected === false) {
-        dbConnected = false;
+          healthResponse.data.database !== undefined) {
+        // Use explicit database connection status if available
+        dbConnected = healthResponse.data.database.connected === true;
       }
       
       return {
@@ -52,12 +50,12 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
       };
     } catch (healthError) {
       console.error("Health check failed:", healthError);
-      // If health endpoint failed but basic server ping worked, still assume database is connected
-      // to prevent unnecessary error messages
+      // If health endpoint failed but basic server ping worked, 
+      // don't assume database is connected
       return {
         serverRunning: true,
-        databaseConnected: true,
-        message: 'Server is running and database is assumed connected'
+        databaseConnected: false,
+        message: 'Server is running but cannot verify database connection'
       };
     }
   } catch (error) {

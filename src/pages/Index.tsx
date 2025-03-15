@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +9,7 @@ import { checkServerHealth } from '@/utils/serverConnection';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connected');
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -25,29 +24,27 @@ const Index = () => {
         
         if (healthStatus.serverRunning) {
           setServerStatus('connected');
-          console.log("Server is running and database is assumed connected");
           
-          // Only show error toast if there's a real database issue and we need user action
-          // and we're sure the database is actually disconnected
-          if (!healthStatus.databaseConnected && 
-              healthStatus.message.includes('database connection failed')) {
-            toast({
-              title: 'Database Connection Issue',
-              description: 'The server is running but there might be database connection issues.',
-              variant: 'destructive'
-            });
+          // Only show toast for database issues if needed for user action
+          if (!healthStatus.databaseConnected) {
+            console.log("Database connection issue detected");
+            // Only show the toast if we're sure there's a database issue
+            // (not just unable to verify)
+            if (healthStatus.message.includes('database connection failed')) {
+              toast({
+                title: 'Database Connection Issue',
+                description: 'The server is running but there might be database connection issues.',
+                variant: 'destructive'
+              });
+            }
           }
         } else {
-          // Only change to disconnected if server is actually not running
+          // Quietly set the status without toast notifications
           setServerStatus('disconnected');
           console.error("Basic server connection failed");
           
-          // Only show the toast notification, no longer displaying message in the UI
-          toast({
-            title: 'Server Connection Failed',
-            description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
-            variant: 'destructive'
-          });
+          // Only show a console message, not a toast
+          console.log("Server connection failed. Please ensure the server is running on port 4000.");
         }
       } catch (error) {
         console.error("Server connection error:", error);

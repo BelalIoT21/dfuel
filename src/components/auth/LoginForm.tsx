@@ -31,7 +31,7 @@ const itemAnimation = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connected' }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
