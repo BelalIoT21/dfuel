@@ -1,5 +1,6 @@
+
 import { getEnv } from '../utils/env';
-import { useToast } from '../hooks/use-toast';
+import { toast } from '../components/ui/use-toast';
 
 // API endpoints configuration with localhost as primary for local development
 // and relative path as fallback for deployed environments
@@ -113,7 +114,6 @@ class ApiService {
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        const { toast } = useToast();
         toast({
           title: `API Error`,
           description: "Could not connect to server. Please ensure the backend server is running.",
