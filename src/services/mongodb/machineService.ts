@@ -1,4 +1,5 @@
-import { Collection, ObjectId } from 'mongodb';
+
+import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
 
@@ -75,6 +76,7 @@ class MongoMachineService {
     }
   }
   
+  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) return [];
@@ -94,19 +96,7 @@ class MongoMachineService {
     if (!this.machinesCollection) return null;
     
     try {
-      // Support both string IDs and ObjectId
-      let query = {};
-      try {
-        if (ObjectId.isValid(machineId)) {
-          query = { _id: new ObjectId(machineId) };
-        } else {
-          query = { _id: machineId };
-        }
-      } catch (e) {
-        query = { _id: machineId };
-      }
-      
-      const machine = await this.machinesCollection.findOne(query);
+      const machine = await this.machinesCollection.findOne({ _id: machineId });
       console.log(`Retrieved machine from MongoDB: ${machine?.name || 'not found'}`);
       return machine;
     } catch (error) {
@@ -132,19 +122,7 @@ class MongoMachineService {
     if (!this.machinesCollection) return false;
     
     try {
-      // Support both string IDs and ObjectId
-      let query = {};
-      try {
-        if (ObjectId.isValid(machineId)) {
-          query = { _id: new ObjectId(machineId) };
-        } else {
-          query = { _id: machineId };
-        }
-      } catch (e) {
-        query = { _id: machineId };
-      }
-      
-      const count = await this.machinesCollection.countDocuments(query);
+      const count = await this.machinesCollection.countDocuments({ _id: machineId });
       return count > 0;
     } catch (error) {
       console.error("Error checking if machine exists in MongoDB:", error);
@@ -152,89 +130,34 @@ class MongoMachineService {
     }
   }
   
-  async addMachine(machine: Omit<MongoMachine, "_id">): Promise<MongoMachine | null> {
-    await this.initCollections();
-    if (!this.machinesCollection) return null;
-    
-    try {
-      // Generate an ObjectId if _id is not provided
-      const machineToAdd: any = { ...machine };
-      if (!machineToAdd._id) {
-        machineToAdd._id = new ObjectId().toString();
-      }
-      
-      console.log(`Adding machine to MongoDB: ${machineToAdd.name}`);
-      const result = await this.machinesCollection.insertOne(machineToAdd);
-      
-      if (result.acknowledged) {
-        console.log(`Successfully added machine with ID: ${result.insertedId}`);
-        return {
-          ...machineToAdd,
-          _id: result.insertedId.toString()
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error("Error adding machine to MongoDB:", error);
-      return null;
-    }
-  }
-  
-  async updateMachine(machineId: string, updates: Partial<MongoMachine>): Promise<MongoMachine | null> {
-    await this.initCollections();
-    if (!this.machinesCollection) return null;
-    
-    try {
-      // Support both string IDs and ObjectId
-      let query = {};
-      try {
-        if (ObjectId.isValid(machineId)) {
-          query = { _id: new ObjectId(machineId) };
-        } else {
-          query = { _id: machineId };
-        }
-      } catch (e) {
-        query = { _id: machineId };
-      }
-      
-      const result = await this.machinesCollection.findOneAndUpdate(
-        query,
-        { $set: updates },
-        { returnDocument: 'after' }
-      );
-      
-      return result.value;
-    } catch (error) {
-      console.error("Error updating machine in MongoDB:", error);
-      return null;
-    }
-  }
-  
-  async deleteMachine(machineId: string): Promise<boolean> {
+  async addMachine(machine: MongoMachine): Promise<boolean> {
     await this.initCollections();
     if (!this.machinesCollection) return false;
     
     try {
-      // Support both string IDs and ObjectId
-      let query = {};
-      try {
-        if (ObjectId.isValid(machineId)) {
-          query = { _id: new ObjectId(machineId) };
-        } else {
-          query = { _id: machineId };
-        }
-      } catch (e) {
-        query = { _id: machineId };
+      // Check if the machine already exists
+      const exists = await this.machineExists(machine._id);
+      if (exists) {
+        console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
+        // Update the machine to ensure it has all properties
+        const result = await this.machinesCollection.updateOne(
+          { _id: machine._id },
+          { $set: machine }
+        );
+        return result.acknowledged;
       }
       
-      const result = await this.machinesCollection.deleteOne(query);
-      return result.acknowledged && result.deletedCount > 0;
+      // Add the machine to the collection
+      const result = await this.machinesCollection.insertOne(machine);
+      console.log(`Machine with ID ${machine._id} added to MongoDB: ${machine.name}`);
+      return result.acknowledged;
     } catch (error) {
-      console.error("Error deleting machine from MongoDB:", error);
+      console.error("Error adding machine to MongoDB:", error);
       return false;
     }
   }
   
+  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) return;
@@ -244,7 +167,7 @@ class MongoMachineService {
       if (count === 0) {
         console.log("No machines found in MongoDB, seeding default machines...");
         
-        const defaultMachines: Omit<MongoMachine, "_id">[] = [
+        const defaultMachines: MongoMachine[] = [
           { 
             _id: '1', 
             name: 'Laser Cutter', 
@@ -298,7 +221,7 @@ class MongoMachineService {
           }
         ];
         
-        // Add machines one by one
+        // Also create machine statuses
         for (const machine of defaultMachines) {
           await this.addMachine(machine);
           

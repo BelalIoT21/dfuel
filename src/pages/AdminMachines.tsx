@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -8,26 +9,52 @@ import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
-import { Button } from '@/components/ui/button';
+import { apiService } from '@/services/apiService';
+import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
+import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [isAddingMachine, setIsAddingMachine] = useState(false);
+  const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-
+  
+  // Form state for new/edit machine
+  const [formData, setFormData] = useState<MachineFormData>({
+    name: '',
+    description: '',
+    type: 'Cutting',
+    status: 'Available',
+    requiresCertification: true,
+    difficulty: 'Intermediate',
+    imageUrl: '/placeholder.svg',
+    details: '',
+    specifications: '',
+    certificationInstructions: '',
+    linkedCourseId: '',
+    linkedQuizId: '',
+  });
+  
+  // Fetch machines and users on component mount
   useEffect(() => {
     const fetchMachines = async () => {
       try {
-        console.log('Using demo machines data');
-        setMachinesList(machines.slice(0, 4));
+        const fetchedMachines = await machineDatabaseService.getAllMachines();
+        if (fetchedMachines && fetchedMachines.length > 0) {
+          setMachinesList(fetchedMachines);
+        } else {
+          // Fallback to mock data if API fails
+          setMachinesList(machines);
+        }
         setInitialLoadComplete(true);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        // Ensure we have fallback data if API fails
-        setMachinesList(machines.slice(0, 4));
+        setMachinesList(machines);
         setInitialLoadComplete(true);
       }
     };
@@ -38,14 +65,13 @@ const AdminMachines = () => {
         setAllUsers(users);
       } catch (error) {
         console.error("Error fetching users:", error);
-        setAllUsers([]);
       }
     };
     
     fetchMachines();
     fetchUsers();
   }, []);
-
+  
   if (!user?.isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,6 +86,7 @@ const AdminMachines = () => {
     );
   }
 
+  // Filter machines based on search term
   const filteredMachines = machinesList
     .filter(machine => 
       machine.type !== 'Equipment' && 
@@ -70,12 +97,161 @@ const AdminMachines = () => {
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+  const handleAddMachine = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Call the API to create a new machine
+      const newMachine = await machineDatabaseService.createMachine(formData);
+      
+      if (!newMachine) {
+        throw new Error("Failed to create machine");
+      }
+      
+      toast({
+        title: "Machine Added",
+        description: `${formData.name} has been added successfully.`
+      });
+      
+      // Update the machines list
+      setMachinesList(prev => [...prev, newMachine]);
+      
+      // Reset form and state
+      setIsAddingMachine(false);
+      setFormData({
+        name: '',
+        description: '',
+        type: 'Cutting',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/placeholder.svg',
+        details: '',
+        specifications: '',
+        certificationInstructions: '',
+        linkedCourseId: '',
+        linkedQuizId: '',
+      });
+    } catch (error) {
+      console.error("Error adding machine:", error);
+      toast({
+        title: "Error Adding Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditMachine = (id: string) => {
+    setEditingMachineId(id);
+    const machine = machinesList.find(m => m.id === id || m._id === id);
+    if (machine) {
+      setFormData({
+        name: machine.name,
+        description: machine.description || '',
+        type: machine.type || 'Cutting',
+        status: machine.status || 'Available',
+        requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
+        difficulty: machine.difficulty || 'Intermediate',
+        imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
+        details: machine.details || '',
+        specifications: machine.specifications || '',
+        certificationInstructions: machine.certificationInstructions || '',
+        linkedCourseId: machine.linkedCourseId || '',
+        linkedQuizId: machine.linkedQuizId || '',
+      });
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMachineId) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Call the API to update the machine
+      const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
+      
+      if (!updatedMachine) {
+        throw new Error("Failed to update machine");
+      }
+      
+      toast({
+        title: "Machine Updated",
+        description: `${formData.name} has been updated successfully.`
+      });
+      
+      // Update the machines list
+      setMachinesList(prev => 
+        prev.map(m => 
+          (m.id === editingMachineId || m._id === editingMachineId) 
+            ? { ...m, ...updatedMachine } 
+            : m
+        )
+      );
+      
+      // Reset form and state
+      setEditingMachineId(null);
+      setFormData({
+        name: '',
+        description: '',
+        type: 'Cutting',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/placeholder.svg',
+        details: '',
+        specifications: '',
+        certificationInstructions: '',
+        linkedCourseId: '',
+        linkedQuizId: '',
+      });
+    } catch (error) {
+      console.error("Error updating machine:", error);
+      toast({
+        title: "Error Updating Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteMachine = async (id: string) => {
+    try {
+      const success = await machineDatabaseService.deleteMachine(id);
+      
+      if (!success) {
+        throw new Error("Failed to delete machine");
+      }
+      
+      toast({
+        title: "Machine Deleted",
+        description: "The machine has been deleted successfully."
+      });
+      
+      // Update the machines list
+      setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
+    } catch (error) {
+      console.error("Error deleting machine:", error);
+      toast({
+        title: "Error Deleting Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Calculate real stats for each machine
   const getUsersCertifiedCount = (machineId: string) => {
     return allUsers.filter(user => 
       user.certifications && user.certifications.includes(machineId)
     ).length;
   };
-
+  
   const getBookingsThisMonth = (machineId: string) => {
     let count = 0;
     allUsers.forEach(user => {
@@ -88,11 +264,6 @@ const AdminMachines = () => {
     });
     
     return count;
-  };
-
-  const getMachineType = (type: string | undefined) => {
-    if (!type || type === '') return 'Machine';
-    return type;
   };
 
   return (
@@ -114,14 +285,45 @@ const AdminMachines = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              <div>
+                <Button onClick={() => setIsAddingMachine(true)}>
+                  Add New Machine
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
         
+        {isAddingMachine && (
+          <MachineForm
+            formData={formData}
+            setFormData={setFormData}
+            isSubmitting={isSubmitting}
+            onSubmit={handleAddMachine}
+            onCancel={() => setIsAddingMachine(false)}
+            title="Add New Machine"
+            description="Enter the details for the new machine"
+            submitLabel="Add Machine"
+          />
+        )}
+        
+        {editingMachineId && (
+          <MachineForm
+            formData={formData}
+            setFormData={setFormData}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSaveEdit}
+            onCancel={() => setEditingMachineId(null)}
+            title="Edit Machine"
+            description="Update the details for this machine"
+            submitLabel="Save Changes"
+          />
+        )}
+        
         <Card>
           <CardHeader>
             <CardTitle>All Machines</CardTitle>
-            <CardDescription>View and monitor your machines</CardDescription>
+            <CardDescription>Manage and monitor all machines</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -149,7 +351,7 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Type: {getMachineType(machine.type)}
+                          Type: {machine.type || 'Unknown'}
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
                           Difficulty: {machine.difficulty || 'Beginner'}
@@ -160,11 +362,32 @@ const AdminMachines = () => {
                         <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                           Bookings: {getBookingsThisMonth(machine.id || machine._id)}
                         </div>
+                        {machine.linkedCourseId && (
+                          <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                            Has Course
+                          </div>
+                        )}
+                        {machine.linkedQuizId && (
+                          <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
+                            Has Quiz
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex gap-2 mt-4">
+                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id || machine._id)}>
+                          Edit
+                        </Button>
                         <Button size="sm" variant="outline" asChild>
                           <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-red-500 hover:text-red-600"
+                          onClick={() => handleDeleteMachine(machine.id || machine._id)}
+                        >
+                          Delete
                         </Button>
                       </div>
                     </div>

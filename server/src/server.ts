@@ -1,51 +1,72 @@
 
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { connectDB } from './config/db';
-import healthRoutes from './routes/healthRoutes';
-import userRoutes from './routes/userRoutes';
+import { errorHandler, notFound } from './middleware/errorMiddleware';
+import { seedDatabase } from './utils/seed';  // Import the seed utility
+
+// Routes
 import authRoutes from './routes/authRoutes';
-import adminRoutes from './routes/adminRoutes';
+import userRoutes from './routes/userRoutes';
+import machineRoutes from './routes/machineRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import certificationRoutes from './routes/certificationRoutes';
-import machineRoutes from './routes/machineRoutes';
+import adminRoutes from './routes/adminRoutes';
+import healthRoutes from './routes/healthRoutes';
 
 // Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  // Seed the database after connection
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Seeding database with initial data...');
+    seedDatabase()
+      .then(() => console.log('Database seeded successfully!'))
+      .catch(err => console.error('Error seeding database:', err));
+  }
+});
 
 const app = express();
+const PORT = process.env.PORT || 4000;
 
-// Set up middleware
+// Middleware
 app.use(express.json());
-app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: 'http://localhost:8080', // Allow frontend to connect
+  credentials: true
+}));
 app.use(helmet());
-app.use(cors());
 app.use(morgan('dev'));
+app.use(cookieParser());
 
-// Routes
-app.use('/api/health', healthRoutes);
-app.use('/api/users', userRoutes);
+// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/machines', machineRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/certifications', certificationRoutes);
-app.use('/api/machines', machineRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/health', healthRoutes);
+
+// Health check endpoint (root level)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
 
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 8000;
-
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Machine routes available at: http://localhost:${PORT}/api/machines`);
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
+
+export default app;

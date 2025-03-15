@@ -7,56 +7,14 @@ import { Machine } from '../models/Machine';
 // @access  Public
 export const getMachines = async (req: Request, res: Response) => {
   try {
-    console.log('Fetching all machines from MongoDB');
-    const machines = await Machine.find({}).limit(4);
-    console.log(`Found ${machines.length} machines`);
+    const machines = await Machine.find({});
     res.json(machines);
   } catch (error) {
     console.error('Error in getMachines:', error);
-    // Return fixed demo data to prevent blank screen
-    res.json([
-      { 
-        _id: '1', 
-        name: 'Laser Cutter', 
-        type: 'Cutting', 
-        status: 'Available', 
-        description: 'Precision laser cutting machine for detailed work on various materials.', 
-        requiresCertification: true,
-        difficulty: 'Advanced',
-        imageUrl: '/machines/laser-cutter.jpg'
-      },
-      { 
-        _id: '2', 
-        name: '3D Printer', 
-        type: 'Printing', 
-        status: 'Available', 
-        description: 'FDM 3D printing for rapid prototyping and model creation.', 
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/machines/3d-printer.jpg'
-      },
-      { 
-        _id: '3', 
-        name: 'CNC Router', 
-        type: 'Cutting', 
-        status: 'Maintenance', 
-        description: 'Computer-controlled cutting machine for wood, plastic, and soft metals.', 
-        requiresCertification: true,
-        difficulty: 'Advanced',
-        maintenanceNote: 'Undergoing monthly maintenance, available next week.',
-        imageUrl: '/machines/cnc-router.jpg'
-      },
-      { 
-        _id: '4', 
-        name: 'Vinyl Cutter', 
-        type: 'Cutting', 
-        status: 'Available', 
-        description: 'For cutting vinyl, paper, and other thin materials for signs and decorations.', 
-        requiresCertification: false,
-        difficulty: 'Beginner',
-        imageUrl: '/machines/vinyl-cutter.jpg'
-      }
-    ]);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
   }
 };
 
@@ -65,18 +23,61 @@ export const getMachines = async (req: Request, res: Response) => {
 // @access  Public
 export const getMachineById = async (req: Request, res: Response) => {
   try {
-    console.log(`Fetching machine with ID: ${req.params.id}`);
     const machine = await Machine.findById(req.params.id);
     
     if (machine) {
-      console.log(`Found machine: ${machine.name}`);
       res.json(machine);
     } else {
-      console.log(`Machine not found with ID: ${req.params.id}`);
       res.status(404).json({ message: 'Machine not found' });
     }
   } catch (error) {
     console.error('Error in getMachineById:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Create a new machine
+// @route   POST /api/machines
+// @access  Private/Admin
+export const createMachine = async (req: Request, res: Response) => {
+  try {
+    const { 
+      name, 
+      type, 
+      description, 
+      status, 
+      requiresCertification, 
+      difficulty, 
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
+    } = req.body;
+
+    const machine = new Machine({
+      name,
+      type,
+      description,
+      status: status || 'Available',
+      requiresCertification: requiresCertification !== undefined ? requiresCertification : true,
+      difficulty,
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
+    });
+
+    const createdMachine = await machine.save();
+    res.status(201).json(createdMachine);
+  } catch (error) {
+    console.error('Error in createMachine:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -90,12 +91,10 @@ export const getMachineById = async (req: Request, res: Response) => {
 export const updateMachineStatus = async (req: Request, res: Response) => {
   try {
     const { status, maintenanceNote } = req.body;
-    console.log(`Updating machine status: ID=${req.params.id}, status=${status}`);
     
     const machine = await Machine.findById(req.params.id);
     
     if (!machine) {
-      console.log(`Machine not found with ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
     
@@ -105,10 +104,84 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
     
     const updatedMachine = await machine.save();
-    console.log(`Machine status updated: ${updatedMachine.name} -> ${updatedMachine.status}`);
     res.json(updatedMachine);
   } catch (error) {
     console.error('Error in updateMachineStatus:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Update machine details
+// @route   PUT /api/machines/:id
+// @access  Private/Admin
+export const updateMachine = async (req: Request, res: Response) => {
+  try {
+    const machine = await Machine.findById(req.params.id);
+    
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+    
+    const { 
+      name, 
+      type, 
+      description, 
+      status, 
+      maintenanceNote,
+      requiresCertification, 
+      difficulty, 
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
+    } = req.body;
+    
+    // Update fields if provided
+    if (name) machine.name = name;
+    if (type) machine.type = type;
+    if (description) machine.description = description;
+    if (status) machine.status = status;
+    if (maintenanceNote !== undefined) machine.maintenanceNote = maintenanceNote;
+    if (requiresCertification !== undefined) machine.requiresCertification = requiresCertification;
+    if (difficulty) machine.difficulty = difficulty;
+    if (imageUrl) machine.imageUrl = imageUrl;
+    if (details !== undefined) machine.details = details;
+    if (specifications !== undefined) machine.specifications = specifications;
+    if (certificationInstructions !== undefined) machine.certificationInstructions = certificationInstructions;
+    if (linkedCourseId !== undefined) machine.linkedCourseId = linkedCourseId;
+    if (linkedQuizId !== undefined) machine.linkedQuizId = linkedQuizId;
+    
+    const updatedMachine = await machine.save();
+    res.json(updatedMachine);
+  } catch (error) {
+    console.error('Error in updateMachine:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Delete a machine
+// @route   DELETE /api/machines/:id
+// @access  Private/Admin
+export const deleteMachine = async (req: Request, res: Response) => {
+  try {
+    const machine = await Machine.findById(req.params.id);
+    
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+    
+    await machine.deleteOne();
+    res.json({ message: 'Machine removed' });
+  } catch (error) {
+    console.error('Error in deleteMachine:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
