@@ -1,9 +1,5 @@
 
 import { isWeb } from '../../utils/platform';
-import * as dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -13,10 +9,8 @@ class MongoConnectionService {
   private connectionPromise: Promise<any | null> | null = null;
   
   constructor() {
-    // Read from environment variables
-    this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
-    console.log(`MongoDB Connection URI: ${this.uri}`);
-    console.log(`MongoDB DB Name: ${process.env.MONGODB_DB_NAME || 'learnit'}`);
+    // In a real application, this would come from environment variables
+    this.uri = 'mongodb://localhost:27017/learnit';
   }
   
   async connect(): Promise<any | null> {
@@ -34,14 +28,12 @@ class MongoConnectionService {
     try {
       if (!this.client) {
         this.isConnecting = true;
-        console.log("Initiating MongoDB connection...");
         
         // Create a new connection promise
         this.connectionPromise = new Promise(async (resolve, reject) => {
           try {
             // Only import MongoDB in non-web environments
             const { MongoClient, ServerApiVersion } = await import('mongodb');
-            console.log("MongoDB driver loaded successfully");
             
             this.client = new MongoClient(this.uri, {
               serverApi: {
@@ -51,18 +43,10 @@ class MongoConnectionService {
               }
             });
             
-            console.log("Attempting to connect to MongoDB at:", this.uri);
             await this.client.connect();
-            console.log("Connected to MongoDB server successfully");
+            console.log("Connected to MongoDB");
             
-            const dbName = process.env.MONGODB_DB_NAME || 'learnit';
-            this.db = this.client.db(dbName);
-            console.log(`Using MongoDB database: ${dbName}`);
-            
-            // List all collections to verify connection
-            const collections = await this.db.listCollections().toArray();
-            console.log(`Available collections in ${dbName}:`, collections.map(c => c.name).join(', '));
-            
+            this.db = this.client.db('learnit');
             resolve(this.db);
           } catch (error) {
             console.error("Error connecting to MongoDB:", error);
@@ -105,52 +89,6 @@ class MongoConnectionService {
     }
     
     return this.connect();
-  }
-  
-  // Get info about the database connection
-  async getConnectionInfo(): Promise<{
-    connected: boolean;
-    databaseName: string | null;
-    uri: string;
-    collections: string[];
-  }> {
-    if (isWeb) {
-      return {
-        connected: false,
-        databaseName: null,
-        uri: this.uri,
-        collections: []
-      };
-    }
-    
-    try {
-      const db = await this.connect();
-      if (!db) {
-        return {
-          connected: false,
-          databaseName: null,
-          uri: this.uri,
-          collections: []
-        };
-      }
-      
-      const collections = await db.listCollections().toArray();
-      
-      return {
-        connected: true,
-        databaseName: db.databaseName,
-        uri: this.uri,
-        collections: collections.map((c: any) => c.name)
-      };
-    } catch (error) {
-      console.error("Error getting connection info:", error);
-      return {
-        connected: false,
-        databaseName: null,
-        uri: this.uri,
-        collections: []
-      };
-    }
   }
 }
 

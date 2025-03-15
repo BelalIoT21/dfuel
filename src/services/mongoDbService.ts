@@ -1,3 +1,4 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoConnectionService from './mongodb/connectionService';
@@ -6,28 +7,6 @@ import { isWeb } from '../utils/platform';
 
 // Maintains the same API as the original monolithic service
 class MongoDbService {
-  // Database connection info methods
-  async getDatabaseInfo(): Promise<{
-    connected: boolean;
-    databaseName: string | null;
-    uri: string;
-    collections: string[];
-  }> {
-    return mongoConnectionService.getConnectionInfo();
-  }
-  
-  // Seed data if collections are empty
-  async seedInitialDataIfNeeded(): Promise<void> {
-    if (isWeb) return;
-    
-    try {
-      await mongoMachineService.seedMachinesIfEmpty();
-      console.log("Initial data seeding completed");
-    } catch (error) {
-      console.error("Error seeding initial data:", error);
-    }
-  }
-  
   // User methods
   async getUsers(): Promise<MongoUser[]> {
     // Skip MongoDB in browser environment
@@ -161,17 +140,14 @@ class MongoDbService {
     return mongoMachineService.addMachine(machine);
   }
   
-  // Connection methods
+  // Connection method
   async connect(): Promise<void> {
     if (!isWeb) {
-      console.log("Connecting to MongoDB...");
       await mongoConnectionService.connect();
-      
-      // Seed initial data if needed
-      await this.seedInitialDataIfNeeded();
     }
   }
   
+  // Close connection method
   async close(): Promise<void> {
     if (!isWeb) {
       await mongoConnectionService.close();
