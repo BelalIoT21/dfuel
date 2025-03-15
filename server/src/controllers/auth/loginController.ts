@@ -15,7 +15,8 @@ export const loginUser = async (req: Request, res: Response) => {
       console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
       return res.status(500).json({ 
         message: 'Database connection error',
-        details: 'MongoDB is not connected. Please check server logs.'
+        details: 'MongoDB Atlas is not connected. Please check server logs.',
+        mongoState: mongoose.connection.readyState
       });
     }
 
@@ -47,7 +48,7 @@ export const loginUser = async (req: Request, res: Response) => {
       
       return res.status(401).json({ 
         message: 'Invalid email or password',
-        debug: { userExists: false, dbConnected: true }
+        debug: { userExists: false, dbConnected: true, mongoHost: mongoose.connection.host }
       });
     }
 
@@ -86,7 +87,9 @@ export const loginUser = async (req: Request, res: Response) => {
     console.error('Error in loginUser:', error);
     res.status(500).json({ 
       message: 'Server error', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      mongoState: mongoose.connection.readyState,
+      mongoHost: mongoose.connection.host || 'Not connected'
     });
   }
 };

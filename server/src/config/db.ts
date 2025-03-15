@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Get MongoDB URI from environment variables or use default
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://admin:admin123@learnit.mongodb.net/learnit';
 const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || 'learnit';
 
 export const connectDB = async () => {
@@ -19,12 +19,13 @@ export const connectDB = async () => {
     }
     
     const options = {
-      // Add connection options to improve reliability
-      connectTimeoutMS: 10000, // 10 seconds
+      // Add connection options to improve reliability for Atlas
+      connectTimeoutMS: 30000, // 30 seconds - longer for Atlas
       socketTimeoutMS: 45000,  // 45 seconds
-      serverSelectionTimeoutMS: 10000, // 10 seconds
+      serverSelectionTimeoutMS: 30000, // 30 seconds - longer for Atlas
       retryWrites: true,
-      retryReads: true
+      retryReads: true,
+      maxPoolSize: 10 // Limit concurrent connections
     };
 
     const conn = await mongoose.connect(MONGODB_URI, options);
@@ -52,7 +53,7 @@ export const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    console.error('Check if MongoDB is running locally or update your MONGODB_URI in .env');
+    console.error('Check your MongoDB Atlas connection string in .env');
     process.exit(1);
   }
 };
