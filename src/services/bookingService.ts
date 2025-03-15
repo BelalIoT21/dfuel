@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -545,49 +544,58 @@ export class BookingService {
         console.error("API error deleting booking:", apiError);
       }
       
-      // Finally try localStorage directly
+      // Finally try localStorage directly - FORCED DELETION APPROACH
       try {
-        // Need to find the user with this booking
-        const allUsers = localStorageService.getAllUsers();
-        const bookings = localStorageService.getBookings();
+        // Force delete from bookings collection
+        const allBookings = localStorageService.getBookings();
+        const updatedBookings = allBookings.filter(b => 
+          b.id !== bookingId && b._id !== bookingId
+        );
         
-        const bookingIndex = bookings.findIndex(b => (b.id === bookingId || b._id === bookingId));
-        if (bookingIndex !== -1) {
-          // Remove from bookings collection
-          bookings.splice(bookingIndex, 1);
-          localStorageService.saveBookings(bookings);
-          
-          let foundInUser = false;
-          
-          // Find and update user
-          for (const user of allUsers) {
-            if (user.bookings) {
-              const userBookingIndex = user.bookings.findIndex(b => (b.id === bookingId || b._id === bookingId));
-              if (userBookingIndex !== -1) {
-                user.bookings.splice(userBookingIndex, 1);
-                localStorageService.updateUser(user.id, { bookings: user.bookings });
-                console.log(`Removed booking from user ${user.id}`);
-                foundInUser = true;
-                
-                toast({
-                  title: "Booking Deleted",
-                  description: "The booking has been successfully deleted."
-                });
-                
-                break;
-              }
-            }
-          }
-          
-          return foundInUser || bookingIndex !== -1;
+        if (updatedBookings.length < allBookings.length) {
+          localStorageService.saveBookings(updatedBookings);
+          console.log(`Removed booking ${bookingId} from global bookings list`);
         }
         
-        console.error("Could not find booking in localStorage");
-        return false;
+        // Force delete from all users' bookings arrays
+        const allUsers = localStorageService.getAllUsers();
+        let foundInUser = false;
+        
+        for (const user of allUsers) {
+          if (user.bookings && Array.isArray(user.bookings)) {
+            const originalLength = user.bookings.length;
+            const updatedUserBookings = user.bookings.filter(b => 
+              b.id !== bookingId && b._id !== bookingId
+            );
+            
+            if (updatedUserBookings.length < originalLength) {
+              localStorageService.updateUser(user.id, { bookings: updatedUserBookings });
+              console.log(`Removed booking ${bookingId} from user ${user.id}'s bookings`);
+              foundInUser = true;
+            }
+          }
+        }
+        
+        // If we made any changes, consider it a success
+        if (updatedBookings.length < allBookings.length || foundInUser) {
+          toast({
+            title: "Booking Deleted",
+            description: "The booking has been successfully deleted."
+          });
+          return true;
+        }
       } catch (storageError) {
         console.error("LocalStorage error deleting booking:", storageError);
-        return false;
       }
+      
+      // If we get here, all methods failed
+      console.error(`Failed to delete booking ${bookingId} after trying all methods`);
+      toast({
+        title: "Error",
+        description: "Failed to delete the booking. Please refresh and try again.",
+        variant: "destructive"
+      });
+      return false;
     } catch (error) {
       console.error("Error in BookingService.deleteBooking:", error);
       toast({

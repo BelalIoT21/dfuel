@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wrench, Shield, Box } from "lucide-react";
 import userDatabase from '../../services/userDatabase';
 
 interface MachineStatusProps {
@@ -50,18 +49,11 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setIsMachineStatusDialogOpen(false);
   };
 
-  const getMachineIcon = (type: string) => {
-    if (type === 'Safety Cabinet') return <Shield className="h-4 w-4 mr-1 text-blue-600" />;
-    if (type === 'Equipment') return <Box className="h-4 w-4 mr-1 text-green-600" />;
-    return <Wrench className="h-4 w-4 mr-1 text-purple-600" />;
-  };
-
   return (
     <>
       <Card className="border-purple-100">
         <CardHeader className="p-4 md:p-6">
           <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-            <Wrench className="h-5 w-5 text-purple-600" />
             Machine Status
           </CardTitle>
           <CardDescription>Current status of all machines</CardDescription>
@@ -75,8 +67,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 return (
                   <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
                     <div>
-                      <div className="font-medium text-sm flex items-center">
-                        {getMachineIcon(machine.type)}
+                      <div className="font-medium text-sm">
                         {machine.name}
                       </div>
                       <div className="text-xs text-gray-500">
