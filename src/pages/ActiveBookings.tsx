@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { apiService } from '@/services/apiService';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { bookingService } from '@/services/bookingService';
 
 const ActiveBookings = () => {
   const { user } = useAuth();

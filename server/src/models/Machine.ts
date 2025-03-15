@@ -5,11 +5,10 @@ export interface IMachine extends mongoose.Document {
   name: string;
   type: string;
   description: string;
-  status: 'Available' | 'Maintenance' | 'In Use';
-  maintenanceNote?: string;
+  status: 'Available' | 'Maintenance' | 'Out of Order';
   requiresCertification: boolean;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  imageUrl?: string;
+  maintenanceNote?: string;
+  bookedTimeSlots: string[]; // Format: YYYY-MM-DD-HH:MM
 }
 
 const machineSchema = new mongoose.Schema<IMachine>(
@@ -17,7 +16,6 @@ const machineSchema = new mongoose.Schema<IMachine>(
     name: {
       type: String,
       required: true,
-      trim: true,
     },
     type: {
       type: String,
@@ -29,23 +27,19 @@ const machineSchema = new mongoose.Schema<IMachine>(
     },
     status: {
       type: String,
-      enum: ['Available', 'Maintenance', 'In Use'],
+      enum: ['Available', 'Maintenance', 'Out of Order'],
       default: 'Available',
+    },
+    requiresCertification: {
+      type: Boolean,
+      default: false,
     },
     maintenanceNote: {
       type: String,
     },
-    requiresCertification: {
-      type: Boolean,
-      default: true,
-    },
-    difficulty: {
-      type: String,
-      enum: ['Beginner', 'Intermediate', 'Advanced'],
-      required: true,
-    },
-    imageUrl: {
-      type: String,
+    bookedTimeSlots: {
+      type: [String],
+      default: [],
     },
   },
   {

@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Calendar, Clock, User } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { apiService } from '@/services/apiService';
 import { userDatabaseService } from '@/services/database/userService';
 import { bookingDatabaseService } from '@/services/database/bookingService';
+import { bookingService } from '@/services/bookingService';
 
 export const PendingBookingsCard = () => {
   const [pendingBookings, setPendingBookings] = useState<any[]>([]);
@@ -79,32 +79,11 @@ export const PendingBookingsCard = () => {
     try {
       console.log(`Approving booking: ${bookingId} for user: ${userId}`);
       
-      // First try API
-      try {
-        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status: 'Approved' });
-        if (response && response.success) {
-          // Update local state on success
-          setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
-          toast({
-            title: "Booking Approved",
-            description: "The booking has been approved successfully",
-          });
-          return;
-        }
-      } catch (apiError) {
-        console.error('API error when approving booking, falling back to database service:', apiError);
-      }
-      
-      // If API fails, use direct database update
-      const success = await bookingDatabaseService.updateBookingStatus(bookingId, 'Approved');
+      const success = await bookingService.updateBookingStatus(bookingId, 'Approved');
       
       if (success) {
         // Update the local state
         setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
-        toast({
-          title: "Booking Approved",
-          description: "The booking has been approved successfully",
-        });
       } else {
         throw new Error("Failed to update booking status");
       }
@@ -123,32 +102,11 @@ export const PendingBookingsCard = () => {
     try {
       console.log(`Rejecting booking: ${bookingId} for user: ${userId}`);
       
-      // First try API
-      try {
-        const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status: 'Rejected' });
-        if (response && response.success) {
-          // Update local state on success
-          setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
-          toast({
-            title: "Booking Rejected",
-            description: "The booking has been rejected",
-          });
-          return;
-        }
-      } catch (apiError) {
-        console.error('API error when rejecting booking, falling back to database service:', apiError);
-      }
-      
-      // If API fails, use direct database update
-      const success = await bookingDatabaseService.updateBookingStatus(bookingId, 'Rejected');
+      const success = await bookingService.updateBookingStatus(bookingId, 'Rejected');
       
       if (success) {
         // Update the local state
         setPendingBookings(prev => prev.filter(booking => booking.id !== bookingId));
-        toast({
-          title: "Booking Rejected",
-          description: "The booking has been rejected",
-        });
       } else {
         throw new Error("Failed to update booking status");
       }

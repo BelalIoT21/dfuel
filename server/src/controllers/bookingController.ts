@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import { User } from '../models/User';
@@ -166,6 +165,41 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
     
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // If status is changing to Approved, check if the time slot is already taken by another approved booking
+    if (status === 'Approved' && booking.status !== 'Approved') {
+      const bookingDate = new Date(booking.date);
+      const conflictingBooking = await Booking.findOne({
+        machine: booking.machine,
+        date: {
+          $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+          $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+        },
+        time: booking.time,
+        status: 'Approved',
+        _id: { $ne: booking._id } // Exclude the current booking
+      });
+      
+      if (conflictingBooking) {
+        return res.status(400).json({ 
+          message: 'This time slot is already booked by another approved booking'
+        });
+      }
+      
+      // Update machine status to show it's booked for this time slot if needed
+      await Machine.findByIdAndUpdate(
+        booking.machine,
+        { $addToSet: { bookedTimeSlots: `${booking.date.toISOString().split('T')[0]}-${booking.time}` } }
+      );
+    }
+    
+    // If status is changing from Approved to something else, remove the booked time slot
+    if (booking.status === 'Approved' && status !== 'Approved') {
+      await Machine.findByIdAndUpdate(
+        booking.machine,
+        { $pull: { bookedTimeSlots: `${booking.date.toISOString().split('T')[0]}-${booking.time}` } }
+      );
     }
     
     booking.status = status;

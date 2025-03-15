@@ -1,3 +1,4 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoConnectionService from './mongodb/connectionService';
@@ -47,6 +48,8 @@ class MongoDbService {
     if (isWeb) return false;
     
     try {
+      console.log(`MongoDbService: Updating booking ${bookingId} to ${status}`);
+      
       // Make an API request to update the booking status
       const response = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PUT',
@@ -58,10 +61,12 @@ class MongoDbService {
       });
       
       if (!response.ok) {
-        console.error(`Error updating booking status: ${response.statusText}`);
+        const errorData = await response.json();
+        console.error(`Error updating booking status: ${errorData.message || response.statusText}`);
         return false;
       }
       
+      console.log('Successfully updated booking status via API');
       return true;
     } catch (error) {
       console.error('Error in MongoDbService.updateBookingStatus:', error);

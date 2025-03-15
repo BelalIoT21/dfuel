@@ -1,10 +1,10 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
 import { bookingDatabaseService } from './database/bookingService';
 import { isWeb } from '../utils/platform';
 import { toast } from '../components/ui/use-toast';
+import { apiService } from './apiService';
 
 export class BookingService {
   // Create a booking
@@ -65,9 +65,15 @@ export class BookingService {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      // Use the API service which has proper authentication
-      const response = await apiService.updateBookingStatus(bookingId, status);
+      // Use the API service for server-side updates
+      const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status });
+      
       if (!response.error) {
+        toast({
+          title: `Booking ${status}`,
+          description: `The booking has been ${status.toLowerCase()} successfully.`,
+          variant: status === 'Approved' ? 'default' : 'destructive',
+        });
         return true;
       }
       
@@ -77,6 +83,11 @@ export class BookingService {
           const success = await mongoDbService.updateBookingStatus(bookingId, status);
           if (success) {
             console.log("Booking status updated via MongoDB");
+            toast({
+              title: `Booking ${status}`,
+              description: `The booking has been ${status.toLowerCase()} successfully.`,
+              variant: status === 'Approved' ? 'default' : 'destructive',
+            });
             return true;
           }
         } catch (mongoError) {
@@ -84,10 +95,26 @@ export class BookingService {
         }
       }
       
+      // As a last resort, try the database service
+      const success = await bookingDatabaseService.updateBookingStatus(bookingId, status);
+      if (success) {
+        toast({
+          title: `Booking ${status}`,
+          description: `The booking has been ${status.toLowerCase()} successfully.`,
+          variant: status === 'Approved' ? 'default' : 'destructive',
+        });
+        return true;
+      }
+      
       console.error("Failed to update booking status");
       return false;
     } catch (error) {
       console.error("Error in BookingService.updateBookingStatus:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem updating the booking status.",
+        variant: "destructive"
+      });
       return false;
     }
   }
@@ -95,5 +122,3 @@ export class BookingService {
 
 // Create a singleton instance
 export const bookingService = new BookingService();
-
-import { apiService } from './apiService';
