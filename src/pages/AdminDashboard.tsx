@@ -1,6 +1,7 @@
 
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useEffect } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
 import { toast } from '@/components/ui/use-toast';
 
