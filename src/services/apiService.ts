@@ -1,8 +1,8 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Prioritize relative API path which works more consistently across environments
-const API_ENDPOINTS = ['/api', 'http://localhost:4000/api'];
+// Prioritize the localhost direct endpoint which is more reliable for auth requests
+const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
@@ -127,6 +127,7 @@ class ApiService {
   // Auth endpoints
   async login(email: string, password: string) {
     console.log('Attempting login via API for:', email);
+    console.log('Using base URL:', BASE_URL);
     return this.request<{ token: string, user: any }>(
       'auth/login', 
       'POST', 
