@@ -9,14 +9,14 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/learni
 
 export const connectDB = async () => {
   try {
-    console.log(`Attempting to connect to MongoDB at: ${MONGODB_URI}`);
+    console.log(`Server attempting to connect to MongoDB at: ${MONGODB_URI}`);
     
     const conn = await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     });
     
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`MongoDB Connected on server: ${conn.connection.host}`);
     
     // Add event listeners for connection issues
     mongoose.connection.on('error', (err) => {

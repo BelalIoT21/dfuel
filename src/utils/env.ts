@@ -29,8 +29,9 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
+  // Always return the same MongoDB URI for consistency
   if (key === 'MONGODB_URI') {
-    return 'mongodb://localhost:27017/learnit'; // Always return the same MongoDB URI
+    return 'mongodb://localhost:27017/learnit';
   }
   
   if (typeof window !== 'undefined' && (window as any).__ENV__) {

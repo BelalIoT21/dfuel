@@ -1,7 +1,7 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService';
+import { getEnv } from '../../utils/env';
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -12,8 +12,8 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // Use the same URI for both preview and local machine
-    this.uri = 'mongodb://localhost:27017/learnit';
+    // Get MongoDB URI from environment variables
+    this.uri = getEnv('MONGODB_URI', 'mongodb://localhost:27017/learnit');
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   

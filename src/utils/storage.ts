@@ -9,9 +9,14 @@ import { isWeb } from './platform';
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      // In web environment, we use API calls to MongoDB instead of localStorage
+      // In web environment, we use API calls to MongoDB via API instead
       console.log('Web environment - using MongoDB via API');
-      return null;
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.error('localStorage error in getItem:', error);
+        return null;
+      }
     } else {
       try {
         // Native environment - use AsyncStorage
@@ -29,8 +34,13 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      // In web environment, we use API calls to MongoDB instead of localStorage
+      // In web environment, use localStorage as fallback
       console.log('Web environment - using MongoDB via API');
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        console.error('localStorage error in setItem:', error);
+      }
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -45,8 +55,13 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      // In web environment, we use API calls to MongoDB instead of localStorage
+      // In web environment, use localStorage as fallback
       console.log('Web environment - using MongoDB via API');
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.error('localStorage error in removeItem:', error);
+      }
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
