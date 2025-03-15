@@ -10,6 +10,7 @@ import { userDatabaseService } from './userService';
 export class BookingDatabaseService extends BaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
+      console.log(`Attempting to create booking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
       const response = await apiService.addBooking(userId, machineId, date, time);
       return response.data?.success || false;
     } catch (error) {
@@ -26,6 +27,10 @@ export class BookingDatabaseService extends BaseService {
         time,
         status: 'Pending' as const
       };
+      
+      if (!user.bookings) {
+        user.bookings = []; // Initialize bookings array if it doesn't exist
+      }
       
       user.bookings.push(booking);
       return localStorageService.updateUser(userId, { bookings: user.bookings });

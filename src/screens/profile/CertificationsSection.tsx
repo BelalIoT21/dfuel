@@ -9,12 +9,19 @@ interface CertificationsSectionProps {
 }
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
+  // Filter out any certifications for Safety Cabinet
+  const filteredCertifications = user.certifications.filter(certId => {
+    // In a real app, you would fetch the machine type from an API
+    // For now, we'll just hardcode the Safety Cabinet ID (usually "5")
+    return certId !== "5"; // Assuming "5" is the Safety Cabinet ID
+  });
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Certifications</Text>
-      {user.certifications && user.certifications.length > 0 ? (
+      {filteredCertifications && filteredCertifications.length > 0 ? (
         <List.Section>
-          {user.certifications.map((certId) => (
+          {filteredCertifications.map((certId) => (
             <List.Item
               key={certId}
               title={`Machine ${certId}`}

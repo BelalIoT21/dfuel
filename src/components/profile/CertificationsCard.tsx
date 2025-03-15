@@ -13,15 +13,11 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
-  // Sort machines so that Safety Cabinet appears at the bottom
-  const sortedMachines = [...machines].sort((a, b) => {
-    if (a.type === 'Safety Cabinet') return 1;
-    if (b.type === 'Safety Cabinet') return -1;
-    return 0;
-  });
+  // Filter out Safety Cabinet and only get real machines
+  const realMachines = machines.filter(machine => machine.type !== 'Safety Cabinet' && machine.type !== 'Equipment');
 
-  // Get user certifications
-  const userCertifications = sortedMachines
+  // Get user certifications, but exclude Safety Cabinet
+  const userCertifications = realMachines
     .filter(machine => user?.certifications.includes(machine.id))
     .map(machine => ({
       id: machine.id,
@@ -52,27 +48,20 @@ const CertificationsCard = () => {
       <CardContent className="overflow-x-auto">
         {userCertifications.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {userCertifications.map((cert) => {
-              // Check if this is a safety cabinet - explicitly comparing with string
-              const isSafetyCabinet = cert.type === 'Safety Cabinet';
-              
-              return (
-                <div key={cert.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
-                  <div className="font-medium text-purple-800">{cert.name}</div>
-                  <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
-                  {!isSafetyCabinet && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 border-purple-200 hover:bg-purple-100"
-                      onClick={() => handleBookNow(cert.id)}
-                    >
-                      Book Now
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
+            {userCertifications.map((cert) => (
+              <div key={cert.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
+                <div className="font-medium text-purple-800">{cert.name}</div>
+                <div className="text-sm text-gray-500">Certified on: {cert.date}</div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 border-purple-200 hover:bg-purple-100"
+                  onClick={() => handleBookNow(cert.id)}
+                >
+                  Book Now
+                </Button>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
