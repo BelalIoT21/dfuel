@@ -110,7 +110,7 @@ export class CertificationService {
     }
   }
   
-  // Special handling for specific users (like b.l.mishmish@gmail.com)
+  // Clear all certifications for a user
   async clearAllCertifications(userId: string): Promise<boolean> {
     console.log(`Clearing all certifications for user ${userId}`);
     try {
@@ -143,27 +143,13 @@ export class CertificationService {
     }
   }
   
-  // Machine Safety Course certification management
+  // Machine Safety Course certification management - simplified without special user handling
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
-    // Special handling for specific users
-    const user = await mongoDbService.getUserById(userId) || localStorageService.findUserById(userId);
-    const isSpecialUser = userId === "user-1741957466063" || (user?.email && user.email.includes("b.l.mishmish"));
-    
-    if (isSpecialUser) {
-      console.log(`Special handling for user ${userId}: Using clear all certifications first`);
-      await this.clearAllCertifications(userId);
-      
-      // Then add the certification
-      const result = await this.addCertification(userId, MACHINE_SAFETY_ID);
-      console.log(`Result of adding certification for special user: ${result}`);
-      return result;
-    }
-    
-    // Regular handling for other users - add direct certification
-    console.log(`Regular handling for user ${userId}: Adding safety certification directly`);
+    // Remove special handling for specific users
+    // Just add the certification directly for all users
     return this.addCertification(userId, MACHINE_SAFETY_ID);
   }
   
@@ -171,16 +157,8 @@ export class CertificationService {
     console.log(`Removing machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
     
-    // Special handling for specific users
-    const user = await mongoDbService.getUserById(userId) || localStorageService.findUserById(userId);
-    const isSpecialUser = userId === "user-1741957466063" || (user?.email && user.email.includes("b.l.mishmish"));
-    
-    if (isSpecialUser) {
-      console.log(`Special handling for user ${userId}: Clearing all certifications`);
-      return this.clearAllCertifications(userId);
-    }
-    
-    // Regular handling for other users
+    // Remove special handling for specific users
+    // Just remove the certification directly for all users
     return this.removeCertification(userId, MACHINE_SAFETY_ID);
   }
   

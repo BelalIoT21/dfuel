@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,37 +18,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-
-  useEffect(() => {
-    const checkForSpecialUsers = async () => {
-      if (user?.email?.includes('b.l.mishmish@gmail.com') && user.certifications?.length > 0) {
-        console.log(`Special handling for user ${user.name} (${user.email}): Clear all certifications`);
-        
-        try {
-          try {
-            const success = await mongoDbService.updateUser(user.id, { certifications: [] });
-            if (success) {
-              console.log(`Successfully cleared all certifications for ${user.email} via MongoDB`);
-              onCertificationAdded();
-              return;
-            }
-          } catch (mongoError) {
-            console.error("MongoDB error clearing certifications:", mongoError);
-          }
-          
-          const updated = localStorageService.updateUser(user.id, { certifications: [] });
-          if (updated) {
-            console.log(`Successfully cleared all certifications for ${user.email} via localStorage`);
-            onCertificationAdded();
-          }
-        } catch (error) {
-          console.error("Error clearing certifications for special user:", error);
-        }
-      }
-    };
-    
-    checkForSpecialUsers();
-  }, [user?.email, user?.certifications, onCertificationAdded, user?.id, user?.name]);
 
   const handleAddCertification = async (userId: string, machineId: string) => {
     setLoading(machineId);
@@ -161,8 +129,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         // If MongoDB fails, try certification service
         if (!success) {
           console.log("MongoDB failed, trying certification service...");
-          success = await certificationService.addMachineSafetyCertification(userId);
-          console.log(`addMachineSafetyCertification result: ${success}`);
+          success = await certificationService.addCertification(userId, "6");
+          console.log(`addCertification result: ${success}`);
         }
         
         // Last resort: add directly to localStorage
@@ -182,7 +150,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           }
         }
       } catch (error) {
-        console.error("Error in addMachineSafetyCertification:", error);
+        console.error("Error in addCertification:", error);
       }
       
       if (success) {
@@ -231,11 +199,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         
         // If MongoDB fails, use certification service
         if (!success) {
-          success = await certificationService.removeMachineSafetyCertification(userId);
-          console.log(`removeMachineSafetyCertification result: ${success}`);
+          success = await certificationService.removeCertification(userId, "6");
+          console.log(`removeCertification result: ${success}`);
         }
       } catch (error) {
-        console.error("Error in removeMachineSafetyCertification:", error);
+        console.error("Error in removeCertification:", error);
       }
       
       if (success) {
