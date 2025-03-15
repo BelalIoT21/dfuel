@@ -15,7 +15,7 @@ export const loginUser = async (req: Request, res: Response) => {
       console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
       return res.status(500).json({ 
         message: 'Database connection error',
-        details: 'MongoDB Atlas is not connected. Please check server logs.',
+        details: 'MongoDB is not connected. Please ensure MongoDB is running on your local machine.',
         mongoState: mongoose.connection.readyState
       });
     }
