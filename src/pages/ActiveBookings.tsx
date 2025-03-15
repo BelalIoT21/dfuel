@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Info } from 'lucide-react';
+import { CheckCircle, XCircle, Info, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
@@ -30,6 +30,7 @@ const ActiveBookings = () => {
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
   
   // Redirect if not admin
@@ -40,46 +41,49 @@ const ActiveBookings = () => {
   }, [user, navigate]);
 
   // Fetch bookings data from API
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        
-        // Try using the bookingService first
-        const allBookings = await bookingService.getAllBookings();
-        
-        if (allBookings && allBookings.length > 0) {
-          console.log('Received bookings from service:', allBookings.length);
-          setBookings(allBookings);
-          setLoading(false);
-          return;
-        }
-        
-        // Fall back to direct API call
-        const response = await apiService.getAllBookings();
-        if (response && response.data) {
-          console.log('Received bookings from API:', response.data.length);
-          setBookings(response.data);
-        } else {
-          console.log('No bookings received from API');
-          setBookings([]);
-        }
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load bookings data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+  const loadBookings = async () => {
+    try {
+      setLoading(true);
+      
+      console.log("Fetching bookings for admin view...");
+      // Try using the bookingService first
+      const allBookings = await bookingService.getAllBookings();
+      
+      if (allBookings && allBookings.length >= 0) {
+        console.log('Received bookings from service:', allBookings.length);
+        setBookings(allBookings);
+      } else {
+        console.log('No bookings received');
+        setBookings([]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load bookings data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     if (user?.isAdmin) {
-      fetchBookings();
+      loadBookings();
     }
   }, [user]);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadBookings();
+    toast({
+      title: "Refreshing",
+      description: "Updating bookings list...",
+    });
+  };
 
   // Filter bookings based on selected filter
   const filteredBookings = filter === 'all' 
@@ -116,7 +120,9 @@ const ActiveBookings = () => {
       if (success) {
         // Update the local state to reflect the change
         setBookings(prevBookings => prevBookings.map((b: any) => 
-          (b._id || b.id) === bookingId ? { ...b, status: newStatus } : b
+          ((b._id && b._id === bookingId) || (b.id && b.id === bookingId)) 
+            ? { ...b, status: newStatus } 
+            : b
         ));
         
         toast({
@@ -135,6 +141,40 @@ const ActiveBookings = () => {
       toast({
         title: "Error",
         description: "Failed to update booking status",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Handle booking deletion
+  const handleDeleteBooking = async (booking: any) => {
+    try {
+      const bookingId = booking._id || booking.id;
+      console.log(`Deleting booking ${bookingId}`);
+      
+      const success = await bookingService.deleteBooking(bookingId);
+      
+      if (success) {
+        // Update the local state to remove the booking
+        setBookings(prevBookings => prevBookings.filter((b: any) => 
+          ((b._id !== bookingId) && (b.id !== bookingId))
+        ));
+        
+        toast({
+          title: "Booking Deleted",
+          description: "The booking has been removed",
+        });
+        
+        // Close dialog if open
+        setIsDialogOpen(false);
+      } else {
+        throw new Error("Failed to delete booking");
+      }
+    } catch (error) {
+      console.error(`Error deleting booking:`, error);
+      toast({
+        title: "Error",
+        description: "Failed to delete booking",
         variant: "destructive",
       });
     }
@@ -189,15 +229,26 @@ const ActiveBookings = () => {
                   </Button>
                 </div>
               ) : (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="border-purple-200 w-full"
-                  onClick={() => handleViewDetails(booking)}
-                >
-                  <Info className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-purple-200 w-full"
+                    onClick={() => handleViewDetails(booking)}
+                  >
+                    <Info className="h-4 w-4 mr-2" />
+                    View Details
+                  </Button>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="border-red-200 text-red-600 hover:bg-red-50 w-full"
+                    onClick={() => handleDeleteBooking(booking)}
+                  >
+                    Delete Booking
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -313,7 +364,17 @@ const ActiveBookings = () => {
               <CardTitle>Active Bookings</CardTitle>
               <CardDescription>Manage machine booking requests and reservations</CardDescription>
             </div>
-            <div className="w-full sm:w-48">
+            <div className="w-full sm:w-48 flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                Refresh
+              </Button>
               <Select value={filter} onValueChange={setFilter}>
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Filter by status" />
@@ -377,7 +438,15 @@ const ActiveBookings = () => {
                   <p>Last Updated: {selectedBooking.updatedAt ? new Date(selectedBooking.updatedAt).toLocaleString() : 'Unknown'}</p>
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  variant="outline"
+                  className="border-red-200 hover:bg-red-50 text-red-600"
+                  onClick={() => handleDeleteBooking(selectedBooking)}
+                >
+                  Delete Booking
+                </Button>
+                
                 {selectedBooking.status === 'Pending' && (
                   <>
                     <Button 

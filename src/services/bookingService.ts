@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -80,7 +81,8 @@ export class BookingService {
           date,
           time,
           status: 'Pending',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          machineName: this.getMachineName(machineId) // Add machine name for display convenience
         };
         
         bookings.push(newBooking);
@@ -219,6 +221,8 @@ export class BookingService {
           
           // Find the user with this booking
           let updated = false;
+          let affectedUserId = null;
+          
           for (let user of users) {
             if (user.bookings && Array.isArray(user.bookings)) {
               const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
@@ -228,9 +232,20 @@ export class BookingService {
                 // Save user back to local storage
                 localStorageService.updateUser(user.id, user);
                 updated = true;
+                affectedUserId = user.id;
                 break;
               }
             }
+          }
+          
+          // Also update in the separate bookings collection
+          const bookings = localStorageService.getBookings();
+          const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+          
+          if (bookingIndex >= 0) {
+            bookings[bookingIndex].status = status;
+            localStorageService.saveBookings(bookings);
+            updated = true;
           }
           
           if (updated) {
@@ -325,14 +340,51 @@ export class BookingService {
       
       // As a last resort, use localStorage
       const bookings = localStorageService.getBookings();
-      console.log("Retrieved all bookings from local storage:", bookings.length);
+      
+      // Get all user bookings from all users
+      const allUsers = localStorageService.getAllUsers();
+      let userBookings = [];
+      
+      for (const user of allUsers) {
+        if (user.bookings && Array.isArray(user.bookings) && user.bookings.length > 0) {
+          // Add user data to each booking
+          const bookingsWithUserInfo = user.bookings.map(booking => ({
+            ...booking,
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+            machineName: booking.machineName || this.getMachineName(booking.machineId || booking.machine)
+          }));
+          
+          userBookings = [...userBookings, ...bookingsWithUserInfo];
+        }
+      }
+      
+      // Merge with global bookings and deduplicate
+      const allBookings = [...bookings];
+      
+      for (const userBooking of userBookings) {
+        // Only add if not already in the array
+        const exists = allBookings.some(b => 
+          (b.id && b.id === userBooking.id) || 
+          (b._id && b._id === userBooking._id)
+        );
+        
+        if (!exists) {
+          allBookings.push(userBooking);
+        }
+      }
+      
+      console.log("Retrieved all bookings merged from localStorage:", allBookings.length);
+      
       // Make sure machine names are set correctly
-      const bookingsWithNames = bookings.map(booking => {
+      const bookingsWithNames = allBookings.map(booking => {
         if (!booking.machineName) {
-          booking.machineName = this.getMachineName(booking.machineId);
+          booking.machineName = this.getMachineName(booking.machineId || booking.machine);
         }
         return booking;
       });
+      
       return bookingsWithNames;
     } catch (error) {
       console.error("Error in BookingService.getAllBookings:", error);
@@ -499,7 +551,7 @@ export class BookingService {
         const allUsers = localStorageService.getAllUsers();
         const bookings = localStorageService.getBookings();
         
-        const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+        const bookingIndex = bookings.findIndex(b => (b.id === bookingId || b._id === bookingId));
         if (bookingIndex !== -1) {
           // Remove from bookings collection
           bookings.splice(bookingIndex, 1);
@@ -510,7 +562,7 @@ export class BookingService {
           // Find and update user
           for (const user of allUsers) {
             if (user.bookings) {
-              const userBookingIndex = user.bookings.findIndex(b => b.id === bookingId);
+              const userBookingIndex = user.bookings.findIndex(b => (b.id === bookingId || b._id === bookingId));
               if (userBookingIndex !== -1) {
                 user.bookings.splice(userBookingIndex, 1);
                 localStorageService.updateUser(user.id, { bookings: user.bookings });
