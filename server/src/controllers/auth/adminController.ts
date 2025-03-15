@@ -16,14 +16,11 @@ export const ensureAdminUser = async () => {
       // Get the admin password from env or use default
       const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
       
-      // Create new admin user - IMPORTANT: we create it directly to avoid double hashing
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(adminPassword, salt);
-      
+      // Create new admin user
       const newAdmin = new User({
         name: 'Administrator',
         email: adminEmail,
-        password: hashedPassword, // Using pre-hashed password to avoid double hashing
+        password: adminPassword, // Will be hashed by pre-save hook
         isAdmin: true,
         certifications: [],
       });
