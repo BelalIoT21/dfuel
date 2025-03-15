@@ -11,7 +11,7 @@ export class UserDatabaseService extends BaseService {
   async getAllUsers(): Promise<UserWithoutSensitiveInfo[]> {
     return this.apiRequest<UserWithoutSensitiveInfo[]>(
       () => apiService.getAllUsers(),
-      () => localStorageService.getUsers().map(({ password, resetCode, ...user }) => user),
+      () => localStorageService.getAllUsersWithoutSensitiveInfo(),
       "API error in getAllUsers"
     ) || [];
   }

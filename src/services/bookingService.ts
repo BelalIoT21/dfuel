@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -219,7 +218,7 @@ export class BookingService {
       }
       
       // As a last resort, use bookingDatabaseService
-      const bookings = await bookingDatabaseService.getAllPendingBookings();
+      const bookings = await bookingDatabaseService.getAllBookings();
       console.log("Retrieved all bookings from local database:", bookings.length);
       // Make sure machine names are set correctly
       const bookingsWithNames = bookings.map(booking => {

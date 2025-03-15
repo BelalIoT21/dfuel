@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { localStorageService } from '../localStorageService';
 import { BaseService } from './baseService';
@@ -93,7 +92,6 @@ export class BookingDatabaseService extends BaseService {
       // Fallback to localStorage
       const bookings = localStorageService.getBookings();
       console.log("Retrieved all bookings from local storage:", bookings.length);
-      console.log("Retrieved all bookings from local database:", bookings.length);
       return bookings;
     }
   }

@@ -181,6 +181,18 @@ class ApiService {
     return this.request<any[]>('bookings/all', 'GET');
   }
   
+  async getUserBookings(userId: string) {
+    return this.request<any[]>(`bookings`, 'GET');
+  }
+  
+  async addBooking(userId: string, machineId: string, date: string, time: string) {
+    return this.request<{ success: boolean }>(
+      'bookings', 
+      'POST', 
+      { machineId, date, time }
+    );
+  }
+  
   async updateBookingStatus(bookingId: string, status: string) {
     // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);

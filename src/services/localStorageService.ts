@@ -30,6 +30,10 @@ class LocalStorageService {
     }));
   }
 
+  getUsers(): User[] {
+    return this.getAllUsers();
+  }
+
   findUserByEmail(email: string): User | undefined {
     try {
       const users = this.getAllUsers();
@@ -48,6 +52,17 @@ class LocalStorageService {
       console.error('Error finding user by id in localStorage:', error);
       return undefined;
     }
+  }
+
+  getAll(key: string): any[] {
+    if (key === 'users') return this.getAllUsers();
+    if (key === 'bookings') return this.getBookings();
+    return [];
+  }
+
+  update(key: string, id: string, data: any): boolean {
+    if (key === 'users') return this.updateUser(id, data);
+    return false;
   }
 
   addUser(user: User): boolean {
@@ -93,8 +108,7 @@ class LocalStorageService {
       return false;
     }
   }
-  
-  // Certification methods
+
   addCertification(userId: string, machineId: string): boolean {
     try {
       const user = this.findUserById(userId);
@@ -111,8 +125,7 @@ class LocalStorageService {
       return false;
     }
   }
-  
-  // Booking methods
+
   getBookings(): any[] {
     try {
       const bookingsJson = localStorage.getItem(BOOKINGS_KEY);
@@ -122,7 +135,7 @@ class LocalStorageService {
       return [];
     }
   }
-  
+
   saveBookings(bookings: any[]): boolean {
     try {
       localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings));
@@ -132,7 +145,7 @@ class LocalStorageService {
       return false;
     }
   }
-  
+
   updateBookingStatus(bookingId: string, status: string): boolean {
     try {
       const bookings = this.getBookings();
@@ -150,8 +163,7 @@ class LocalStorageService {
       return false;
     }
   }
-  
-  // Machine status methods
+
   getMachineStatus(machineId: string): string | null {
     try {
       const statusesJson = localStorage.getItem(MACHINE_STATUSES_KEY);
