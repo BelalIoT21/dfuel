@@ -41,7 +41,7 @@ const MachineActions = ({
   const isSafetyCourse = machineType === 'Safety Course';
   
   // Admin should always be able to get certified and book machines
-  const showGetCertified = isAdmin ? !isCertified : (!isCertified && (canGetCertified || isSafetyCourse));
+  const showGetCertified = (!isCertified && (canGetCertified || isSafetyCourse)) || isAdmin;
 
   return (
     <View style={styles.actionContainer}>
