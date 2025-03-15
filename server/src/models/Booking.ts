@@ -7,6 +7,7 @@ export interface IBooking extends mongoose.Document {
   date: Date;
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
+  clientId?: string; // Optional client-side ID
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,10 @@ const bookingSchema = new mongoose.Schema<IBooking>(
       enum: ['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected'],
       default: 'Pending',
     },
+    clientId: {
+      type: String,
+      index: true, // Add index for faster queries
+    },
   },
   {
     timestamps: true,
@@ -45,7 +50,15 @@ const bookingSchema = new mongoose.Schema<IBooking>(
 // Add a method to update the booking status
 bookingSchema.statics.updateStatus = async function(bookingId: string, status: string) {
   try {
-    const booking = await this.findById(bookingId);
+    // Try to find by MongoDB ID first
+    let booking;
+    if (mongoose.Types.ObjectId.isValid(bookingId)) {
+      booking = await this.findById(bookingId);
+    } else {
+      // If not a valid ObjectId, it might be a client-generated ID
+      booking = await this.findOne({ clientId: bookingId });
+    }
+    
     if (!booking) return false;
     
     booking.status = status;

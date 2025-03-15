@@ -9,7 +9,7 @@ import {
   getAllBookings
 } from '../controllers/bookingController';
 import { protect, admin } from '../middleware/authMiddleware';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
 const router = express.Router();
 
@@ -40,7 +40,8 @@ router.put(
   protect,
   admin,
   [
-    body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled']).withMessage('Valid status is required')
+    param('id').notEmpty().withMessage('Booking ID is required'),
+    body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected']).withMessage('Valid status is required')
   ],
   updateBookingStatus
 );

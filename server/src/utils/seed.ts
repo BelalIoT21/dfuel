@@ -137,28 +137,31 @@ export const seedDatabase = async () => {
       return date.toISOString().split('T')[0];
     };
     
-    // Create bookings using the Booking model
+    // Create bookings using the Booking model with clientId field
     const bookings = [
       {
         user: regularUser._id,
         machine: createdMachines[0]._id,
         date: today,
         time: '10:00 - 12:00',
-        status: 'Approved'
+        status: 'Approved',
+        clientId: `booking-${Date.now() - 100000}` // Add a clientId for client compatibility
       },
       {
         user: regularUser._id,
         machine: createdMachines[1]._id,
         date: tomorrow,
         time: '14:00 - 16:00',
-        status: 'Pending'
+        status: 'Pending',
+        clientId: `booking-${Date.now() - 50000}` // Add a clientId for client compatibility
       },
       {
         user: regularUser._id,
         machine: createdMachines[2]._id,
         date: nextWeek,
         time: '09:00 - 11:00',
-        status: 'Pending'
+        status: 'Pending',
+        clientId: `booking-${Date.now()}` // Add a clientId for client compatibility
       }
     ];
     
