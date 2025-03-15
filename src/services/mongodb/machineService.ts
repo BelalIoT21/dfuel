@@ -168,15 +168,69 @@ class MongoMachineService {
         console.log("No machines found in MongoDB, seeding default machines...");
         
         const defaultMachines: MongoMachine[] = [
-          { _id: '1', name: 'Laser Cutter', type: 'Cutting', status: 'Available', description: 'Precision laser cutting machine', requiresCertification: true },
-          { _id: '2', name: '3D Printer', type: 'Printing', status: 'Available', description: '3D printing for rapid prototyping', requiresCertification: true },
-          { _id: '3', name: 'CNC Router', type: 'Cutting', status: 'Available', description: 'Computer-controlled cutting machine', requiresCertification: true },
-          { _id: '4', name: 'Vinyl Cutter', type: 'Cutting', status: 'Available', description: 'For cutting vinyl and other thin materials', requiresCertification: false },
-          { _id: '5', name: 'Soldering Station', type: 'Electronics', status: 'Available', description: 'For electronics work and repairs', requiresCertification: false }
+          { 
+            _id: '1', 
+            name: 'Laser Cutter', 
+            type: 'Cutting', 
+            status: 'Available', 
+            description: 'Precision laser cutting machine for detailed work on various materials.', 
+            requiresCertification: true,
+            difficulty: 'Advanced',
+            imageUrl: '/machines/laser-cutter.jpg'
+          },
+          { 
+            _id: '2', 
+            name: '3D Printer', 
+            type: 'Printing', 
+            status: 'Available', 
+            description: 'FDM 3D printing for rapid prototyping and model creation.', 
+            requiresCertification: true,
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/3d-printer.jpg'
+          },
+          { 
+            _id: '3', 
+            name: 'CNC Router', 
+            type: 'Cutting', 
+            status: 'Maintenance', 
+            description: 'Computer-controlled cutting machine for wood, plastic, and soft metals.', 
+            requiresCertification: true,
+            difficulty: 'Advanced',
+            maintenanceNote: 'Undergoing monthly maintenance, available next week.',
+            imageUrl: '/machines/cnc-router.jpg'
+          },
+          { 
+            _id: '4', 
+            name: 'Vinyl Cutter', 
+            type: 'Cutting', 
+            status: 'Available', 
+            description: 'For cutting vinyl, paper, and other thin materials for signs and decorations.', 
+            requiresCertification: false,
+            difficulty: 'Beginner',
+            imageUrl: '/machines/vinyl-cutter.jpg'
+          },
+          { 
+            _id: '5', 
+            name: 'Soldering Station', 
+            type: 'Electronics', 
+            status: 'Available', 
+            description: 'Professional-grade soldering equipment for electronics work and repairs.', 
+            requiresCertification: false,
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/soldering-station.jpg'
+          }
         ];
         
+        // Also create machine statuses
         for (const machine of defaultMachines) {
           await this.addMachine(machine);
+          
+          // Add corresponding machine status
+          await this.updateMachineStatus(
+            machine._id, 
+            machine.status, 
+            machine.maintenanceNote
+          );
         }
         
         console.log("Successfully seeded default machines to MongoDB");

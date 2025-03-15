@@ -1,5 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
+import mongoMachineService from './machineService';
+import mongoSeedService from './seedService'; // New import
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -7,6 +9,7 @@ class MongoConnectionService {
   private uri: string;
   private isConnecting: boolean = false;
   private connectionPromise: Promise<any | null> | null = null;
+  private initialized: boolean = false;
   
   constructor() {
     // In a real application, this would come from environment variables
@@ -56,6 +59,12 @@ class MongoConnectionService {
             const collections = await this.db.listCollections().toArray();
             console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
             
+            // Initialize seed data if not already done
+            if (!this.initialized) {
+              await this.initializeData();
+              this.initialized = true;
+            }
+            
             resolve(this.db);
           } catch (error) {
             console.error("Error connecting to MongoDB:", error);
@@ -76,6 +85,24 @@ class MongoConnectionService {
       this.isConnecting = false;
       this.connectionPromise = null;
       return null;
+    }
+  }
+  
+  // New method to initialize data
+  private async initializeData(): Promise<void> {
+    try {
+      console.log("Initializing MongoDB with seed data...");
+      
+      // First seed machines (as they're referenced by users and bookings)
+      await mongoMachineService.seedDefaultMachines();
+      
+      // Then seed users and bookings
+      await mongoSeedService.seedUsers();
+      await mongoSeedService.seedBookings();
+      
+      console.log("Seed data initialization complete");
+    } catch (error) {
+      console.error("Error initializing seed data:", error);
     }
   }
   
