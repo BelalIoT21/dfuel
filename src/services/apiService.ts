@@ -252,6 +252,7 @@ class ApiService {
   async updateBookingStatus(bookingId: string, status: string) {
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
+    // Try first endpoint format (/:id/status)
     try {
       const response = await this.request<any>(
         `bookings/${bookingId}/status`, 
@@ -260,22 +261,50 @@ class ApiService {
       );
       
       if (!response.error) {
+        console.log("Successfully updated booking status via primary endpoint");
         return response;
       }
+      
+      console.log(`Primary endpoint failed: ${response.error}`);
     } catch (error) {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
+    // Try alternative endpoint (/update-status)
     try {
-      return await this.request<any>(
+      const alternativeResponse = await this.request<any>(
         `bookings/update-status`, 
         'PUT', 
         { bookingId, status }
       );
+      
+      if (!alternativeResponse.error) {
+        console.log("Successfully updated booking status via alternative endpoint");
+        return alternativeResponse;
+      }
+      
+      console.log(`Alternative endpoint failed: ${alternativeResponse.error}`);
     } catch (error) {
       console.log(`Error with alternative endpoint: ${error}`);
-      throw error;
     }
+    
+    // Both endpoints failed, try direct MongoDB operation if not in web environment
+    if (typeof window === 'undefined' || !window.isSecureContext) {
+      try {
+        // This would be a direct DB call in Node.js environment
+        console.log("Attempting direct MongoDB update (server-side only)");
+        // This would be implemented differently in a true server environment
+      } catch (dbError) {
+        console.log(`Direct MongoDB update failed: ${dbError}`);
+      }
+    }
+    
+    // If all attempts fail, return error
+    return {
+      data: null,
+      error: "Failed to update booking status after multiple attempts",
+      status: 500
+    };
   }
   
   async cancelBooking(bookingId: string) {

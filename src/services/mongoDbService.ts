@@ -1,8 +1,3 @@
-
-import mongoUserService from './mongodb/userService';
-import mongoMachineService from './mongodb/machineService';
-import mongoSeedService from './mongodb/seedService';
-import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -156,13 +151,22 @@ class MongoDbService {
     }
   }
   
-  async updateBookingStatus(bookingId: string, status: string) {
-    if (isWeb) return false;
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    console.log(`MongoDB.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      return await mongoUserService.updateBookingStatus(bookingId, status);
+      // Try the primary endpoint format first
+      const response = await apiService.updateBookingStatus(bookingId, status);
+      
+      if (!response.error && response.data) {
+        console.log(`Successfully updated booking status in MongoDB: ${bookingId} → ${status}`);
+        return true;
+      }
+      
+      console.error("API response error:", response.error || "No data returned");
+      return false;
     } catch (error) {
-      console.error(`Error updating booking ${bookingId} status in MongoDB:`, error);
+      console.error("MongoDB error in updateBookingStatus:", error);
       return false;
     }
   }

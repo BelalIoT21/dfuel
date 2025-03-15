@@ -1,11 +1,9 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
-import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
-import mongoDbService from '@/services/mongoDbService';
+import { apiService } from '@/services/apiService';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -26,24 +24,29 @@ export const PendingBookingsCard = ({
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
       if (action === 'Deleted') {
-        // Use MongoDB to delete the booking
-        await mongoDbService.deleteBooking(bookingId);
+        // Use direct API call to delete the booking
+        const response = await apiService.request(`bookings/${bookingId}`, 'DELETE');
         
-        toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from the system."
-        });
-        
-        // After deleting, trigger refresh of the bookings list
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
+        if (response && !response.error) {
+          toast({
+            title: "Booking Removed",
+            description: "The booking has been removed from the system."
+          });
+          
+          // After deleting, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+          
+          return;
         }
-      } else {
-        // Handle approval/rejection
-        const success = await mongoDbService.updateBookingStatus(bookingId, action);
-        console.log(`MongoDB updateBookingStatus result: ${success}`);
         
-        if (success) {
+        throw new Error('Failed to delete booking');
+      } else {
+        // Handle approval/rejection via direct API call
+        const response = await apiService.updateBookingStatus(bookingId, action);
+        
+        if (response && !response.error) {
           toast({
             title: `Booking ${action}`,
             description: `The booking has been ${action.toLowerCase()} successfully.`
@@ -53,20 +56,18 @@ export const PendingBookingsCard = ({
           if (onBookingStatusChange) {
             onBookingStatusChange();
           }
-        } else {
-          toast({
-            title: "Action Failed",
-            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-            variant: "destructive"
-          });
+          
+          return;
         }
+        
+        throw new Error(`Failed to ${action.toLowerCase()} booking`);
       }
     } catch (error) {
       console.error(`Error processing booking action:`, error);
       
       toast({
-        title: "Error",
-        description: "An error occurred while processing the booking",
+        title: "Action Failed",
+        description: `Could not ${action.toLowerCase()} booking. Please try again.`,
         variant: "destructive"
       });
     } finally {
