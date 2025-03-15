@@ -50,9 +50,12 @@ const Index = () => {
         
         // Try API service as fallback
         try {
-          const apiResponse = await apiService.ping();
-          if (apiResponse.data && apiResponse.data.pong) {
-            setServerStatus('connected via API');
+          // Check if apiService has a ping method
+          if (typeof apiService.ping === 'function') {
+            const apiResponse = await apiService.ping();
+            if (apiResponse.data && apiResponse.data.pong) {
+              setServerStatus('connected via API');
+            }
           }
         } catch (apiError) {
           console.error("API service connection also failed:", apiError);
@@ -66,7 +69,7 @@ const Index = () => {
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      console.log("User is logged in, redirecting:", user);
+      console.log("User is logged in, redirecting to /home:", user);
       navigate('/home');
     }
   }, [user, navigate]);
@@ -75,11 +78,19 @@ const Index = () => {
     console.log("Attempting login with:", email);
     const success = await login(email, password);
     console.log("Login success:", success);
+    
+    if (success) {
+      navigate('/home');
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    const success = await register(email, password, name);
+    
+    if (success) {
+      navigate('/home');
+    }
   };
 
   const toggleMode = () => {
