@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -115,12 +114,48 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    return this.request<{ status: string, message: string }>(
-      'health',
-      'GET',
-      undefined,
-      false
-    );
+    try {
+      console.log('Checking server health...');
+      const response = await this.request<{ status: string, message: string }>(
+        'health',
+        'GET',
+        undefined,
+        false
+      );
+      
+      console.log('Health check response:', response);
+      return response;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        status: 500
+      };
+    }
+  }
+  
+  // New ping method for simple connectivity testing
+  async ping() {
+    try {
+      console.log('Pinging server...');
+      const response = await this.request<{ pong: boolean }>(
+        'health/ping',
+        'GET',
+        undefined,
+        false
+      );
+      
+      console.log('Ping response:', response);
+      return response;
+    } catch (error) {
+      console.error('Ping failed:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        status: 500
+      };
+    }
   }
   
   // User endpoints

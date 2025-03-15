@@ -1,10 +1,11 @@
 
 import express from 'express';
-import { healthCheck } from '../controllers/healthController';
+import { healthCheck, ping } from '../controllers/healthController';
 
 const router = express.Router();
 
-// Health check endpoint
+// Health check endpoints
 router.get('/', healthCheck);
+router.get('/ping', ping);
 
 export default router;
