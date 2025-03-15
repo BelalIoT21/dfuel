@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { User } from '@/types/database';
@@ -28,15 +27,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('Found auth token, attempting to get current user...');
           try {
             // Set the token in the API service
+            apiService.setToken(token);
+            
+            // Try to get current user with the token
             const response = await apiService.getCurrentUser();
             
             if (response.data) {
               console.log('Successfully retrieved current user from API');
-              setUser(response.data);
+              // Ensure the user data has id field (from _id if needed)
+              const userData = {
+                ...response.data,
+                id: response.data._id || response.data.id
+              };
+              setUser(userData);
             } else {
               // If the token is invalid, remove it
               console.log('Token might be invalid, removing it');
               localStorage.removeItem('token');
+              apiService.setToken(null);
               
               // As a fallback, try to get from storage
               const storedUser = await storage.getItem('learnit_user');
@@ -48,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } catch (error) {
             console.error('Error getting current user with token:', error);
             localStorage.removeItem('token');
+            apiService.setToken(null);
           }
         } else {
           // Try to get from storage as a backup
@@ -174,9 +183,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     loading,
-    login,
-    register,
-    logout,
+    login: loginFn,
+    register: registerFn,
+    logout: logoutFn,
     addCertification,
     updateProfile,
     changePassword,

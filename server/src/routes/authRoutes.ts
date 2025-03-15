@@ -1,7 +1,8 @@
 
 import express from 'express';
-import { registerUser, forgotPassword, resetPassword, getUserProfile } from '../controllers/authController';
+import { registerUser, forgotPassword, resetPassword } from '../controllers/authController';
 import { loginUser } from '../controllers/auth/loginController';
+import { getUserProfile, getUserBookings } from '../controllers/auth/profileController';
 import { protect } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
 import { User } from '../models/User';
@@ -57,6 +58,9 @@ router.post(
 
 // Get user profile
 router.get('/me', protect, getUserProfile);
+
+// Get user bookings
+router.get('/bookings', protect, getUserBookings);
 
 // Get user count - public endpoint for the login screen
 router.get('/user-count', async (req, res) => {

@@ -39,6 +39,8 @@ export const useAuthFunctions = (
         if (apiResponse.data.token) {
           console.log("Saving token to localStorage");
           localStorage.setItem('token', apiResponse.data.token);
+          // Also set the token in the API service
+          apiService.setToken(apiResponse.data.token);
         } else {
           console.error("No token received from API");
         }
@@ -152,6 +154,8 @@ export const useAuthFunctions = (
     // Remove all auth data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    // Clear the token from API service
+    apiService.setToken(null);
     toast({
       description: "Logged out successfully."
     });
