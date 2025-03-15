@@ -11,20 +11,30 @@ export class BookingDatabaseService extends BaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
       console.log(`Attempting to create booking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
-      // The API expects data with just machineId, date, and time (userId comes from the auth token)
-      const response = await apiService.request('bookings', 'POST', { 
-        machineId, 
-        date, 
-        time 
-      });
       
-      return response.data?.success || false;
-    } catch (error) {
-      console.error("API error, falling back to localStorage booking:", error);
+      // First try the API
+      try {
+        const response = await apiService.request('bookings', 'POST', { 
+          machineId, 
+          date, 
+          time 
+        });
+        
+        if (response.data) {
+          console.log("Booking created successfully via API:", response.data);
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API error, falling back to localStorage booking:", apiError);
+      }
       
-      // Fallback to localStorage
+      // If API fails, fall back to localStorage
+      console.log("Using localStorage fallback for booking");
       const user = localStorageService.findUserById(userId);
-      if (!user) return false;
+      if (!user) {
+        console.error("User not found in localStorage:", userId);
+        return false;
+      }
       
       const booking = {
         id: `booking-${Date.now()}`,
@@ -39,7 +49,13 @@ export class BookingDatabaseService extends BaseService {
       }
       
       user.bookings.push(booking);
-      return localStorageService.updateUser(userId, { bookings: user.bookings });
+      const success = localStorageService.updateUser(userId, { bookings: user.bookings });
+      
+      console.log("Booking created via localStorage:", success);
+      return success;
+    } catch (error) {
+      console.error("Fatal error in addBooking:", error);
+      return false;
     }
   }
 

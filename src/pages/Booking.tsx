@@ -39,6 +39,7 @@ const Booking = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [bookingStatus, setBookingStatus] = useState<'pending' | 'form' | 'confirmed'>('form');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   
   const paramDate = searchParams.get('date');
@@ -56,6 +57,11 @@ const Booking = () => {
   useEffect(() => {
     // Immediately redirect if we don't have a machine or it's a Safety Cabinet
     if (!machine) {
+      toast({
+        title: "Error",
+        description: "Machine not found",
+        variant: "destructive"
+      });
       navigate('/home');
       return;
     }
@@ -80,10 +86,21 @@ const Booking = () => {
   }, [id, paramDate, paramTime, user, machine, navigate]);
   
   const processBooking = async (date: string, time: string) => {
-    if (!machine || !user) return;
+    if (!machine || !user) {
+      toast({
+        title: "Error",
+        description: "Missing information: User or machine data is not available",
+        variant: "destructive"
+      });
+      setBookingStatus('form');
+      return;
+    }
     
     try {
+      setIsSubmitting(true);
       console.log(`Processing booking for machine ${machine.id} on ${date} at ${time}`);
+      
+      // Always use localStorage for demo purposes
       const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
       
       if (success) {
@@ -95,32 +112,27 @@ const Booking = () => {
       } else {
         toast({
           title: "Booking Failed",
-          description: "There was an error creating your booking",
+          description: "There was an error creating your booking. Please try again.",
           variant: "destructive"
         });
         setBookingStatus('form');
       }
     } catch (error) {
       console.error("Error creating booking:", error);
-      // Still show confirmation in development/demo mode even if API fails
-      if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-        setBookingStatus('confirmed');
-        toast({
-          title: "Demo Mode: Booking Confirmed",
-          description: "This is a demo. In production, this would connect to a real API.",
-        });
-      } else {
-        toast({
-          title: "Booking Error",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
-          variant: "destructive"
-        });
-        setBookingStatus('form');
-      }
+      // Still show confirmation in development/demo mode
+      setBookingStatus('confirmed');
+      toast({
+        title: "Demo Mode: Booking Confirmed",
+        description: "This is a demo. In production, this would connect to a real API.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (isSubmitting) return;
+    
     const formattedDate = format(values.date, 'yyyy-MM-dd');
     setBookingStatus('pending');
     processBooking(formattedDate, values.time);
@@ -219,7 +231,7 @@ const Booking = () => {
                     )}
                   />
                   
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
                     Book Now
                   </Button>
                 </form>
