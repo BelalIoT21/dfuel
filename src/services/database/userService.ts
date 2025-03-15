@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { localStorageService } from '../localStorageService';
 import { User, UserWithoutSensitiveInfo } from '../../types/database';
@@ -44,23 +43,14 @@ export class UserDatabaseService extends BaseService {
         }
         return response.data.user;
       }
-    } catch (error) {
-      console.error("API error, falling back to localStorage auth:", error);
-    }
-    
-    // Fallback to localStorage
-    console.log("Falling back to localStorage authentication");
-    const user = localStorageService.findUserByEmail(email);
-    if (user && user.password === password) {
-      console.log("LocalStorage authentication successful");
-      // Update last login time
-      user.lastLogin = new Date().toISOString();
-      localStorageService.updateUser(user.id, { lastLogin: user.lastLogin });
       
-      const { password: _, resetCode: __, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    } else {
-      console.log("LocalStorage authentication failed");
+      if (response.error) {
+        console.error("API authentication error:", response.error);
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      console.error("API error during authentication:", error);
+      throw error; // Propagate the error instead of falling back to localStorage
     }
     
     return null;
@@ -78,36 +68,17 @@ export class UserDatabaseService extends BaseService {
         }
         return response.data.user;
       }
+      
+      if (response.error) {
+        console.error("API registration error:", response.error);
+        throw new Error(response.error);
+      }
     } catch (error) {
-      console.error("API error, falling back to localStorage registration:", error);
+      console.error("API error during registration:", error);
+      throw error; // Propagate the error instead of falling back to localStorage
     }
     
-    // Fallback to localStorage
-    console.log("Falling back to localStorage registration");
-    // Check if user already exists
-    const existingUser = localStorageService.findUserByEmail(email);
-    if (existingUser) {
-      console.log("User already exists in localStorage");
-      return null;
-    }
-    
-    // Create new user
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      password,
-      name,
-      isAdmin: false,
-      certifications: [],
-      bookings: [],
-      lastLogin: new Date().toISOString(),
-    };
-    
-    localStorageService.addUser(newUser);
-    console.log("User added to localStorage");
-    
-    const { password: _, resetCode: __, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+    return null;
   }
   
   async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {

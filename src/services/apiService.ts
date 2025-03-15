@@ -2,8 +2,8 @@
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Try to connect to local API first, but have a fallback to relative path
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+// Prioritize relative API path which works more consistently across environments
+const API_ENDPOINTS = ['/api', 'http://localhost:4000/api'];
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 

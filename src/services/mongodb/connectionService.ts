@@ -14,8 +14,18 @@ class MongoConnectionService {
   private maxConnectionAttempts: number = 3;
   
   constructor() {
-    // Updated to use the localhost MongoDB instance
-    this.uri = 'mongodb://localhost:27017/learnit';
+    // Use an environment-aware MongoDB connection string
+    // For development environments, this will connect to the local MongoDB
+    // For production or preview, this should connect to the same MongoDB instance
+    this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
+    
+    // Override for development environments where the server might be on a different machine
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      // When running in browser but not on localhost, use relative path which will
+      // connect through the same domain as the web app
+      this.uri = '/api/mongodb';
+    }
+    
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   
