@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { User } from '../models/User';
 import { Machine } from '../models/Machine';
 import { connectDB } from '../config/db';
+import { Booking } from '../models/Booking';
 
 // Load environment variables
 dotenv.config();
@@ -16,17 +17,19 @@ export const seedDatabase = async () => {
     // Check if data already exists
     const userCount = await User.countDocuments();
     const machineCount = await Machine.countDocuments();
+    const bookingCount = await Booking.countDocuments();
     
-    if (userCount > 0 && machineCount > 0) {
-      console.log(`Database already contains ${userCount} users and ${machineCount} machines. Skipping seed.`);
+    if (userCount > 0 && machineCount > 0 && bookingCount > 0) {
+      console.log(`Database already contains ${userCount} users, ${machineCount} machines, and ${bookingCount} bookings. Skipping seed.`);
       return;
     }
 
     // Clear existing data if only partial data exists
-    if (userCount === 0 || machineCount === 0) {
+    if (userCount === 0 || machineCount === 0 || bookingCount === 0) {
       console.log('Clearing existing data to ensure consistent seeding...');
       await User.deleteMany({});
       await Machine.deleteMany({});
+      await Booking.deleteMany({});
     }
 
     // Create admin user
@@ -129,34 +132,38 @@ export const seedDatabase = async () => {
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
     
-    // Format dates as YYYY-MM-DD
-    const formatDate = (date) => {
+    // Format dates as YYYY-MM-DD with proper type annotation
+    const formatDate = (date: Date): string => {
       return date.toISOString().split('T')[0];
     };
     
-    // Create bookings in the User model (embedded bookings)
-    regularUser.bookings = [
+    // Create bookings using the Booking model
+    const bookings = [
       {
-        machineId: createdMachines[0]._id.toString(), // 3D Printer
-        date: formatDate(today),
+        user: regularUser._id,
+        machine: createdMachines[0]._id,
+        date: today,
         time: '10:00 - 12:00',
         status: 'Approved'
       },
       {
-        machineId: createdMachines[1]._id.toString(), // Laser Cutter
-        date: formatDate(tomorrow),
+        user: regularUser._id,
+        machine: createdMachines[1]._id,
+        date: tomorrow,
         time: '14:00 - 16:00',
         status: 'Pending'
       },
       {
-        machineId: createdMachines[2]._id.toString(), // CNC Router
-        date: formatDate(nextWeek),
+        user: regularUser._id,
+        machine: createdMachines[2]._id,
+        date: nextWeek,
         time: '09:00 - 11:00',
         status: 'Pending'
       }
     ];
     
-    await regularUser.save();
+    // Insert bookings
+    await Booking.insertMany(bookings);
     
     console.log('Database seeded successfully!');
   } catch (error) {
