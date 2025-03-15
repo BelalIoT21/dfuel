@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 class MongoDbService {
@@ -41,7 +40,7 @@ class MongoDbService {
       }
 
       console.log('Getting all machines from MongoDB via API');
-      const response = await apiService.getMachines();
+      const response = await apiService.request('GET', '/machines');
       if (response.data && Array.isArray(response.data)) {
         console.log(`Got ${response.data.length} machines from MongoDB`);
         const normalizedData = response.data.map(machine => ({
@@ -233,7 +232,7 @@ class MongoDbService {
       }
 
       console.log('Getting all bookings from MongoDB via API');
-      const response = await apiService.getAllBookings();
+      const response = await apiService.request('GET', '/bookings/all');
       if (response.data && Array.isArray(response.data)) {
         console.log(`Got ${response.data.length} bookings from MongoDB`);
         // Cache the results
