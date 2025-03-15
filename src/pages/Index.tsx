@@ -61,12 +61,36 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    await login(email, password);
+    try {
+      const success = await login(email, password);
+      if (!success) {
+        console.error("Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred during login.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    try {
+      const success = await register(email, password, name);
+      if (!success) {
+        console.error("Registration failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration Error",
+        description: "An unexpected error occurred during registration.",
+        variant: "destructive"
+      });
+    }
   };
 
   const toggleMode = () => {

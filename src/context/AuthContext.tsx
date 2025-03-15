@@ -4,8 +4,9 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { apiService } from '@/services/apiService';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
+// Create the context with undefined as initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -177,7 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
