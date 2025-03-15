@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Calendar } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
+import { useToast } from '@/hooks/use-toast';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -15,18 +16,38 @@ export const PendingBookingsCard = ({
   onBookingStatusChange
 }: PendingBookingsCardProps) => {
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  const { toast } = useToast();
   
   const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected') => {
     setProcessingBookingId(bookingId);
     
     try {
-      await bookingService.updateBookingStatus(bookingId, action);
-      // After updating, trigger refresh of the bookings list
-      if (onBookingStatusChange) {
-        onBookingStatusChange();
+      const success = await bookingService.updateBookingStatus(bookingId, action);
+      
+      if (success) {
+        toast({
+          title: `Booking ${action}`,
+          description: `The booking has been ${action.toLowerCase()} successfully.`
+        });
+        
+        // After updating, trigger refresh of the bookings list
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to update booking status`,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error(`Error ${action.toLowerCase()} booking:`, error);
+      toast({
+        title: "Error",
+        description: `An error occurred while ${action.toLowerCase()} the booking`,
+        variant: "destructive"
+      });
     } finally {
       setProcessingBookingId(null);
     }

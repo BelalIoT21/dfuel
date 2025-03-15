@@ -11,7 +11,7 @@ export class CertificationService {
     try {
       // Try API first
       const response = await apiService.addCertification(userId, machineId);
-      if (response.data?.success) {
+      if (response && response.data?.success) {
         console.log('Successfully added certification via API');
         return true;
       }
@@ -28,9 +28,29 @@ export class CertificationService {
     }
     
     // Fallback to localStorage
-    const result = localStorageService.addCertification(userId, machineId);
-    console.log(`Added certification via localStorage: ${result}`);
-    return result;
+    try {
+      // Get user first
+      const user = localStorageService.findUserById(userId);
+      if (!user) {
+        console.error("User not found in localStorage");
+        return false;
+      }
+      
+      // Check if user already has this certification
+      if (!user.certifications.includes(machineId)) {
+        // Add the certification
+        user.certifications.push(machineId);
+        // Update the user
+        const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
+        console.log(`Added certification via localStorage: ${updated}`);
+        return updated;
+      }
+      
+      return true; // User already has certification
+    } catch (error) {
+      console.error("Error in localStorage fallback:", error);
+      return false;
+    }
   }
   
   // Remove certifications
@@ -39,7 +59,7 @@ export class CertificationService {
     try {
       // Try API first
       const response = await apiService.removeCertification(userId, machineId);
-      if (response.data?.success) {
+      if (response && response.data?.success) {
         console.log('Successfully removed certification via API');
         return true;
       }

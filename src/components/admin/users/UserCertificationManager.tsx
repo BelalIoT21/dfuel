@@ -20,6 +20,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleAddCertification = async (userId: string, machineId: string) => {
     setLoading(machineId);
     try {
+      console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
       const success = await certificationService.addCertification(userId, machineId);
       
       if (success) {
@@ -51,6 +52,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleRemoveCertification = async (userId: string, machineId: string) => {
     setLoading(machineId);
     try {
+      console.log(`Removing certification for machine ID: ${machineId} from user ID: ${userId}`);
       const success = await certificationService.removeCertification(userId, machineId);
       
       if (success) {
@@ -82,22 +84,26 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleMachineSafetyCourse = async (userId: string) => {
     setLoading('machineSafety');
     try {
-      console.log("Adding machine safety course certification");
-      // Use the specific certification method with the safety ID
-      const success = await certificationService.addCertification(userId, "6");
-      
-      if (success) {
-        toast({
-          title: "Machine Safety Course Completed",
-          description: "User has completed the machine safety course."
-        });
-        onCertificationAdded();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add machine safety certification.",
-          variant: "destructive"
-        });
+      console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
+      // Use the localStorageService directly for Machine Safety Course
+      const userCerts = [...user.certifications];
+      if (!userCerts.includes("6")) {
+        userCerts.push("6");
+        const success = await certificationService.addCertification(userId, "6");
+        
+        if (success) {
+          toast({
+            title: "Machine Safety Course Completed",
+            description: "User has completed the machine safety course."
+          });
+          onCertificationAdded();
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add machine safety certification.",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error("Error adding machine safety certification:", error);
@@ -115,22 +121,25 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleRemoveMachineSafetyCourse = async (userId: string) => {
     setLoading('machineSafety');
     try {
-      console.log("Removing machine safety course certification");
-      // Use direct certification removal with the safety ID
-      const success = await certificationService.removeCertification(userId, "6");
-      
-      if (success) {
-        toast({
-          title: "Machine Safety Course Removed",
-          description: "User's machine safety certification has been removed."
-        });
-        onCertificationAdded();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to remove machine safety certification.",
-          variant: "destructive"
-        });
+      console.log(`Removing Machine Safety Course (ID: 6) for user ${userId}`);
+      // Use the localStorageService directly for Machine Safety Course
+      const userCerts = [...user.certifications];
+      if (userCerts.includes("6")) {
+        const success = await certificationService.removeCertification(userId, "6");
+        
+        if (success) {
+          toast({
+            title: "Machine Safety Course Removed",
+            description: "User's machine safety certification has been removed."
+          });
+          onCertificationAdded();
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to remove machine safety certification.",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error("Error removing machine safety certification:", error);
