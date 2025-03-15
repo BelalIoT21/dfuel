@@ -3,7 +3,7 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we don't use localStorage anymore since we're using MongoDB exclusively
+ * For web, we use MongoDB exclusively
  * For native environments, we still use AsyncStorage for session persistence
  */
 class StorageService {

@@ -32,13 +32,12 @@ export const useAuthFunctions = (
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
-        // Save the token for future API requests
+        // Save the token for future API requests in sessionStorage
         if (apiResponse.data.token) {
-          localStorage.setItem('token', apiResponse.data.token);
+          sessionStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -89,13 +88,12 @@ export const useAuthFunctions = (
         console.log("API registration successful:", apiResponse.data);
         const userData = apiResponse.data.user;
         
-        // Save the token for future API requests
+        // Save the token for future API requests in sessionStorage
         if (apiResponse.data.token) {
-          localStorage.setItem('token', apiResponse.data.token);
+          sessionStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -124,8 +122,7 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('learnit_user');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });
