@@ -4,7 +4,7 @@ import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import { apiService } from '@/services/apiService';
 import { storage } from '@/utils/storage';
-import { Platform } from '@/utils/platform';
+import { Platform, isWeb } from '@/utils/platform';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (storedUser) {
           setUser(JSON.parse(storedUser));
-        } else {
+        } else if (isWeb) {
           // For web, try to get from token
           const token = localStorage.getItem('token');
           if (token) {
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.data && response.data.user) {
         const userData = response.data.user;
         
-        if (response.data.token) {
+        if (response.data.token && isWeb) {
           localStorage.setItem('token', response.data.token);
         }
         
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // For native platforms, still store in AsyncStorage
         if (Platform.OS !== 'web') {
           await storage.setItem('learnit_user', JSON.stringify(userData));
-        } else {
+        } else if (isWeb) {
           // For web, just store basic info for session restoration
           localStorage.setItem('learnit_user', JSON.stringify({
             id: userData.id,
@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.data && response.data.user) {
         const userData = response.data.user;
         
-        if (response.data.token) {
+        if (response.data.token && isWeb) {
           localStorage.setItem('token', response.data.token);
         }
         
@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // For native platforms, still store in AsyncStorage
         if (Platform.OS !== 'web') {
           await storage.setItem('learnit_user', JSON.stringify(userData));
-        } else {
+        } else if (isWeb) {
           // For web, just store basic info for session restoration
           localStorage.setItem('learnit_user', JSON.stringify({
             id: userData.id,
@@ -130,8 +130,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Logout function
   const logout = async () => {
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('learnit_user');
+    
+    if (isWeb) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('learnit_user');
+    }
     
     // For native platforms
     if (Platform.OS !== 'web') {
@@ -158,6 +161,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // For native platforms, update AsyncStorage
         if (Platform.OS !== 'web') {
           await storage.setItem('learnit_user', JSON.stringify(updatedUser));
+        } else if (isWeb) {
+          // For web, update minimal session data
+          const storedUser = localStorage.getItem('learnit_user');
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            localStorage.setItem('learnit_user', JSON.stringify({
+              ...parsedUser,
+              certifications: [...(parsedUser.certifications || []), machineId]
+            }));
+          }
         }
         
         return true;
@@ -184,7 +197,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // For native platforms, update AsyncStorage
         if (Platform.OS !== 'web') {
           await storage.setItem('learnit_user', JSON.stringify(updatedUser));
-        } else {
+        } else if (isWeb) {
           // For web, update minimal session data
           const storedUser = localStorage.getItem('learnit_user');
           if (storedUser) {
