@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Info } from 'lucide-react';
 
 const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking }) => {
   if (!bookings || bookings.length === 0) {
@@ -37,7 +37,8 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
                 className="border-purple-200 hover:bg-purple-50"
                 onClick={() => onViewDetails(booking)}
               >
-                View Details
+                <Info size={16} className="mr-1" />
+                View
               </Button>
               
               <Button 
