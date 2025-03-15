@@ -8,8 +8,9 @@ export class CertificationService {
   // Update user certifications
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.addCertification: userId=${userId}, machineId=${machineId}`);
+    console.log(`Adding certification for user ${userId}, machine ${machineId}`);
     try {
-      // Try MongoDB first
+      // Try MongoDB first - ALWAYS PRIORITIZE MONGODB
       try {
         // Direct MongoDB connection is preferred
         const success = await mongoDbService.updateUserCertifications(userId, machineId);
@@ -59,11 +60,11 @@ export class CertificationService {
   // Remove certifications
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.removeCertification: userId=${userId}, machineId=${machineId}`);
+    console.log(`Removing certification for user ${userId}, machine ${machineId}`);
     try {
-      // Try MongoDB first
+      // Try MongoDB first - ALWAYS PRIORITIZE MONGODB
       try {
         // For MongoDB, we need a special remove certification method
-        // We'll simulate this with an update where we filter out the certificationId
         const user = await mongoDbService.getUserById(userId);
         if (user) {
           // Filter out the certification

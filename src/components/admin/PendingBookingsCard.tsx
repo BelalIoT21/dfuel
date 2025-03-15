@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, Loader2 } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -91,7 +91,7 @@ export const PendingBookingsCard = ({
                   onClick={() => handleBookingAction(booking.id, 'Approved')}
                   disabled={processingBookingId === booking.id}
                 >
-                  <CheckCircle className="h-4 w-4 mr-1" />
+                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                   Approve
                 </Button>
                 <Button
@@ -101,7 +101,7 @@ export const PendingBookingsCard = ({
                   onClick={() => handleBookingAction(booking.id, 'Rejected')}
                   disabled={processingBookingId === booking.id}
                 >
-                  <XCircle className="h-4 w-4 mr-1" />
+                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
                 </Button>
               </div>

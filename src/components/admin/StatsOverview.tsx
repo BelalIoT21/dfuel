@@ -1,17 +1,18 @@
-
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
 import { bookingService } from "@/services/bookingService";
+import userDatabase from "@/services/userDatabase";
 
 interface StatsOverviewProps {
-  allUsers: any[];
+  allUsers?: any[];
   machines: any[];
 }
 
-export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
+export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) => {
   const [bookingsCount, setBookingsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [userCount, setUserCount] = useState(0);
   
   // Fetch the actual bookings count
   useEffect(() => {
@@ -33,11 +34,30 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     fetchBookingsCount();
   }, []);
   
+  // Ensure user count is fetched if not provided via props
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (allUsers && allUsers.length > 0) {
+        // Use provided users if available
+        setUserCount(allUsers.length);
+      } else {
+        try {
+          // Otherwise fetch from database
+          console.log("Fetching users for stats overview");
+          const users = await userDatabase.getAllUsers();
+          setUserCount(users.length);
+        } catch (error) {
+          console.error("Error fetching users:", error);
+          setUserCount(0);
+        }
+      }
+    };
+    
+    fetchUsers();
+  }, [allUsers]);
+  
   // Filter out equipment - only count real machines (including Bambu Lab X1 E)
   const realMachines = machines.filter(machine => machine.type !== 'Equipment');
-  
-  // Display the actual user count from the props
-  const userCount = allUsers.length;
   
   // Basic statistics for the admin dashboard
   const stats = [
