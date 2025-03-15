@@ -7,7 +7,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import { setEnv } from '@/utils/env';
+import { setEnv, getEnv } from '@/utils/env';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,6 +20,10 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
+        // Get current API URL for better error messages
+        const currentApiUrl = getEnv('API_URL');
+        console.log("Current API URL:", currentApiUrl);
+        
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check:", response.data);
@@ -102,16 +106,30 @@ const Index = () => {
     const newUrl = window.prompt("Enter new API URL:", currentUrl);
     
     if (newUrl && newUrl !== currentUrl) {
-      setEnv('API_URL', newUrl);
-      toast({
-        title: 'API URL Updated',
-        description: `API URL changed to: ${newUrl}. Please refresh the page.`,
-      });
-      
-      // Refresh the page after 2 seconds to reload with new API URL
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      // Validate URL format
+      try {
+        // Simple URL validation
+        if (!newUrl.startsWith('http')) {
+          throw new Error('URL must start with http:// or https://');
+        }
+        
+        setEnv('API_URL', newUrl);
+        toast({
+          title: 'API URL Updated',
+          description: `API URL changed to: ${newUrl}. Refreshing page...`,
+        });
+        
+        // Refresh the page after 2 seconds to reload with new API URL
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (error) {
+        toast({
+          title: 'Invalid URL',
+          description: error instanceof Error ? error.message : 'Please enter a valid URL',
+          variant: 'destructive'
+        });
+      }
     }
   };
 

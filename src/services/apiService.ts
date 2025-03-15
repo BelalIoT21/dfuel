@@ -2,7 +2,18 @@ import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
 // Use the environment variable for the API URL
-const BASE_URL = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
+const getBaseApiUrl = () => {
+  const url = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
+  
+  // Validate URL format - it should be an HTTP URL, not a MongoDB connection string
+  if (url.startsWith('mongodb://')) {
+    console.error('Invalid API URL format. Using default API URL instead.');
+    // Reset to default in case of MongoDB URI
+    return 'https://learnit-server.onrender.com/api';
+  }
+  
+  return url;
+};
 
 interface ApiResponse<T> {
   data: T | null;
@@ -13,7 +24,7 @@ interface ApiResponse<T> {
 class ApiService {
   // Get the current base URL
   getBaseUrl(): string {
-    return BASE_URL;
+    return getBaseApiUrl();
   }
 
   private async request<T>(
@@ -23,11 +34,15 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
+      const BASE_URL = getBaseApiUrl();
+      
       // Ensure endpoint doesn't start with a slash to avoid double slashes
       const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
       // Build the full URL properly
       const url = `${BASE_URL}/${cleanEndpoint}`;
+      
+      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
       const token = localStorage.getItem('token');
       
@@ -49,7 +64,6 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       const response = await fetch(url, options);
       
       // Handle empty responses gracefully
@@ -68,12 +82,6 @@ class ApiService {
         
         if (response.status === 404) {
           const serverBaseUrl = BASE_URL.split('/api')[0];
-          
-          toast({
-            title: 'API Error',
-            description: `Endpoint not found: ${url}. Please check if the server is running at ${serverBaseUrl}.`,
-            variant: 'destructive'
-          });
           
           return {
             data: null,
