@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff, WifiOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { motion } from 'framer-motion';
@@ -91,20 +91,21 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }
         <CardDescription>
           Enter your credentials to access your account
         </CardDescription>
-        {serverStatus !== 'connected' && (
-          <div className={`flex items-center text-sm mt-2 p-2 rounded-md ${
-            serverStatus === 'connecting' ? 'text-amber-500 bg-amber-50' : 'text-red-500 bg-red-50'
-          }`}>
-            <WifiOff className="h-4 w-4 mr-2" />
-            {serverStatus === 'connecting' ? 'Checking server connection...' : 'Server disconnected. Check if backend is running with MongoDB connected.'}
-          </div>
-        )}
       </CardHeader>
       <CardContent>
         {formError && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
+        
+        {serverStatus === 'disconnected' && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Server disconnected. Check if backend is running with MongoDB connected.
+            </AlertDescription>
           </Alert>
         )}
         

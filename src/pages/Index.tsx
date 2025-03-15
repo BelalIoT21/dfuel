@@ -127,17 +127,6 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          <div className={`mt-2 text-sm ${
-            serverStatus === 'connected' ? 'text-green-600' : 
-            serverStatus === 'connecting' ? 'text-amber-600' : 'text-red-600'
-          }`}>
-            Server status: {serverStatus}
-            {serverStatus === 'disconnected' && (
-              <p className="text-xs mt-1">
-                Make sure the backend server is running on port 4000 and MongoDB is connected
-              </p>
-            )}
-          </div>
         </div>
 
         <AnimatePresence mode="wait">
