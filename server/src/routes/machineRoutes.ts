@@ -3,7 +3,6 @@ import express from 'express';
 import { 
   getMachines, 
   getMachineById, 
-  createMachine, 
   updateMachine, 
   deleteMachine, 
   updateMachineStatus 
@@ -18,20 +17,6 @@ router.get('/', getMachines);
 
 // Get machine by ID
 router.get('/:id', getMachineById);
-
-// Create machine (admin only)
-router.post(
-  '/',
-  protect,
-  admin,
-  [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('type').notEmpty().withMessage('Type is required'),
-    body('description').notEmpty().withMessage('Description is required'),
-    body('difficulty').isIn(['Beginner', 'Intermediate', 'Advanced']).withMessage('Valid difficulty level is required')
-  ],
-  createMachine
-);
 
 // Update machine (admin only)
 router.put('/:id', protect, admin, updateMachine);

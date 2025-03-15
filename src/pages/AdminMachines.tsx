@@ -9,14 +9,11 @@ import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
-import { apiService } from '@/services/apiService';
-import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
 import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isAddingMachine, setIsAddingMachine] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -24,8 +21,8 @@ const AdminMachines = () => {
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  // Form state for new/edit machine
-  const [formData, setFormData] = useState<MachineFormData>({
+  // Form state for edit machine
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
     type: 'Cutting',
@@ -96,53 +93,6 @@ const AdminMachines = () => {
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-  const handleAddMachine = async () => {
-    try {
-      setIsSubmitting(true);
-      
-      // Call the API to create a new machine
-      const newMachine = await machineDatabaseService.createMachine(formData);
-      
-      if (!newMachine) {
-        throw new Error("Failed to create machine");
-      }
-      
-      toast({
-        title: "Machine Added",
-        description: `${formData.name} has been added successfully.`
-      });
-      
-      // Update the machines list
-      setMachinesList(prev => [...prev, newMachine]);
-      
-      // Reset form and state
-      setIsAddingMachine(false);
-      setFormData({
-        name: '',
-        description: '',
-        type: 'Cutting',
-        status: 'Available',
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/placeholder.svg',
-        details: '',
-        specifications: '',
-        certificationInstructions: '',
-        linkedCourseId: '',
-        linkedQuizId: '',
-      });
-    } catch (error) {
-      console.error("Error adding machine:", error);
-      toast({
-        title: "Error Adding Machine",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleEditMachine = (id: string) => {
     setEditingMachineId(id);
@@ -285,40 +235,9 @@ const AdminMachines = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div>
-                <Button onClick={() => setIsAddingMachine(true)}>
-                  Add New Machine
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
-        
-        {isAddingMachine && (
-          <MachineForm
-            formData={formData}
-            setFormData={setFormData}
-            isSubmitting={isSubmitting}
-            onSubmit={handleAddMachine}
-            onCancel={() => setIsAddingMachine(false)}
-            title="Add New Machine"
-            description="Enter the details for the new machine"
-            submitLabel="Add Machine"
-          />
-        )}
-        
-        {editingMachineId && (
-          <MachineForm
-            formData={formData}
-            setFormData={setFormData}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSaveEdit}
-            onCancel={() => setEditingMachineId(null)}
-            title="Edit Machine"
-            description="Update the details for this machine"
-            submitLabel="Save Changes"
-          />
-        )}
         
         <Card>
           <CardHeader>
