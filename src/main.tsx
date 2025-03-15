@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode, Suspense } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
-import { loadEnv, setEnv } from './utils/env';
-import App from './App'; // Move the import to the top level
+import { loadEnv } from './utils/env';
+import App from './App';
 
-// Add console log for debugging
+// Add debug logs
 console.log("Initializing application");
 console.log("Is web environment:", isWeb);
 console.log("Is native platform:", isPlatformNative());
@@ -45,6 +45,10 @@ if (isWeb) {
     console.error("Failed to find the root element");
   } else {
     const root = createRoot(rootElement);
+    
+    // Add additional console logs for debugging
+    console.log("Creating root and rendering app");
+    
     root.render(
       <StrictMode>
         <Suspense fallback={<LoadingFallback />}>
@@ -56,6 +60,5 @@ if (isWeb) {
   }
 } else {
   // For React Native, this file is not the entry point
-  // The entry point is App.native.tsx which is handled by Expo
-  console.log("React Native environment detected");
+  console.log("React Native environment detected - deferring to native entry point");
 }
