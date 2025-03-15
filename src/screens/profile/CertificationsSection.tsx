@@ -20,13 +20,11 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const names: Record<string, string> = {};
       const types: Record<string, string> = {};
       
-      // Set special cases first with consistent naming
-      names["3"] = "Safety Course";
-      types["3"] = "Safety Course";
-      names["5"] = "X1 E Carbon 3D Printer";
-      types["5"] = "3D Printer";
-      names["8"] = "Safety Cabinet";
-      types["8"] = "Safety Cabinet";
+      // Set consistent naming for special cases
+      names["6"] = "Machine Safety Course";
+      types["6"] = "Safety Course";
+      names["3"] = "Safety Cabinet";
+      types["3"] = "Safety Cabinet";
       names["1"] = "Laser Cutter";
       types["1"] = "Laser Cutter";
       names["2"] = "Ultimaker";
@@ -49,7 +47,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Process certifications
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "8"].includes(certId)) continue;
+            if (["1", "2", "3", "6"].includes(certId)) continue;
             
             // First check our map
             if (machineMap[certId]) {
@@ -79,7 +77,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Fall back to individual fetches
           for (const certId of user.certifications) {
             // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "8"].includes(certId)) continue;
+            if (["1", "2", "3", "6"].includes(certId)) continue;
             
             try {
               const machine = await machineService.getMachineById(certId);
