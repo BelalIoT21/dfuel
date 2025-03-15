@@ -1,13 +1,14 @@
-export interface Machine {
+interface Machine {
   id: string;
   name: string;
   description: string;
   image: string;
+  status: string;
+  maintenanceDate: string;
+  type: string;
+  specs?: Record<string, string | string[]>;
   courseCompleted: boolean;
   quizPassed: boolean;
-  specs?: Record<string, string | string[]>;
-  maintenanceDate?: string;
-  status?: string;
 }
 
 export interface CourseContent {
@@ -102,7 +103,8 @@ export const machines: Machine[] = [
       'supported materials': ['Wood', 'Acrylic', 'Paper', 'Leather', 'Glass (engraving only)']
     },
     maintenanceDate: '2023-05-15',
-    status: 'available'
+    status: 'available',
+    type: 'laser'
   },
   {
     id: '2',
@@ -120,7 +122,8 @@ export const machines: Machine[] = [
       'supported materials': ['PLA', 'ABS', 'Nylon', 'TPU', 'CPE', 'PVA']
     },
     maintenanceDate: '2023-06-01',
-    status: 'available'
+    status: 'available',
+    type: '3d-printer'
   },
   {
     id: '4',
@@ -138,7 +141,8 @@ export const machines: Machine[] = [
       features: ['Closed-loop system', 'In-process inspection', 'Composite reinforcement']
     },
     maintenanceDate: '2023-05-30',
-    status: 'available'
+    status: 'available',
+    type: '3d-printer'
   },
   {
     id: '5',
@@ -156,7 +160,8 @@ export const machines: Machine[] = [
       features: ['Core XY', 'Auto bed leveling', 'Multi-material printing', 'AI monitoring']
     },
     maintenanceDate: '2023-06-10',
-    status: 'available'
+    status: 'available',
+    type: '3d-printer'
   },
 ];
 

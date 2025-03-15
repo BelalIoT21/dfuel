@@ -1,12 +1,12 @@
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProfileHeader from '@/components/profile/ProfileHeader';
-import PersonalInfoCard from '@/components/profile/PersonalInfoCard';
-import CertificationsCard from '@/components/profile/CertificationsCard';
-import BookingsCard from '@/components/profile/BookingsCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../.././server/src/components/ui/tabs";
+import ProfileHeader from '../.././server/src/components/profile/ProfileHeader';
+import PersonalInfoCard from '../.././server/src/components/profile/PersonalInfoCard';
+import CertificationsCard from '../.././server/src/components/profile/CertificationsCard';
+import BookingsCard from '../.././server/src/components/profile/BookingsCard';
 import { Loader2 } from 'lucide-react';
 
 const Profile = () => {

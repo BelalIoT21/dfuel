@@ -21,25 +21,11 @@ export const useAuthFunctions = (
       
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
-        
-        // Check if it's a 404 error (endpoint not found)
-        if (apiResponse.status === 404) {
-          const apiUrl = apiResponse.error.includes('http') 
-            ? apiResponse.error.split('Endpoint not found:')[1]?.split('.')[0]?.trim() 
-            : 'API server';
-          
-          toast({
-            title: "Server connection error",
-            description: `Cannot connect to authentication server. Is your server running at ${apiUrl}?`,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Login failed",
-            description: apiResponse.error,
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Login failed",
+          description: apiResponse.error,
+          variant: "destructive"
+        });
         return false;
       }
       
@@ -48,11 +34,11 @@ export const useAuthFunctions = (
         const userData = apiResponse.data.user;
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          // Store token in localStorage for persistence
           localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -109,6 +95,7 @@ export const useAuthFunctions = (
         }
         
         setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -137,6 +124,7 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('learnit_user');
     localStorage.removeItem('token');
     toast({
       description: "Logged out successfully."

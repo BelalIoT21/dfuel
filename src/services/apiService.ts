@@ -1,4 +1,4 @@
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '../../server/src/components/ui/use-toast';
 import { apiConnection } from './api/apiConnection';
 import { apiLogger } from './api/apiLogger';
 
@@ -276,6 +276,10 @@ class ApiService {
       console.log(`Error with alternative endpoint: ${error}`);
       throw error;
     }
+  }
+
+  async deleteBooking(bookingId: string) {
+    return this.request<any>(`bookings/${bookingId}`, 'DELETE');
   }
   
   async cancelBooking(bookingId: string) {

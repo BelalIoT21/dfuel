@@ -1,12 +1,12 @@
-
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '../.././server/src/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../.././server/src/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../.././server/src/components/ui/tabs";
+import { Badge } from '../.././server/src/components/ui/badge';
+import { Progress } from '../.././server/src/components/ui/progress';
+import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { machines, courses, quizzes } from '../utils/data';
 
@@ -48,7 +48,7 @@ const MachineDetail = () => {
       });
       return;
     }
-    
+
     navigate(`/booking/${id}`);
   };
   
@@ -122,7 +122,7 @@ const MachineDetail = () => {
                 
                 <div className="mt-4">
                   <div className="text-sm text-gray-500 mb-1">Certification Progress</div>
-                  <Progress value={progress} className="h-2 bg-purple-100" indicatorClassName="bg-purple-600" />
+                  <Progress value={progress} className="h-2 bg-purple-100 [&>div]:bg-purple-600" />
                   <div className="flex justify-between text-sm mt-1">
                     <span>0%</span>
                     <span>100%</span>

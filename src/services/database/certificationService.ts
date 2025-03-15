@@ -1,7 +1,7 @@
 
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '../../../server/src/components/ui/use-toast';
 
 /**
  * Service that handles all certification-related database operations.

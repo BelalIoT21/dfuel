@@ -1,27 +1,23 @@
 
+import React from 'react';
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
+import { DashboardContent } from '../.././server/src/components/admin/dashboard/DashboardContent';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
-    // If no user is logged in, redirect to login page
-    if (!user) {
-      navigate('/');
-      return;
-    }
-    
-    // If user is not an admin, redirect to home dashboard
-    if (!user.isAdmin) {
-      navigate('/home');
+    // Check if user is not admin and redirect if needed
+    if (user && !user.isAdmin) {
+      console.log('Non-admin user attempted to access admin dashboard, redirecting...');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
-  // Show loading or nothing until redirection happens
+  // If user is not logged in or not admin, don't render the dashboard
   if (!user || !user.isAdmin) {
     return null;
   }

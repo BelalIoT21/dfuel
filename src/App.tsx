@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import Home from './pages/Home';
@@ -12,7 +13,7 @@ import Quiz from './pages/Quiz';
 import ActiveBookings from './pages/ActiveBookings';
 import AdminUsers from './pages/AdminUsers';
 import AdminMachines from './pages/AdminMachines';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from '../server/src/components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 

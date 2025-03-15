@@ -1,15 +1,15 @@
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
+import React, { useState, useEffect } from 'react';
+import { Button } from '../.././server/src/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../.././server/src/components/ui/card';
+import { Calendar } from '../.././server/src/components/ui/calendar';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { machineService } from '@/services/machineService';
-import { bookingService } from '@/services/bookingService';
-import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '../context/AuthContext';
+import { machineService } from '../services/machineService';
+import { bookingService } from '../services/bookingService';
+import { toast } from '../.././server/src/components/ui/use-toast';
 import { format } from 'date-fns';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../.././server/src/components/ui/select';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 
 const timeSlots = [
