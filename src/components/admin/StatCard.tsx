@@ -28,7 +28,7 @@ export const StatCard = ({ title, value, icon, change, link }: StatCardProps) =>
             !change || change === '' 
               ? 'hidden'
               : change === '0' 
-                ? 'text-black' 
+                ? 'hidden' 
                 : change.startsWith('+') 
                   ? 'text-green-600' 
                   : change.startsWith('-') 

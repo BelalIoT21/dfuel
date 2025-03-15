@@ -25,7 +25,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       title: 'Total Users', 
       value: allUsers.length, 
       icon: <Users className="h-5 w-5 text-purple-600" />,
-      change: allUsers.length > 0 ? '+' + allUsers.length : '0',
+      change: '', // Removed change indicator
       link: '/admin/users'
     },
     { 
@@ -39,15 +39,14 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       title: 'Certifications', 
       value: allUsers.reduce((total, user) => total + user.certifications.length, 0), 
       icon: <UserCheck className="h-5 w-5 text-purple-600" />,
-      change: '0',  // Just 0 without +
+      change: '',  // Removed change indicator
       link: '/admin/users'
     },
     { 
       title: 'Active Bookings', 
       value: allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.length : 0), 0), 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
-      change: allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.length : 0), 0) > 0 ? 
-        '+' + allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.length : 0), 0) : '0',
+      change: '', // Removed change indicator
       link: '/admin/bookings'
     },
   ];
