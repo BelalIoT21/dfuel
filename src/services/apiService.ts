@@ -82,12 +82,23 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    return this.request<{ status: string, message: string, database: any, server: any }>(
+    console.log('Checking server health via API');
+    const response = await this.request<{ 
+      status: string;
+      message: string;
+      database: any;
+      server: any;
+      environment: string;
+      timestamp: string;
+    }>(
       'health',
       'GET',
       undefined,
       false
     );
+    
+    console.log('Health check response:', response);
+    return response;
   }
   
   // User endpoints

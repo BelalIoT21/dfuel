@@ -91,6 +91,17 @@ class ConnectionManager {
       const wasConnected = this.isConnected;
       this.isConnected = response.ok;
       
+      console.log(`Connection check result: ${this.isConnected ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
+      
+      // Parse the response JSON for better logging
+      let responseData = null;
+      try {
+        responseData = await response.clone().json();
+        console.log('Health check response data:', responseData);
+      } catch (e) {
+        console.log('Could not parse health check response as JSON');
+      }
+      
       // Only notify if the status changed
       if (wasConnected !== this.isConnected) {
         this.notifyListeners();
