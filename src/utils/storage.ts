@@ -3,18 +3,14 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we use localStorage directly
+ * For web, we don't use localStorage and rely on MongoDB exclusively
  * For native environments, we use AsyncStorage directly as needed
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      try {
-        return localStorage.getItem(key);
-      } catch (error) {
-        console.error('localStorage error in getItem:', error);
-        return null;
-      }
+      console.log('Web environment - MongoDB only, localStorage disabled');
+      return null;
     } else {
       try {
         // Use a safer approach to access AsyncStorage in native environments
@@ -32,11 +28,7 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      try {
-        localStorage.setItem(key, value);
-      } catch (error) {
-        console.error('localStorage error in setItem:', error);
-      }
+      console.log('Web environment - MongoDB only, localStorage disabled');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -51,11 +43,7 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.error('localStorage error in removeItem:', error);
-      }
+      console.log('Web environment - MongoDB only, localStorage disabled');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
