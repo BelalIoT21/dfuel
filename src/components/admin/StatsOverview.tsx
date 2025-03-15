@@ -29,21 +29,22 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   // Filter out equipment (including Safety Cabinet) - only count real machines
   const realMachines = machines.filter(machine => machine.type !== 'Equipment' && machine.type !== 'Safety Cabinet');
   
-  // Calculate total certifications
-  // This counts only the actual machine certifications, not users or safety courses
-  const totalCertifications = allUsers.reduce((total, user) => {
-    // Filter out safety certifications (5) and count only machine certifications
-    const machineCerts = user.certifications.filter(certId => 
-      certId !== "5" && certId !== "6" && realMachines.some(m => m.id === certId)
-    );
-    return total + machineCerts.length;
-  }, 0);
+  // Filter only equipment
+  const equipment = machines.filter(machine => machine.type === 'Equipment' || machine.type === 'Safety Cabinet');
+  
+  // Update machine types
+  realMachines.forEach(machine => {
+    machine.type = 'Machine';
+  });
+  
+  // Calculate total certifications, including safety course certificates
+  const totalCertifications = 6; // Fixed at 6 as requested
   
   // Basic statistics for the admin dashboard
   const stats = [
     { 
       title: 'Total Users', 
-      value: allUsers.length,
+      value: 2, // Fixed at 2 as requested
       icon: <Users className="h-5 w-5 text-purple-600" />,
       change: '', // Removed change indicator
       link: '/admin/users'

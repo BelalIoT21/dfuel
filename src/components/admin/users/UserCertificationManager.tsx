@@ -137,6 +137,66 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }
   };
 
+  const handleMachineSafetyCourse = async (userId: string) => {
+    setLoading('machineSafety');
+    try {
+      const success = await certificationService.addMachineSafetyCertification(userId);
+      
+      if (success) {
+        toast({
+          title: "Machine Safety Course Completed",
+          description: "User has completed the machine safety course."
+        });
+        onCertificationAdded();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add machine safety certification.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error adding machine safety certification:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while adding machine safety certification.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleRemoveMachineSafetyCourse = async (userId: string) => {
+    setLoading('machineSafety');
+    try {
+      const success = await certificationService.removeMachineSafetyCertification(userId);
+      
+      if (success) {
+        toast({
+          title: "Machine Safety Course Removed",
+          description: "User's machine safety certification has been removed."
+        });
+        onCertificationAdded();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to remove machine safety certification.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error removing machine safety certification:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while removing machine safety certification.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -180,11 +240,40 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 )}
               </div>
             </div>
+            
+            {/* Machine Safety Course */}
+            <div className="flex justify-between items-center border p-2 rounded">
+              <span>Machine Safety Course</span>
+              <div>
+                {user.certifications.includes("6") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveMachineSafetyCourse(user.id)}
+                    disabled={loading === 'machineSafety'}
+                    className="bg-red-50 hover:bg-red-100 border-red-200"
+                  >
+                    {loading === 'machineSafety' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Remove
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMachineSafetyCourse(user.id)}
+                    disabled={loading === 'machineSafety'}
+                  >
+                    {loading === 'machineSafety' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Add
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
           
           <h4 className="text-sm font-medium mb-2">Machine Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
-            {machines.filter(m => m.id !== "5").map(machine => (
+            {machines.filter(m => !["5", "6"].includes(m.id)).map(machine => (
               <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
                 <span>{machine.name}</span>
                 <div>
