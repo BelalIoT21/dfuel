@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 import userDatabase from '../services/userDatabase';
 import { UserSearch } from '../components/admin/users/UserSearch';
 import { UsersTable } from '../components/admin/users/UsersTable';
-import { AdminAccessRequired } from '../components/admin/users/AdminAccessRequired';
 import { UserWithoutSensitiveInfo } from '../types/database';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { StatsOverview } from '@/components/admin/StatsOverview';
@@ -13,16 +12,16 @@ import { machines } from '@/utils/data';
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const AdminUsers = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserWithoutSensitiveInfo[]>([]);
-  const { user } = useAuth(); // Get user from AuthContext instead of localStorage
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
-  const isAdmin = user?.isAdmin || false;
+  const navigate = useNavigate();
   
   const fetchUsers = async () => {
     setRefreshing(true);
@@ -45,8 +44,14 @@ const AdminUsers = () => {
   };
   
   useEffect(() => {
+    // Redirect non-authenticated users to login page
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    
     fetchUsers();
-  }, [toast]);
+  }, [toast, user, navigate]);
 
   if (loading) {
     return (
@@ -54,10 +59,6 @@ const AdminUsers = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     );
-  }
-
-  if (!isAdmin) {
-    return <AdminAccessRequired />;
   }
 
   const handleUserAdded = (newUser: UserWithoutSensitiveInfo) => {
