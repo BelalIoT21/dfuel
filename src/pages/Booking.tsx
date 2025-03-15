@@ -10,9 +10,7 @@ import { bookingService } from '@/services/bookingService';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, Loader2, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 
 const timeSlots = [
   '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', 
@@ -29,8 +27,6 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState<any>(null);
 
   useEffect(() => {
     // Ensure machines are in MongoDB (for server versions)
@@ -86,16 +82,11 @@ const BookingPage = () => {
       );
       
       if (success) {
-        // Store booking details for the success dialog
-        setBookingDetails({
-          machineName: machine.name,
-          date: formattedDate,
-          time: selectedTime,
-          status: user.isAdmin ? 'Approved' : 'Pending'
+        toast({
+          title: 'Booking Successful',
+          description: `You have booked ${machine.name} on ${formattedDate} at ${selectedTime}`,
         });
-        
-        // Show the success dialog instead of toast
-        setShowSuccessDialog(true);
+        navigate('/profile');
       } else {
         setError('Failed to create booking. Please try again.');
         toast({
@@ -139,11 +130,6 @@ const BookingPage = () => {
           });
       }
     }, 1000);
-  };
-
-  const handleSuccessClose = () => {
-    setShowSuccessDialog(false);
-    navigate('/profile');
   };
 
   if (loading) {
@@ -257,70 +243,6 @@ const BookingPage = () => {
           </Button>
         </CardFooter>
       </Card>
-
-      {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-green-600">Booking Successful!</DialogTitle>
-            <DialogDescription className="text-center">
-              Your booking has been submitted
-            </DialogDescription>
-          </DialogHeader>
-          
-          {bookingDetails && (
-            <div className="space-y-4 py-4">
-              <div className="flex items-center justify-center">
-                <div className="rounded-full bg-green-100 p-3">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-500">Machine:</span>
-                  <span className="font-semibold">{bookingDetails.machineName}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>Date:</span>
-                  </div>
-                  <span>{bookingDetails.date}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Clock className="h-4 w-4" />
-                    <span>Time:</span>
-                  </div>
-                  <span>{bookingDetails.time}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-500">Status:</span>
-                  <Badge className={bookingDetails.status === 'Pending' ? 'bg-yellow-500' : 'bg-green-500'}>
-                    {bookingDetails.status}
-                  </Badge>
-                </div>
-              </div>
-              
-              {bookingDetails.status === 'Pending' && (
-                <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200 text-sm text-yellow-800">
-                  <p className="font-medium mb-1">Pending Admin Approval</p>
-                  <p>Your booking requires administrator approval. You'll be notified when it's approved.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button className="w-full" onClick={handleSuccessClose}>
-              Go to My Bookings
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

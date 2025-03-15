@@ -44,40 +44,7 @@ export class BookingService {
       return [];
     }
   }
-  
-  // Update booking status (for admin approval/rejection)
-  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
-    console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
-    
-    try {
-      // First try the API
-      const response = await apiService.updateBookingStatus(bookingId, status);
-      if (response.data) {
-        console.log("Booking status updated via API");
-        return true;
-      }
-      
-      // If API fails, try updating in MongoDB directly (if not in web)
-      if (!isWeb) {
-        try {
-          // This would need implementation in MongoDB service
-          // For now, return false as this is not implemented
-          console.log("API failed, but MongoDB direct update not implemented");
-          return false;
-        } catch (mongoError) {
-          console.error("MongoDB error when updating booking status:", mongoError);
-        }
-      }
-      
-      return false;
-    } catch (error) {
-      console.error("Error in BookingService.updateBookingStatus:", error);
-      return false;
-    }
-  }
 }
 
 // Create a singleton instance
 export const bookingService = new BookingService();
-
-import { apiService } from './apiService';
