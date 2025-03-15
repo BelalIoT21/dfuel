@@ -1,6 +1,8 @@
 
 import { Users, Settings, CalendarClock, UserCheck, ShieldCheck } from "lucide-react";
 import { StatCard } from "./StatCard";
+import { useEffect, useState } from "react";
+import { bookingService } from "@/services/bookingService";
 
 interface StatsOverviewProps {
   allUsers: any[];
@@ -8,6 +10,22 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
+  const [bookingsCount, setBookingsCount] = useState(0);
+  
+  // Fetch the actual bookings count
+  useEffect(() => {
+    const fetchBookingsCount = async () => {
+      try {
+        const bookings = await bookingService.getAllBookings();
+        setBookingsCount(bookings.length);
+      } catch (error) {
+        console.error("Error fetching bookings count:", error);
+      }
+    };
+    
+    fetchBookingsCount();
+  }, []);
+  
   // Filter out equipment (including Safety Cabinet) - only count real machines
   const realMachines = machines.filter(machine => machine.type !== 'Equipment' && machine.type !== 'Safety Cabinet');
   
@@ -47,7 +65,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     },
     { 
       title: 'Active Bookings', 
-      value: allUsers.reduce((total, user) => total + (user.bookings ? user.bookings.length : 0), 0), 
+      value: bookingsCount, 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
       change: '', // Removed change indicator
       link: '/admin/bookings'

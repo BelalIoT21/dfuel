@@ -1,4 +1,3 @@
-
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoConnectionService from './mongodb/connectionService';
@@ -95,7 +94,7 @@ class MongoDbService {
       }
       
       const bookings = await response.json();
-      console.log('Successfully retrieved all bookings:', bookings.length);
+      console.log('Successfully retrieved all bookings from MongoDB:', bookings.length);
       return bookings;
     } catch (error) {
       console.error('Error in MongoDbService.getAllBookings:', error);

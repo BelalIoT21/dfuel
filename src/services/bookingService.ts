@@ -142,15 +142,21 @@ export class BookingService {
       
       // If API fails, try MongoDB directly
       if (!isWeb) {
-        const bookings = await mongoDbService.getAllBookings();
-        if (bookings && bookings.length > 0) {
-          console.log("Retrieved all bookings from MongoDB:", bookings.length);
-          return bookings;
+        try {
+          const bookings = await mongoDbService.getAllBookings();
+          if (bookings && bookings.length > 0) {
+            console.log("Retrieved all bookings from MongoDB:", bookings.length);
+            return bookings;
+          }
+        } catch (mongoError) {
+          console.error("MongoDB error when fetching bookings:", mongoError);
         }
       }
       
       // As a last resort, use bookingDatabaseService
-      return bookingDatabaseService.getAllPendingBookings(); // This will get all bookings, not just pending
+      const bookings = await bookingDatabaseService.getAllPendingBookings();
+      console.log("Retrieved all bookings from local database:", bookings.length);
+      return bookings;
     } catch (error) {
       console.error("Error in BookingService.getAllBookings:", error);
       return [];

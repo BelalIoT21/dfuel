@@ -9,6 +9,8 @@ export interface IMachine extends mongoose.Document {
   requiresCertification: boolean;
   maintenanceNote?: string;
   bookedTimeSlots: string[]; // Format: YYYY-MM-DD-HH:MM
+  difficulty?: string; // Add the missing difficulty property
+  imageUrl?: string; // Add the missing imageUrl property
   
   // Add a method to add and remove booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -44,6 +46,12 @@ const machineSchema = new mongoose.Schema<IMachine>(
     bookedTimeSlots: {
       type: [String],
       default: [],
+    },
+    difficulty: {
+      type: String,
+    },
+    imageUrl: {
+      type: String,
     },
   },
   {

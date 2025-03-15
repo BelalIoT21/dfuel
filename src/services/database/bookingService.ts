@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import { userDatabaseService } from './userService';
@@ -221,7 +220,11 @@ export class BookingDatabaseService extends BaseService {
               ...booking,
               userName: user.name,
               userEmail: user.email,
-              userId: user.id
+              userId: user.id,
+              // Add additional fields to match MongoDB response format
+              _id: booking.id,
+              machineName: `Machine ${booking.machineId}`, // Provide a default machine name
+              machineType: 'Unknown Type',
             });
           }
         }
