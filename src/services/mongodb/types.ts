@@ -26,3 +26,15 @@ export interface MongoMachineStatus {
   status: string;
   note?: string;
 }
+
+export interface MongoMachine {
+  _id: string;
+  name: string;
+  type: string;
+  description: string;
+  status: string;
+  requiresCertification: boolean;
+  difficulty: string;
+  maintenanceNote?: string;
+  imageUrl?: string;
+}

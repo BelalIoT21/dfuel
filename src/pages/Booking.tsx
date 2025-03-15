@@ -29,6 +29,11 @@ const BookingPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Ensure machines are in MongoDB (for server versions)
+    machineService.ensureMachinesInMongoDB().catch(err => {
+      console.error("Error ensuring machines in MongoDB:", err);
+    });
+
     async function loadMachine() {
       try {
         if (!id) return;

@@ -2,6 +2,7 @@
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { machines } from '../utils/data';
+import { isWeb } from '../utils/platform';
 
 export class MachineService {
   // Update machine status
@@ -65,7 +66,7 @@ export class MachineService {
     return localStorageService.getMachineMaintenanceNote(machineId);
   }
   
-  // Get machine by ID - new method to fix the booking page
+  // Get machine by ID - fixed method to work with web and native environments
   async getMachineById(machineId: string): Promise<any | null> {
     try {
       console.log(`Getting machine by ID: ${machineId}`);
@@ -89,24 +90,71 @@ export class MachineService {
     }
   }
   
-  // Helper method to get machines
+  // Helper method to get machines - now properly handles web and native environments
   async getMachines(): Promise<any[]> {
     try {
-      const machines = require('../utils/data').machines;
-      
-      // Update machine types based on whether they are regular machines or safety equipment
-      machines.forEach((machine: any) => {
-        if (machine.type === 'Safety Cabinet') {
-          machine.type = 'Equipment';
-        } else {
-          machine.type = 'Machine';
+      // First try to get machines from MongoDB (for consistency across devices)
+      if (!isWeb) {
+        try {
+          const mongoMachines = await mongoDbService.getMachines();
+          if (mongoMachines && mongoMachines.length > 0) {
+            return mongoMachines.map(machine => ({
+              id: machine._id.toString(),
+              name: machine.name,
+              type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine',
+              description: machine.description,
+              status: machine.status.toLowerCase(),
+              requiresCertification: machine.requiresCertification,
+              difficulty: machine.difficulty,
+              imageUrl: machine.imageUrl
+            }));
+          }
+        } catch (mongoError) {
+          console.error("Failed to get machines from MongoDB:", mongoError);
         }
-      });
+      }
       
-      return machines;
+      // Fallback to local data
+      return machines.map(machine => ({
+        ...machine,
+        type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine'
+      }));
     } catch (error) {
       console.error("Error getting machines data:", error);
       return [];
+    }
+  }
+  
+  // Method to ensure all machines are in MongoDB
+  async ensureMachinesInMongoDB(): Promise<boolean> {
+    if (isWeb) return false; // Skip in web environment
+    
+    try {
+      // Get local machines data
+      const localMachines = machines;
+      
+      // Add each machine to MongoDB if it doesn't exist
+      for (const machine of localMachines) {
+        const exists = await mongoDbService.machineExists(machine.id);
+        if (!exists) {
+          await mongoDbService.addMachine({
+            _id: machine.id,
+            name: machine.name,
+            type: machine.type,
+            description: machine.description || 'No description available',
+            status: 'Available',
+            requiresCertification: !!machine.requiresCertification,
+            difficulty: machine.difficulty || 'Beginner',
+            imageUrl: machine.imageUrl || '/placeholder.svg'
+          });
+        }
+      }
+      
+      console.log("Successfully ensured all machines exist in MongoDB");
+      return true;
+    } catch (error) {
+      console.error("Error ensuring machines in MongoDB:", error);
+      return false;
     }
   }
 }

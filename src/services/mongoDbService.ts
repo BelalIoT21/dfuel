@@ -2,7 +2,7 @@
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoConnectionService from './mongodb/connectionService';
-import { MongoUser, MongoMachineStatus } from './mongodb/types';
+import { MongoUser, MongoMachineStatus, MongoMachine } from './mongodb/types';
 import { isWeb } from '../utils/platform';
 
 // Maintains the same API as the original monolithic service
@@ -58,6 +58,22 @@ class MongoDbService {
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     if (isWeb) return false;
     return mongoMachineService.updateMachineStatus(machineId, status, note);
+  }
+  
+  // New machine methods
+  async getMachines(): Promise<MongoMachine[]> {
+    if (isWeb) return [];
+    return mongoMachineService.getMachines();
+  }
+  
+  async machineExists(machineId: string): Promise<boolean> {
+    if (isWeb) return false;
+    return mongoMachineService.machineExists(machineId);
+  }
+  
+  async addMachine(machine: MongoMachine): Promise<boolean> {
+    if (isWeb) return false;
+    return mongoMachineService.addMachine(machine);
   }
   
   // Connection method

@@ -1,22 +1,28 @@
 
 import { Collection } from 'mongodb';
-import { MongoMachineStatus } from './types';
+import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
 
 class MongoMachineService {
   private machineStatusesCollection: Collection<MongoMachineStatus> | null = null;
+  private machinesCollection: Collection<MongoMachine> | null = null;
   
-  async initCollection(): Promise<void> {
-    if (!this.machineStatusesCollection) {
-      const db = await mongoConnectionService.connect();
-      if (db) {
-        this.machineStatusesCollection = db.collection<MongoMachineStatus>('machineStatuses');
+  async initCollections(): Promise<void> {
+    try {
+      if (!this.machineStatusesCollection || !this.machinesCollection) {
+        const db = await mongoConnectionService.connect();
+        if (db) {
+          this.machineStatusesCollection = db.collection<MongoMachineStatus>('machineStatuses');
+          this.machinesCollection = db.collection<MongoMachine>('machines');
+        }
       }
+    } catch (error) {
+      console.error("Error initializing MongoDB collections:", error);
     }
   }
   
   async getMachineStatuses(): Promise<MongoMachineStatus[]> {
-    await this.initCollection();
+    await this.initCollections();
     if (!this.machineStatusesCollection) return [];
     
     try {
@@ -28,7 +34,7 @@ class MongoMachineService {
   }
   
   async getMachineStatus(machineId: string): Promise<MongoMachineStatus | null> {
-    await this.initCollection();
+    await this.initCollections();
     if (!this.machineStatusesCollection) return null;
     
     try {
@@ -40,7 +46,7 @@ class MongoMachineService {
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
-    await this.initCollection();
+    await this.initCollections();
     if (!this.machineStatusesCollection) return false;
     
     try {
@@ -53,6 +59,66 @@ class MongoMachineService {
       return result.acknowledged;
     } catch (error) {
       console.error("Error updating machine status in MongoDB:", error);
+      return false;
+    }
+  }
+  
+  // New methods for machine document management
+  async getMachines(): Promise<MongoMachine[]> {
+    await this.initCollections();
+    if (!this.machinesCollection) return [];
+    
+    try {
+      return await this.machinesCollection.find().toArray();
+    } catch (error) {
+      console.error("Error getting machines from MongoDB:", error);
+      return [];
+    }
+  }
+  
+  async getMachineById(machineId: string): Promise<MongoMachine | null> {
+    await this.initCollections();
+    if (!this.machinesCollection) return null;
+    
+    try {
+      return await this.machinesCollection.findOne({ _id: machineId });
+    } catch (error) {
+      console.error("Error getting machine by ID from MongoDB:", error);
+      return null;
+    }
+  }
+  
+  async machineExists(machineId: string): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection) return false;
+    
+    try {
+      const count = await this.machinesCollection.countDocuments({ _id: machineId });
+      return count > 0;
+    } catch (error) {
+      console.error("Error checking if machine exists in MongoDB:", error);
+      return false;
+    }
+  }
+  
+  async addMachine(machine: MongoMachine): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection) return false;
+    
+    try {
+      // Check if the machine already exists
+      const exists = await this.machineExists(machine._id);
+      if (exists) {
+        console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
+        return true;
+      }
+      
+      // Add the machine to the collection
+      const result = await this.machinesCollection.insertOne(machine);
+      console.log(`Machine with ID ${machine._id} added to MongoDB`);
+      return result.acknowledged;
+    } catch (error) {
+      console.error("Error adding machine to MongoDB:", error);
       return false;
     }
   }
