@@ -49,6 +49,19 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setIsMachineStatusDialogOpen(false);
   };
 
+  // Function to get displayed machine type
+  const getMachineType = (machine) => {
+    // Handle special machine types
+    if (machine.id === "3") {
+      return "Safety Cabinet";
+    } else if (machine.id === "6") {
+      return "Safety Course";
+    }
+    
+    // Return machine type or "Unknown" if it's empty/undefined
+    return machine.type || "Unknown";
+  };
+
   return (
     <>
       <Card className="border-purple-100">
@@ -63,6 +76,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             {sortedMachineData.length > 0 ? (
               sortedMachineData.map((machine) => {
                 const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
+                const machineType = getMachineType(machine);
                 
                 return (
                   <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
@@ -71,7 +85,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                         {machine.name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Type: {machine.type}
+                        {machineType && `Type: ${machineType}`}
                         {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
                       </div>
                     </div>

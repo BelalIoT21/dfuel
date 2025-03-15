@@ -38,6 +38,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     machineType = "Safety Course";
   }
   
+  // Only display machineType chip if there's an actual value
+  const showMachineType = machineType && machineType.trim() !== '';
   const isCertified = userCertifications.includes(machine.id);
 
   return (
@@ -60,7 +62,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
               {getStatusLabel(machine.status)}
             </Chip>
             
-            {machineType && (
+            {showMachineType && (
               <Chip 
                 style={{backgroundColor: '#3b82f620'}}
                 textStyle={{color: '#3b82f6'}}
