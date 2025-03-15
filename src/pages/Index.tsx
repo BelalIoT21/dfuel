@@ -9,7 +9,7 @@ import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { ConnectionStatus } from '@/components/common/ConnectionStatus';
 import { AlertCircle, Database, HardDrive, Server } from 'lucide-react';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { connectionManager } from '@/services/api/connectionManager';
 
 const Index = () => {
@@ -78,12 +78,7 @@ const Index = () => {
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    try {
-      await register(email, password, name);
-    } catch (error) {
-      console.error("Registration error:", error);
-      throw error; // Rethrow so the form can handle it
-    }
+    await register(email, password, name);
   };
 
   const toggleMode = () => {

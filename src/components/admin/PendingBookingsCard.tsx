@@ -36,7 +36,7 @@ export const PendingBookingsCard = ({
       
       if (action === 'Deleted') {
         // Try MongoDB to delete the booking
-        const success = await bookingService.deleteBooking(bookingId);
+        const success = await mongoDbService.deleteBooking(bookingId);
         console.log(`MongoDB deleteBooking result: ${success}`);
         
         if (success) {
@@ -57,9 +57,9 @@ export const PendingBookingsCard = ({
           });
         }
       } else {
-        // Handle approval/rejection through BookingService
-        const success = await bookingService.updateBookingStatus(bookingId, action);
-        console.log(`BookingService updateBookingStatus result: ${success}`);
+        // Handle approval/rejection through MongoDB
+        const success = await mongoDbService.updateBookingStatus(bookingId, action);
+        console.log(`MongoDB updateBookingStatus result: ${success}`);
         
         if (success) {
           toast({
@@ -117,33 +117,22 @@ export const PendingBookingsCard = ({
             
             // Determine machine name with special handling for known IDs
             let machineName = booking.machineName || `Machine ${booking.machineId}`;
-            let machineId = booking.machineId;
-            
-            // Handle cases where machineId is an object
-            if (booking.machineId && typeof booking.machineId === 'object') {
-              machineId = booking.machineId._id || booking.machineId.id;
-            }
-            
-            if (machineId === "1" || machineId === 1 || machineId === "67d5658be9267b302f7aa015") {
+            if (booking.machineId === "1" || booking.machineId === 1) {
               machineName = "Laser Cutter";
-            } else if (machineId === "2" || machineId === 2 || machineId === "67d5658be9267b302f7aa016") {
+            } else if (booking.machineId === "2" || booking.machineId === 2) {
               machineName = "Ultimaker";
-            } else if (machineId === "3" || machineId === 3) {
+            } else if (booking.machineId === "3" || booking.machineId === 3) {
               machineName = "Safety Cabinet";
-            } else if (machineId === "4" || machineId === 4 || machineId === "67d5658be9267b302f7aa017") {
+            } else if (booking.machineId === "4" || booking.machineId === 4) {
               machineName = "X1 E Carbon 3D Printer";
-            } else if (machineId === "5" || machineId === 5) {
+            } else if (booking.machineId === "5" || booking.machineId === 5) {
               machineName = "Bambu Lab X1 E";
-            } else if (machineId === "6" || machineId === 6) {
+            } else if (booking.machineId === "6" || booking.machineId === 6) {
               machineName = "Machine Safety Course";
-            } else if (booking.machineId && booking.machineId.name) {
-              // If we still have a machine object with name
-              machineName = booking.machineId.name;
+            } else if (booking.machineId?._id) {
+              // Handle nested machine object
+              machineName = booking.machineId.name || machineName;
             }
-            
-            // Get the user info
-            const userName = booking.userName || (booking.user && booking.user.name) || 'User';
-            const userId = booking.userId || (booking.user && (booking.user._id || booking.user.id)) || '';
             
             return (
               <div 
@@ -155,7 +144,7 @@ export const PendingBookingsCard = ({
                     {machineName}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {userName} ({userId}) • {booking.date} at {booking.time}
+                    {booking.userName || 'User'} • {booking.date} at {booking.time}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

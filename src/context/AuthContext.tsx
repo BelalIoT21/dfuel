@@ -1,10 +1,11 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
-import { toast } from '@/components/ui/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -12,11 +13,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage or tokens on initial load
+  // Load user from tokens on initial load (web) or storage (native)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // For native, try to get from AsyncStorage
+        // For native, still try to get from AsyncStorage
         const storedUser = await storage.getItem('learnit_user');
         
         if (storedUser) {
@@ -27,9 +28,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (token) {
             try {
               const response = await apiService.getCurrentUser();
-              if (response.data) {
-                setUser(response.data);
-                localStorage.setItem('learnit_user', JSON.stringify(response.data));
+              if (response.data && response.data.user) {
+                setUser(response.data.user);
               }
             } catch (error) {
               console.error('Error getting current user:', error);
@@ -49,71 +49,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Login function
   const login = async (email: string, password: string) => {
     try {
-      console.log("Login attempt for:", email);
+      const authenticatedUser = await userDatabase.authenticate(email, password);
       
-      // First try API login
-      const apiResponse = await apiService.login(email, password);
-      
-      if (apiResponse.data && apiResponse.data.token) {
-        // Successfully authenticated via API
-        console.log("Login successful via API");
-        const userData = apiResponse.data;
-        
-        // Ensure we have both user data and token
-        if (userData) {
-          // Store token for future API requests
-          localStorage.setItem('token', userData.token);
-          
-          // Store user data without sensitive info
-          const userToStore = userData;
-          setUser(userToStore);
-          localStorage.setItem('learnit_user', JSON.stringify(userToStore));
-          
-          toast({
-            title: "Login successful",
-            description: `Welcome back, ${userToStore.name || 'User'}!`
-          });
-          
-          return true;
-        }
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        return true;
+      } else {
+        throw new Error('Invalid credentials');
       }
-      
-      // If API login fails, fallback to local authentication
-      if (apiResponse.error) {
-        console.warn("API login failed, falling back to local auth:", apiResponse.error);
-        
-        const authenticatedUser = await userDatabase.authenticate(email, password);
-        
-        if (authenticatedUser) {
-          setUser(authenticatedUser);
-          // For native, still store in AsyncStorage
-          await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
-          
-          toast({
-            title: "Login successful",
-            description: `Welcome back, ${authenticatedUser.name || 'User'}!`
-          });
-          
-          return true;
-        }
-      }
-      
-      toast({
-        title: "Login failed",
-        description: "Invalid credentials. Please check your email and password.",
-        variant: "destructive"
-      });
-      
-      throw new Error("Invalid credentials");
     } catch (error) {
       console.error('Login error:', error);
-      
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during login",
-        variant: "destructive"
-      });
-      
       throw error;
     }
   };
@@ -121,82 +68,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Register function
   const register = async (email: string, password: string, name: string) => {
     try {
-      console.log("Registration attempt for:", email);
+      const newUser = await userDatabase.registerUser(email, password, name);
       
-      // First try API registration
-      const apiResponse = await apiService.register({ email, password, name });
-      
-      if (apiResponse.data && apiResponse.data.token) {
-        // Successfully registered via API
-        console.log("Registration successful via API");
-        const userData = apiResponse.data;
-        
-        // Ensure we have both user data and token
-        if (userData) {
-          // Store token for future API requests
-          localStorage.setItem('token', userData.token);
-          
-          // Store user data without sensitive info
-          const userToStore = userData;
-          setUser(userToStore);
-          localStorage.setItem('learnit_user', JSON.stringify(userToStore));
-          
-          toast({
-            title: "Registration successful",
-            description: `Welcome, ${userToStore.name || 'User'}!`
-          });
-          
-          return true;
-        }
+      if (newUser) {
+        setUser(newUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
+        return true;
+      } else {
+        throw new Error('Registration failed');
       }
-      
-      // If API registration fails with a specific error, show it
-      if (apiResponse.error) {
-        console.warn("API registration failed:", apiResponse.error);
-        
-        // Check if it's a "user already exists" error from API
-        if (apiResponse.error.includes("already exists")) {
-          toast({
-            title: "Registration failed",
-            description: "A user with this email already exists",
-            variant: "destructive"
-          });
-          throw new Error("User already exists");
-        }
-        
-        // Fallback to local registration
-        console.log("Falling back to local registration");
-        const newUser = await userDatabase.registerUser(email, password, name);
-        
-        if (newUser) {
-          setUser(newUser);
-          await storage.setItem('learnit_user', JSON.stringify(newUser));
-          
-          toast({
-            title: "Registration successful",
-            description: `Welcome, ${newUser.name || 'User'}!`
-          });
-          
-          return true;
-        }
-      }
-      
-      toast({
-        title: "Registration failed",
-        description: "Could not create your account. Please try again later.",
-        variant: "destructive"
-      });
-      
-      throw new Error("Registration failed");
     } catch (error) {
       console.error('Registration error:', error);
-      
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "An error occurred during registration",
-        variant: "destructive"
-      });
-      
       throw error;
     }
   };
@@ -206,11 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     localStorage.removeItem('token');
     await storage.removeItem('learnit_user');
-    
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out"
-    });
   };
 
   // Add certification
@@ -278,7 +156,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return success;
     } catch (error) {
       console.error('Error changing password:', error);
-      return false;
+      throw error;
     }
   };
 
@@ -308,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     register,
     logout,
-    addCertification: userDatabase.addCertification,
+    addCertification,
     updateProfile,
     changePassword,
     requestPasswordReset,

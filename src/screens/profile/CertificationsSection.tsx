@@ -19,14 +19,14 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const types = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
-          // Handle specific machine IDs directly
-          if (certId === "1" || certId === 1 || certId === "67d5658be9267b302f7aa015") {
-            names[certId] = "Laser Cutter";
-            types[certId] = "Machine";
+          // Handle special cases directly
+          if (certId === "6" || certId === 6) {
+            names[certId] = "Machine Safety Course";
+            types[certId] = "Safety Course";
             continue;
           }
-          if (certId === "2" || certId === 2 || certId === "67d5658be9267b302f7aa016") {
-            names[certId] = "Ultimaker";
+          if (certId === "5" || certId === 5) {
+            names[certId] = "Bambu Lab X1 E";
             types[certId] = "3D Printer";
             continue;
           }
@@ -35,19 +35,19 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             types[certId] = "Safety Cabinet";
             continue;
           }
-          if (certId === "4" || certId === 4 || certId === "67d5658be9267b302f7aa017") {
+          if (certId === "1" || certId === 1) {
+            names[certId] = "Laser Cutter";
+            types[certId] = "Machine";
+            continue;
+          }
+          if (certId === "2" || certId === 2) {
+            names[certId] = "Ultimaker";
+            types[certId] = "3D Printer";
+            continue;
+          }
+          if (certId === "4" || certId === 4) {
             names[certId] = "X1 E Carbon 3D Printer";
             types[certId] = "3D Printer";
-            continue;
-          }
-          if (certId === "5" || certId === 5) {
-            names[certId] = "Bambu Lab X1 E";
-            types[certId] = "3D Printer";
-            continue;
-          }
-          if (certId === "6" || certId === 6) {
-            names[certId] = "Machine Safety Course";
-            types[certId] = "Safety Course";
             continue;
           }
           
@@ -71,23 +71,23 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
 
   // Helper function to get machine name with special handling
   const getMachineName = (certId: string) => {
-    if (certId === "1" || certId === 1 || certId === "67d5658be9267b302f7aa015") return "Laser Cutter";
-    if (certId === "2" || certId === 2 || certId === "67d5658be9267b302f7aa016") return "Ultimaker";
-    if (certId === "3" || certId === 3) return "Safety Cabinet";
-    if (certId === "4" || certId === 4 || certId === "67d5658be9267b302f7aa017") return "X1 E Carbon 3D Printer";
-    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
     if (certId === "6" || certId === 6) return "Machine Safety Course";
+    if (certId === "5" || certId === 5) return "Bambu Lab X1 E";
+    if (certId === "3" || certId === 3) return "Safety Cabinet";
+    if (certId === "1" || certId === 1) return "Laser Cutter";
+    if (certId === "2" || certId === 2) return "Ultimaker";
+    if (certId === "4" || certId === 4) return "X1 E Carbon 3D Printer";
     return machineNames[certId] || `Machine ${certId}`;
   };
 
   // Helper function to get machine type with special handling
   const getMachineType = (certId: string) => {
-    if (certId === "1" || certId === 1 || certId === "67d5658be9267b302f7aa015") return "Machine";
-    if (certId === "2" || certId === 2 || certId === "67d5658be9267b302f7aa016") return "3D Printer";
-    if (certId === "3" || certId === 3) return "Safety Cabinet";
-    if (certId === "4" || certId === 4 || certId === "67d5658be9267b302f7aa017") return "3D Printer";
-    if (certId === "5" || certId === 5) return "3D Printer";
     if (certId === "6" || certId === 6) return "Safety Course";
+    if (certId === "5" || certId === 5) return "3D Printer";
+    if (certId === "3" || certId === 3) return "Safety Cabinet";
+    if (certId === "1" || certId === 1) return "Machine";
+    if (certId === "2" || certId === 2) return "3D Printer";
+    if (certId === "4" || certId === 4) return "3D Printer";
     return machineTypes[certId] || "Machine";
   };
 
