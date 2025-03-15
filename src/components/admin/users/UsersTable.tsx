@@ -5,7 +5,7 @@ import { machines } from '../../../utils/data';
 import { useState, useEffect } from 'react';
 import { machineService } from '@/services/machineService';
 import { Button } from "@/components/ui/button";
-import { Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import userDatabase from '@/services/userDatabase';
-import mongoDbService from '@/services/mongoDbService';
 import { useAuth } from '@/context/AuthContext';
 
 interface UsersTableProps {
@@ -56,7 +55,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   );
 
   const getMachineName = (certId: string) => {
-    // Known machine IDs mapping
+    // Known machine IDs mapping with proper names for all machines and safety course
     const knownMachines = {
       "1": "Laser Cutter",
       "2": "Ultimaker",
@@ -67,6 +66,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       "67d5658be9267b302f7aa015": "Laser Cutter",
       "67d5658be9267b302f7aa016": "Ultimaker",
       "67d5658be9267b302f7aa017": "X1 E Carbon 3D Printer",
+      "67d5658be9267b302f7aa018": "Safety Cabinet",
+      "67d5658be9267b302f7aa019": "Bambu Lab X1 E",
     };
     
     // First check if it's a known ID
@@ -78,7 +79,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     const machine = allMachines.find(m => 
       m.id === certId || 
       m._id === certId || 
-      m.id.toString() === certId || 
+      m.id?.toString() === certId || 
       (m._id && m._id.toString() === certId)
     );
     
@@ -171,27 +172,47 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      user.certifications
-                        .filter((cert: string | number) => cert !== "6" && cert !== 6)
-                        .map((cert: string | number) => (
+                      <>
+                        {/* Display non-safety-course certifications */}
+                        {user.certifications
+                          .filter((cert: string | number) => 
+                            cert !== "6" && cert !== 6 && 
+                            cert !== "3" && cert !== 3)
+                          .map((cert: string | number) => (
+                            <span 
+                              key={cert.toString()} 
+                              className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+                              title={`Certification ID: ${cert}`}
+                            >
+                              {getMachineName(cert.toString())}
+                            </span>
+                          ))
+                        }
+                        
+                        {/* Display Safety Cabinet certification separately */}
+                        {(user.certifications?.includes("3") || 
+                         user.certifications?.includes(3) || 
+                         user.certifications?.some((c: any) => c.toString().includes("67d5658be9267b302f7aa018"))) && (
                           <span 
-                            key={cert.toString()} 
-                            className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                            title={`Certification ID: ${cert}`}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded"
                           >
-                            {getMachineName(cert.toString())}
+                            Safety Cabinet
                           </span>
-                        ))
+                        )}
+                        
+                        {/* Display Safety Course certification separately */}
+                        {(user.certifications?.includes("6") || 
+                         user.certifications?.includes(6)) && (
+                          <span 
+                            className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                          >
+                            Safety Course
+                          </span>
+                        )}
+                      </>
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
                     )}
-                    {user.certifications?.includes("6") || user.certifications?.includes(6) ? (
-                      <span 
-                        className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
-                      >
-                        Safety Course
-                      </span>
-                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -216,7 +237,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete User</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the user "{user.name}" ({user.id || user._id}) and all their data, including bookings and certifications. This action cannot be undone.
+                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

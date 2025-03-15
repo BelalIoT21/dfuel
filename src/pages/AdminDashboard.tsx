@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Users, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 
@@ -52,7 +52,8 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-end gap-2 mb-4">
           <Link to="/admin/users">
-            <Button variant="outline" className="bg-white">
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Users className="h-4 w-4 mr-2" />
               Manage Users
             </Button>
           </Link>

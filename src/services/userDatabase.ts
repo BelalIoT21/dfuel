@@ -1,4 +1,3 @@
-
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -102,8 +101,12 @@ class UserDatabase {
             return true;
           }
           
-          const errorData = await response.json();
-          console.error(`API deletion error: ${errorData.message}`);
+          console.error(`API deletion error: ${response.status} ${response.statusText}`);
+          // Don't try to parse JSON if there's no content
+          if (response.headers.get('content-length') !== '0') {
+            const errorData = await response.json();
+            console.error(`API deletion error details: ${errorData.message}`);
+          }
         }
       } catch (apiError) {
         console.error('API deletion error:', apiError);

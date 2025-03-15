@@ -47,6 +47,8 @@ export const seedDatabase = async () => {
 
     // Create regular user
     console.log('Creating regular user...');
+    // COMMENTED OUT - Join feature removed
+    /*
     const regularUser = await User.create({
       name: 'John Doe',
       email: 'user@example.com',
@@ -54,6 +56,7 @@ export const seedDatabase = async () => {
       isAdmin: false,
       certifications: []
     });
+    */
 
     // Create machines with specific types
     console.log('Creating machines...');
@@ -69,7 +72,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Ultimaker',
-        type: 'Machine',
+        type: '3D Printer',
         description: 'Ultimaker 3D printer for precise prototyping and modeling.',
         status: 'Available',
         requiresCertification: true,
@@ -77,8 +80,17 @@ export const seedDatabase = async () => {
         imageUrl: '/machines/3d-printer.jpg'
       },
       {
+        name: 'Safety Cabinet',
+        type: 'Safety Cabinet',
+        description: 'Safety equipment storage cabinet.',
+        status: 'Available',
+        requiresCertification: false,
+        difficulty: 'Beginner',
+        imageUrl: '/machines/safety-cabinet.jpg'
+      },
+      {
         name: 'X1 E Carbon 3D Printer',
-        type: 'Machine',
+        type: '3D Printer',
         description: 'Advanced 3D printer for carbon fiber composites.',
         status: 'Available',
         requiresCertification: true,
@@ -87,7 +99,7 @@ export const seedDatabase = async () => {
       },
       {
         name: 'Bambu Lab X1 E',
-        type: 'Machine',
+        type: '3D Printer',
         description: 'High-speed multi-material 3D printer with exceptional print quality.',
         status: 'Available',
         requiresCertification: true,
@@ -95,13 +107,13 @@ export const seedDatabase = async () => {
         imageUrl: '/machines/bambu-printer.jpg'
       },
       {
-        name: 'Soldering Station',
-        type: 'Machine',
-        description: 'Professional soldering station for electronics work.',
+        name: 'Machine Safety Course',
+        type: 'Safety Course',
+        description: 'Required safety training for using machines.',
         status: 'Available',
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/machines/soldering-station.jpg'
+        requiresCertification: false,
+        difficulty: 'Beginner',
+        imageUrl: '/machines/safety-course.jpg'
       }
     ];
 
@@ -112,6 +124,8 @@ export const seedDatabase = async () => {
     adminUser.certifications = createdMachines.map(machine => machine._id.toString());
     await adminUser.save();
 
+    // COMMENTED OUT - Regular user certifications removed
+    /*
     // Add some certifications to regular user
     console.log('Adding certifications to regular user...');
     regularUser.certifications = [
@@ -121,7 +135,10 @@ export const seedDatabase = async () => {
       createdMachines[3]._id.toString()  // Bambu Lab X1 E
     ];
     await regularUser.save();
+    */
 
+    // COMMENTED OUT - Booking creation removed
+    /*
     // Create some bookings
     console.log('Creating sample bookings...');
     
@@ -168,6 +185,7 @@ export const seedDatabase = async () => {
     
     // Insert bookings
     await Booking.insertMany(bookings);
+    */
     
     console.log('Database seeded successfully!');
   } catch (error) {

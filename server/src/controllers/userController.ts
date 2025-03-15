@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -176,7 +175,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     await User.deleteOne({ _id: userId });
     console.log(`User ${userId} deleted successfully`);
     
-    res.json({ message: 'User removed successfully' });
+    res.status(200).json({ message: 'User removed successfully' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
     res.status(500).json({ 
