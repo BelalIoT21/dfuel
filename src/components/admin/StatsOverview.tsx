@@ -1,8 +1,9 @@
 
-import { Users, Settings, CalendarClock, UserCheck, ShieldCheck } from "lucide-react";
+import { Users, Settings, CalendarClock, UserCheck } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
 import { bookingService } from "@/services/bookingService";
+import { certificationService } from "@/services/certificationService";
 
 interface StatsOverviewProps {
   allUsers: any[];
@@ -11,6 +12,7 @@ interface StatsOverviewProps {
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   const [bookingsCount, setBookingsCount] = useState(0);
+  const [totalCertifications, setTotalCertifications] = useState(0);
   
   // Fetch the actual bookings count
   useEffect(() => {
@@ -26,19 +28,30 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     fetchBookingsCount();
   }, []);
   
+  // Calculate total certifications across all users (excluding safety certs)
+  useEffect(() => {
+    const calculateCertifications = () => {
+      let count = 0;
+      
+      // For each user, count their machine certifications (excluding safety cabinet and safety course)
+      allUsers.forEach(user => {
+        if (user.certifications) {
+          // Filter out safety cabinet (id: "5") and safety course (id: "6")
+          const machineCerts = user.certifications.filter(certId => 
+            certId !== "5" && certId !== "6"
+          );
+          count += machineCerts.length;
+        }
+      });
+      
+      setTotalCertifications(count);
+    };
+    
+    calculateCertifications();
+  }, [allUsers]);
+  
   // Filter out equipment (including Safety Cabinet) - only count real machines
   const realMachines = machines.filter(machine => machine.type !== 'Equipment' && machine.type !== 'Safety Cabinet');
-  
-  // Filter only equipment
-  const equipment = machines.filter(machine => machine.type === 'Equipment' || machine.type === 'Safety Cabinet');
-  
-  // Update machine types
-  realMachines.forEach(machine => {
-    machine.type = 'Machine';
-  });
-  
-  // Calculate total certifications, including safety course certificates
-  const totalCertifications = 6; // Fixed at 6 as requested
   
   // Basic statistics for the admin dashboard
   const stats = [

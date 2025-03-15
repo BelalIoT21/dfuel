@@ -33,11 +33,10 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   }, [user.certifications]);
 
-  // Filter out any certifications for Safety Cabinet
+  // Filter out any certifications for Safety Cabinet and Machine Safety Course
   const filteredCertifications = user.certifications.filter(certId => {
-    // In a real app, you would fetch the machine type from an API
-    // For now, we'll just hardcode the Safety Cabinet ID (usually "5")
-    return certId !== "5"; // Assuming "5" is the Safety Cabinet ID
+    // Filter out Safety Cabinet (ID: "5") and Machine Safety Course (ID: "6")
+    return certId !== "5" && certId !== "6";
   });
 
   return (
