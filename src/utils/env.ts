@@ -1,10 +1,11 @@
+
 /**
  * Environment variable management for client-side configuration
  */
 
 // Default values for environment variables
 const ENV_DEFAULTS = {
-  // Use localhost:4000 as the default API URL when in development
+  // Use localhost:4000/api as the default API URL when in development
   API_URL: 'http://localhost:4000/api',
   // Keep MongoDB URI for reference only in client
   MONGODB_URI: 'mongodb://localhost:27017/learnit'
