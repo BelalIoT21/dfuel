@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { apiService } from './apiService';
@@ -22,7 +23,7 @@ export class CertificationService {
       // Then try API
       try {
         const response = await apiService.addCertification(userId, machineId);
-        if (response && (response.success || response.data?.success)) {
+        if (response && response.data?.success) {
           console.log('Successfully added certification via API');
           return true;
         }
@@ -84,7 +85,7 @@ export class CertificationService {
       // Then try API
       try {
         const response = await apiService.removeCertification(userId, machineId);
-        if (response && (response.success || response.data?.success)) {
+        if (response && response.data?.success) {
           console.log('Successfully removed certification via API');
           return true;
         }
@@ -96,7 +97,7 @@ export class CertificationService {
       const user = localStorageService.findUserById(userId);
       if (!user) return false;
       
-      if (user.certifications && user.certifications.includes(machineId)) {
+      if (user.certifications.includes(machineId)) {
         user.certifications = user.certifications.filter(id => id !== machineId);
         const updated = localStorageService.updateUser(userId, { certifications: user.certifications });
         console.log(`Removed certification via localStorage: ${updated}`);
@@ -115,10 +116,14 @@ export class CertificationService {
     try {
       // Try MongoDB first
       try {
-        const success = await mongoDbService.updateUser(userId, { certifications: [] });
-        if (success) {
-          console.log('Successfully cleared all certifications via MongoDB');
-          return true;
+        const user = await mongoDbService.getUserById(userId);
+        if (user) {
+          // Clear all certifications
+          const success = await mongoDbService.updateUser(userId, { certifications: [] });
+          if (success) {
+            console.log('Successfully cleared all certifications via MongoDB');
+            return true;
+          }
         }
       } catch (mongoErr) {
         console.error("MongoDB error clearing certifications:", mongoErr);
@@ -176,7 +181,7 @@ export class CertificationService {
       // Try MongoDB first
       try {
         const user = await mongoDbService.getUserById(userId);
-        if (user && user.certifications) {
+        if (user) {
           return user.certifications.includes(machineId);
         }
       } catch (mongoErr) {
@@ -195,7 +200,7 @@ export class CertificationService {
       
       // Last resort - localStorage
       const user = localStorageService.findUserById(userId);
-      return user && user.certifications ? user.certifications.includes(machineId) : false;
+      return user ? user.certifications.includes(machineId) : false;
     } catch (error) {
       console.error("Error checking certification:", error);
       return false;

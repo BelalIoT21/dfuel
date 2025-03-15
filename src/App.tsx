@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
@@ -43,16 +43,12 @@ const App = () => {
     document.title = "Learnit - Your Learning Platform";
   }, []);
 
-  // Display toast message only on first load
+  // Display toast message when app loads
   useEffect(() => {
-    const hasShownWelcome = sessionStorage.getItem('welcomeShown');
-    if (!hasShownWelcome) {
-      toast({
-        title: "Welcome to Learnit",
-        description: "Please log in to continue",
-      });
-      sessionStorage.setItem('welcomeShown', 'true');
-    }
+    toast({
+      title: "Welcome to Learnit",
+      description: "Please log in to continue",
+    });
   }, []);
 
   console.log("Rendering App component");
@@ -65,7 +61,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Root path displays the Index component directly */}
+              {/* Redirect root to login page */}
               <Route path="/" element={<Index />} />
               <Route path="/home" element={<Home />} />
               <Route path="/machine/:id" element={<MachineDetail />} />
