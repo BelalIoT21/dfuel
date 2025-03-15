@@ -23,7 +23,10 @@ const logFormat = ':method :url :status :response-time ms - :res[content-length]
 
 // Create the morgan middleware with our custom format
 export const requestLogger = morgan(logFormat, {
-  skip: (req) => req.url.includes('/health') // Skip health check logs to reduce noise
+  skip: (req) => {
+    // Fixed: Check if url is defined before using it
+    return req.url ? req.url.includes('/health') : false;
+  } // Skip health check logs to reduce noise
 });
 
 // Custom API request logger middleware

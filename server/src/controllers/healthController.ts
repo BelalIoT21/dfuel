@@ -34,8 +34,9 @@ export const healthCheck = (req: Request, res: Response) => {
 };
 
 // Helper function to get readable connection state name
+// Fixed: Using a type-safe approach with Record<number, string>
 const getMongoConnectionState = (state: number): string => {
-  const states = {
+  const states: Record<number, string> = {
     0: 'Disconnected',
     1: 'Connected',
     2: 'Connecting',
