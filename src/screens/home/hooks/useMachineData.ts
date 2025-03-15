@@ -25,8 +25,30 @@ export const useMachineData = (user, navigation) => {
       
       console.log("Fetched machines data:", machines.length, "items");
       
+      // Apply fixed names and types for specific machine IDs
+      const mappedMachines = machines.map(machine => {
+        const machineId = machine.id || machine._id;
+        
+        // Apply special handling for machine IDs 1-6
+        if (machineId === "1" || machineId === 1) {
+          return { ...machine, name: "Laser Cutter", type: "Machine" };
+        } else if (machineId === "2" || machineId === 2) {
+          return { ...machine, name: "Ultimaker", type: "3D Printer" };
+        } else if (machineId === "3" || machineId === 3) {
+          return { ...machine, name: "Safety Cabinet", type: "Safety Cabinet" };
+        } else if (machineId === "4" || machineId === 4) {
+          return { ...machine, name: "X1 E Carbon 3D Printer", type: "3D Printer" };
+        } else if (machineId === "5" || machineId === 5) {
+          return { ...machine, name: "Bambu Lab X1 E", type: "3D Printer" };
+        } else if (machineId === "6" || machineId === 6) {
+          return { ...machine, name: "Machine Safety Course", type: "Safety Course" };
+        }
+        
+        return machine;
+      });
+      
       // Load status for each machine from MongoDB
-      const extendedMachines = await Promise.all(machines.map(async (machine) => {
+      const extendedMachines = await Promise.all(mappedMachines.map(async (machine) => {
         try {
           console.log("Loading status for machine:", machine.id);
           // Try to get status directly from MongoDB

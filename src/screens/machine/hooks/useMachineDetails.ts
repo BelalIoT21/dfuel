@@ -30,14 +30,25 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Special handling for Safety Cabinet (ID: 3)
-        if (machineId === "3") {
+        // Special handling for machine types based on ID
+        if (machineId === "1" || machineId === 1) {
+          machineData.type = "Machine";
+          machineData.name = "Laser Cutter";
+        } else if (machineId === "2" || machineId === 2) {
+          machineData.type = "3D Printer";
+          machineData.name = "Ultimaker";
+        } else if (machineId === "3" || machineId === 3) {
           machineData.type = "Safety Cabinet";
-        }
-        
-        // Special handling for Machine Safety Course (ID: 6)
-        if (machineId === "6") {
+          machineData.name = "Safety Cabinet";
+        } else if (machineId === "4" || machineId === 4) {
+          machineData.type = "3D Printer";
+          machineData.name = "X1 E Carbon 3D Printer";
+        } else if (machineId === "5" || machineId === 5) {
+          machineData.type = "3D Printer";
+          machineData.name = "Bambu Lab X1 E";
+        } else if (machineId === "6" || machineId === 6) {
           machineData.type = "Safety Course";
+          machineData.name = "Machine Safety Course";
         }
         
         // Get machine status from MongoDB
@@ -53,16 +64,19 @@ export const useMachineDetails = (machineId, user, navigation) => {
         setMachineStatus(status);
         setMachine(machineData);
         
-        // Check if user is certified for this machine
-        if (user.certifications && user.certifications.includes(machineId)) {
-          setIsCertified(true);
-        }
+        // Check if user is certified for this machine - handle string/number ID
+        const userCertifications = user.certifications || [];
+        const isUserCertified = userCertifications.some(cert => 
+          cert === machineId || cert === machineId.toString() || cert === Number(machineId)
+        );
+        setIsCertified(isUserCertified);
         
         // Check if user has completed Machine Safety Course
         const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
-        if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
-          setHasMachineSafetyCert(true);
-        }
+        const hasUserSafetyCert = userCertifications.some(cert => 
+          cert === MACHINE_SAFETY_ID || cert === 6 || cert === "6"
+        );
+        setHasMachineSafetyCert(hasUserSafetyCert);
       } catch (error) {
         console.error('Error loading machine details:', error);
         Alert.alert('Error', 'Failed to load machine details');
