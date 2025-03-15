@@ -263,6 +263,35 @@ class ApiService {
       { userId }
     );
   }
+  
+  async updateMachineStatus(machineId: string, status: string, note?: string) {
+    return this.request<{ success: boolean }>(
+      `machines/${machineId}/status`, 
+      'PUT', 
+      { status, maintenanceNote: note }, 
+      true
+    );
+  }
+  
+  async getAllMachines() {
+    return this.request<any[]>('machines', 'GET', undefined, true);
+  }
+  
+  async getMachineById(machineId: string) {
+    return this.request<any>(`machines/${machineId}`, 'GET', undefined, true);
+  }
+  
+  async createMachine(machineData: any) {
+    return this.request<any>('machines', 'POST', machineData, true);
+  }
+  
+  async updateMachine(machineId: string, machineData: any) {
+    return this.request<any>(`machines/${machineId}`, 'PUT', machineData, true);
+  }
+  
+  async deleteMachine(machineId: string) {
+    return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
+  }
 }
 
 // Create and export a singleton instance

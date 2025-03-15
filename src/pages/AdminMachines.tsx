@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,9 @@ import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { apiService } from '@/services/apiService';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -18,12 +22,17 @@ const AdminMachines = () => {
   const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state for new machine
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    image: '/placeholder.svg',
+    type: 'Cutting',
+    status: 'Available',
+    requiresCertification: true,
+    difficulty: 'Intermediate',
+    imageUrl: '/placeholder.svg',
   });
   
   useEffect(() => {
@@ -69,19 +78,58 @@ const AdminMachines = () => {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleAddMachine = () => {
-    // In a real app, this would make an API call to add the machine
-    toast({
-      title: "Machine Added",
-      description: `${formData.name} has been added successfully.`
-    });
-    
-    setIsAddingMachine(false);
-    setFormData({
-      name: '',
-      description: '',
-      image: '/placeholder.svg',
-    });
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSwitchChange = (id: string, checked: boolean) => {
+    setFormData((prev) => ({ ...prev, [id]: checked }));
+  };
+
+  const handleAddMachine = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Call the API to create a new machine
+      const response = await apiService.request(
+        'machines', 
+        'POST', 
+        formData, 
+        true
+      );
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      toast({
+        title: "Machine Added",
+        description: `${formData.name} has been added successfully.`
+      });
+      
+      setIsAddingMachine(false);
+      setFormData({
+        name: '',
+        description: '',
+        type: 'Cutting',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/placeholder.svg',
+      });
+      
+      // Reload the page to show the new machine
+      window.location.reload();
+    } catch (error) {
+      console.error("Error adding machine:", error);
+      toast({
+        title: "Error Adding Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEditMachine = (id: string) => {
@@ -90,33 +138,90 @@ const AdminMachines = () => {
     if (machine) {
       setFormData({
         name: machine.name,
-        description: machine.description,
-        image: machine.image,
+        description: machine.description || '',
+        type: machine.type || 'Cutting',
+        status: 'Available',
+        requiresCertification: machine.requiresCertification || true,
+        difficulty: machine.difficulty || 'Intermediate',
+        imageUrl: machine.image || '/placeholder.svg',
       });
     }
   };
 
-  const handleSaveEdit = () => {
-    // In a real app, this would make an API call to update the machine
-    toast({
-      title: "Machine Updated",
-      description: `${formData.name} has been updated successfully.`
-    });
-    
-    setEditingMachineId(null);
-    setFormData({
-      name: '',
-      description: '',
-      image: '/placeholder.svg',
-    });
+  const handleSaveEdit = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Call the API to update the machine
+      const response = await apiService.request(
+        `machines/${editingMachineId}`, 
+        'PUT', 
+        formData, 
+        true
+      );
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      toast({
+        title: "Machine Updated",
+        description: `${formData.name} has been updated successfully.`
+      });
+      
+      setEditingMachineId(null);
+      setFormData({
+        name: '',
+        description: '',
+        type: 'Cutting',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Intermediate',
+        imageUrl: '/placeholder.svg',
+      });
+      
+      // Reload the page to show the updated machine
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating machine:", error);
+      toast({
+        title: "Error Updating Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteMachine = (id: string) => {
-    // In a real app, this would make an API call to delete the machine
-    toast({
-      title: "Machine Deleted",
-      description: "The machine has been deleted successfully."
-    });
+  const handleDeleteMachine = async (id: string) => {
+    try {
+      const response = await apiService.request(
+        `machines/${id}`, 
+        'DELETE', 
+        undefined, 
+        true
+      );
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      toast({
+        title: "Machine Deleted",
+        description: "The machine has been deleted successfully."
+      });
+      
+      // Reload the page to update the machine list
+      window.location.reload();
+    } catch (error) {
+      console.error("Error deleting machine:", error);
+      toast({
+        title: "Error Deleting Machine",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   // Calculate real stats for each machine
@@ -187,6 +292,26 @@ const AdminMachines = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <Label htmlFor="type">Machine Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleSelectChange('type', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select machine type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cutting">Cutting</SelectItem>
+                      <SelectItem value="Printing">Printing</SelectItem>
+                      <SelectItem value="Electronics">Electronics</SelectItem>
+                      <SelectItem value="Woodworking">Woodworking</SelectItem>
+                      <SelectItem value="Metalworking">Metalworking</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
@@ -197,17 +322,62 @@ const AdminMachines = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleSelectChange('status', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Available">Available</SelectItem>
+                      <SelectItem value="Maintenance">Maintenance</SelectItem>
+                      <SelectItem value="Out of Order">Out of Order</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(value) => handleSelectChange('difficulty', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Beginner">Beginner</SelectItem>
+                      <SelectItem value="Intermediate">Intermediate</SelectItem>
+                      <SelectItem value="Advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="requiresCertification"
+                    checked={formData.requiresCertification}
+                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
+                  />
+                  <Label htmlFor="requiresCertification">Requires Certification</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Image URL</Label>
                   <Input
-                    id="image"
-                    value={formData.image}
+                    id="imageUrl"
+                    value={formData.imageUrl}
                     onChange={handleInputChange}
                     placeholder="Enter image URL"
                   />
                 </div>
                 
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={handleAddMachine}>Add Machine</Button>
+                  <Button onClick={handleAddMachine} disabled={isSubmitting}>
+                    {isSubmitting ? 'Adding...' : 'Add Machine'}
+                  </Button>
                   <Button variant="outline" onClick={() => setIsAddingMachine(false)}>Cancel</Button>
                 </div>
               </div>
@@ -234,6 +404,26 @@ const AdminMachines = () => {
                 </div>
                 
                 <div className="space-y-2">
+                  <Label htmlFor="type">Machine Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleSelectChange('type', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select machine type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cutting">Cutting</SelectItem>
+                      <SelectItem value="Printing">Printing</SelectItem>
+                      <SelectItem value="Electronics">Electronics</SelectItem>
+                      <SelectItem value="Woodworking">Woodworking</SelectItem>
+                      <SelectItem value="Metalworking">Metalworking</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
@@ -244,17 +434,62 @@ const AdminMachines = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="image">Image URL</Label>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => handleSelectChange('status', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Available">Available</SelectItem>
+                      <SelectItem value="Maintenance">Maintenance</SelectItem>
+                      <SelectItem value="Out of Order">Out of Order</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(value) => handleSelectChange('difficulty', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Beginner">Beginner</SelectItem>
+                      <SelectItem value="Intermediate">Intermediate</SelectItem>
+                      <SelectItem value="Advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="requiresCertification"
+                    checked={formData.requiresCertification}
+                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
+                  />
+                  <Label htmlFor="requiresCertification">Requires Certification</Label>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Image URL</Label>
                   <Input
-                    id="image"
-                    value={formData.image}
+                    id="imageUrl"
+                    value={formData.imageUrl}
                     onChange={handleInputChange}
                     placeholder="Enter image URL"
                   />
                 </div>
                 
                 <div className="flex gap-2 pt-2">
-                  <Button onClick={handleSaveEdit}>Save Changes</Button>
+                  <Button onClick={handleSaveEdit} disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
                   <Button variant="outline" onClick={() => setEditingMachineId(null)}>Cancel</Button>
                 </div>
               </div>

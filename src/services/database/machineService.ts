@@ -29,6 +29,56 @@ export class MachineDatabaseService extends BaseService {
       return false;
     }
   }
+
+  async createMachine(machineData: any): Promise<any> {
+    try {
+      const response = await apiService.request('machines', 'POST', machineData, true);
+      return response.data;
+    } catch (error) {
+      console.error("API error, could not create machine:", error);
+      return null;
+    }
+  }
+
+  async updateMachine(machineId: string, machineData: any): Promise<any> {
+    try {
+      const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
+      return response.data;
+    } catch (error) {
+      console.error(`API error, could not update machine ${machineId}:`, error);
+      return null;
+    }
+  }
+
+  async deleteMachine(machineId: string): Promise<boolean> {
+    try {
+      const response = await apiService.request(`machines/${machineId}`, 'DELETE', undefined, true);
+      return !response.error;
+    } catch (error) {
+      console.error(`API error, could not delete machine ${machineId}:`, error);
+      return false;
+    }
+  }
+
+  async getAllMachines(): Promise<any[]> {
+    try {
+      const response = await apiService.request('machines', 'GET', undefined, true);
+      return response.data || [];
+    } catch (error) {
+      console.error("API error, could not get all machines:", error);
+      return [];
+    }
+  }
+
+  async getMachineById(machineId: string): Promise<any> {
+    try {
+      const response = await apiService.request(`machines/${machineId}`, 'GET', undefined, true);
+      return response.data;
+    } catch (error) {
+      console.error(`API error, could not get machine ${machineId}:`, error);
+      return null;
+    }
+  }
 }
 
 // Create a singleton instance
