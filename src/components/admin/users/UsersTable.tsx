@@ -41,7 +41,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         setAllMachines(fetchedMachines);
       } catch (error) {
         console.error('Error fetching machines:', error);
-        setAllMachines(machines); // Fallback to local data
       }
     };
     
@@ -62,8 +61,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     const machine = allMachines.find(m => m.id === certId);
     if (machine) return machine.name;
     
-    const localMachine = machines.find(m => m.id === certId);
-    return localMachine ? localMachine.name : `Machine ${certId}`;
   };
 
   const handleDeleteUser = async (userId: string) => {
