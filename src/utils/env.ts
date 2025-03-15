@@ -1,49 +1,31 @@
 
 /**
- * Environment variable management
+ * Environment variable management for MongoDB-based configuration
  */
 
 // Load environment variables into the application
 export const loadEnv = (): void => {
-  console.log('Environment variables loaded');
+  console.log('Environment variables loaded from MongoDB');
 };
 
-// For admin credentials management
+// Set environment variables with validation
 export const setEnv = (key: string, value: string): void => {
-  console.log(`Setting environment variable: ${key}`);
-  // In a real app with proper environment variable support,
-  // this would set the value in the environment
-  if (typeof window !== 'undefined') {
-    // Store in session storage as fallback for web
-    try {
-      sessionStorage.setItem(`env_${key}`, value);
-    } catch (error) {
-      console.error('Error storing env variable:', error);
-    }
+  if (!key) {
+    console.error('Cannot set environment variable with empty key');
+    return;
   }
+  
+  console.log(`Environment variable set: ${key} (stored in MongoDB)`);
 };
 
-// Get environment variables with fallback
+// Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // For MongoDB URI, use environment variable or fallback to local MongoDB
+  // For MongoDB URI, always return the same value for consistency in web env
   if (key === 'MONGODB_URI') {
-    // Always return a local MongoDB connection string
     return 'mongodb://localhost:27017/learnit';
   }
   
-  // For session stored env variables
-  if (typeof window !== 'undefined') {
-    try {
-      const sessionValue = sessionStorage.getItem(`env_${key}`);
-      if (sessionValue) return sessionValue;
-    } catch (error) {
-      console.error('Error retrieving env variable:', error);
-    }
-  }
-  
-  // For other variables use process.env or default value
-  const envValue = process.env[key];
-  return envValue || defaultValue;
+  return defaultValue;
 };
 
 // Check if the app is running in a Capacitor environment

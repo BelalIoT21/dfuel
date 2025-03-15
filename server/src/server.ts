@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
+import { seedDatabase } from './utils/seed';  // Import the seed utility
 import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
 
 // Routes
@@ -25,6 +26,14 @@ dotenv.config();
 connectDB().then(async () => {
   // Ensure admin user exists
   await ensureAdminUser();
+  
+  // Seed the database after connection
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Seeding database with initial data...');
+    seedDatabase()
+      .then(() => console.log('Database seeded successfully!'))
+      .catch(err => console.error('Error seeding database:', err));
+  }
 });
 
 const app = express();
@@ -55,6 +64,38 @@ app.use('/api/health', healthRoutes);
 // Health check endpoint (root level)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+// Log all API routes for debugging
+console.log('Registered API routes:');
+// Define explicit types for middleware and handler
+app._router.stack.forEach((middleware: {
+  route?: { path: string },
+  name?: string,
+  handle?: { 
+    stack: Array<{
+      route?: { 
+        path: string, 
+        stack: Array<{ method: string }>
+      }
+    }>
+  },
+  regexp?: { toString: () => string }
+}) => {
+  if (middleware.route) {
+    console.log(`Route: ${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    middleware.handle?.stack.forEach((handler: {
+      route?: { 
+        path: string, 
+        stack: Array<{ method: string }>
+      }
+    }) => {
+      if (handler.route) {
+        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp?.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
+      }
+    });
+  }
 });
 
 // Error handling middleware

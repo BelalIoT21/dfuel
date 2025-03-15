@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
-import mongoDbService from '@/services/mongoDbService';
+import { apiService } from '@/services/apiService';
 
 export const useAuthFunctions = (
   user: User | null, 
@@ -11,61 +11,55 @@ export const useAuthFunctions = (
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Helper function to store token in sessionStorage only
-  const storeToken = (token: string) => {
-    try {
-      sessionStorage.setItem('token', token);
-    } catch (error) {
-      console.error("Error storing token:", error);
-    }
-  };
-
-  // Helper function to get token from sessionStorage
-  const getToken = (): string | null => {
-    try {
-      return sessionStorage.getItem('token');
-    } catch (error) {
-      console.error("Error retrieving token:", error);
-      return null;
-    }
-  };
-
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // Get user by email from MongoDB
-      const userData = await mongoDbService.getUserByEmail(email);
+      // API login
+      const apiResponse = await apiService.login(email, password);
       
-      if (!userData) {
+      if (apiResponse.error) {
+        console.error("API login error:", apiResponse.error);
         toast({
           title: "Login failed",
-          description: "User not found",
+          description: apiResponse.error,
           variant: "destructive"
         });
         return false;
       }
       
-      // Here you would compare password with hashed password
-      // For this example, assuming comparison is done in mongoDbService
-      // In a real app, you would use bcrypt.compare here or in the service
-
-      // Generate a simple token (in a real app, use JWT)
-      const token = `token-${Date.now()}`;
-      storeToken(token);
+      if (apiResponse.data) {
+        console.log("API login successful:", apiResponse.data);
+        const userData = apiResponse.data.user;
+        // Save the token for future API requests
+        if (apiResponse.data.token) {
+          // Use sessionStorage for token, which is just for the current session
+          // and doesn't persist with app refresh
+          sessionStorage.setItem('token', apiResponse.data.token);
+        }
+        
+        setUser(userData as User);
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${userData.name}!`
+        });
+        return true;
+      }
       
-      setUser(userData as User);
+      // If we get here, the API returned no data and no error, which is odd
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${userData.name}!`
+        title: "Login failed",
+        description: "The server returned an unexpected response. Please try again.",
+        variant: "destructive"
       });
-      return true;
+      return false;
+      
     } catch (error) {
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -79,40 +73,47 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
       
-      // Create user in MongoDB
-      const userData = await mongoDbService.createUser({
-        email,
-        password, // In a real app, this would be hashed
-        name,
-        isAdmin: false,
-        certifications: [],
-        bookings: []
-      });
+      // API registration
+      const apiResponse = await apiService.register({ email, password, name });
       
-      if (!userData) {
+      if (apiResponse.error) {
+        console.error("API registration error:", apiResponse.error);
         toast({
           title: "Registration failed",
-          description: "Could not create user",
+          description: apiResponse.error,
           variant: "destructive"
         });
         return false;
       }
       
-      // Generate a simple token (in a real app, use JWT)
-      const token = `token-${Date.now()}`;
-      storeToken(token);
+      if (apiResponse.data) {
+        console.log("API registration successful:", apiResponse.data);
+        const userData = apiResponse.data.user;
+        
+        // Save the token for future API requests
+        if (apiResponse.data.token) {
+          sessionStorage.setItem('token', apiResponse.data.token);
+        }
+        
+        setUser(userData as User);
+        toast({
+          title: "Registration successful",
+          description: `Welcome, ${name}!`
+        });
+        return true;
+      }
       
-      setUser(userData as User);
       toast({
-        title: "Registration successful",
-        description: `Welcome, ${name}!`
+        title: "Registration failed",
+        description: "The server returned an unexpected response. Please try again.",
+        variant: "destructive"
       });
-      return true;
+      return false;
     } catch (error) {
       console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -123,11 +124,7 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    try {
-      sessionStorage.removeItem('token');
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+    sessionStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });
