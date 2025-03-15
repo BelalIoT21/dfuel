@@ -1,19 +1,6 @@
-import { getEnv } from '../utils/env';
-import { toast } from '../components/ui/use-toast';
-
-// Use the environment variable for the API URL
-const getBaseApiUrl = () => {
-  const url = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
-  
-  // Validate URL format - it should be an HTTP URL for REST API calls
-  if (!url.startsWith('http')) {
-    console.error('Invalid API URL format. Using default API URL instead.');
-    // Reset to default - API URLs must be HTTP/HTTPS
-    return 'https://learnit-server.onrender.com/api';
-  }
-  
-  return url;
-};
+import { toast } from '@/components/ui/use-toast';
+import { apiConnection } from './api/apiConnection';
+import { apiLogger } from './api/apiLogger';
 
 interface ApiResponse<T> {
   data: T | null;
@@ -24,7 +11,35 @@ interface ApiResponse<T> {
 class ApiService {
   // Get the current base URL
   getBaseUrl(): string {
-    return getBaseApiUrl();
+    return apiConnection.getBaseUrl();
+  }
+
+  // Check if the API server is reachable
+  async checkHealth(): Promise<ApiResponse<any>> {
+    const connected = await apiConnection.checkConnection();
+    
+    if (connected) {
+      try {
+        return await this.request<{ status: string, message: string, database?: any }>(
+          'health',
+          'GET',
+          undefined,
+          false
+        );
+      } catch (error) {
+        return {
+          data: null,
+          error: 'Health check request failed',
+          status: 0
+        };
+      }
+    } else {
+      return {
+        data: null,
+        error: 'Cannot connect to API server',
+        status: 0
+      };
+    }
   }
 
   private async request<T>(
@@ -33,16 +48,12 @@ class ApiService {
     data?: any,
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
+    const startTime = performance.now();
+    
     try {
-      const BASE_URL = getBaseApiUrl();
+      const url = apiConnection.buildUrl(endpoint);
       
-      // Ensure endpoint doesn't start with a slash to avoid double slashes
-      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-      
-      // Build the full URL properly
-      const url = `${BASE_URL}/${cleanEndpoint}`;
-      
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
+      apiLogger.logRequest(method, url, data);
       
       const token = localStorage.getItem('token');
       
@@ -57,11 +68,11 @@ class ApiService {
       const options: RequestInit = {
         method,
         headers,
-        credentials: 'include', // This is important for CORS with credentials
-        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'include',
+        mode: 'cors',
       };
       
-      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
         options.body = JSON.stringify(data);
       }
       
@@ -73,6 +84,9 @@ class ApiService {
       const response = await fetch(url, options);
       clearTimeout(timeoutId);
       
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      
       // Handle empty responses gracefully
       let responseData;
       const contentType = response.headers.get('content-type');
@@ -83,9 +97,10 @@ class ApiService {
         responseData = null;
       }
       
+      apiLogger.logResponse(method, url, response.status, responseData, duration);
+      
       if (!response.ok) {
         const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
           return {
@@ -104,11 +119,10 @@ class ApiService {
         status: response.status
       };
     } catch (error) {
-      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      apiLogger.logError(method, endpoint, error);
       
       // Check if it's an AbortError (timeout)
       if (error instanceof DOMException && error.name === 'AbortError') {
-        console.error(`Request timeout for ${endpoint}`);
         return {
           data: null,
           error: 'Request timed out. The server might be unavailable.',
@@ -156,21 +170,9 @@ class ApiService {
     );
   }
   
-  // Health check endpoint
-  async checkHealth() {
-    console.log('Checking API health at:', this.getBaseUrl());
-    return this.request<{ status: string, message: string, database?: any }>(
-      'health',
-      'GET',
-      undefined,
-      false
-    );
-  }
-  
   // User endpoints
   async getCurrentUser() {
     console.log("Fetching current user with auth token");
-    // Use auth/me endpoint instead of users/me to match the server's routes
     return this.request<{ user: any }>('auth/me', 'GET');
   }
   
@@ -202,7 +204,6 @@ class ApiService {
   // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
-    // Use the correct endpoint format based on the server routes
     return this.request<{ success: boolean }>(
       'certifications', 
       'POST', 
@@ -212,7 +213,6 @@ class ApiService {
   
   async removeCertification(userId: string, machineId: string) {
     console.log(`Removing certification for user ${userId}, machine ${machineId}`);
-    // The DELETE method might need different handling for the body
     return this.request<{ success: boolean }>(
       'certifications', 
       'DELETE', 
@@ -250,10 +250,8 @@ class ApiService {
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
-    // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
-    // Try endpoint with /:id/status format first
     try {
       const response = await this.request<any>(
         `bookings/${bookingId}/status`, 
@@ -268,7 +266,6 @@ class ApiService {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
-    // Try alternative endpoint if first one fails
     try {
       return await this.request<any>(
         `bookings/update-status`, 

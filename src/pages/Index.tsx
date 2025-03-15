@@ -6,14 +6,14 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
+import { apiConnection } from '@/services/api/apiConnection';
 import { toast } from '@/components/ui/use-toast';
-import { getEnv } from '@/utils/env';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Server, Database } from 'lucide-react';
+import { AlertCircle, Server, Database, RefreshCw } from 'lucide-react';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const [connectionDetails, setConnectionDetails] = useState<any>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const { user, login, register } = useAuth();
@@ -23,11 +23,27 @@ const Index = () => {
   const checkServer = async () => {
     try {
       console.log("Checking server health...");
-      // Get current API URL for better error messages
-      const currentApiUrl = getEnv('API_URL');
-      console.log("Current API URL:", currentApiUrl);
-      
       setIsRetrying(true);
+      setServerStatus('checking');
+      
+      // Check API connection first
+      const connected = await apiConnection.checkConnection();
+      
+      if (!connected) {
+        console.error("API connection failed");
+        setServerStatus('disconnected');
+        setConnectionDetails(null);
+        setIsRetrying(false);
+        
+        toast({
+          title: 'Server Connection Failed',
+          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Please ensure the server is running.`,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Get detailed health information
       const response = await apiService.checkHealth();
       setIsRetrying(false);
       
@@ -35,6 +51,7 @@ const Index = () => {
         console.log("Server health check:", response.data);
         setServerStatus('connected');
         setConnectionDetails(response.data);
+        
         toast({
           title: 'Server Connected',
           description: 'Successfully connected to the backend server',
@@ -43,9 +60,10 @@ const Index = () => {
         console.error("Server connection error:", response.error);
         setServerStatus('disconnected');
         setConnectionDetails(null);
+        
         toast({
           title: 'Server Connection Failed',
-          description: `Could not connect to the backend server at ${currentApiUrl}. Please ensure the server is running.`,
+          description: `Could not connect to the backend server. ${response.error}`,
           variant: 'destructive'
         });
       }
@@ -54,6 +72,7 @@ const Index = () => {
       setServerStatus('disconnected');
       setConnectionDetails(null);
       setIsRetrying(false);
+      
       toast({
         title: 'Server Connection Failed',
         description: 'Could not connect to the backend server. Please try again later.',
@@ -129,14 +148,19 @@ const Index = () => {
                 ? 'bg-green-100 text-green-800' 
                 : serverStatus === 'disconnected' 
                   ? 'bg-red-100 text-red-800' 
-                  : 'bg-gray-100 text-gray-800'}`}
+                  : 'bg-yellow-100 text-yellow-800'}`}
             >
-              <Server size={16} />
+              <Server size={16} className={serverStatus === 'checking' ? 'animate-pulse' : ''} />
               Server: {serverStatus === 'connected' 
                 ? 'Connected' 
                 : serverStatus === 'disconnected' 
                   ? 'Disconnected' 
                   : 'Checking...'}
+            </div>
+            
+            {/* Display API URL */}
+            <div className="mt-2 text-xs text-gray-500">
+              API URL: {apiConnection.getBaseUrl()}
             </div>
             
             {connectionDetails && connectionDetails.database && (
@@ -151,17 +175,16 @@ const Index = () => {
               </div>
             )}
             
-            {serverStatus === 'disconnected' && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="mt-3"
-                onClick={checkServer}
-                disabled={isRetrying}
-              >
-                {isRetrying ? 'Retrying...' : 'Retry Connection'}
-              </Button>
-            )}
+            <Button 
+              size="sm" 
+              variant={serverStatus === 'disconnected' ? "default" : "outline"}
+              className="mt-3 gap-2"
+              onClick={checkServer}
+              disabled={isRetrying}
+            >
+              <RefreshCw size={16} className={isRetrying ? 'animate-spin' : ''} />
+              {isRetrying ? 'Connecting...' : 'Check Connection'}
+            </Button>
           </div>
         </div>
 

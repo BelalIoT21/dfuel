@@ -1,6 +1,7 @@
 
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import os from 'os';
 
 // Health check controller
 export const healthCheck = (req: Request, res: Response) => {
@@ -11,14 +12,29 @@ export const healthCheck = (req: Request, res: Response) => {
   // Get CORS origin information
   const origin = req.headers.origin || 'unknown';
   
+  // Server information
+  const serverInfo = {
+    uptime: Math.floor(process.uptime()),
+    nodeVersion: process.version,
+    platform: process.platform,
+    memoryUsage: process.memoryUsage(),
+    cpuUsage: process.cpuUsage(),
+    hostname: os.hostname(),
+    loadAverage: os.loadavg(),
+    freeMemory: os.freemem(),
+    totalMemory: os.totalmem()
+  };
+  
   res.status(200).json({ 
     status: 'success',
     message: 'Server is up and running',
     timestamp: new Date().toISOString(),
     request: {
+      id: req.requestId || 'unknown',
       origin,
       method: req.method,
       path: req.path,
+      ip: req.ip,
       headers: {
         // Only include safe headers for debugging
         'user-agent': req.headers['user-agent'],
@@ -26,10 +42,14 @@ export const healthCheck = (req: Request, res: Response) => {
         'accept': req.headers['accept']
       }
     },
+    server: serverInfo,
     database: {
       status: dbStatus,
       name: dbName || 'Not connected',
-      host: mongoose.connection.host || 'Unknown'
+      host: mongoose.connection.host || 'Unknown',
+      port: mongoose.connection.port || 'Unknown',
+      models: Object.keys(mongoose.connection.models),
+      mongoose: mongoose.version
     },
     cors: {
       enabled: true,
@@ -43,7 +63,8 @@ export const healthCheck = (req: Request, res: Response) => {
       ]
     },
     env: {
-      nodeEnv: process.env.NODE_ENV || 'development'
+      nodeEnv: process.env.NODE_ENV || 'development',
+      port: process.env.PORT || '4000',
     }
   });
 };
