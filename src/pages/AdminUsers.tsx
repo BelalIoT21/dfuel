@@ -19,6 +19,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserWithoutSensitiveInfo[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   // Check if current user is admin
   useEffect(() => {
@@ -32,6 +33,8 @@ const AdminUsers = () => {
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -39,8 +42,11 @@ const AdminUsers = () => {
   }, []);
   
   const fetchUsers = async () => {
+    setLoading(true);
     try {
+      console.log("Fetching all users for admin dashboard");
       const allUsers = await userDatabase.getAllUsers();
+      console.log(`Fetched ${allUsers.length} users`);
       setUsers(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -49,12 +55,22 @@ const AdminUsers = () => {
         description: "Failed to load users",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
   
   useEffect(() => {
     fetchUsers();
   }, [toast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return <AdminAccessRequired />;
@@ -67,6 +83,7 @@ const AdminUsers = () => {
   
   const handleUserDeleted = () => {
     // Refresh the users list after a user is deleted
+    console.log("User deleted, refreshing user list");
     fetchUsers();
   };
 

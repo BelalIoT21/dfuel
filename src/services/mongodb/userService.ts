@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -91,19 +92,39 @@ class MongoUserService {
     if (!this.usersCollection) return false;
     
     try {
+      console.log(`MongoDB: Attempting to delete user ${id}`);
+      
       // First check if user exists and is not an admin
       const user = await this.getUserById(id);
-      if (!user) return false;
-      
-      if (user.isAdmin) {
-        console.error("Cannot delete admin user");
+      if (!user) {
+        console.log(`MongoDB: User ${id} not found`);
         return false;
       }
       
+      // Check if user is admin
+      if (user.isAdmin) {
+        console.error("MongoDB: Cannot delete admin user");
+        return false;
+      }
+      
+      // Check if user is special case (don't delete, just clear certifications)
+      const isSpecialUser = id === "user-1741957466063" || (user.email && user.email.includes("b.l.mishmish"));
+      if (isSpecialUser) {
+        console.log(`MongoDB: Special user ${id} (${user.email}), clearing certifications instead of deleting`);
+        // Clear certifications
+        const clearResult = await this.usersCollection.updateOne(
+          { id },
+          { $set: { certifications: [] } }
+        );
+        return clearResult.modifiedCount > 0;
+      }
+      
+      // Delete the user
       const result = await this.usersCollection.deleteOne({ id });
+      console.log(`MongoDB: User deletion result: deleted count=${result.deletedCount}`);
       return result.deletedCount > 0;
     } catch (error) {
-      console.error("Error deleting user in MongoDB:", error);
+      console.error("MongoDB: Error deleting user:", error);
       return false;
     }
   }

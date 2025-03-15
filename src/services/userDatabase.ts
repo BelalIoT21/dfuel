@@ -92,19 +92,38 @@ class UserDatabase {
     try {
       console.log(`Attempting to delete user ${userId}`);
       
-      // First check if user is special case (b.l.mishmish@gmail.com)
+      // Get user details first for special case checks
       const user = await this.findUserById(userId);
-      if (user && (user.email.includes("b.l.mishmish") || user.id === "user-1741957466063")) {
+      
+      // Check if user exists
+      if (!user) {
+        console.log(`User ${userId} not found`);
+        return false;
+      }
+      
+      // Check if user is admin
+      if (user.isAdmin) {
+        console.log(`Cannot delete admin user ${userId}`);
+        return false;
+      }
+      
+      // First check if user is special case (b.l.mishmish@gmail.com or user-1741957466063)
+      // Don't delete special users, just clear their certifications
+      if (user.email.includes("b.l.mishmish") || userId === "user-1741957466063") {
         console.log(`Special user handling for ${user.email}: Clear certifications instead of delete`);
         return await certificationService.clearAllCertifications(userId);
       }
       
       // Try MongoDB first
+      let success = false;
       try {
-        const success = await mongoDbService.deleteUser(userId);
+        console.log(`Attempting to delete user ${userId} from MongoDB`);
+        success = await mongoDbService.deleteUser(userId);
         if (success) {
           console.log(`Successfully deleted user ${userId} from MongoDB`);
           return true;
+        } else {
+          console.log(`Failed to delete user ${userId} from MongoDB`);
         }
       } catch (mongoError) {
         console.error(`MongoDB error deleting user ${userId}:`, mongoError);
@@ -112,17 +131,7 @@ class UserDatabase {
       
       // Try localStorage as fallback
       try {
-        // Get user to check if admin (don't allow admin deletion)
-        const user = localStorageService.findUserById(userId);
-        if (!user) {
-          console.log(`User ${userId} not found in localStorage`);
-          return false;
-        }
-        
-        if (user.isAdmin) {
-          console.log(`Cannot delete admin user ${userId}`);
-          return false;
-        }
+        console.log(`Attempting to delete user ${userId} from localStorage`);
         
         // Delete user bookings from the bookings collection
         const allBookings = localStorageService.getBookings();

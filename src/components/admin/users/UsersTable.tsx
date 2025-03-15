@@ -76,19 +76,64 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     setDeletingUserId(userId);
     
     try {
+      console.log(`Attempting to delete user ${userId} from UsersTable component`);
+      
+      // Check if user is special case that should not be deleted
+      const userToDelete = users.find(u => u.id === userId);
+      if (userToDelete?.email?.includes("b.l.mishmish") || userId === "user-1741957466063") {
+        console.log(`Cannot delete special user ${userId} (${userToDelete?.email})`);
+        toast({
+          title: "Cannot Delete Special User",
+          description: "This user cannot be deleted, but their certifications can be cleared.",
+          variant: "destructive"
+        });
+        
+        // Clear certifications instead of deleting
+        const certCleared = await userDatabase.addCertification(userId, "6"); // This triggers certification clearing
+        
+        if (certCleared) {
+          toast({
+            title: "User Updated",
+            description: "User certifications have been cleared instead of deletion.",
+          });
+          
+          // Refresh the user list
+          if (onUserDeleted) {
+            onUserDeleted();
+          }
+        }
+        
+        setDeletingUserId(null);
+        return;
+      }
+      
       // Try MongoDB first
-      let success = false;
       try {
-        success = await mongoDbService.deleteUser(userId);
+        console.log(`Trying MongoDB deletion for user ${userId}`);
+        const success = await mongoDbService.deleteUser(userId);
         console.log(`MongoDB deleteUser result: ${success}`);
+        
+        if (success) {
+          toast({
+            title: "User Deleted",
+            description: "User has been permanently deleted from MongoDB.",
+          });
+          
+          // Refresh the user list
+          if (onUserDeleted) {
+            onUserDeleted();
+          }
+          setDeletingUserId(null);
+          return;
+        }
       } catch (mongoError) {
         console.error("MongoDB error deleting user:", mongoError);
       }
       
-      // If MongoDB fails, use user database service
-      if (!success) {
-        success = await userDatabase.deleteUser(userId);
-      }
+      // If MongoDB fails or is unavailable, use local storage
+      console.log(`Trying localStorage deletion for user ${userId}`);
+      const success = await userDatabase.deleteUser(userId);
+      console.log(`localStorage deleteUser result: ${success}`);
       
       if (success) {
         toast({
@@ -103,7 +148,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete user.",
+          description: "Failed to delete user. They may be an admin or have special permissions.",
           variant: "destructive"
         });
       }
