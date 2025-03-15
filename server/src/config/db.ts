@@ -21,15 +21,6 @@ export const connectDB = async () => {
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
     
-    // Set up error handlers for mongoose connection
-    mongoose.connection.on('error', (err) => {
-      console.error(`Mongoose connection error: ${err.message}`);
-    });
-    
-    mongoose.connection.on('disconnected', () => {
-      console.warn('Mongoose disconnected from MongoDB');
-    });
-    
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
