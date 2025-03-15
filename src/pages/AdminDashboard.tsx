@@ -3,10 +3,15 @@ import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     // If not logged in, redirect to login
@@ -44,7 +49,16 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-4">
-      <DashboardContent />
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-end gap-2 mb-4">
+          <Link to="/admin/users">
+            <Button variant="outline" className="bg-white">
+              Manage Users
+            </Button>
+          </Link>
+        </div>
+        <DashboardContent />
+      </div>
     </div>
   );
 };

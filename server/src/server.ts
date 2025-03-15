@@ -6,8 +6,6 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { seedDatabase } from './utils/seed';  // Import the seed utility
-import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
 import { requestLogger, apiLogger } from './utils/logger'; // Import our new logger
 
 // Routes
@@ -24,16 +22,7 @@ dotenv.config();
 
 // Connect to MongoDB
 connectDB().then(async () => {
-  // Ensure admin user exists
-  await ensureAdminUser();
-  
-  // Seed the database after connection
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Seeding database with initial data...');
-    seedDatabase()
-      .then(() => console.log('Database seeded successfully!'))
-      .catch(err => console.error('Error seeding database:', err));
-  }
+  console.log('MongoDB connection established successfully');
 });
 
 const app = express();

@@ -1,3 +1,4 @@
+
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -83,18 +84,35 @@ class UserDatabase {
     try {
       console.log(`Attempting to delete user ${userId}`);
       
-      // Get user details first
-      const user = await this.findUserById(userId);
-      
-      // Check if user exists
-      if (!user) {
-        console.log(`User ${userId} not found`);
-        return false;
+      // Try to delete via API first
+      try {
+        console.log('Deleting via API...');
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch(`/api/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            console.log(`User ${userId} deleted successfully via API`);
+            return true;
+          }
+          
+          const errorData = await response.json();
+          console.error(`API deletion error: ${errorData.message}`);
+        }
+      } catch (apiError) {
+        console.error('API deletion error:', apiError);
       }
       
-      // Delete from MongoDB
+      // Fallback to MongoDB service if API fails
+      console.log('Fallback: Deleting via MongoDB service...');
       const success = await mongoDbService.deleteUser(userId);
-      console.log(`User ${userId} deletion result:`, success);
+      console.log(`MongoDB deletion result for ${userId}: ${success}`);
       return success;
     } catch (error) {
       console.error(`Error deleting user ${userId}:`, error);

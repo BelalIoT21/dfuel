@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 
@@ -58,6 +59,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     
     res.json({
       _id: updatedUser._id,
+      id: updatedUser._id, // Add id field for compatibility
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
@@ -92,6 +94,7 @@ export const updateUser = async (req: Request, res: Response) => {
     
     res.json({
       _id: updatedUser._id,
+      id: updatedUser._id, // Add id field for compatibility
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
@@ -152,16 +155,28 @@ export const changePassword = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id);
+    const userId = req.params.id;
+    console.log(`Attempting to delete user with ID: ${userId}`);
+    
+    // Find user by ID
+    const user = await User.findById(userId);
     
     if (!user) {
+      console.log(`User with ID ${userId} not found`);
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Allow deleting any user (including admins)
-    await user.deleteOne();
+    // Check if user is an admin
+    if (user.isAdmin) {
+      console.log(`Cannot delete admin user ${userId}`);
+      return res.status(403).json({ message: 'Cannot delete admin users' });
+    }
     
-    res.json({ message: 'User removed' });
+    // Delete user
+    await User.deleteOne({ _id: userId });
+    console.log(`User ${userId} deleted successfully`);
+    
+    res.json({ message: 'User removed successfully' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
     res.status(500).json({ 
