@@ -12,6 +12,7 @@ import { apiConnection } from '@/services/api/apiConnection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { setEnv, getEnv } from '@/utils/env';
+import { Badge } from '@/components/ui/badge';
 import { Server } from 'lucide-react';
 
 const Index = () => {
@@ -98,7 +99,7 @@ const Index = () => {
       apiConnection.setBaseUrl(customApiUrl);
       toast({
         title: "API URL Updated",
-        description: `API URL updated successfully. Checking connection...`,
+        description: `API URL set to: ${customApiUrl}. Checking connection...`,
       });
       
       // Check connection with new URL
@@ -137,30 +138,44 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           
+          {/* API URL Banner */}
+          <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Server size={16} className="text-blue-500" />
+              <span className="font-medium">Using API:</span>
+            </div>
+            <Badge variant="outline" className="bg-white px-3 py-1 font-mono text-xs">
+              {currentApiUrl}
+            </Badge>
+            <p className="mt-2 text-xs text-gray-500">
+              Running locally? Make sure your server is started with <code>npm run server</code>
+            </p>
+          </div>
+          
           {/* Server Status Display */}
           <div className="mt-4">
             <ConnectionStatus />
           </div>
           
-          {/* Hidden API URL Configuration (only for admins) */}
+          {/* API URL Configuration */}
           <div className="mt-4">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setShowApiConfig(!showApiConfig)}
             >
-              {showApiConfig ? 'Hide Server Settings' : 'Advanced Server Settings'}
+              {showApiConfig ? 'Hide API Config' : 'Configure API URL'}
             </Button>
             
             {showApiConfig && (
               <div className="mt-2 p-3 bg-gray-50 rounded">
                 <p className="text-xs text-gray-500 mb-2">
-                  Server configuration (admin only):
+                  You can configure a custom API URL below:
                 </p>
                 <div className="flex gap-2">
                   <Input
                     type="text"
-                    placeholder="Enter API URL"
+                    placeholder="http://localhost:4000/api"
                     value={customApiUrl}
                     onChange={(e) => setCustomApiUrl(e.target.value)}
                     className="text-sm"
@@ -183,7 +198,7 @@ const Index = () => {
                     checkServer();
                     toast({
                       title: "Default API URL Restored",
-                      description: "Using default server configuration"
+                      description: "Using http://localhost:4000/api"
                     });
                   }}
                 >
