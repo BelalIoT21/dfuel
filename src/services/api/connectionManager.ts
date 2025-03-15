@@ -9,7 +9,6 @@ class ConnectionManager {
   private baseUrl: string = '';
   private connectionStatus: 'connected' | 'disconnected' | 'checking' = 'checking';
   private maxRetries: number = 2;
-  private isOffline: boolean = false;
   private lastConnectionCheck: number = 0;
   private connectionCheckInterval: number = 10000; // 10 seconds
 
@@ -18,13 +17,9 @@ class ConnectionManager {
     this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
     console.log('API URL:', this.baseUrl);
     
-    // Start with offline mode if we can't connect at startup
-    this.isOffline = true;
-    
     // Initial connection check
     this.checkConnection().catch(() => {
-      console.log('Initial connection check failed, starting in offline mode');
-      this.isOffline = true;
+      console.log('Initial connection check failed');
       this.connectionStatus = 'disconnected';
     });
   }
@@ -37,7 +32,7 @@ class ConnectionManager {
       // Only check if we haven't checked in the last interval
       const now = Date.now();
       if (now - this.lastConnectionCheck < this.connectionCheckInterval) {
-        return !this.isOffline;
+        return this.connectionStatus === 'connected';
       }
       
       this.lastConnectionCheck = now;
@@ -56,7 +51,6 @@ class ConnectionManager {
       const data = await response.json();
       
       this.connectionStatus = response.ok ? 'connected' : 'disconnected';
-      this.isOffline = !response.ok;
       
       console.log(`Connection check result: ${response.ok ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
       console.log(`Health check response data:`, data);
@@ -65,7 +59,6 @@ class ConnectionManager {
     } catch (error) {
       console.error('Connection check failed:', error);
       this.connectionStatus = 'disconnected';
-      this.isOffline = true;
       return false;
     }
   }
@@ -78,35 +71,10 @@ class ConnectionManager {
   }
 
   /**
-   * Check if we're in offline mode
-   */
-  public isOfflineMode(): boolean {
-    return this.isOffline;
-  }
-
-  /**
-   * Set offline mode manually
-   */
-  public setOfflineMode(offline: boolean): void {
-    this.isOffline = offline;
-    this.connectionStatus = offline ? 'disconnected' : 'connected';
-  }
-
-  /**
    * Make an API request with retries
    */
   public async request<T>(endpoint: string, options: RequestInit, retryCount = 0): Promise<ApiResponse<T>> {
     try {
-      // Check if we're already marked as offline
-      if (this.isOffline && retryCount === 0) {
-        console.log(`Skipping API request to ${endpoint} in offline mode`);
-        return {
-          data: null,
-          error: 'Offline mode',
-          status: 0
-        };
-      }
-      
       // Prepare the full URL
       const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}/${endpoint.startsWith('/') ? endpoint.substring(1) : endpoint}`;
       
@@ -162,12 +130,6 @@ class ConnectionManager {
       if (retryCount < this.maxRetries) {
         console.log(`Retrying API request (${retryCount + 1}/${this.maxRetries})...`);
         return this.request<T>(endpoint, options, retryCount + 1);
-      }
-      
-      // Mark as offline after retries fail
-      if (retryCount === this.maxRetries) {
-        this.isOffline = true;
-        this.connectionStatus = 'disconnected';
       }
       
       return {

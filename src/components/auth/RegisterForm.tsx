@@ -9,10 +9,9 @@ import { AlertCircle } from 'lucide-react';
 interface RegisterFormProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
   onToggleMode: () => void;
-  isOfflineMode?: boolean;
 }
 
-export const RegisterForm = ({ onRegister, onToggleMode, isOfflineMode }: RegisterFormProps) => {
+export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,11 +59,6 @@ export const RegisterForm = ({ onRegister, onToggleMode, isOfflineMode }: Regist
       <CardHeader>
         <CardTitle>Register</CardTitle>
         <CardDescription>Create a new account to get started</CardDescription>
-        {isOfflineMode && (
-          <div className="mt-2 p-2 bg-amber-50 text-amber-800 rounded-md text-sm">
-            Creating an account in offline mode. Data will be stored locally.
-          </div>
-        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">

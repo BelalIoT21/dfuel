@@ -10,10 +10,9 @@ import { toast } from '@/components/ui/use-toast';
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
-  isOfflineMode?: boolean;
 }
 
-export const LoginForm = ({ onLogin, onToggleMode, isOfflineMode }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,22 +44,14 @@ export const LoginForm = ({ onLogin, onToggleMode, isOfflineMode }: LoginFormPro
   };
 
   const handleAdminLogin = async () => {
-    if (isOfflineMode) {
-      setEmail('admin@learnit.com');
-      setPassword('admin123');
-      
-      // Show toast
-      toast({
-        title: 'Admin Credentials Set',
-        description: 'Click Login to continue as admin in offline mode',
-      });
-    } else {
-      toast({
-        title: 'Admin Login',
-        description: 'Admin login is only available in offline mode',
-        variant: 'destructive',
-      });
-    }
+    setEmail('admin@learnit.com');
+    setPassword('admin123');
+    
+    // Show toast
+    toast({
+      title: 'Admin Credentials Set',
+      description: 'Click Login to continue as admin',
+    });
   };
 
   return (
@@ -106,16 +97,14 @@ export const LoginForm = ({ onLogin, onToggleMode, isOfflineMode }: LoginFormPro
             </div>
           )}
 
-          {isOfflineMode && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
-              onClick={handleAdminLogin}
-            >
-              Use Admin Credentials
-            </Button>
-          )}
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full" 
+            onClick={handleAdminLogin}
+          >
+            Use Admin Credentials
+          </Button>
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}

@@ -48,13 +48,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Login function
-  const login = async (email: string, password: string, offlineMode: boolean = false) => {
+  const login = async (email: string, password: string) => {
     try {
       console.log("Login attempt for:", email);
       
-      // Create admin user for offline mode
-      if (offlineMode && email === "admin@learnit.com" && password === "admin123") {
-        console.log("Creating offline admin user");
+      // Special handling for admin credentials
+      if (email === "admin@learnit.com" && password === "admin123") {
+        console.log("Using admin credentials");
+        
+        // First try API login
+        try {
+          const apiResponse = await apiService.login(email, password);
+          
+          if (apiResponse.data && apiResponse.data.token) {
+            console.log("API login successful for admin");
+            const userData = apiResponse.data;
+            
+            // Save the token for future API requests
+            localStorage.setItem('token', userData.token);
+            
+            // Store user data
+            const userToStore = userData.user || userData;
+            setUser(userToStore);
+            localStorage.setItem('learnit_user', JSON.stringify(userToStore));
+            
+            toast({
+              title: "Admin login successful",
+              description: "Welcome back, Administrator!"
+            });
+            
+            return true;
+          }
+        } catch (error) {
+          console.warn("API login failed for admin:", error);
+        }
+        
+        // Fallback to local admin if API fails
         const adminUser = {
           id: "admin-offline",
           _id: "admin-offline",
@@ -70,14 +99,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('learnit_user', JSON.stringify(adminUser));
         
         toast({
-          title: "Login successful (Offline mode)",
-          description: "Welcome back, Administrator!"
+          title: "Admin login successful",
+          description: "Welcome back, Administrator! (Local mode)"
         });
         
         return true;
       }
       
-      if (!offlineMode) {
+      // Standard login flow
+      try {
         // First try API login
         const apiResponse = await apiService.login(email, password);
         
@@ -106,6 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (apiResponse.error) {
           console.warn("API login failed, falling back to local auth:", apiResponse.error);
         }
+      } catch (error) {
+        console.warn("API error, trying local auth:", error);
       }
       
       // Local authentication
@@ -147,11 +179,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Register function
-  const register = async (email: string, password: string, name: string, offlineMode: boolean = false) => {
+  const register = async (email: string, password: string, name: string) => {
     try {
       console.log("Registration attempt for:", email);
       
-      if (!offlineMode) {
+      try {
         // First try API registration
         const apiResponse = await apiService.register({ email, password, name });
         
@@ -193,6 +225,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             throw new Error("User already exists");
           }
         }
+      } catch (error) {
+        console.warn("API error, trying local registration:", error);
       }
       
       // Fallback to local registration

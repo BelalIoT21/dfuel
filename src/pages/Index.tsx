@@ -11,11 +11,10 @@ import { connectionManager } from '@/services/api/connectionManager';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [offlineMode, setOfflineMode] = useState(false);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
-  // Check server connection and set offline mode right away
+  // Check server connection 
   useEffect(() => {
     const checkServer = async () => {
       try {
@@ -23,52 +22,16 @@ const Index = () => {
         setIsLoading(true);
         
         // Force a connection check
-        const isConnected = await connectionManager.checkConnection();
-        
-        // Set offline mode if not connected
-        if (!isConnected) {
-          console.log("Server not connected, enabling offline mode");
-          setOfflineMode(true);
-          toast({
-            title: 'Offline Mode Enabled',
-            description: 'Using local authentication. Some features may be limited.',
-            variant: 'default'
-          });
-        } else {
-          console.log("Server connected successfully");
-        }
-        
+        await connectionManager.checkConnection();
         setIsLoading(false);
       } catch (error) {
         console.error("Server connection error:", error);
-        setOfflineMode(true);
-        toast({
-          title: 'Offline Mode Enabled',
-          description: 'Using local authentication. Some features may be limited.',
-          variant: 'default'
-        });
         setIsLoading(false);
       }
     };
     
     // Run the check immediately
     checkServer();
-    
-    // Also mark as offline if there's no server response within 3 seconds
-    const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        console.log("Server connection timeout, enabling offline mode");
-        setOfflineMode(true);
-        setIsLoading(false);
-        toast({
-          title: 'Offline Mode Enabled',
-          description: 'Server connection timed out. Using local authentication.',
-          variant: 'default'
-        });
-      }
-    }, 3000);
-    
-    return () => clearTimeout(timeoutId);
   }, []);
 
   // Redirect if user is already logged in
@@ -85,17 +48,10 @@ const Index = () => {
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
-    console.log("Attempting login with:", email, "in", offlineMode ? "offline" : "online", "mode");
+    console.log("Attempting login with:", email);
     try {
-      if (offlineMode && email === "admin@learnit.com" && password === "admin123") {
-        console.log("Special handling for admin in offline mode");
-        // Special handling for admin in offline mode
-        await login(email, password, true);
-        return;
-      }
-      
-      // Always pass the offline mode flag so the auth context knows
-      await login(email, password, offlineMode);
+      // Always try to log in - the Auth context will handle all scenarios
+      await login(email, password);
     } catch (error) {
       console.error("Login error:", error);
       toast({
@@ -108,9 +64,9 @@ const Index = () => {
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email, "in", offlineMode ? "offline" : "online", "mode");
+    console.log("Attempting registration for:", email);
     try {
-      await register(email, password, name, offlineMode);
+      await register(email, password, name);
     } catch (error) {
       console.error("Registration error:", error);
       toast({
@@ -134,11 +90,6 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          {offlineMode && (
-            <div className="mt-2 p-2 bg-amber-50 text-amber-800 rounded-md text-sm">
-              <span className="font-medium">Offline Mode Active</span> - Using local authentication
-            </div>
-          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -152,8 +103,7 @@ const Index = () => {
             >
               <LoginForm 
                 onLogin={handleLogin} 
-                onToggleMode={toggleMode} 
-                isOfflineMode={offlineMode}
+                onToggleMode={toggleMode}
               />
             </motion.div>
           ) : (
@@ -166,8 +116,7 @@ const Index = () => {
             >
               <RegisterForm 
                 onRegister={handleRegister} 
-                onToggleMode={toggleMode} 
-                isOfflineMode={offlineMode}
+                onToggleMode={toggleMode}
               />
             </motion.div>
           )}
