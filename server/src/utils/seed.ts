@@ -9,15 +9,25 @@ import { connectDB } from '../config/db';
 dotenv.config();
 
 // Function to seed the database with initial data
-const seedDatabase = async () => {
+export const seedDatabase = async () => {
   try {
-    console.log('Connecting to database...');
-    await connectDB();
+    console.log('Starting database seeding process...');
+    
+    // Check if data already exists
+    const userCount = await User.countDocuments();
+    const machineCount = await Machine.countDocuments();
+    
+    if (userCount > 0 && machineCount > 0) {
+      console.log(`Database already contains ${userCount} users and ${machineCount} machines. Skipping seed.`);
+      return;
+    }
 
-    // Clear existing data
-    console.log('Clearing existing data...');
-    await User.deleteMany({});
-    await Machine.deleteMany({});
+    // Clear existing data if only partial data exists
+    if (userCount === 0 || machineCount === 0) {
+      console.log('Clearing existing data to ensure consistent seeding...');
+      await User.deleteMany({});
+      await Machine.deleteMany({});
+    }
 
     // Create admin user
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@learnit.com';
@@ -108,13 +118,64 @@ const seedDatabase = async () => {
     ];
     await regularUser.save();
 
+    // Create some bookings
+    console.log('Creating sample bookings...');
+    
+    // Get today and future dates
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+      return date.toISOString().split('T')[0];
+    };
+    
+    // Create bookings in the User model (embedded bookings)
+    regularUser.bookings = [
+      {
+        machineId: createdMachines[0]._id.toString(), // 3D Printer
+        date: formatDate(today),
+        time: '10:00 - 12:00',
+        status: 'Approved'
+      },
+      {
+        machineId: createdMachines[1]._id.toString(), // Laser Cutter
+        date: formatDate(tomorrow),
+        time: '14:00 - 16:00',
+        status: 'Pending'
+      },
+      {
+        machineId: createdMachines[2]._id.toString(), // CNC Router
+        date: formatDate(nextWeek),
+        time: '09:00 - 11:00',
+        status: 'Pending'
+      }
+    ];
+    
+    await regularUser.save();
+    
     console.log('Database seeded successfully!');
-    process.exit(0);
   } catch (error) {
     console.error('Error seeding database:', error);
-    process.exit(1);
+    throw error; // Re-throw to be caught by the caller
   }
 };
 
-// Run the seeding function
-seedDatabase();
+// If this script is run directly (not imported)
+if (require.main === module) {
+  // Connect to the database and seed it
+  connectDB()
+    .then(seedDatabase)
+    .then(() => {
+      console.log('Seeding completed, exiting process');
+      process.exit(0);
+    })
+    .catch(error => {
+      console.error('Seeding failed:', error);
+      process.exit(1);
+    });
+}

@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
+import { seedDatabase } from './utils/seed';  // Import the seed utility
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -21,7 +22,15 @@ import healthRoutes from './routes/healthRoutes';
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  // Seed the database after connection
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Seeding database with initial data...');
+    seedDatabase()
+      .then(() => console.log('Database seeded successfully!'))
+      .catch(err => console.error('Error seeding database:', err));
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 4000;
