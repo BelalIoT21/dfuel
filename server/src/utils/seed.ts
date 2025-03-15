@@ -109,8 +109,8 @@ export const seedDatabase = async () => {
     console.log('Adding certifications to admin...');
     adminUser.certifications = createdMachines.map(machine => machine._id.toString());
     await adminUser.save();
-
-    // All bookings and regular users are now removed from seeding
+    
+    // No regular users or bookings - commented out as requested
     
     console.log('Database seeded successfully!');
   } catch (error) {

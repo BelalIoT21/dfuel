@@ -117,7 +117,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
       
-      const success = await certificationService.addMachineSafetyCertification(userId);
+      // Directly use machineId "6" for Machine Safety Course
+      const success = await certificationService.addCertification(userId, "6");
       
       if (success) {
         toast({
@@ -158,7 +159,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Removing Machine Safety Course (ID: 6) for user ${userId}`);
       
-      const success = await certificationService.removeMachineSafetyCertification(userId);
+      // Directly use machineId "6" for Machine Safety Course
+      const success = await certificationService.removeCertification(userId, "6");
       
       if (success) {
         toast({
@@ -229,8 +231,16 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }
   };
 
+  // Get userId from either id or _id field
   const userId = user.id || user._id;
-  const hasMachineSafetyCourse = user?.certifications?.includes("6");
+  
+  // Check for Machine Safety Course certification (both "6" and 6 for compatibility)
+  const hasMachineSafetyCourse = user?.certifications?.some(cert => 
+    cert === "6" || cert === 6 || cert.toString() === "6"
+  );
+
+  // This is for admins to be able to bypass the Machine Safety Course requirement
+  const isAdmin = user?.isAdmin === true;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -297,11 +307,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddCertification(userId, "3")}
-                    disabled={loading === "3" || !hasMachineSafetyCourse}
-                    className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                    disabled={loading === "3" || (!hasMachineSafetyCourse && !isAdmin)}
+                    className={!hasMachineSafetyCourse && !isAdmin ? "opacity-50" : ""}
                   >
                     {loading === "3" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                    {!hasMachineSafetyCourse && !isAdmin ? "Requires Safety Course" : "Add"}
                   </Button>
                 )}
               </div>
@@ -326,11 +336,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddCertification(userId, "5")}
-                    disabled={loading === "5" || !hasMachineSafetyCourse}
-                    className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                    disabled={loading === "5" || (!hasMachineSafetyCourse && !isAdmin)}
+                    className={!hasMachineSafetyCourse && !isAdmin ? "opacity-50" : ""}
                   >
                     {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                    {!hasMachineSafetyCourse && !isAdmin ? "Requires Safety Course" : "Add"}
                   </Button>
                 )}
               </div>
@@ -356,11 +366,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       variant="outline"
                       size="sm"
                       onClick={() => handleAddCertification(userId, machine.id)}
-                      disabled={loading === machine.id || !hasMachineSafetyCourse}
-                      className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                      disabled={loading === machine.id || (!hasMachineSafetyCourse && !isAdmin)}
+                      className={!hasMachineSafetyCourse && !isAdmin ? "opacity-50" : ""}
                     >
                       {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                      {!hasMachineSafetyCourse && !isAdmin ? "Requires Safety Course" : "Add"}
                     </Button>
                   )}
                 </div>

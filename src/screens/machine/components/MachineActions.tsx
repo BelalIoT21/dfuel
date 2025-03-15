@@ -31,7 +31,7 @@ const MachineActions = ({
   // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
   const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
   
-  // Determine if user can get certified (must have Machine Safety Course)
+  // Determine if user can get certified (must have Machine Safety Course or be admin)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
   // Special handling for special users
@@ -39,6 +39,9 @@ const MachineActions = ({
   
   // Is this the Machine Safety Course itself?
   const isSafetyCourse = machineType === 'Safety Course';
+  
+  // Admin should always be able to get certified and book machines
+  const showGetCertified = isAdmin ? !isCertified : (!isCertified && (canGetCertified || isSafetyCourse));
 
   return (
     <View style={styles.actionContainer}>
@@ -60,13 +63,13 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {(!isCertified && (canGetCertified || isSafetyCourse)) && (
+      {showGetCertified && (
         <Button 
           mode="contained" 
           icon="certificate" 
           style={styles.actionButton}
           onPress={onGetCertified}
-          disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
+          disabled={!isAdmin && isSpecialUser} // Only disable for special users unless admin
         >
           Get Certified
         </Button>

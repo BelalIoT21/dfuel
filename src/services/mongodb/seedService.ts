@@ -64,7 +64,7 @@ class MongoSeedService {
     }
   }
   
-  // Seed bookings - no longer creates any bookings
+  // Seed method - no longer creates any bookings
   async seedBookings(): Promise<void> {
     await this.initCollections();
     if (!this.usersCollection) return;
@@ -92,6 +92,20 @@ class MongoSeedService {
       console.log("Bookings seeding skipped as requested");
     } catch (error) {
       console.error("Error checking bookings in MongoDB:", error);
+    }
+  }
+  
+  // Main seed method
+  async seed(): Promise<boolean> {
+    try {
+      console.log("Starting MongoDB seeding process...");
+      await this.seedUsers();
+      // Skip booking seeding as requested
+      console.log("MongoDB seeding completed successfully");
+      return true;
+    } catch (error) {
+      console.error("Error during MongoDB seeding:", error);
+      return false;
     }
   }
 }

@@ -94,7 +94,94 @@ class MongoMachineService {
     if (!this.machinesCollection) return null;
     
     try {
-      const machine = await this.machinesCollection.findOne({ _id: machineId });
+      // Try to find by direct _id match
+      let machine = await this.machinesCollection.findOne({ _id: machineId });
+      
+      // If not found, try by numeric ID match
+      if (!machine) {
+        machine = await this.machinesCollection.findOne({ _id: machineId.toString() });
+      }
+      
+      // Handle MongoDB's ObjectId strings
+      if (!machine && machineId.length === 24) {
+        try {
+          machine = await this.machinesCollection.findOne({ _id: machineId });
+        } catch (err) {
+          console.error("Error using ObjectId:", err);
+        }
+      }
+      
+      // If still not found by IDs, map specific machine IDs
+      if (!machine) {
+        if (machineId === "1" || machineId === 1) {
+          machine = {
+            _id: "1",
+            name: "Laser Cutter",
+            type: "Machine",
+            description: "A high-quality laser cutter for detailed cutting projects.",
+            status: "Available",
+            requiresCertification: true,
+            difficulty: "Intermediate",
+            imageUrl: "/machines/laser-cutter.jpg"
+          };
+        } else if (machineId === "2" || machineId === 2) {
+          machine = {
+            _id: "2",
+            name: "Ultimaker",
+            type: "3D Printer",
+            description: "Ultimaker 3D printer for precise prototyping and modeling.",
+            status: "Available",
+            requiresCertification: true,
+            difficulty: "Intermediate",
+            imageUrl: "/machines/3d-printer.jpg"
+          };
+        } else if (machineId === "3" || machineId === 3) {
+          machine = {
+            _id: "3",
+            name: "Safety Cabinet",
+            type: "Safety Cabinet",
+            description: "Safety equipment storage cabinet.",
+            status: "Available",
+            requiresCertification: false,
+            difficulty: "Beginner",
+            imageUrl: "/machines/safety-cabinet.jpg"
+          };
+        } else if (machineId === "4" || machineId === 4) {
+          machine = {
+            _id: "4",
+            name: "X1 E Carbon 3D Printer",
+            type: "3D Printer",
+            description: "Advanced 3D printer for carbon fiber composites.",
+            status: "Available",
+            requiresCertification: true,
+            difficulty: "Advanced",
+            imageUrl: "/machines/carbon-printer.jpg"
+          };
+        } else if (machineId === "5" || machineId === 5) {
+          machine = {
+            _id: "5",
+            name: "Bambu Lab X1 E",
+            type: "3D Printer",
+            description: "High-speed multi-material 3D printer with exceptional print quality.",
+            status: "Available",
+            requiresCertification: true,
+            difficulty: "Intermediate",
+            imageUrl: "/machines/bambu-printer.jpg"
+          };
+        } else if (machineId === "6" || machineId === 6) {
+          machine = {
+            _id: "6",
+            name: "Machine Safety Course",
+            type: "Safety Course",
+            description: "Required safety training for using machines.",
+            status: "Available",
+            requiresCertification: false,
+            difficulty: "Beginner",
+            imageUrl: "/machines/safety-course.jpg"
+          };
+        }
+      }
+      
       console.log(`Retrieved machine from MongoDB: ${machine?.name || 'not found'}`);
       return machine;
     } catch (error) {
@@ -165,7 +252,7 @@ class MongoMachineService {
           { 
             _id: '1', 
             name: 'Laser Cutter', 
-            type: 'Cutting', 
+            type: 'Machine', 
             status: 'Available', 
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
@@ -174,8 +261,8 @@ class MongoMachineService {
           },
           { 
             _id: '2', 
-            name: '3D Printer', 
-            type: 'Printing', 
+            name: 'Ultimaker', 
+            type: '3D Printer', 
             status: 'Available', 
             description: 'FDM 3D printing for rapid prototyping and model creation.', 
             requiresCertification: true,
@@ -184,29 +271,8 @@ class MongoMachineService {
           },
           { 
             _id: '3', 
-            name: 'CNC Router', 
-            type: 'Cutting', 
-            status: 'Maintenance', 
-            description: 'Computer-controlled cutting machine for wood, plastic, and soft metals.', 
-            requiresCertification: true,
-            difficulty: 'Advanced',
-            maintenanceNote: 'Undergoing monthly maintenance, available next week.',
-            imageUrl: '/machines/cnc-router.jpg'
-          },
-          { 
-            _id: '4', 
-            name: 'Vinyl Cutter', 
-            type: 'Cutting', 
-            status: 'Available', 
-            description: 'For cutting vinyl, paper, and other thin materials for signs and decorations.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/vinyl-cutter.jpg'
-          },
-          { 
-            _id: '5', 
             name: 'Safety Cabinet', 
-            type: 'Safety', 
+            type: 'Safety Cabinet', 
             status: 'Available', 
             description: 'Safety equipment storage cabinet.', 
             requiresCertification: false,
@@ -214,9 +280,29 @@ class MongoMachineService {
             imageUrl: '/machines/safety-cabinet.jpg'
           },
           { 
+            _id: '4', 
+            name: 'X1 E Carbon 3D Printer', 
+            type: '3D Printer', 
+            status: 'Available', 
+            description: 'Advanced 3D printer for carbon fiber composites.', 
+            requiresCertification: true,
+            difficulty: 'Advanced',
+            imageUrl: '/machines/carbon-printer.jpg'
+          },
+          { 
+            _id: '5', 
+            name: 'Bambu Lab X1 E', 
+            type: '3D Printer', 
+            status: 'Available', 
+            description: 'High-speed multi-material 3D printer with exceptional print quality.', 
+            requiresCertification: true,
+            difficulty: 'Intermediate',
+            imageUrl: '/machines/bambu-printer.jpg'
+          },
+          { 
             _id: '6', 
             name: 'Machine Safety Course', 
-            type: 'Course', 
+            type: 'Safety Course', 
             status: 'Available', 
             description: 'Required safety training for using machines.', 
             requiresCertification: false,
