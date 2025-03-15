@@ -1,8 +1,10 @@
+
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Try to connect to local API first, but have a fallback to relative path
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+// API endpoints configuration with relative path first for deployed environments
+// and localhost as fallback for local development
+const API_ENDPOINTS = ['/api', 'http://localhost:4000/api'];
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
@@ -115,7 +117,7 @@ class ApiService {
         const { toast } = useToast();
         toast({
           title: `API Error`,
-          description: "Could not connect to server. Using local storage fallback.",
+          description: "Could not connect to server. Please ensure the backend server is running.",
           variant: 'destructive'
         });
       }

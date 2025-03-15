@@ -28,21 +28,21 @@ const Index = () => {
             description: 'Successfully connected to the backend server',
           });
         } else {
-          console.log("Server health check failed, but no error");
+          console.log("Server health check failed");
           setServerStatus('disconnected');
           toast({
-            title: 'Running in Demo Mode',
-            description: 'Could not connect to the backend server. Using mock data.',
-            variant: 'default'
+            title: 'Server Connection Failed',
+            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+            variant: 'destructive'
           });
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
-          title: 'Running in Demo Mode',
-          description: 'Could not connect to the backend server. Using mock data.',
-          variant: 'default'
+          title: 'Server Connection Failed',
+          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+          variant: 'destructive'
         });
       }
     };
@@ -89,10 +89,10 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-amber-600'}`}>
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
               {serverStatus === 'connected' 
                 ? 'Connected to server' 
-                : 'Running in demo mode (offline)'}
+                : 'Server connection failed. Please ensure the server is running at http://localhost:4000.'}
             </div>
           )}
         </div>
