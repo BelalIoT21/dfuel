@@ -3,7 +3,6 @@ import { Machine } from '../types/database';
 import { machines } from '../utils/data';
 import { apiService } from './apiService';
 import mongoDbService from './mongoDbService';
-import { toast } from '@/components/ui/use-toast';
 
 class MachineService {
   private machineCache: Machine[] | null = null;
@@ -87,48 +86,13 @@ class MachineService {
     }
   }
 
-  // Update machine status with improved feedback
+  // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      console.log(`Updating status for machine ${machineId} to ${status}${note ? ` with note: ${note}` : ''}`);
-      
-      // First try direct API call
-      const response = await apiService.updateMachineStatus(machineId, status, note);
-      if (response && !response.error) {
-        console.log(`Successfully updated machine status via API: ${machineId}`);
-        toast({
-          title: "Status Updated",
-          description: `Machine status has been updated to ${status}`,
-        });
-        return true;
-      }
-      
-      // Then try MongoDB service
-      const mongoResult = await mongoDbService.updateMachineStatus(machineId, status, note);
-      if (mongoResult) {
-        console.log(`Successfully updated machine status via MongoDB: ${machineId}`);
-        toast({
-          title: "Status Updated",
-          description: `Machine status has been updated to ${status}`,
-        });
-        return true;
-      }
-      
-      // If both failed, show error
-      console.error(`Failed to update machine status: ${machineId}`);
-      toast({
-        title: "Update Failed",
-        description: "Could not update machine status. Please try again.",
-        variant: "destructive"
-      });
-      return false;
+      // Try MongoDB service
+      return await mongoDbService.updateMachineStatus(machineId, status, note);
     } catch (error) {
       console.error(`Error updating status for machine ${machineId}:`, error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while updating status",
-        variant: "destructive"
-      });
       return false;
     }
   }

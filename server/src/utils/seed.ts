@@ -10,16 +10,6 @@ import bcrypt from 'bcryptjs';
 // Load environment variables
 dotenv.config();
 
-// Define a type for the booking objects to avoid implicit any arrays
-interface BookingSeed {
-  user: mongoose.Types.ObjectId;
-  machine: mongoose.Types.ObjectId;
-  date: Date;
-  time: string;
-  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
-  clientId?: string;
-}
-
 // Function to seed the database with initial data
 export const seedDatabase = async () => {
   try {
@@ -63,8 +53,18 @@ export const seedDatabase = async () => {
     // Create regular user
     console.log('Creating regular user...');
     const regularUser = await User.create({
-      name: 'Bilal Mishmish',
-      email: 'b.l.mishmish@gmail.com',
+      name: 'John Doe',
+      email: 'user@example.com',
+      password: userPassword,
+      isAdmin: false,
+      certifications: []
+    });
+
+    // Create test user
+    console.log('Creating test user...');
+    const testUser = await User.create({
+      name: 'Jane Smith',
+      email: 'jane@example.com',
       password: userPassword,
       isAdmin: false,
       certifications: []
@@ -94,6 +94,25 @@ export const seedDatabase = async () => {
         specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU'
       },
       {
+        name: 'Safety Course',
+        type: 'Safety Course',
+        description: 'Required safety training for all makerspace users.',
+        status: 'Available',
+        requiresCertification: false,
+        difficulty: 'Beginner',
+        imageUrl: '/machines/safety.jpg'
+      },
+      {
+        name: 'CNC Mill',
+        type: 'CNC Machine',
+        description: 'Industrial CNC milling machine for precision metalworking.',
+        status: 'Available',
+        requiresCertification: true,
+        difficulty: 'Advanced',
+        imageUrl: '/machines/cnc-mill.jpg',
+        specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
+      },
+      {
         name: 'X1 E Carbon 3D Printer',
         type: '3D Printer',
         description: 'High-speed multi-material 3D printer with exceptional print quality.',
@@ -104,14 +123,25 @@ export const seedDatabase = async () => {
         specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS'
       },
       {
-        name: 'Bambu Lab X1 E',
-        type: '3D Printer',
-        description: 'Next-generation 3D printing technology',
+        name: 'Soldering Station',
+        type: 'Electronics',
+        description: 'Professional soldering station for electronics work.',
         status: 'Available',
         requiresCertification: true,
-        difficulty: 'Advanced',
-        imageUrl: '/machines/cnc-mill.jpg',
-        specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
+        difficulty: 'Intermediate',
+        imageUrl: '/machines/soldering-station.jpg',
+        specifications: 'Temperature range: 200°C-450°C, Digital control, ESD safe'
+      },
+      {
+        name: 'Vinyl Cutter',
+        type: 'Cutting',
+        description: 'Precision vinyl cutter for signs, stickers, and heat transfers.',
+        status: 'Maintenance',
+        requiresCertification: false,
+        difficulty: 'Beginner',
+        imageUrl: '/machines/vinyl-cutter.jpg',
+        maintenanceNote: 'Replacing cutting blade, available next week.',
+        specifications: 'Cutting width: 24", Materials: Vinyl, Paper, Heat Transfer Vinyl'
       },
       {
         name: 'Safety Cabinet',
@@ -143,11 +173,19 @@ export const seedDatabase = async () => {
     regularUser.certifications = [
       machineMap['Laser Cutter'],
       machineMap['Ultimaker'],
-      machineMap['X1 E Carbon 3D Printer'],
-      machineMap['Bambu Lab X1 E'],
-      machineMap['Safety Cabinet']
+      machineMap['Safety Course'],
+      machineMap['X1 E Carbon 3D Printer']
     ];
     await regularUser.save();
+
+    // Add different certifications to test user
+    console.log('Adding certifications to test user...');
+    testUser.certifications = [
+      machineMap['Safety Course'],
+      machineMap['Soldering Station'],
+      machineMap['Safety Cabinet']
+    ];
+    await testUser.save();
 
     // Create some bookings
     console.log('Creating sample bookings...');
@@ -161,12 +199,43 @@ export const seedDatabase = async () => {
     nextWeek.setDate(nextWeek.getDate() + 7);
     
     // Create bookings using the Booking model with clientId field
-    const bookings: BookingSeed[] = [];
+    const bookings = [
+      {
+        user: regularUser._id,
+        machine: machineMap['Laser Cutter'],
+        date: today,
+        time: '10:00 - 12:00',
+        status: 'Approved',
+        clientId: `booking-${Date.now() - 100000}` // Add a clientId for client compatibility
+      },
+      {
+        user: regularUser._id,
+        machine: machineMap['Ultimaker'],
+        date: tomorrow,
+        time: '14:00 - 16:00',
+        status: 'Pending',
+        clientId: `booking-${Date.now() - 50000}` // Add a clientId for client compatibility
+      },
+      {
+        user: testUser._id,
+        machine: machineMap['Soldering Station'],
+        date: today,
+        time: '13:00 - 15:00',
+        status: 'Approved',
+        clientId: `booking-${Date.now() - 25000}`
+      },
+      {
+        user: testUser._id,
+        machine: machineMap['X1 E Carbon 3D Printer'],
+        date: nextWeek,
+        time: '09:00 - 11:00',
+        status: 'Pending',
+        clientId: `booking-${Date.now()}`
+      }
+    ];
     
-    // Insert bookings if there are any
-    if (bookings.length > 0) {
-      await Booking.insertMany(bookings);
-    }
+    // Insert bookings
+    await Booking.insertMany(bookings);
     
     console.log('Database seeded successfully!');
     // Display summary of what was created
