@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, Loader2 } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import mongoDbService from '@/services/mongoDbService';
@@ -19,47 +19,32 @@ export const PendingBookingsCard = ({
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
+  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected') => {
     setProcessingBookingId(bookingId);
     
     try {
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
-      if (action === 'Deleted') {
-        // Use MongoDB to delete the booking
-        await mongoDbService.deleteBooking(bookingId);
-        
+      // Handle approval/rejection
+      const success = await mongoDbService.updateBookingStatus(bookingId, action);
+      console.log(`MongoDB updateBookingStatus result: ${success}`);
+      
+      if (success) {
         toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from the system."
+          title: `Booking ${action}`,
+          description: `The booking has been ${action.toLowerCase()} successfully.`
         });
         
-        // After deleting, trigger refresh of the bookings list
+        // After updating, trigger refresh of the bookings list
         if (onBookingStatusChange) {
           onBookingStatusChange();
         }
       } else {
-        // Handle approval/rejection
-        const success = await mongoDbService.updateBookingStatus(bookingId, action);
-        console.log(`MongoDB updateBookingStatus result: ${success}`);
-        
-        if (success) {
-          toast({
-            title: `Booking ${action}`,
-            description: `The booking has been ${action.toLowerCase()} successfully.`
-          });
-          
-          // After updating, trigger refresh of the bookings list
-          if (onBookingStatusChange) {
-            onBookingStatusChange();
-          }
-        } else {
-          toast({
-            title: "Action Failed",
-            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Action Failed",
+          description: `Could not ${action.toLowerCase()} booking. Please try again.`,
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error(`Error processing booking action:`, error);
@@ -123,16 +108,6 @@ export const PendingBookingsCard = ({
                 >
                   {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
-                  disabled={processingBookingId === booking.id}
-                >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
-                  Delete
                 </Button>
               </div>
             </div>
