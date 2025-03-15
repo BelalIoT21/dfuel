@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import { User } from '../models/User';
@@ -225,12 +224,34 @@ export const getAllBookings = async (req: Request, res: Response) => {
   try {
     console.log('Fetching all bookings for admin');
     const bookings = await Booking.find({})
-      .populate('machine', 'name type')
-      .populate('user', 'name email')
+      .populate({
+        path: 'machine',
+        select: 'name type'
+      })
+      .populate({
+        path: 'user',
+        select: 'name email'
+      })
       .sort({ date: -1 });
     
+    // Format the response to include machine name and user name
+    const formattedBookings = bookings.map(booking => {
+      return {
+        _id: booking._id,
+        machineName: booking.machine ? booking.machine.name : 'Unknown Machine',
+        machineType: booking.machine ? booking.machine.type : 'Unknown Type',
+        userName: booking.user ? booking.user.name : 'Unknown User',
+        userEmail: booking.user ? booking.user.email : 'Unknown Email',
+        date: booking.date,
+        time: booking.time,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt
+      };
+    });
+    
     console.log('Found total bookings:', bookings.length);
-    res.json(bookings);
+    res.json(formattedBookings);
   } catch (error) {
     console.error('Error in getAllBookings:', error);
     res.status(500).json({ 

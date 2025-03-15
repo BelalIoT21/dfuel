@@ -65,27 +65,26 @@ export class BookingService {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      // Try API first
-      try {
-        const response = await apiService.updateBookingStatus(bookingId, status);
-        if (response.data) {
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error when updating booking status:", apiError);
+      // Use the API service which has proper authentication
+      const response = await apiService.updateBookingStatus(bookingId, status);
+      if (!response.error) {
+        return true;
       }
       
-      // Then try MongoDB directly if not in web environment
+      // If API fails, try MongoDB directly if not in web environment
       if (!isWeb) {
         try {
-          await mongoDbService.updateBookingStatus(bookingId, status);
-          return true;
+          const success = await mongoDbService.updateBookingStatus(bookingId, status);
+          if (success) {
+            console.log("Booking status updated via MongoDB");
+            return true;
+          }
         } catch (mongoError) {
           console.error("MongoDB error when updating booking status:", mongoError);
         }
       }
       
-      // Finally try local storage
+      console.error("Failed to update booking status");
       return false;
     } catch (error) {
       console.error("Error in BookingService.updateBookingStatus:", error);

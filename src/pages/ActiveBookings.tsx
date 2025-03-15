@@ -41,6 +41,7 @@ const ActiveBookings = () => {
         setLoading(true);
         const response = await apiService.getAllBookings();
         if (response.data) {
+          console.log('Received bookings:', response.data);
           setBookings(response.data);
         }
       } catch (error) {
@@ -61,7 +62,7 @@ const ActiveBookings = () => {
   // Filter bookings based on selected filter
   const filteredBookings = filter === 'all' 
     ? bookings 
-    : bookings.filter((booking: any) => booking.status.toLowerCase() === filter);
+    : bookings.filter((booking: any) => booking.status.toLowerCase() === filter.toLowerCase());
 
   // Handle approval or rejection
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
@@ -100,10 +101,10 @@ const ActiveBookings = () => {
     <div className="space-y-4">
       {filteredBookings.length > 0 ? (
         filteredBookings.map((booking: any) => (
-          <Card key={booking.id} className="overflow-hidden">
+          <Card key={booking._id} className="overflow-hidden">
             <CardHeader className="p-4 pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">{booking.machineName}</CardTitle>
+                <CardTitle className="text-lg">{booking.machineName || 'Unknown Machine'}</CardTitle>
                 <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
                       className={`
                         ${booking.status === 'Approved' && 'bg-green-500 hover:bg-green-600'} 
@@ -114,12 +115,12 @@ const ActiveBookings = () => {
                 </Badge>
               </div>
               <CardDescription>
-                <span className="font-medium">User:</span> {booking.userName}
+                <span className="font-medium">User:</span> {booking.userName || 'Unknown User'}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <p className="text-sm mb-3">
-                <span className="font-medium">Date & Time:</span> {booking.date} at {booking.time}
+                <span className="font-medium">Date & Time:</span> {new Date(booking.date).toLocaleDateString()} at {booking.time}
               </p>
               
               {booking.status === 'Pending' ? (
@@ -127,7 +128,7 @@ const ActiveBookings = () => {
                   <Button 
                     size="sm" 
                     className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-1 w-full"
-                    onClick={() => handleStatusChange(booking.id, 'Approved')}
+                    onClick={() => handleStatusChange(booking._id, 'Approved')}
                   >
                     <CheckCircle size={16} />
                     Approve
@@ -136,7 +137,7 @@ const ActiveBookings = () => {
                     size="sm" 
                     variant="destructive"
                     className="flex items-center justify-center gap-1 w-full"
-                    onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                    onClick={() => handleStatusChange(booking._id, 'Rejected')}
                   >
                     <XCircle size={16} />
                     Reject
@@ -181,11 +182,11 @@ const ActiveBookings = () => {
         <TableBody>
           {filteredBookings.length > 0 ? (
             filteredBookings.map((booking: any) => (
-              <TableRow key={booking.id}>
-                <TableCell className="font-medium">{booking.machineName}</TableCell>
-                <TableCell>{booking.userName}</TableCell>
+              <TableRow key={booking._id}>
+                <TableCell className="font-medium">{booking.machineName || 'Unknown Machine'}</TableCell>
+                <TableCell>{booking.userName || 'Unknown User'}</TableCell>
                 <TableCell>
-                  {booking.date} at {booking.time}
+                  {new Date(booking.date).toLocaleDateString()} at {booking.time}
                 </TableCell>
                 <TableCell>
                   <Badge variant={booking.status === 'Approved' ? 'default' : 'outline'} 
@@ -203,7 +204,7 @@ const ActiveBookings = () => {
                       <Button 
                         size="sm" 
                         className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
-                        onClick={() => handleStatusChange(booking.id, 'Approved')}
+                        onClick={() => handleStatusChange(booking._id, 'Approved')}
                       >
                         <CheckCircle size={16} />
                         Approve
@@ -212,7 +213,7 @@ const ActiveBookings = () => {
                         size="sm" 
                         variant="destructive"
                         className="flex items-center gap-1"
-                        onClick={() => handleStatusChange(booking.id, 'Rejected')}
+                        onClick={() => handleStatusChange(booking._id, 'Rejected')}
                       >
                         <XCircle size={16} />
                         Reject
