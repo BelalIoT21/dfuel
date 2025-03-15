@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -78,31 +77,15 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     try {
       console.log(`Attempting to delete user ${userId} from UsersTable component`);
       
-      // Check if user is special case that should not be deleted
+      // Check if user is admin
       const userToDelete = users.find(u => u.id === userId);
-      if (userToDelete?.email?.includes("b.l.mishmish") || userId === "user-1741957466063") {
-        console.log(`Cannot delete special user ${userId} (${userToDelete?.email})`);
+      if (userToDelete?.isAdmin) {
+        console.log(`Cannot delete admin user ${userId}`);
         toast({
-          title: "Cannot Delete Special User",
-          description: "This user cannot be deleted, but their certifications can be cleared.",
+          title: "Cannot Delete Admin",
+          description: "Admin users cannot be deleted for security reasons.",
           variant: "destructive"
         });
-        
-        // Clear certifications instead of deleting
-        const certCleared = await userDatabase.addCertification(userId, "6"); // This triggers certification clearing
-        
-        if (certCleared) {
-          toast({
-            title: "User Updated",
-            description: "User certifications have been cleared instead of deletion.",
-          });
-          
-          // Refresh the user list
-          if (onUserDeleted) {
-            onUserDeleted();
-          }
-        }
-        
         setDeletingUserId(null);
         return;
       }

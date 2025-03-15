@@ -10,6 +10,8 @@ import { UserWithoutSensitiveInfo } from '../types/database';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { StatsOverview } from '@/components/admin/StatsOverview';
 import { machines } from '@/utils/data';
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 // Use localStorage to check admin status instead of AuthContext
 import { storage } from '@/utils/storage';
@@ -20,6 +22,7 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserWithoutSensitiveInfo[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Check if current user is admin
   useEffect(() => {
@@ -42,7 +45,7 @@ const AdminUsers = () => {
   }, []);
   
   const fetchUsers = async () => {
-    setLoading(true);
+    setRefreshing(true);
     try {
       console.log("Fetching all users for admin dashboard");
       const allUsers = await userDatabase.getAllUsers();
@@ -56,7 +59,7 @@ const AdminUsers = () => {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
   
@@ -94,7 +97,18 @@ const AdminUsers = () => {
           <BackToAdminButton />
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">User Management</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <Button 
+            onClick={fetchUsers} 
+            variant="outline" 
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing...' : 'Refresh Users'}
+          </Button>
+        </div>
         
         {/* Add Stats Overview with user count */}
         <div className="mb-6">

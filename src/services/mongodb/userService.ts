@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -101,22 +100,10 @@ class MongoUserService {
         return false;
       }
       
-      // Check if user is admin
+      // Check if user is admin - only protection we keep
       if (user.isAdmin) {
         console.error("MongoDB: Cannot delete admin user");
         return false;
-      }
-      
-      // Check if user is special case (don't delete, just clear certifications)
-      const isSpecialUser = id === "user-1741957466063" || (user.email && user.email.includes("b.l.mishmish"));
-      if (isSpecialUser) {
-        console.log(`MongoDB: Special user ${id} (${user.email}), clearing certifications instead of deleting`);
-        // Clear certifications
-        const clearResult = await this.usersCollection.updateOne(
-          { id },
-          { $set: { certifications: [] } }
-        );
-        return clearResult.modifiedCount > 0;
       }
       
       // Delete the user

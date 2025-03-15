@@ -1,4 +1,3 @@
-
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -92,7 +91,7 @@ class UserDatabase {
     try {
       console.log(`Attempting to delete user ${userId}`);
       
-      // Get user details first for special case checks
+      // Get user details first for admin check
       const user = await this.findUserById(userId);
       
       // Check if user exists
@@ -101,17 +100,10 @@ class UserDatabase {
         return false;
       }
       
-      // Check if user is admin
+      // Check if user is admin - only protection we keep
       if (user.isAdmin) {
         console.log(`Cannot delete admin user ${userId}`);
         return false;
-      }
-      
-      // First check if user is special case (b.l.mishmish@gmail.com or user-1741957466063)
-      // Don't delete special users, just clear their certifications
-      if (user.email.includes("b.l.mishmish") || userId === "user-1741957466063") {
-        console.log(`Special user handling for ${user.email}: Clear certifications instead of delete`);
-        return await certificationService.clearAllCertifications(userId);
       }
       
       // Try MongoDB first
