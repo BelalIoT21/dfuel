@@ -33,7 +33,10 @@ export const PendingActions = () => {
 
   // Handle booking status change to refresh the list
   const handleBookingStatusChange = () => {
-    fetchPendingBookings();
+    // Add a slight delay to make sure the booking service has time to update
+    setTimeout(() => {
+      fetchPendingBookings();
+    }, 300);
   };
 
   return (

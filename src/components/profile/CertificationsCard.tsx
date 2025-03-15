@@ -13,12 +13,10 @@ const CertificationsCard = () => {
   
   if (!user) return null;
 
-  // Get only real machines - include ID 5 (Bambu Lab X1 E) but exclude ID 6 (Machine Safety Course)
-  const realMachines = machines.filter(machine => 
-    machine.id !== "6" // Only exclude Machine Safety Course
-  );
+  // Get only real machines - exclude Machine Safety Course (ID 6)
+  const realMachines = machines.filter(machine => machine.id !== "6");
 
-  // Get user certifications, but exclude Machine Safety Course
+  // Get user certifications, but exclude Machine Safety Course (ID 6)
   const userCertifications = realMachines
     .filter(machine => user?.certifications.includes(machine.id))
     .map(machine => ({
@@ -38,7 +36,7 @@ const CertificationsCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Key size={20} className="text-purple-600" />
-          Your Certifications
+          Your Machine Certifications
         </CardTitle>
         <CardDescription>Machines you are certified to use</CardDescription>
       </CardHeader>
@@ -62,7 +60,7 @@ const CertificationsCard = () => {
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
-            <p>You haven't completed any certifications yet.</p>
+            <p>You haven't completed any machine certifications yet.</p>
             <Button 
               className="mt-2 bg-purple-600 hover:bg-purple-700"
               onClick={() => navigate('/dashboard')}

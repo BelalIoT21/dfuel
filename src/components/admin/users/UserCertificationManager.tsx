@@ -83,8 +83,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading('machineSafety');
     try {
       console.log("Adding machine safety course certification");
-      // Use the specific machine safety course method
-      const success = await certificationService.addMachineSafetyCertification(userId);
+      // Use the specific certification method with the safety ID
+      const success = await certificationService.addCertification(userId, "6");
       
       if (success) {
         toast({
@@ -116,8 +116,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading('machineSafety');
     try {
       console.log("Removing machine safety course certification");
-      // Use the specific machine safety course removal method
-      const success = await certificationService.removeMachineSafetyCertification(userId);
+      // Use direct certification removal with the safety ID
+      const success = await certificationService.removeCertification(userId, "6");
       
       if (success) {
         toast({

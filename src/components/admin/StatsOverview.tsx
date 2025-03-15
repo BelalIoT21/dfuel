@@ -39,7 +39,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   // Basic statistics for the admin dashboard
   const stats = [
     { 
-      title: `Total Users (${allUsers.length})`, 
+      title: `Total Users`, 
       value: allUsers.length, 
       icon: <Users className="h-5 w-5 text-purple-600" />,
       change: '', 

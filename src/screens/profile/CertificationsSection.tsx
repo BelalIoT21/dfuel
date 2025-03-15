@@ -17,8 +17,13 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const names = {};
       if (user.certifications && user.certifications.length > 0) {
         for (const certId of user.certifications) {
-          // Skip fetch if it's Machine Safety Course
-          if (certId === "6") continue;
+          // Skip fetch for Machine Safety Course and special case for Bambu X1
+          if (certId === "6") continue; 
+          if (certId === "5") {
+            names[certId] = "Bambu Lab X1 E";
+            continue;
+          }
+          
           try {
             const machine = await machineService.getMachineById(certId);
             if (machine) {
@@ -36,13 +41,10 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   }, [user.certifications]);
 
   // Filter out Machine Safety Course (ID: "6")
-  const filteredCertifications = user.certifications.filter(certId => {
-    return certId !== "6";
-  });
+  const filteredCertifications = user.certifications.filter(certId => certId !== "6");
 
-  // Helper function to get machine name with special handling for ID "6" and "5"
+  // Helper function to get machine name with special handling for Bambu Lab X1 E
   const getMachineName = (certId: string) => {
-    if (certId === "6") return "Machine Safety Course";
     if (certId === "5") return "Bambu Lab X1 E";
     return machineNames[certId] || `Machine ${certId}`;
   };
