@@ -1,5 +1,6 @@
 
 import { User } from '../../models/User';
+import bcrypt from 'bcryptjs';
 
 // Ensure an admin user exists in the database
 export const ensureAdminUser = async () => {
@@ -15,17 +16,35 @@ export const ensureAdminUser = async () => {
       // Get the admin password from env or use default
       const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
       
-      // Create new admin user
+      // Create new admin user - IMPORTANT: we create it directly to avoid double hashing
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(adminPassword, salt);
+      
       const newAdmin = new User({
         name: 'Administrator',
         email: adminEmail,
-        password: adminPassword, // This will be hashed by the pre-save hook
+        password: hashedPassword, // Using pre-hashed password to avoid double hashing
         isAdmin: true,
         certifications: [],
       });
       
       await newAdmin.save();
       console.log('Default admin user created successfully');
+    } else {
+      console.log(`Admin user with email ${adminEmail} already exists`);
+      
+      // Optional: Update admin password if needed (for development environments)
+      if (process.env.NODE_ENV === 'development') {
+        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+        // Check if we need to update the password
+        const passwordMatch = await existingAdmin.matchPassword(adminPassword);
+        
+        if (!passwordMatch) {
+          console.log('Updating admin password to match environment variables');
+          existingAdmin.password = adminPassword; // Will be hashed by pre-save hook
+          await existingAdmin.save();
+        }
+      }
     }
   } catch (error) {
     console.error('Error ensuring admin user exists:', error);

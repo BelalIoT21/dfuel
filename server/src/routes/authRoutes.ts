@@ -6,6 +6,7 @@ import { getUserProfile, getUserBookings } from '../controllers/auth/profileCont
 import { protect } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
 import { User } from '../models/User';
+import { ensureAdminUser } from '../controllers/auth/adminController';
 
 const router = express.Router();
 
@@ -13,6 +14,40 @@ const router = express.Router();
 router.get('/debug', (req, res) => {
   console.log('Auth routes are working');
   res.json({ message: 'Auth routes are working' });
+});
+
+// Debug endpoint to check users
+router.get('/debug/users', async (req, res) => {
+  try {
+    // Only allow in development mode
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ message: 'Not available in production' });
+    }
+    
+    // Ensure admin exists before checking users
+    await ensureAdminUser();
+    
+    // Get all users
+    const users = await User.find({}).select('-password');
+    const adminUser = await User.findOne({ isAdmin: true }).select('-password');
+    
+    res.json({ 
+      users: users.map(u => ({ 
+        _id: u._id, 
+        name: u.name, 
+        email: u.email, 
+        isAdmin: u.isAdmin 
+      })), 
+      adminUser,
+      userCount: users.length
+    });
+  } catch (error) {
+    console.error('Error in debug users:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
 });
 
 // Register user

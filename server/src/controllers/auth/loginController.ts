@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { User } from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
+import { ensureAdminUser } from './adminController';
 
 // @desc    Authenticate user & get token
 // @route   POST /api/auth/login
@@ -22,6 +23,13 @@ export const loginUser = async (req: Request, res: Response) => {
 
     console.log(`Login attempt for email: ${email}`);
 
+    // Ensure admin user exists (if admin credentials are used)
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@learnit.com';
+    if (email === adminEmail) {
+      console.log('Admin login attempt, ensuring admin user exists');
+      await ensureAdminUser();
+    }
+
     // Find user by email
     const user = await User.findOne({ email });
 
@@ -36,9 +44,14 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     // Check password
+    console.log(`Checking password for user: ${email}`);
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       console.log(`Password mismatch for user: ${email}`);
+      // Log the password hash for debugging in development (NEVER do this in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Stored password hash: ${user.password.substring(0, 10)}...`);
+      }
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 

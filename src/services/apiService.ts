@@ -1,16 +1,29 @@
+
 // Add or update the setToken method and ensure it's used in all requests
 class ApiService {
   private baseUrl: string;
   private token: string | null = null;
 
   constructor() {
-    this.baseUrl = 'http://localhost:4000/api';
+    // Use environment variables if available, otherwise fallback to localhost
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    this.baseUrl = apiUrl;
+    
     // Initialize token from localStorage if available
     this.token = localStorage.getItem('token');
+    console.log(`API Service initialized with ${this.token ? 'existing token' : 'no token'}`);
+    console.log(`API URL: ${this.baseUrl}`);
   }
 
   setToken(token: string | null) {
     this.token = token;
+    if (token) {
+      localStorage.setItem('token', token);
+      console.log('Token saved to localStorage');
+    } else {
+      localStorage.removeItem('token');
+      console.log('Token removed from localStorage');
+    }
     console.log(`API token ${token ? 'set' : 'cleared'}`);
   }
 
@@ -20,7 +33,7 @@ class ApiService {
       'Content-Type': 'application/json'
     };
     
-    // Add auth token if available
+    // Add auth token if available and required
     if (requiresAuth && this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
@@ -29,13 +42,28 @@ class ApiService {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
+      // Add credentials to allow cookies if needed
+      credentials: 'include',
     };
     
-    console.log(`Making API request: ${method} ${url}${data ? ' with data: ' + JSON.stringify(data) : ''}${requiresAuth ? (this.token ? ' with auth token' : ' no auth required') : ' no auth required'}`);
+    console.log(`Making API request: ${method} ${url}${data ? ' with data: ' + JSON.stringify(data) : ''}${requiresAuth ? (this.token ? ' with auth token' : ' no auth token available') : ' no auth required'}`);
     
     try {
       const response = await fetch(url, options);
-      const responseData = await response.json();
+      
+      // Try to parse as JSON, but handle non-JSON responses
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          responseData = JSON.parse(text);
+        } catch (e) {
+          responseData = { message: text };
+        }
+      }
       
       if (!response.ok) {
         console.error(`API error for ${method} ${url}: ${response.status} - ${responseData.message || 'Unknown error'}`);
@@ -58,7 +86,7 @@ class ApiService {
       console.error(`Network error for ${method} ${url}:`, error);
       return { 
         data: null, 
-        error: 'Network error. Server may be unavailable.', 
+        error: error instanceof Error ? error.message : 'Network error. Server may be unavailable.', 
         status: 0,
         success: false 
       };
