@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 class MongoDbService {
@@ -45,7 +44,6 @@ class MongoDbService {
     }
   }
   
-  // Special method for MongoDB ObjectIds
   async getMachineByMongoId(mongoId: string) {
     try {
       console.log(`Getting machine by MongoDB ID: ${mongoId}`);
@@ -83,6 +81,30 @@ class MongoDbService {
     } catch (error) {
       console.error('Error getting all users from MongoDB:', error);
       return [];
+    }
+  }
+  
+  async getUserCount() {
+    try {
+      console.log('Getting user count from MongoDB via API');
+      const response = await apiService.ping();
+      if (response.data && response.data.mongodb && typeof response.data.mongodb.userCount === 'number') {
+        console.log(`MongoDB user count: ${response.data.mongodb.userCount}`);
+        return response.data.mongodb.userCount;
+      }
+      
+      // Fallback to counting users if ping doesn't return count
+      try {
+        const users = await this.getAllUsers();
+        return users.length;
+      } catch (innerError) {
+        console.error('Error getting user count from users list:', innerError);
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('Error getting user count from MongoDB:', error);
+      return 0;
     }
   }
   

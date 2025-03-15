@@ -7,6 +7,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import mongoDbService from '@/services/mongoDbService';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,9 +28,15 @@ const Index = () => {
           console.log("Server health check:", data);
           setServerStatus('connected');
           
-          // Set MongoDB user count if available
+          // Set MongoDB user count if available from health endpoint
           if (data.mongodb && typeof data.mongodb.userCount === 'number') {
             setDbUserCount(data.mongodb.userCount);
+            console.log("MongoDB user count from health endpoint:", data.mongodb.userCount);
+          } else {
+            // If not available from health endpoint, get it from MongoDB service
+            const count = await mongoDbService.getUserCount();
+            setDbUserCount(count);
+            console.log("MongoDB user count from service:", count);
           }
           
           toast({
@@ -53,6 +60,17 @@ const Index = () => {
           const apiResponse = await apiService.ping();
           if (apiResponse.data && apiResponse.data.pong) {
             setServerStatus('connected via API');
+            
+            // Try to get user count from ping response
+            if (apiResponse.data.mongodb && typeof apiResponse.data.mongodb.userCount === 'number') {
+              setDbUserCount(apiResponse.data.mongodb.userCount);
+              console.log("MongoDB user count from API ping:", apiResponse.data.mongodb.userCount);
+            } else {
+              // If not in ping response, use the service
+              const count = await mongoDbService.getUserCount();
+              setDbUserCount(count);
+              console.log("MongoDB user count from service (fallback):", count);
+            }
           }
         } catch (apiError) {
           console.error("API service connection also failed:", apiError);

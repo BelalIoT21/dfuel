@@ -1,255 +1,188 @@
-
-import { getEnv } from '../utils/env';
-import { toast } from '../components/ui/use-toast';
-
-const BASE_URL = 'http://localhost:4000/api'; // Updated to explicitly use localhost:4000
-
-interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  status: number;
-}
+import { User } from '@/types/database';
 
 class ApiService {
+  private readonly baseURL: string = 'http://localhost:4000/api';
+  
+  // Helper method to handle API requests
   private async request<T>(
-    endpoint: string, 
+    url: string, 
     method: string = 'GET', 
-    data?: any,
-    authRequired: boolean = true
-  ): Promise<ApiResponse<T>> {
+    body?: any, 
+    customHeaders?: Record<string, string>
+  ): Promise<{ data: T | null; error: string | null; success: boolean }> {
     try {
-      const url = `${BASE_URL}/${endpoint}`;
       const token = localStorage.getItem('token');
       
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...customHeaders
       };
       
-      if (authRequired && token) {
+      if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
       const options: RequestInit = {
         method,
         headers,
-        credentials: 'include',
+        credentials: 'include'
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
-        options.body = JSON.stringify(data);
+      if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        options.body = JSON.stringify(body);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
-      const response = await fetch(url, options);
+      const response = await fetch(`${this.baseURL}${url}`, options);
       
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
+      if (response.status === 404) {
+        throw new Error(`${response.status} - ${response.statusText} - ${url}`);
       }
+      
+      const data = await response.json();
       
       if (!response.ok) {
-        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
-        
-        if (response.status === 404) {
-          return {
-            data: null,
-            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
-            status: response.status
-          };
-        }
-        
-        throw new Error(errorMessage);
+        console.error(`API error for ${method} ${this.baseURL}${url}:`, response.status, '-', data.message || response.statusText);
+        throw new Error(data.message || response.statusText);
       }
       
-      return {
-        data: responseData,
-        error: null,
-        status: response.status
-      };
+      return { data, error: null, success: true };
     } catch (error) {
-      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`API error for ${method} ${this.baseURL}${url}:`, error);
       
-      // Don't show toast for health check failures, they're expected when backend is not running
-      if (!endpoint.includes('health')) {
-        toast({
-          title: `API Error (${endpoint})`,
-          description: error instanceof Error ? error.message : 'Unknown error occurred',
-          variant: 'destructive'
-        });
+      // If it's a network error or CORS issue, return a more user-friendly message
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network Error')) {
+        return { 
+          data: null, 
+          error: 'Server is unreachable. Please check your connection.', 
+          success: false 
+        };
       }
       
-      return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+      return { 
+        data: null, 
+        error: errorMessage, 
+        success: false 
       };
     }
   }
   
   // Auth endpoints
   async login(email: string, password: string) {
-    console.log('Attempting login via API for:', email);
-    return this.request<{ token: string, user: any }>(
-      'auth/login', 
-      'POST', 
-      { email, password },
-      false
-    );
+    return this.request<{user: User, token: string}>('/auth/login', 'POST', { email, password });
   }
   
-  async register(userData: any) {
-    console.log('Attempting registration via API for:', userData.email);
-    return this.request<{ token: string, user: any }>(
-      'auth/register', 
-      'POST', 
-      userData,
-      false
-    );
+  async register(userData: { email: string; password: string; name: string }) {
+    return this.request<{user: User, token: string}>('/auth/register', 'POST', userData);
   }
   
-  // Health check endpoint
-  async checkHealth() {
-    try {
-      console.log('Checking server health...');
-      const response = await this.request<{ status: string, message: string }>(
-        'health',
-        'GET',
-        undefined,
-        false
-      );
-      
-      console.log('Health check response:', response);
-      return response;
-    } catch (error) {
-      console.error('Health check failed:', error);
-      return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
-      };
-    }
+  async getCurrentUser() {
+    return this.request<{user: User}>('/auth/me');
   }
   
-  // New ping method for simple connectivity testing
-  async ping() {
-    try {
-      console.log('Pinging server...');
-      const response = await this.request<{ pong: boolean }>(
-        'health/ping',
-        'GET',
-        undefined,
-        false
-      );
-      
-      console.log('Ping response:', response);
-      return response;
-    } catch (error) {
-      console.error('Ping failed:', error);
-      return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
-      };
-    }
+  async requestPasswordReset(email: string) {
+    return this.request<{success: boolean}>('/auth/forgot-password', 'POST', { email });
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string) {
+    return this.request<{success: boolean}>('/auth/reset-password', 'POST', { email, resetCode, newPassword });
   }
   
   // User endpoints
-  async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+  async getAllUsers() {
+    try {
+      const result = await this.request<User[]>('/users');
+      console.log('API response for users:', result);
+      return result;
+    } catch (error) {
+      console.error('API request failed for users:', error);
+      throw error;
+    }
   }
   
-  async updateUser(userId: string, updates: any) {
-    return this.request<any>(`users/${userId}`, 'PUT', updates);
+  async getUserById(id: string) {
+    return this.request<User>(`/users/${id}`);
   }
   
-  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
-    return this.request<void>(
-      `users/${userId}/password`, 
-      'PUT', 
-      { currentPassword, newPassword }
-    );
-  }
-  
-  // Additional methods to support databaseService
   async getUserByEmail(email: string) {
-    return this.request<any>(`users/email/${email}`, 'GET');
+    return this.request<User>(`/users/email/${email}`);
   }
   
-  async getUserById(userId: string) {
-    return this.request<any>(`users/${userId}`, 'GET');
+  async updateUser(id: string, updates: any) {
+    return this.request<{success: boolean}>(`/users/${id}`, 'PUT', updates);
   }
   
-  async updateProfile(userId: string, updates: any) {
-    return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
+  async updateProfile(id: string, updates: any) {
+    return this.request<{success: boolean}>(`/users/${id}/profile`, 'PUT', updates);
+  }
+  
+  async deleteUser(id: string) {
+    return this.request<{success: boolean}>(`/users/${id}`, 'DELETE');
+  }
+  
+  // Health check
+  async ping() {
+    return this.request<{pong: boolean, mongodb?: {userCount: number, status: string}}>('/health');
+  }
+  
+  // Machine endpoints
+  async getAllMachines() {
+    return this.request<any[]>('/machines', 'GET', undefined, true);
+  }
+  
+  async getMachineById(machineId: string) {
+    return this.request<any>(`/machines/${machineId}`, 'GET', undefined, true);
+  }
+  
+  async createMachine(machineData: any) {
+    return this.request<any>('/machines', 'POST', machineData, true);
+  }
+  
+  async updateMachine(machineId: string, machineData: any) {
+    return this.request<any>(`/machines/${machineId}`, 'PUT', machineData, true);
+  }
+  
+  async deleteMachine(machineId: string) {
+    return this.request<{success: boolean}>(`/machines/${machineId}`, 'DELETE', undefined, true);
   }
   
   // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
-    // Use the correct endpoint format based on the server routes
-    return this.request<{ success: boolean }>(
-      'certifications', 
-      'POST', 
-      { userId, machineId }
-    );
+    return this.request<{success: boolean}>('/certifications', 'POST', { userId, machineId });
   }
   
   async removeCertification(userId: string, machineId: string) {
     console.log(`Removing certification for user ${userId}, machine ${machineId}`);
-    // The DELETE method might need different handling for the body
-    return this.request<{ success: boolean }>(
-      'certifications', 
-      'DELETE', 
-      { userId, machineId }
-    );
+    return this.request<{success: boolean}>('/certifications', 'DELETE', { userId, machineId });
   }
   
   async getUserCertifications(userId: string) {
-    return this.request<string[]>(`certifications/user/${userId}`, 'GET');
+    return this.request<string[]>(`/certifications/user/${userId}`, 'GET');
   }
   
   async checkCertification(userId: string, machineId: string) {
-    return this.request<boolean>(
-      'certifications/check', 
-      'GET', 
-      { userId, machineId }
-    );
+    return this.request<boolean>('/certifications/check', 'GET', { userId, machineId });
   }
   
   // Booking endpoints
   async getAllBookings() {
-    return this.request<any[]>('bookings/all', 'GET');
+    return this.request<any[]>('/bookings/all', 'GET');
   }
   
   async getUserBookings(userId: string) {
-    return this.request<any[]>(`bookings`, 'GET');
+    return this.request<any[]>(`/bookings`, 'GET');
   }
   
   async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.request<{ success: boolean }>(
-      'bookings', 
-      'POST', 
-      { machineId, date, time }
-    );
+    return this.request<{success: boolean}>('/bookings', 'POST', { machineId, date, time });
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
-    // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
-    // Try endpoint with /:id/status format first
     try {
-      const response = await this.request<any>(
-        `bookings/${bookingId}/status`, 
-        'PUT', 
-        { status }
-      );
+      const response = await this.request<any>(`/bookings/${bookingId}/status`, 'PUT', { status });
       
       if (!response.error) {
         return response;
@@ -258,13 +191,8 @@ class ApiService {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
-    // Try alternative endpoint if first one fails
     try {
-      return await this.request<any>(
-        `bookings/update-status`, 
-        'PUT', 
-        { bookingId, status }
-      );
+      return await this.request<any>('/bookings/update-status', 'PUT', { bookingId, status });
     } catch (error) {
       console.log(`Error with alternative endpoint: ${error}`);
       throw error;
@@ -272,73 +200,35 @@ class ApiService {
   }
   
   async cancelBooking(bookingId: string) {
-    return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
+    return this.request<any>(`/bookings/${bookingId}/cancel`, 'PUT');
   }
   
   // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
-    return this.request<void>(
-      'admin/credentials', 
-      'PUT', 
-      { email, password }
-    );
+    return this.request<void>('/admin/credentials', 'PUT', { email, password });
   }
   
   // Dashboard endpoints
   async getAllUsers() {
-    return this.request<any[]>('users', 'GET');
+    return this.request<any[]>('/users', 'GET');
   }
   
   async getMachineStatus(machineId: string) {
-    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
+    return this.request<{ status: string, note?: string }>(`/machines/${machineId}/status`, 'GET');
   }
   
   // Safety certification management
   async addSafetyCertification(userId: string) {
-    return this.request<{ success: boolean }>(
-      'certifications/safety', 
-      'POST', 
-      { userId }
-    );
+    return this.request<{ success: boolean }>(`/certifications/safety`, 'POST', { userId });
   }
   
   async removeSafetyCertification(userId: string) {
-    return this.request<{ success: boolean }>(
-      'certifications/safety', 
-      'DELETE', 
-      { userId }
-    );
+    return this.request<{ success: boolean }>(`/certifications/safety`, 'DELETE', { userId });
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.request<{ success: boolean }>(
-      `machines/${machineId}/status`, 
-      'PUT', 
-      { status, maintenanceNote: note }, 
-      true
-    );
-  }
-  
-  async getAllMachines() {
-    return this.request<any[]>('machines', 'GET', undefined, true);
-  }
-  
-  async getMachineById(machineId: string) {
-    return this.request<any>(`machines/${machineId}`, 'GET', undefined, true);
-  }
-  
-  async createMachine(machineData: any) {
-    return this.request<any>('machines', 'POST', machineData, true);
-  }
-  
-  async updateMachine(machineId: string, machineData: any) {
-    return this.request<any>(`machines/${machineId}`, 'PUT', machineData, true);
-  }
-  
-  async deleteMachine(machineId: string) {
-    return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
+    return this.request<{ success: boolean }>(`/machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
   }
 }
 
-// Create and export a singleton instance
 export const apiService = new ApiService();

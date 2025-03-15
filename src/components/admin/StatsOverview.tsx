@@ -1,111 +1,117 @@
 
-import { Users, Settings, CalendarClock } from "lucide-react";
-import { StatCard } from "./StatCard";
-import { useEffect, useState } from "react";
-import { bookingService } from "@/services/bookingService";
-import userDatabase from "@/services/userDatabase";
-import { apiService } from "@/services/apiService";
-import { isWeb } from "@/utils/platform";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from './StatCard';
+import { machines } from '../../utils/data';
+import { User } from '@/types/database';
+import { Skeleton } from '@/components/ui/skeleton';
+import userDatabase from '@/services/userDatabase';
+import mongoDbService from '@/services/mongoDbService';
 
 interface StatsOverviewProps {
-  allUsers?: any[];
+  allUsers: User[];
   machines: any[];
 }
 
-export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) => {
-  const [bookingsCount, setBookingsCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userCount, setUserCount] = useState(0);
-  
-  // Fetch the actual bookings count
+export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    users: 0,
+    certifications: 0,
+    machinesAvailable: 0,
+    machinesInUse: 0,
+    machinesMaintenance: 0
+  });
+
   useEffect(() => {
-    const fetchBookingsCount = async () => {
+    const fetchStats = async () => {
       try {
-        setIsLoading(true);
-        // Try fetching all bookings including pending ones
-        const bookings = await bookingService.getAllBookings();
-        console.log("Fetched bookings:", bookings);
-        setBookingsCount(bookings.length);
+        setLoading(true);
+        
+        // Get MongoDB user count
+        const mongoUserCount = await mongoDbService.getUserCount();
+        
+        // Calculate certifications count
+        let certCount = 0;
+        allUsers.forEach(user => {
+          if (user.certifications && Array.isArray(user.certifications)) {
+            certCount += user.certifications.length;
+          }
+        });
+        
+        // Count machine statuses
+        let available = 0;
+        let inUse = 0;
+        let maintenance = 0;
+        
+        machines.forEach(machine => {
+          const status = machine.status || 'available';
+          if (status.toLowerCase() === 'available') available++;
+          else if (status.toLowerCase() === 'in-use' || status.toLowerCase() === 'inuse' || status.toLowerCase() === 'in use') inUse++;
+          else if (status.toLowerCase() === 'maintenance') maintenance++;
+        });
+        
+        setStats({
+          users: mongoUserCount,
+          certifications: certCount,
+          machinesAvailable: available,
+          machinesInUse: inUse,
+          machinesMaintenance: maintenance
+        });
       } catch (error) {
-        console.error("Error fetching bookings count:", error);
-        setBookingsCount(0);
+        console.error('Error fetching stats:', error);
       } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchBookingsCount();
-  }, []);
-  
-  // Ensure user count is fetched consistently from API first, then fallback to props or userDatabase
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        console.log("Fetching users for stats overview");
-        
-        // Always try the API first for consistency between web and native
-        const response = await apiService.getAllUsers();
-        if (response.success && response.data && response.data.length > 0) {
-          console.log(`Retrieved ${response.data.length} users from API`);
-          setUserCount(response.data.length);
-          return;
-        }
-        
-        // If API fails but allUsers prop is provided, use it
-        if (allUsers && allUsers.length > 0) {
-          console.log(`Using provided users list: ${allUsers.length} users`);
-          setUserCount(allUsers.length);
-          return;
-        }
-        
-        // Last resort - fetch directly from database
-        console.log("Falling back to userDatabase for user count");
-        const users = await userDatabase.getAllUsers();
-        console.log(`Retrieved ${users.length} users from userDatabase`);
-        setUserCount(users.length);
-      } catch (error) {
-        console.error("Error fetching users for stats:", error);
-        // If all else fails, use the provided users or show 0
-        setUserCount(allUsers?.length || 0);
+        setLoading(false);
       }
     };
     
     fetchUsers();
-  }, [allUsers]);
-  
-  // Filter out equipment - only count real machines (including Bambu Lab X1 E)
-  const realMachines = machines.filter(machine => machine.type !== 'Equipment');
-  
-  // Basic statistics for the admin dashboard
-  const stats = [
-    { 
-      title: `Total Users`, 
-      value: userCount, 
-      icon: <Users className="h-5 w-5 text-purple-600" />,
-      change: '', 
-      link: '/admin/users'
-    },
-    { 
-      title: 'Total Machines', 
-      value: realMachines.length, 
-      icon: <Settings className="h-5 w-5 text-purple-600" />,
-      change: '',
-      link: '/admin/machines'
-    },
-    { 
-      title: 'Active Bookings', 
-      value: isLoading ? '...' : bookingsCount, 
-      icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
-      change: '',
-      link: '/admin/bookings'
-    },
-  ];
+    fetchStats();
+  }, [allUsers, machines]);
+
+  const fetchUsers = async () => {
+    try {
+      // Try to get users from MongoDB/userDatabase
+      const users = await userDatabase.getAllUsers();
+      console.log(`Retrieved ${users.length} users from userDatabase`);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-6">
-      {stats.map((stat, index) => (
-        <StatCard key={index} {...stat} />
-      ))}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+      <StatCard
+        title="Total Users"
+        value={loading ? <Skeleton className="h-8 w-20" /> : stats.users}
+        description="Registered users"
+        icon="user"
+        trend={{ value: "12%", label: "from last month" }}
+      />
+      
+      <StatCard
+        title="Certifications"
+        value={loading ? <Skeleton className="h-8 w-20" /> : stats.certifications}
+        description="Active certifications"
+        icon="award"
+        trend={{ value: "8%", label: "from last month" }}
+      />
+      
+      <StatCard
+        title="Machines Available"
+        value={loading ? <Skeleton className="h-8 w-20" /> : stats.machinesAvailable}
+        description="Ready for use"
+        icon="check-circle"
+        trend={{ value: "", label: "" }}
+      />
+      
+      <StatCard
+        title="Maintenance"
+        value={loading ? <Skeleton className="h-8 w-20" /> : stats.machinesMaintenance}
+        description="Machines in maintenance"
+        icon="tool"
+        trend={{ value: "", label: "" }}
+      />
     </div>
   );
 };
