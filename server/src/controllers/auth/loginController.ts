@@ -31,21 +31,28 @@ export const loginUser = async (req: Request, res: Response) => {
       // For development, provide more helpful error
       if (process.env.NODE_ENV === 'development') {
         if (userCount === 0) {
-          return res.status(400).json({ 
-            message: 'No users in database. Database may need seeding.',
+          return res.status(401).json({ 
+            message: 'No users in database. Use the default admin credentials or restart the server to seed the database.',
+            code: 'NO_USERS',
             debug: true
           });
         }
       }
       
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        code: 'INVALID_CREDENTIALS' 
+      });
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       console.log(`Password mismatch for user: ${email}`);
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        code: 'INVALID_CREDENTIALS'
+      });
     }
 
     console.log(`Login successful for user: ${email}`);
@@ -53,6 +60,10 @@ export const loginUser = async (req: Request, res: Response) => {
     // Update last login time
     user.lastLogin = new Date();
     await user.save();
+
+    // Generate token with proper expiration
+    const token = generateToken(user._id);
+    console.log(`Generated token for user ${email}`);
 
     // Return user data in the format expected by the frontend
     res.json({
@@ -63,12 +74,13 @@ export const loginUser = async (req: Request, res: Response) => {
         isAdmin: user.isAdmin,
         certifications: user.certifications,
       },
-      token: generateToken(user._id),
+      token,
     });
   } catch (error) {
     console.error('Error in loginUser:', error);
     res.status(500).json({ 
       message: 'Server error', 
+      code: 'SERVER_ERROR',
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
   }

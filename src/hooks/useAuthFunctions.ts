@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import userDatabase from '@/services/userDatabase';
@@ -26,6 +25,9 @@ export const useAuthFunctions = (
         // Save the token for future API requests
         if (apiResponse.data.token) {
           localStorage.setItem('token', apiResponse.data.token);
+          console.log("Token saved to localStorage");
+        } else {
+          console.warn("No token received from API");
         }
         
         setUser(userData as User);
@@ -35,6 +37,21 @@ export const useAuthFunctions = (
           description: `Welcome back, ${userData.name}!`
         });
         return true;
+      }
+      
+      // Check for specific API errors
+      if (apiResponse.error) {
+        console.error("API login error:", apiResponse.error);
+        
+        // Handle specific error codes
+        if (apiResponse.status === 401) {
+          if (apiResponse.error.includes('No users in database')) {
+            throw new Error('No users in database. Use the default admin credentials.');
+          }
+          throw new Error('Invalid email or password');
+        }
+        
+        throw new Error(apiResponse.error);
       }
       
       // Fallback to local storage if API fails
@@ -55,16 +72,16 @@ export const useAuthFunctions = (
           description: "Invalid credentials.",
           variant: "destructive"
         });
-        return false;
+        throw new Error('Invalid email or password');
       }
     } catch (error) {
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive"
       });
-      return false;
+      throw error;
     } finally {
       setIsLoading(false);
     }
