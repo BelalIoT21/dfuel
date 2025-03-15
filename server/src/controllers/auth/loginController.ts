@@ -1,5 +1,6 @@
 
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
 import { User } from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
