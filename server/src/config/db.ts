@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
@@ -9,11 +8,9 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/learni
 // MongoDB connection options
 const options = {
   autoIndex: true,
-  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  serverSelectionTimeoutMS: 10000, // Increased timeout to 10s
   socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
   family: 4, // Use IPv4, skip trying IPv6
-  useNewUrlParser: true,
-  useUnifiedTopology: true
 };
 
 export const connectDB = async () => {
@@ -21,6 +18,11 @@ export const connectDB = async () => {
     console.log(`Attempting to connect to MongoDB at ${MONGODB_URI}...`);
     const conn = await mongoose.connect(MONGODB_URI, options);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Print all collections for debugging
+    const collections = await conn.connection.db.listCollections().toArray();
+    console.log('Available collections:', collections.map(c => c.name).join(', '));
+    
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);

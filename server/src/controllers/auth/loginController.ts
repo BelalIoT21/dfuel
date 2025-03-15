@@ -10,6 +10,7 @@ import { generateToken } from '../../utils/tokenUtils';
 export const loginUser = async (req: Request, res: Response) => {
   try {
     console.log('Login request received:', req.body);
+    console.log('Request headers:', req.headers);
     
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

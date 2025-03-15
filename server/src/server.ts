@@ -42,12 +42,19 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Enhanced CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', '*'], // Allow frontend origins
+  origin: function(origin, callback) {
+    // Allow any origin
+    console.log('Request origin:', origin);
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
@@ -57,6 +64,10 @@ app.use(cookieParser());
 // Log all incoming requests for debugging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url} from ${req.ip}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  if (req.method !== 'GET') {
+    console.log('Body:', JSON.stringify(req.body));
+  }
   next();
 });
 

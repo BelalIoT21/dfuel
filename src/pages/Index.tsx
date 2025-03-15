@@ -11,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [dbUserCount, setDbUserCount] = useState<number | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -19,12 +20,18 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        const response = await fetch('http://localhost:4000/health');
+        const response = await fetch('http://localhost:4000/api/health');
         
         if (response.ok) {
           const data = await response.json();
           console.log("Server health check:", data);
           setServerStatus('connected');
+          
+          // Set MongoDB user count if available
+          if (data.mongodb && typeof data.mongodb.userCount === 'number') {
+            setDbUserCount(data.mongodb.userCount);
+          }
+          
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
@@ -66,7 +73,8 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    await login(email, password);
+    const success = await login(email, password);
+    console.log("Login success:", success);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
@@ -92,6 +100,11 @@ const Index = () => {
           {serverStatus && (
             <div className={`mt-2 text-sm ${serverStatus.includes('connected') ? 'text-green-600' : 'text-red-600'}`}>
               Server status: {serverStatus}
+            </div>
+          )}
+          {dbUserCount !== null && (
+            <div className="mt-1 text-sm text-blue-600">
+              MongoDB users: {dbUserCount}
             </div>
           )}
         </div>
