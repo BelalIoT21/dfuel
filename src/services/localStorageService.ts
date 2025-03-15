@@ -8,8 +8,42 @@ const bookingsKey = 'learnit_bookings';
 const machineStatusKey = 'learnit_machine_status';
 
 class LocalStorageService {
-  // User operations
+  constructor() {
+    // Initialize default admin user if not exists
+    this.ensureAdminExists();
+  }
+
+  // Ensure admin user exists in localStorage
+  private ensureAdminExists() {
+    try {
+      const users = this.getAllUsers();
+      // Check if admin user exists
+      const adminExists = users.some(user => 
+        user.email.toLowerCase() === 'admin@learnit.com' && user.isAdmin
+      );
+      
+      if (!adminExists) {
+        console.log('Creating default admin user in localStorage');
+        const adminUser: User = {
+          id: 'admin-user',
+          name: 'Admin User',
+          email: 'admin@learnit.com',
+          password: 'admin123', // In a real app, this would be hashed
+          isAdmin: true,
+          certifications: [],
+          bookings: [],
+          lastLogin: new Date().toISOString()
+        };
+        
+        users.push(adminUser);
+        localStorage.setItem(userKey, JSON.stringify(users));
+      }
+    } catch (error) {
+      console.error('Error ensuring admin exists:', error);
+    }
+  }
   
+  // User operations
   getAllUsers(): User[] {
     try {
       const storedData = localStorage.getItem(userKey);

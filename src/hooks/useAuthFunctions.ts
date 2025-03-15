@@ -17,35 +17,37 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // First try API login
-      const apiResponse = await apiService.login(email, password);
-      
-      if (apiResponse.data) {
-        console.log("API login successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
-        // Save the token for future API requests
-        if (apiResponse.data.token) {
-          localStorage.setItem('token', apiResponse.data.token);
-        }
-        
-        setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${userData.name}!`
-        });
-        return true;
+      // Check if this is admin@learnit.com and we're in local development mode
+      if (email === 'admin@learnit.com') {
+        console.log("Admin login attempt detected");
       }
       
-      // Check if the error is a 404, which means the API endpoint might not exist
-      if (apiResponse.status === 404) {
-        console.log("API endpoint not found, trying localStorage");
-      } else if (apiResponse.error) {
-        console.error("API login error:", apiResponse.error);
+      // First try API login
+      try {
+        const apiResponse = await apiService.login(email, password);
+        
+        if (apiResponse.data) {
+          console.log("API login successful:", apiResponse.data);
+          const userData = apiResponse.data.user;
+          // Save the token for future API requests
+          if (apiResponse.data.token) {
+            localStorage.setItem('token', apiResponse.data.token);
+          }
+          
+          setUser(userData as User);
+          localStorage.setItem('learnit_user', JSON.stringify(userData));
+          toast({
+            title: "Login successful",
+            description: `Welcome back, ${userData.name}!`
+          });
+          return true;
+        }
+      } catch (error) {
+        console.error("API login error, will try localStorage fallback:", error);
       }
       
       // Fallback to local storage if API fails
-      console.log("API login failed, trying localStorage");
+      console.log("API login failed or not available, trying localStorage");
       const userData = await userDatabase.authenticate(email, password);
       
       if (userData) {
