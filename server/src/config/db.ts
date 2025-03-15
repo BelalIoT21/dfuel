@@ -20,8 +20,12 @@ export const connectDB = async () => {
     console.log(`Using database: ${MONGODB_DB_NAME}`);
     
     // Verify connection by listing collections
-    const collections = await conn.connection.db.listCollections().toArray();
-    console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
+    try {
+      const collections = await conn.connection.db.listCollections().toArray();
+      console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
+    } catch (error) {
+      console.warn("Could not list collections, but connection appears successful", error);
+    }
     
     return true;
   } catch (error) {
@@ -30,6 +34,7 @@ export const connectDB = async () => {
     
     // Don't exit in development to allow fallback to localStorage
     if (process.env.NODE_ENV === 'production') {
+      console.error("Production environment detected, exiting due to MongoDB connection failure");
       process.exit(1);
     }
     

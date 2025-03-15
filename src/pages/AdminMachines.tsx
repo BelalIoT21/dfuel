@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -10,21 +9,16 @@ import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { apiService } from '@/services/apiService';
-import MachineForm, { MachineFormData, initialFormData } from '@/components/admin/machines/MachineForm';
 import { machineDatabaseService } from '@/services/database/machineService';
+import { Button } from '@/components/ui/button';
 
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isAddingMachine, setIsAddingMachine] = useState(false);
-  const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  
-  const [formData, setFormData] = useState<MachineFormData>({...initialFormData});
 
   useEffect(() => {
     const fetchMachines = async () => {
@@ -82,110 +76,6 @@ const AdminMachines = () => {
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-  const handleAddMachine = async () => {
-    try {
-      setIsSubmitting(true);
-      
-      console.log("Creating machine with data:", formData);
-      const newMachine = await machineDatabaseService.createMachine(formData);
-      
-      if (!newMachine) {
-        throw new Error("Failed to create machine");
-      }
-      
-      toast({
-        title: "Machine Added",
-        description: `${formData.name} has been added successfully.`
-      });
-      
-      // Add the new machine to the list
-      setMachinesList(prev => [...prev, newMachine]);
-      
-      // Reset form and state
-      setIsAddingMachine(false);
-      setFormData({...initialFormData});
-    } catch (error) {
-      console.error("Error adding machine:", error);
-      toast({
-        title: "Error Adding Machine",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancelAdd = () => {
-    setIsAddingMachine(false);
-    setFormData({...initialFormData});
-  };
-
-  const handleEditMachine = (id: string) => {
-    setEditingMachineId(id);
-    const machine = machinesList.find(m => m.id === id || m._id === id);
-    if (machine) {
-      setFormData({
-        name: machine.name,
-        description: machine.description || '',
-        type: machine.type || 'Cutting',
-        status: machine.status || 'Available',
-        requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
-        difficulty: machine.difficulty || 'Intermediate',
-        imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
-        details: machine.details || '',
-        specifications: machine.specifications || '',
-        certificationInstructions: machine.certificationInstructions || '',
-        linkedCourseId: machine.linkedCourseId || '',
-        linkedQuizId: machine.linkedQuizId || '',
-      });
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingMachineId(null);
-    setFormData({...initialFormData});
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingMachineId) return;
-    
-    try {
-      setIsSubmitting(true);
-      
-      const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
-      
-      if (!updatedMachine) {
-        throw new Error("Failed to update machine");
-      }
-      
-      toast({
-        title: "Machine Updated",
-        description: `${formData.name} has been updated successfully.`
-      });
-      
-      setMachinesList(prev => 
-        prev.map(m => 
-          (m.id === editingMachineId || m._id === editingMachineId) 
-            ? { ...m, ...updatedMachine } 
-            : m
-        )
-      );
-      
-      setEditingMachineId(null);
-      setFormData({...initialFormData});
-    } catch (error) {
-      console.error("Error updating machine:", error);
-      toast({
-        title: "Error Updating Machine",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteMachine = async (id: string) => {
     try {
@@ -255,45 +145,14 @@ const AdminMachines = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div>
-                <Button onClick={() => setIsAddingMachine(true)}>
-                  Add New Machine
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
         
-        {isAddingMachine && (
-          <MachineForm
-            formData={formData}
-            setFormData={setFormData}
-            isSubmitting={isSubmitting}
-            onSubmit={handleAddMachine}
-            onCancel={handleCancelAdd}
-            title="Add New Machine"
-            description="Enter the details for the new machine"
-            submitLabel="Add Machine"
-          />
-        )}
-        
-        {editingMachineId && (
-          <MachineForm
-            formData={formData}
-            setFormData={setFormData}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSaveEdit}
-            onCancel={handleCancelEdit}
-            title="Edit Machine"
-            description="Update the details for this machine"
-            submitLabel="Save Changes"
-          />
-        )}
-        
         <Card>
           <CardHeader>
             <CardTitle>All Machines</CardTitle>
-            <CardDescription>Manage and monitor all machines</CardDescription>
+            <CardDescription>Manage and monitor your machines</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -345,19 +204,8 @@ const AdminMachines = () => {
                       </div>
                       
                       <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id || machine._id)}>
-                          Edit
-                        </Button>
                         <Button size="sm" variant="outline" asChild>
                           <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteMachine(machine.id || machine._id)}
-                        >
-                          Delete
                         </Button>
                       </div>
                     </div>
