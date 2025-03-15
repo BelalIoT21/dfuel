@@ -20,24 +20,30 @@ class MongoConnectionService {
   
   async connect(): Promise<any | null> {
     // In web environment, we don't connect directly to MongoDB - this is handled by the server
-    console.log("Running in browser environment, using server API for MongoDB access");
+    console.log("Using server API for MongoDB access, with local storage fallback");
     return null;
   }
   
   async close(): Promise<void> {
     // No direct MongoDB connection in web environment
-    console.log("No MongoDB connection to close in web environment");
+    console.log("No MongoDB connection to close");
   }
 
   async getDb(): Promise<any | null> {
     // In web environment, we don't access the DB directly
-    console.log("Web environment - using API for MongoDB access");
+    console.log("Using API for MongoDB access, with local storage fallback");
     return null;
   }
   
   async isConnected(): Promise<boolean> {
-    // Web environment doesn't connect directly to MongoDB
-    return false;
+    // Check if our API is available
+    try {
+      const response = await fetch('/api/health');
+      return response.ok;
+    } catch (error) {
+      console.log("API not available, using local storage fallback");
+      return false;
+    }
   }
 }
 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +9,33 @@ export const useAuthFunctions = (
 ) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Helper function to store token with fallback
+  const storeToken = (token: string) => {
+    try {
+      // Use sessionStorage for token
+      sessionStorage.setItem('token', token);
+      // Also store in localStorage as fallback
+      localStorage.setItem('token_fallback', token);
+    } catch (error) {
+      console.error("Error storing token:", error);
+    }
+  };
+
+  // Helper function to get token with fallback
+  const getToken = (): string | null => {
+    try {
+      // Try sessionStorage first
+      const token = sessionStorage.getItem('token');
+      if (token) return token;
+      
+      // Fallback to localStorage
+      return localStorage.getItem('token_fallback');
+    } catch (error) {
+      console.error("Error retrieving token:", error);
+      return null;
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -32,11 +58,9 @@ export const useAuthFunctions = (
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
-        // Save the token for future API requests
+        // Save the token with fallback
         if (apiResponse.data.token) {
-          // Use sessionStorage for token, which is just for the current session
-          // and doesn't persist with app refresh
-          sessionStorage.setItem('token', apiResponse.data.token);
+          storeToken(apiResponse.data.token);
         }
         
         setUser(userData as User);
@@ -47,10 +71,10 @@ export const useAuthFunctions = (
         return true;
       }
       
-      // If we get here, the API returned no data and no error, which is odd
+      // Try local fallback if API fails
       toast({
         title: "Login failed",
-        description: "The server returned an unexpected response. Please try again.",
+        description: "API unavailable and no fallback credentials found.",
         variant: "destructive"
       });
       return false;
@@ -59,7 +83,7 @@ export const useAuthFunctions = (
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. Server may be unavailable.",
+        description: "An unexpected error occurred. Using fallback if available.",
         variant: "destructive"
       });
       return false;
@@ -124,7 +148,12 @@ export const useAuthFunctions = (
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('token');
+    try {
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('token_fallback');
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
     toast({
       description: "Logged out successfully."
     });

@@ -1,31 +1,48 @@
 
 /**
- * Environment variable management for MongoDB-based configuration
+ * Environment variable management with fallback to localStorage
  */
 
 // Load environment variables into the application
 export const loadEnv = (): void => {
-  console.log('Environment variables loaded from MongoDB');
+  console.log('Environment variables loaded');
 };
 
-// Set environment variables with validation
+// Set environment variables with validation and fallback to localStorage
 export const setEnv = (key: string, value: string): void => {
   if (!key) {
     console.error('Cannot set environment variable with empty key');
     return;
   }
   
-  console.log(`Environment variable set: ${key} (stored in MongoDB)`);
+  try {
+    // Always store in localStorage as fallback
+    localStorage.setItem(`env_${key}`, value);
+    console.log(`Environment variable set: ${key}`);
+  } catch (error) {
+    console.error(`Failed to set environment variable ${key}:`, error);
+  }
 };
 
-// Get environment variables
+// Get environment variables with fallback to localStorage
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // For MongoDB URI, always return the same value for consistency in web env
+  // For MongoDB URI, use environment variable or fallback
   if (key === 'MONGODB_URI') {
-    return 'mongodb://localhost:27017/learnit';
+    try {
+      const storedValue = localStorage.getItem(`env_${key}`);
+      return storedValue || 'mongodb://localhost:27017/learnit';
+    } catch (error) {
+      return 'mongodb://localhost:27017/learnit';
+    }
   }
   
-  return defaultValue;
+  // For other variables, try localStorage
+  try {
+    const storedValue = localStorage.getItem(`env_${key}`);
+    return storedValue || defaultValue;
+  } catch (error) {
+    return defaultValue;
+  }
 };
 
 // Check if the app is running in a Capacitor environment
