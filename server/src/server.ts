@@ -43,10 +43,12 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'http://localhost:8080', // Allow frontend to connect
+  origin: '*', // Allow all origins for testing
   credentials: true
 }));
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false // Disable CSP for development
+}));
 app.use(morgan('dev'));
 app.use(cookieParser());
 
@@ -62,6 +64,20 @@ app.use('/api/health', healthRoutes);
 // Health check endpoint (root level)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+// Log all API routes for debugging
+console.log('Registered API routes:');
+app._router.stack.forEach(middleware => {
+  if (middleware.route) {
+    console.log(`Route: ${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    middleware.handle.stack.forEach(handler => {
+      if (handler.route) {
+        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
+      }
+    });
+  }
 });
 
 // Error handling middleware

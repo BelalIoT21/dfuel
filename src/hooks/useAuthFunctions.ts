@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { User } from '@/types/database';
-import userDatabase from '@/services/userDatabase';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
 
@@ -16,35 +15,27 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // First try API login
-      try {
-        const apiResponse = await apiService.login(email, password);
-        
-        if (apiResponse.data) {
-          console.log("API login successful:", apiResponse.data);
-          const userData = apiResponse.data.user;
-          // Save the token for future API requests
-          if (apiResponse.data.token) {
-            localStorage.setItem('token', apiResponse.data.token);
-          }
-          
-          setUser(userData as User);
-          localStorage.setItem('learnit_user', JSON.stringify(userData));
-          toast({
-            title: "Login successful",
-            description: `Welcome back, ${userData.name}!`
-          });
-          return true;
-        }
-      } catch (error) {
-        console.error("API login error, will try localStorage fallback:", error);
+      // Try API login
+      const apiResponse = await apiService.login(email, password);
+      
+      if (apiResponse.error) {
+        console.error("API login error:", apiResponse.error);
+        toast({
+          title: "Login failed",
+          description: apiResponse.error,
+          variant: "destructive"
+        });
+        return false;
       }
       
-      // Fallback to local storage if API fails
-      console.log("API login failed or not available, trying localStorage");
-      const userData = await userDatabase.authenticate(email, password);
-      
-      if (userData) {
+      if (apiResponse.data) {
+        console.log("API login successful:", apiResponse.data);
+        const userData = apiResponse.data.user;
+        // Save the token for future API requests
+        if (apiResponse.data.token) {
+          localStorage.setItem('token', apiResponse.data.token);
+        }
+        
         setUser(userData as User);
         localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
@@ -52,14 +43,16 @@ export const useAuthFunctions = (
           description: `Welcome back, ${userData.name}!`
         });
         return true;
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid credentials.",
-          variant: "destructive"
-        });
-        return false;
       }
+      
+      // If we get here, the API returned no data and no error, which is odd
+      toast({
+        title: "Login failed",
+        description: "The server returned an unexpected response. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+      
     } catch (error) {
       console.error("Error during login:", error);
       toast({
