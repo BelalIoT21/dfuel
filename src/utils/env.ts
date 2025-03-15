@@ -1,12 +1,11 @@
-
 /**
  * Environment variable management for client-side configuration
  */
 
 // Default values for environment variables
 const ENV_DEFAULTS = {
-  // Use localhost:4000/api as the default API URL when in development
-  API_URL: 'http://localhost:4000/api',
+  // Default API URL with fallbacks for different environments
+  API_URL: 'https://learnit-server.onrender.com/api',
   // Keep MongoDB URI for reference only in client
   MONGODB_URI: 'mongodb://localhost:27017/learnit'
 };
@@ -18,7 +17,7 @@ export const loadEnv = (): void => {
   try {
     const storedApiUrl = sessionStorage.getItem('env_API_URL');
     if (storedApiUrl && (storedApiUrl.startsWith('mongodb://') || !storedApiUrl.includes('http'))) {
-      console.log('Invalid API URL detected in storage, resetting to default');
+      console.error('Invalid API URL detected in storage, resetting to default');
       sessionStorage.removeItem('env_API_URL');
     }
   } catch (error) {
@@ -64,7 +63,7 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
       if (key === 'API_URL' && (value.startsWith('mongodb://') || !value.includes('http'))) {
         console.warn('Invalid API URL format detected, using default instead');
         sessionStorage.removeItem(`env_${key}`);
-        return ENV_DEFAULTS[key as keyof typeof ENV_DEFAULTS];
+        return ENV_DEFAULTS[key as keyof typeof ENV_DEFAULTS] || defaultValue;
       }
       return value;
     }

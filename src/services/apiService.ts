@@ -1,16 +1,15 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
 // Use the environment variable for the API URL
 const getBaseApiUrl = () => {
-  const url = getEnv('API_URL', 'http://localhost:4000/api');
+  const url = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
   
   // Validate URL format - it should be an HTTP URL for REST API calls
   if (!url.startsWith('http')) {
     console.error('Invalid API URL format. Using default API URL instead.');
     // Reset to default - API URLs must be HTTP/HTTPS
-    return 'http://localhost:4000/api';
+    return 'https://learnit-server.onrender.com/api';
   }
   
   return url;
@@ -66,7 +65,13 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
+      // Add a timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      options.signal = controller.signal;
+      
       const response = await fetch(url, options);
+      clearTimeout(timeoutId);
       
       // Handle empty responses gracefully
       let responseData;
@@ -83,8 +88,6 @@ class ApiService {
         console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
-          const serverBaseUrl = BASE_URL.split('/api')[0];
-          
           return {
             data: null,
             error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
@@ -103,6 +106,16 @@ class ApiService {
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
+      // Check if it's an AbortError (timeout)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error(`Request timeout for ${endpoint}`);
+        return {
+          data: null,
+          error: 'Request timed out. The server might be unavailable.',
+          status: 0
+        };
+      }
+      
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
         toast({
@@ -115,7 +128,9 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        status: error instanceof Error && 
+               (error.message.includes('Failed to fetch') || 
+                error.message.includes('Network Error')) ? 0 : 500
       };
     }
   }
@@ -143,7 +158,8 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    return this.request<{ status: string, message: string }>(
+    console.log('Checking API health at:', this.getBaseUrl());
+    return this.request<{ status: string, message: string, database?: any }>(
       'health',
       'GET',
       undefined,

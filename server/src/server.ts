@@ -43,20 +43,24 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Allowed origins for CORS
+// Allowed origins for CORS - ensure all possible origins are included
 const allowedOrigins = [
   'http://localhost:8080',
+  'http://localhost:5173',
+  'http://localhost:3000',
   'https://learnit-client.vercel.app', 
   'https://lovableproject.com',
   // Allow any subdomain of lovableproject.com
   /^https:\/\/[\w-]+\.lovableproject\.com$/
 ];
 
-// Updated CORS configuration to explicitly allow requests from the frontend origin
+// Updated CORS configuration with explicit origins and proper error handling
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) return callback(null, true);
+    
+    console.log('Request origin:', origin);
     
     // Check if the origin is allowed
     const isAllowed = allowedOrigins.some(allowedOrigin => {
@@ -71,16 +75,19 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
-      console.log('CORS blocked request from:', origin);
-      callback(null, true); // Still allow for development, but log it
+      console.log('CORS allowing all origins for development');
+      callback(null, true); // Allow all origins for development
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
+
+// Add CORS preflight response
+app.options('*', cors());
 
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
