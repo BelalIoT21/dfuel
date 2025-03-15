@@ -1,61 +1,88 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
+import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { logger } from '@/utils/logger';
+
+const pageLogger = logger.child('IndexPage');
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if user is already logged in
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        pageLogger.info("Checking server health...");
+        const response = await apiService.checkHealth();
+        if (response.data) {
+          pageLogger.info("Server health check successful:", response.data);
+          setServerStatus('connected');
+          toast({
+            title: 'Server Connected',
+            description: 'Successfully connected to the backend server',
+          });
+        } else {
+          pageLogger.warn("Server health check failed");
+          setServerStatus('disconnected');
+          toast({
+            title: 'Server Connection Failed',
+            description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+            variant: 'destructive'
+          });
+        }
+      } catch (error) {
+        pageLogger.error("Server connection error:", error);
+        setServerStatus('disconnected');
+        toast({
+          title: 'Server Connection Failed',
+          description: 'Could not connect to the backend server. Please ensure the server is running at http://localhost:4000.',
+          variant: 'destructive'
+        });
+      }
+    };
+    
+    checkServer();
+  }, []);
+
   useEffect(() => {
     if (user) {
-      console.log("User is logged in, redirecting:", user);
+      pageLogger.info("User is logged in, redirecting:", user);
       navigate('/home');
     }
   }, [user, navigate]);
 
   const handleLogin = async (email: string, password: string) => {
-    console.log("Attempting login with:", email);
-    try {
-      const success = await login(email, password);
-      if (!success) {
-        console.error("Login failed");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Login Error",
-        description: "An unexpected error occurred during login.",
-        variant: "destructive"
-      });
+    pageLogger.info("Attempting login with:", { email });
+    const success = await login(email, password);
+    if (success) {
+      pageLogger.info("Login successful, navigating to home");
+      navigate('/home');
+    } else {
+      pageLogger.warn("Login failed for:", { email });
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email);
-    try {
-      const success = await register(email, password, name);
-      if (!success) {
-        console.error("Registration failed");
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast({
-        title: "Registration Error",
-        description: "An unexpected error occurred during registration.",
-        variant: "destructive"
-      });
+    pageLogger.info("Attempting registration for:", { email });
+    const success = await register(email, password, name);
+    if (success) {
+      pageLogger.info("Registration successful, navigating to home");
+      navigate('/home');
+    } else {
+      pageLogger.warn("Registration failed for:", { email });
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
+    pageLogger.debug(`Switched to ${isLogin ? 'register' : 'login'} mode`);
   };
 
   return (
@@ -66,6 +93,13 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
+          {serverStatus && (
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+              {serverStatus === 'connected' 
+                ? 'Connected to server' 
+                : 'Server connection failed. Please ensure the server is running at http://localhost:4000.'}
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">

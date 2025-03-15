@@ -39,121 +39,37 @@ connectDB().then(async () => {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Get allowed origins from environment variable or use default
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:8080'];
+  
+console.log('CORS allowed origins:', allowedOrigins);
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Allowed origins for CORS - ensure all possible origins are included
-const allowedOrigins = [
-  'http://localhost:8080',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://learnit-client.vercel.app', 
-  'https://lovableproject.com',
-  // Allow any subdomain of lovableproject.com
-  /^https:\/\/[\w-]+\.lovableproject\.com$/
-];
-
-// Custom request logger middleware
-app.use((req, res, next) => {
-  const timestamp = new Date().toISOString();
-  const requestId = Math.random().toString(36).substring(2, 10);
-  
-  // Add request ID and timestamp to the request object for later use
-  req.requestId = requestId;
-  req.timestamp = timestamp;
-  
-  // Log the incoming request
-  console.log(`[${timestamp}] 📥 ${requestId} ${req.method} ${req.originalUrl} - Origin: ${req.headers.origin || 'unknown'} - IP: ${req.ip}`);
-  
-  // Log request headers if in development mode
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[${timestamp}] 📝 ${requestId} Headers:`, req.headers);
-  }
-  
-  // Log request body for POST/PUT/PATCH requests, excluding sensitive routes
-  const sensitiveRoutes = ['/api/auth/login', '/api/auth/register', '/api/users/password'];
-  const isSensitiveRoute = sensitiveRoutes.some(route => req.originalUrl.includes(route));
-  
-  if (['POST', 'PUT', 'PATCH'].includes(req.method) && !isSensitiveRoute && req.body && process.env.NODE_ENV === 'development') {
-    console.log(`[${timestamp}] 📦 ${requestId} Request Body:`, JSON.stringify(req.body, null, 2));
-  }
-  
-  // Log response when completed
-  res.on('finish', () => {
-    const duration = Date.now() - new Date(timestamp).getTime();
-    const statusCode = res.statusCode;
-    const statusSymbol = statusCode >= 200 && statusCode < 300 ? '✅' : '❌';
-    
-    console.log(`[${new Date().toISOString()}] 📤 ${requestId} ${req.method} ${req.originalUrl} - ${statusSymbol} ${statusCode} - ${duration}ms`);
-  });
-  
-  next();
-});
-
-// CORS configuration with more permissive settings for development
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) {
-      console.log('Request with no origin allowed');
-      return callback(null, true);
-    }
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
     
-    console.log('Request origin:', origin);
-    
-    // Check if the origin is allowed
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      if (typeof allowedOrigin === 'string') {
-        return origin === allowedOrigin;
-      } else if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
-      }
-      return false;
-    });
-    
-    if (isAllowed) {
-      console.log(`Origin ${origin} is allowed by CORS policy`);
-      callback(null, true);
-    } else if (process.env.NODE_ENV !== 'production') {
-      // In development, allow all origins
-      console.log(`Origin ${origin} allowed in development mode`);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      console.log('Request origin:', origin);
+      console.log('Origin', origin, 'is allowed by CORS policy');
       callback(null, true);
     } else {
-      console.log(`Origin ${origin} blocked by CORS policy`);
-      callback(new Error(`Origin ${origin} not allowed by CORS policy`), false);
+      console.log('Request origin:', origin);
+      console.log('Origin', origin, 'is NOT allowed by CORS policy');
+      callback(new Error('Not allowed by CORS'), false);
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  credentials: true
 }));
-
-// Add CORS preflight response
-app.options('*', cors());
-
-// Security middleware
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
-
-// HTTP request logger
-app.use(morgan((tokens, req, res) => {
-  // Only use morgan for non-API routes to avoid duplication
-  if (!req.originalUrl.startsWith('/api/')) {
-    return [
-      `[${new Date().toISOString()}]`,
-      tokens.method(req, res),
-      tokens.url(req, res),
-      tokens.status(req, res),
-      tokens['response-time'](req, res), 'ms'
-    ].join(' ');
-  }
-  return null;
-}));
-
+app.use(morgan('dev'));
 app.use(cookieParser());
 
 // API Routes
@@ -209,8 +125,7 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`Available at http://localhost:${PORT}`);
-  console.log(`API URL: http://localhost:${PORT}/api`);
+  console.log(`API is available at http://localhost:${PORT}/api`);
 });
 
 export default app;
