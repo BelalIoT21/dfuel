@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import userDatabase from '@/services/userDatabase';
@@ -17,6 +18,7 @@ export const useAuthFunctions = (
       console.log("Login attempt for:", email);
       
       // First try API login
+      console.log("Attempting API login...");
       const apiResponse = await apiService.login(email, password);
       
       if (apiResponse.data) {
@@ -40,18 +42,21 @@ export const useAuthFunctions = (
       }
       
       // Check for specific API errors
-      if (apiResponse.error) {
-        console.error("API login error:", apiResponse.error);
+      if (apiResponse.error || apiResponse.status >= 400) {
+        console.error("API login error:", apiResponse.error, "Status:", apiResponse.status);
         
         // Handle specific error codes
         if (apiResponse.status === 401) {
-          if (apiResponse.error.includes('No users in database')) {
+          if (apiResponse.error?.includes('No users in database')) {
             throw new Error('No users in database. Use the default admin credentials.');
           }
           throw new Error('Invalid email or password');
+        } else if (apiResponse.status === 404) {
+          console.warn("API endpoint not found (404). Check server routes configuration.");
+          // Fall through to local storage login
+        } else {
+          throw new Error(apiResponse.error || 'Authentication failed');
         }
-        
-        throw new Error(apiResponse.error);
       }
       
       // Fallback to local storage if API fails
@@ -62,7 +67,7 @@ export const useAuthFunctions = (
         setUser(userData as User);
         localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
-          title: "Login successful",
+          title: "Login successful (local mode)",
           description: `Welcome back, ${userData.name}!`
         });
         return true;

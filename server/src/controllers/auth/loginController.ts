@@ -9,13 +9,15 @@ import { generateToken } from '../../utils/tokenUtils';
 // @access  Public
 export const loginUser = async (req: Request, res: Response) => {
   try {
+    console.log('Login attempt received at endpoint:', req.originalUrl);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { email, password } = req.body;
-
     console.log(`Login attempt for email: ${email}`);
 
     // Find user by email
