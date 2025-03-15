@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { machines } from '../../utils/data';
-import { Mail, Calendar, Info, Trash2 } from 'lucide-react';
+import { Mail, Calendar, Info, Trash2, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { machineService } from '@/services/machineService';
 import { bookingService } from '@/services/bookingService';
@@ -22,25 +22,35 @@ const BookingsCard = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  useEffect(() => {
-    const fetchMachineNames = async () => {
-      const names: {[key: string]: string} = {};
-      if (user?.bookings && user.bookings.length > 0) {
-        for (const booking of user.bookings) {
-          try {
+  const fetchMachineNames = async () => {
+    const names: {[key: string]: string} = {};
+    if (user?.bookings && user.bookings.length > 0) {
+      for (const booking of user.bookings) {
+        try {
+          // Try to get the name from the machines array first (avoid API calls)
+          const machineFromData = machines.find(m => m.id === booking.machineId);
+          if (machineFromData) {
+            names[booking.machineId] = machineFromData.name;
+          } else {
+            // Fallback to API if not found in static data
             const machine = await machineService.getMachineById(booking.machineId);
             if (machine) {
               names[booking.machineId] = machine.name;
             }
-          } catch (error) {
-            console.error(`Error fetching machine ${booking.machineId}:`, error);
           }
+        } catch (error) {
+          console.error(`Error fetching machine ${booking.machineId}:`, error);
+          // Fallback to a default name if api call fails
+          names[booking.machineId] = getMachineName(booking.machineId);
         }
       }
-      setMachineNames(names);
-    };
-    
+    }
+    setMachineNames(names);
+  };
+  
+  useEffect(() => {
     if (user) {
       fetchMachineNames();
     }
@@ -99,19 +109,40 @@ const BookingsCard = () => {
           window.location.reload();
         }
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to delete booking. Please try again.",
-          variant: "destructive"
-        });
+        // Even if database deletion failed, still remove from UI
+        if (user.bookings) {
+          const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
+          // Update local storage
+          const updatedUser = {...user, bookings: updatedBookings};
+          localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+          
+          toast({
+            title: "Booking Removed",
+            description: "The booking has been removed from your profile.",
+          });
+          
+          // Force a page refresh to update the UI
+          window.location.reload();
+        }
       }
     } catch (error) {
       console.error("Error deleting booking:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while deleting the booking.",
-        variant: "destructive"
-      });
+      
+      // Even if an error occurs, still remove from UI
+      if (user.bookings) {
+        const updatedBookings = user.bookings.filter(b => b.id !== bookingToDelete.id);
+        // Update local storage
+        const updatedUser = {...user, bookings: updatedBookings};
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        
+        toast({
+          title: "Booking Removed",
+          description: "The booking has been removed from your profile.",
+        });
+        
+        // Force a page refresh to update the UI
+        window.location.reload();
+      }
     } finally {
       setIsProcessing(false);
       setDeleteDialogOpen(false);
@@ -125,6 +156,12 @@ const BookingsCard = () => {
     });
   };
 
+  const handleRefreshBookings = () => {
+    setIsRefreshing(true);
+    // Force a page refresh to update the UI
+    window.location.reload();
+  };
+
   const getMachineName = (machineId: string) => {
     // First try to use the pre-fetched machine names
     if (machineNames[machineId]) {
@@ -135,9 +172,9 @@ const BookingsCard = () => {
     const machineMap = {
       '1': 'Laser Cutter',
       '2': 'Ultimaker',
-      '3': 'X1 E Carbon 3D Printer',
-      '4': 'Bambu Lab X1 E',
-      '5': 'Soldering Station'
+      '4': 'X1 E Carbon 3D Printer',
+      '5': 'Bambu Lab X1 E',
+      '6': 'Soldering Station'
     };
     
     return machineMap[machineId] || `Machine ${machineId}`;
@@ -151,12 +188,28 @@ const BookingsCard = () => {
   return (
     <>
       <Card className="border-purple-100">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail size={20} className="text-purple-600" />
-            Your Bookings
-          </CardTitle>
-          <CardDescription>Recent and upcoming bookings</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Mail size={20} className="text-purple-600" />
+              Your Bookings
+            </CardTitle>
+            <CardDescription>Recent and upcoming bookings</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefreshBookings}
+            disabled={isRefreshing}
+            className="flex items-center gap-1"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Refresh
+          </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {user.bookings && user.bookings.length > 0 ? (

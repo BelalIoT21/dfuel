@@ -1,4 +1,3 @@
-
 export interface Machine {
   id: string;
   name: string;
@@ -124,25 +123,6 @@ export const machines: Machine[] = [
     status: 'available'
   },
   {
-    id: '3',
-    name: 'Safety Cabinet',
-    description: 'Storage for hazardous materials and equipment',
-    image: '/placeholder.svg',
-    courseCompleted: false,
-    quizPassed: false,
-    type: 'Equipment', // Updated to Equipment directly at source
-    specs: {
-      manufacturer: 'Justrite',
-      model: 'Sure-Grip EX',
-      capacity: '45 gallons',
-      'cabinet type': 'Flammable storage',
-      certification: 'NFPA, OSHA compliant',
-      features: ['Self-closing doors', 'Adjustable shelves', 'Leak-proof sump']
-    },
-    maintenanceDate: '2023-04-22',
-    status: 'available'
-  },
-  {
     id: '4',
     name: 'X1 E Carbon 3D Printer',
     description: 'Advanced 3D printer for carbon fiber composites',
@@ -256,45 +236,6 @@ export const courses: Record<string, CourseContent> = {
       {
         title: 'Maintenance',
         content: 'Clean the build plate regularly. Check belts for tension. Keep filament dry. Lubricate moving parts according to the schedule.',
-        image: '/placeholder.svg'
-      }
-    ]
-  },
-  '3': {
-    id: '3',
-    machineId: '3',
-    title: 'Safety Cabinet Course',
-    content: `
-      <h1>Welcome to the Safety Cabinet Course</h1>
-      <p>This course will teach you how to safely use the Safety Cabinet.</p>
-      <h2>Course Outline</h2>
-      <ul>
-        <li>Introduction to Safety Cabinets</li>
-        <li>Safety Precautions</li>
-        <li>Operating Procedures</li>
-        <li>Maintenance</li>
-      </ul>
-    `,
-    duration: '30 minutes',
-    slides: [
-      {
-        title: 'Introduction to Safety Cabinets',
-        content: 'Safety cabinets are designed to store hazardous materials safely and prevent accidents in the workplace.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Types of Cabinets',
-        content: 'There are different types of safety cabinets for different materials: flammable liquids, corrosives, pesticides, etc.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Proper Storage Practices',
-        content: 'Always keep incompatible materials separate. Store heavier items on lower shelves. Keep containers tightly closed.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Maintenance',
-        content: 'Inspect cabinets regularly for damage. Clean spills immediately. Check self-closing mechanisms are working properly.',
         image: '/placeholder.svg'
       }
     ]
@@ -497,67 +438,6 @@ export const quizzes: Record<string, Quiz> = {
           'Pause the print and re-level the bed',
           'Increase the bed temperature',
           'Start a new print',
-        ],
-        correctAnswer: 1,
-      },
-    ],
-  },
-  '3': {
-    id: '3',
-    machineId: '3',
-    questions: [
-      {
-        id: '3-1',
-        question: 'What is the primary purpose of a safety cabinet?',
-        options: [
-          'To store tools',
-          'To store hazardous materials',
-          'To store finished products',
-          'To store food',
-        ],
-        correctAnswer: 1,
-      },
-      {
-        id: '3-2',
-        question: 'What type of materials should be stored in a flammable safety cabinet?',
-        options: [
-          'Paper',
-          'Flammable liquids',
-          'Tools',
-          'Food',
-        ],
-        correctAnswer: 1,
-      },
-      {
-        id: '3-3',
-        question: 'What should you do if you spill a hazardous material inside the safety cabinet?',
-        options: [
-          'Leave it for someone else to clean',
-          'Clean it up immediately using proper safety procedures',
-          'Ignore it',
-          'Use water to clean it',
-        ],
-        correctAnswer: 1,
-      },
-      {
-        id: '3-4',
-        question: 'What is the purpose of the self-closing doors on a safety cabinet?',
-        options: [
-          'To keep the materials organized',
-          'To contain fires',
-          'To keep the materials cool',
-          'To keep the materials dry',
-        ],
-        correctAnswer: 1,
-      },
-      {
-        id: '3-5',
-        question: 'What should you do if you notice a leak in the safety cabinet?',
-        options: [
-          'Ignore it',
-          'Report it immediately',
-          'Try to fix it yourself',
-          'Use tape to seal it',
         ],
         correctAnswer: 1,
       },

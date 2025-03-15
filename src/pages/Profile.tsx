@@ -1,19 +1,20 @@
 
-import { useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PersonalInfoCard from '@/components/profile/PersonalInfoCard';
 import CertificationsCard from '@/components/profile/CertificationsCard';
 import BookingsCard from '@/components/profile/BookingsCard';
+import { Loader2 } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
+  const [isLoading, setIsLoading] = useState(true);
   
   // Set default tab based on URL parameter
   const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
@@ -24,6 +25,27 @@ const Profile = () => {
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
+
+  useEffect(() => {
+    // Add a small delay to ensure auth state is loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-purple-600 animate-spin mx-auto mb-4" />
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect if user is not logged in
   if (!user) {

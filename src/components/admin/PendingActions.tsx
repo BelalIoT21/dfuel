@@ -2,12 +2,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
   
   const fetchPendingBookings = useCallback(async () => {
     try {
@@ -39,6 +43,7 @@ export const PendingActions = () => {
       setPendingBookings([]);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
   
@@ -61,10 +66,33 @@ export const PendingActions = () => {
     await fetchPendingBookings();
   }, [fetchPendingBookings]);
 
+  const handleManualRefresh = () => {
+    setIsRefreshing(true);
+    fetchPendingBookings();
+    toast({
+      title: "Refreshing Bookings",
+      description: "Fetching the latest booking information..."
+    });
+  };
+
   return (
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Pending Actions</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-1"
+        >
+          {isRefreshing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Refresh
+        </Button>
       </div>
       <div className="space-y-4">
         {isLoading ? (
