@@ -139,19 +139,6 @@ export class CertificationService {
     }
   }
   
-  // Safety course certification management - uses the same methods as other certifications
-  async addSafetyCertification(userId: string): Promise<boolean> {
-    console.log(`Adding safety certification for user ${userId}`);
-    const SAFETY_MACHINE_ID = "5"; // Safety cabinet ID
-    return this.addCertification(userId, SAFETY_MACHINE_ID);
-  }
-  
-  async removeSafetyCertification(userId: string): Promise<boolean> {
-    console.log(`Removing safety certification for user ${userId}`);
-    const SAFETY_MACHINE_ID = "5"; // Safety cabinet ID
-    return this.removeCertification(userId, SAFETY_MACHINE_ID);
-  }
-  
   // Machine Safety Course certification management
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
@@ -169,15 +156,7 @@ export class CertificationService {
     }
     
     // Regular handling for other users
-    try {
-      console.log(`LocalStorage addMachineSafetyCourse for user ${userId}`);
-      const result = await this.addCertification(userId, MACHINE_SAFETY_ID);
-      console.log(`LocalStorage addMachineSafetyCourse result: ${result}`);
-      return result;
-    } catch (error) {
-      console.error(`Error adding Machine Safety Course certification: ${error}`);
-      return false;
-    }
+    return this.addCertification(userId, MACHINE_SAFETY_ID);
   }
   
   async removeMachineSafetyCertification(userId: string): Promise<boolean> {
@@ -191,15 +170,20 @@ export class CertificationService {
     }
     
     // Regular handling for other users
-    try {
-      console.log(`LocalStorage removeMachineSafetyCourse for user ${userId}`);
-      const result = await this.removeCertification(userId, MACHINE_SAFETY_ID);
-      console.log(`LocalStorage removeMachineSafetyCourse result: ${result}`);
-      return result;
-    } catch (error) {
-      console.error(`Error removing Machine Safety Course certification: ${error}`);
-      return false;
-    }
+    return this.removeCertification(userId, MACHINE_SAFETY_ID);
+  }
+  
+  // Safety course certification management
+  async addSafetyCertification(userId: string): Promise<boolean> {
+    console.log(`Adding safety certification for user ${userId}`);
+    const SAFETY_MACHINE_ID = "3"; // Safety cabinet ID
+    return this.addCertification(userId, SAFETY_MACHINE_ID);
+  }
+  
+  async removeSafetyCertification(userId: string): Promise<boolean> {
+    console.log(`Removing safety certification for user ${userId}`);
+    const SAFETY_MACHINE_ID = "3"; // Safety cabinet ID
+    return this.removeCertification(userId, SAFETY_MACHINE_ID);
   }
   
   // Check if user has a specific certification

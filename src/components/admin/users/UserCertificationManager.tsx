@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -145,35 +146,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       let success = false;
       try {
-        const userDoc = await mongoDbService.getUserById(userId);
-        if (userDoc) {
-          if (!userDoc.certifications.includes("6")) {
-            const updatedCertifications = [...userDoc.certifications, "6"];
-            success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
-            console.log(`MongoDB addMachineSafetyCourse result: ${success}`);
-          } else {
-            success = true;
-          }
-        }
-      } catch (mongoError) {
-        console.error("MongoDB add machine safety certification error:", mongoError);
-      }
-      
-      if (!success) {
-        const user = localStorageService.findUserById(userId);
-        if (user) {
-          if (!user.certifications.includes("6")) {
-            const updatedCertifications = [...user.certifications, "6"];
-            success = localStorageService.updateUser(userId, { certifications: updatedCertifications });
-            console.log(`LocalStorage addMachineSafetyCourse result: ${success}`);
-          } else {
-            success = true;
-          }
-        }
-        
-        if (!success) {
-          success = await certificationService.addMachineSafetyCertification(userId);
-        }
+        success = await certificationService.addMachineSafetyCertification(userId);
+        console.log(`addMachineSafetyCertification result: ${success}`);
+      } catch (error) {
+        console.error("Error in addMachineSafetyCertification:", error);
       }
       
       if (success) {
@@ -208,27 +184,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       let success = false;
       try {
-        const userDoc = await mongoDbService.getUserById(userId);
-        if (userDoc) {
-          const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
-          success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
-          console.log(`MongoDB removeMachineSafetyCourse result: ${success}`);
-        }
-      } catch (mongoError) {
-        console.error("MongoDB remove machine safety certification error:", mongoError);
-      }
-      
-      if (!success) {
-        const user = localStorageService.findUserById(userId);
-        if (user) {
-          const updatedCertifications = user.certifications.filter(id => id !== "6");
-          success = localStorageService.updateUser(userId, { certifications: updatedCertifications });
-          console.log(`LocalStorage removeMachineSafetyCourse result: ${success}`);
-        }
-      }
-      
-      if (!success) {
         success = await certificationService.removeMachineSafetyCertification(userId);
+        console.log(`removeMachineSafetyCertification result: ${success}`);
+      } catch (error) {
+        console.error("Error in removeMachineSafetyCertification:", error);
       }
       
       if (success) {
@@ -348,35 +307,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           <h4 className="text-sm font-medium mb-2">Machine Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
             <div className="flex justify-between items-center border p-2 rounded">
-              <span>Bambu Lab X1 E</span>
-              <div>
-                {user.certifications?.includes("5") ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveCertification(user.id, "5")}
-                    disabled={loading === "5"}
-                    className="bg-red-50 hover:bg-red-100 border-red-200"
-                  >
-                    {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Remove
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddCertification(user.id, "5")}
-                    disabled={loading === "5" || !hasMachineSafetyCourse}
-                    className={!hasMachineSafetyCourse ? "opacity-50" : ""}
-                  >
-                    {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
-                  </Button>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex justify-between items-center border p-2 rounded">
               <span>Safety Cabinet</span>
               <div>
                 {user.certifications?.includes("3") ? (
@@ -399,6 +329,35 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
                     {loading === "3" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center border p-2 rounded">
+              <span>Bambu Lab X1 E</span>
+              <div>
+                {user.certifications?.includes("5") ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveCertification(user.id, "5")}
+                    disabled={loading === "5"}
+                    className="bg-red-50 hover:bg-red-100 border-red-200"
+                  >
+                    {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Remove
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddCertification(user.id, "5")}
+                    disabled={loading === "5" || !hasMachineSafetyCourse}
+                    className={!hasMachineSafetyCourse ? "opacity-50" : ""}
+                  >
+                    {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
                   </Button>
                 )}

@@ -117,6 +117,25 @@ class MongoUserService {
       const user = await this.getUserById(userId);
       if (!user) return false;
       
+      // Special handling for special users and Machine Safety Course (ID: 6)
+      if (machineId === "6" && (userId === "user-1741957466063" || userId.includes("b.l.mishmish"))) {
+        console.log(`Special handling for user ${userId} with Safety Course certification`);
+        // Clear all certifications first
+        const clearResult = await this.usersCollection.updateOne(
+          { id: userId },
+          { $set: { certifications: [] } }
+        );
+        
+        // Then add just the safety course
+        const addResult = await this.usersCollection.updateOne(
+          { id: userId },
+          { $push: { certifications: machineId } }
+        );
+        
+        return clearResult.modifiedCount > 0 || addResult.modifiedCount > 0;
+      }
+      
+      // Normal handling for other cases
       if (!user.certifications.includes(machineId)) {
         const result = await this.usersCollection.updateOne(
           { id: userId },

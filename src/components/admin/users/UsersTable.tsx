@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -148,9 +149,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      // Remove Machine Safety Course (ID: "6") from visible certifications
                       user.certifications
-                        .filter((cert: string) => cert !== "6")
+                        .filter((cert: string) => cert !== "6") // Hide Machine Safety Course from the list
                         .map((cert: string) => (
                           <span 
                             key={cert} 
@@ -161,6 +161,13 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                         ))
                     ) : (
                       <span className="text-xs text-gray-500">None</span>
+                    )}
+                    {user.certifications?.includes("6") && (
+                      <span 
+                        className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                      >
+                        Safety Course
+                      </span>
                     )}
                   </div>
                 </TableCell>
