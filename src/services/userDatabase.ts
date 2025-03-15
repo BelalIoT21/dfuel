@@ -1,4 +1,3 @@
-
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -10,7 +9,7 @@ class UserDatabase {
   // User methods
   async getAllUsers() {
     try {
-      // Only use MongoDB, no fallback
+      // Only use MongoDB
       const mongoUsers = await mongoDbService.getAllUsers();
       console.log(`Retrieved ${mongoUsers ? mongoUsers.length : 0} users from MongoDB`);
       return mongoUsers || [];
@@ -27,7 +26,7 @@ class UserDatabase {
   
   async findUserByEmail(email: string) {
     try {
-      // Only use MongoDB, no fallback
+      // Only use MongoDB
       const mongoUser = await mongoDbService.getUserByEmail(email);
       if (mongoUser) {
         console.log(`Found user ${email} in MongoDB`);
