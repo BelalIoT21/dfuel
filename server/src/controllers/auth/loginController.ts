@@ -1,6 +1,5 @@
 
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import { validationResult } from 'express-validator';
 import { User } from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
@@ -10,16 +9,6 @@ import { generateToken } from '../../utils/tokenUtils';
 // @access  Public
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    // Check MongoDB connection first
-    if (mongoose.connection.readyState !== 1) {
-      console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
-      return res.status(500).json({ 
-        message: 'Database connection error',
-        details: 'MongoDB is not connected. Please ensure MongoDB is running on your local machine.',
-        mongoState: mongoose.connection.readyState
-      });
-    }
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log('Validation errors:', errors.array());
@@ -46,20 +35,14 @@ export const loginUser = async (req: Request, res: Response) => {
         console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
       }
       
-      return res.status(401).json({ 
-        message: 'Invalid email or password',
-        debug: { userExists: false, dbConnected: true, mongoHost: mongoose.connection.host }
-      });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     // Check password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       console.log(`Password mismatch for user: ${email}`);
-      return res.status(401).json({ 
-        message: 'Invalid email or password',
-        debug: { userExists: true, passwordMatch: false }
-      });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     console.log(`Login successful for user: ${email}`);
@@ -87,9 +70,7 @@ export const loginUser = async (req: Request, res: Response) => {
     console.error('Error in loginUser:', error);
     res.status(500).json({ 
       message: 'Server error', 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      mongoState: mongoose.connection.readyState,
-      mongoHost: mongoose.connection.host || 'Not connected'
+      error: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 };

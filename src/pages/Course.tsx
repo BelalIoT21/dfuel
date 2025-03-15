@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,44 +13,15 @@ const Course = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
-  // Find machine and course data
-  const machine = id ? machines.find(m => m.id === id) : undefined;
-  const course = id ? courses[id as keyof typeof courses] : undefined;
+  const machine = machines.find(m => m.id === id);
+  const course = courses[id as keyof typeof courses];
   
-  useEffect(() => {
-    console.log("Course component mounted with id:", id);
-    console.log("Machine data:", machine);
-    console.log("Course data:", course);
-    
-    // Add a small delay to ensure data is properly loaded
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      if (!machine || !course) {
-        setError("Course not found. Please check the URL and try again.");
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
-  }, [id, machine, course]);
-
-  if (isLoading) {
+  if (!machine || !course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-xl font-medium mb-4">Loading course content...</h1>
-        </div>
-      </div>
-    );
-  }
-  
-  if (error || !machine || !course) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">{error || "Course not found"}</h1>
+          <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           <Link to="/home">
             <Button>Return to Home</Button>
           </Link>
@@ -102,15 +73,11 @@ const Course = () => {
             <div className="relative">
               {/* Slide Content */}
               <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                {course.slides[currentSlide].image ? (
-                  <img 
-                    src={course.slides[currentSlide].image} 
-                    alt={course.slides[currentSlide].title}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <div className="text-gray-400">No image available</div>
-                )}
+                <img 
+                  src={course.slides[currentSlide].image} 
+                  alt={course.slides[currentSlide].title}
+                  className="max-w-full max-h-full object-contain"
+                />
               </div>
               
               {/* Navigation Arrows */}

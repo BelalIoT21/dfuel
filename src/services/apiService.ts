@@ -40,60 +40,38 @@ class ApiService {
       }
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
+      const response = await fetch(url, options);
       
-      // Add timeout for fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      options.signal = controller.signal;
+      // Handle empty responses gracefully
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json') && response.status !== 204) {
+        const text = await response.text();
+        responseData = text ? JSON.parse(text) : null;
+      } else {
+        responseData = null;
+      }
       
-      try {
-        const response = await fetch(url, options);
-        clearTimeout(timeoutId);
+      if (!response.ok) {
+        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
+        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
-        // Handle empty responses gracefully
-        let responseData;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json') && response.status !== 204) {
-          const text = await response.text();
-          responseData = text ? JSON.parse(text) : null;
-        } else {
-          responseData = null;
-        }
-        
-        if (!response.ok) {
-          const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-          console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
-          
-          if (response.status === 404) {
-            return {
-              data: null,
-              error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
-              status: response.status
-            };
-          }
-          
+        if (response.status === 404) {
           return {
             data: null,
-            error: errorMessage,
+            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
             status: response.status
           };
         }
         
-        return {
-          data: responseData,
-          error: null,
-          status: response.status
-        };
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
-        if (fetchError.name === 'AbortError') {
-          console.error(`Request timeout for ${url}`);
-          throw new Error(`Request timeout for ${endpoint}. The server did not respond in time.`);
-        }
-        
-        throw fetchError;
+        throw new Error(errorMessage);
       }
+      
+      return {
+        data: responseData,
+        error: null,
+        status: response.status
+      };
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
@@ -106,22 +84,9 @@ class ApiService {
         });
       }
       
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
-      // Special handling for login errors to provide more helpful messages
-      if (endpoint === 'auth/login') {
-        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-          return {
-            data: null,
-            error: 'Cannot connect to the server. Please ensure the backend server is running.',
-            status: 0
-          };
-        }
-      }
-      
       return {
         data: null,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Unknown error',
         status: 500
       };
     }

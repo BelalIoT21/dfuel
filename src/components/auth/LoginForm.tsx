@@ -13,7 +13,6 @@ import { motion } from 'framer-motion';
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
-  serverStatus?: 'connecting' | 'connected' | 'disconnected';
 }
 
 const formAnimation = {
@@ -31,7 +30,7 @@ const itemAnimation = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connected' }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -69,17 +68,12 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connected' }:
     
     if (!validateForm()) return;
     
-    if (serverStatus === 'disconnected') {
-      setFormError('Server connection issue. Please try again later.');
-      return;
-    }
-    
     try {
       await onLogin(email, password);
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError('Authentication failed. Please check your credentials and try again.');
+      setFormError('Authentication failed. Please try again.');
     }
   };
 
@@ -96,15 +90,6 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connected' }:
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{formError}</AlertDescription>
-          </Alert>
-        )}
-        
-        {serverStatus === 'disconnected' && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Server connection issue. Local demo mode enabled.
-            </AlertDescription>
           </Alert>
         )}
         
@@ -169,11 +154,7 @@ export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connected' }:
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button 
-              type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={serverStatus === 'disconnected'}
-            >
+            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
               Sign In
             </Button>
           </motion.div>

@@ -21,27 +21,11 @@ export const useAuthFunctions = (
       
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
-        
-        // Show more specific error messages for common issues
-        if (apiResponse.error.includes('Cannot connect to the server')) {
-          toast({
-            title: "Connection Error",
-            description: "Unable to connect to the backend server. Please ensure it's running on port 4000.",
-            variant: "destructive"
-          });
-        } else if (apiResponse.error.includes('Database connection error')) {
-          toast({
-            title: "Database Error",
-            description: "The server cannot connect to MongoDB. Please check your database connection.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Login failed",
-            description: apiResponse.error,
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Login failed",
+          description: apiResponse.error,
+          variant: "destructive"
+        });
         return false;
       }
       

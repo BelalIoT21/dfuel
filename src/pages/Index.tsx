@@ -5,11 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { checkServerHealth } from '@/utils/serverConnection';
+import { apiService } from '@/services/apiService';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -18,36 +19,37 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        
-        const healthStatus = await checkServerHealth();
-        console.log("Server health check result:", healthStatus);
-        
-        if (healthStatus.serverRunning) {
+        const response = await apiService.checkHealth();
+        if (response.data) {
+          console.log("Server health check:", response.data);
           setServerStatus('connected');
-          console.log("Server connection successful");
-        } else {
-          setServerStatus('disconnected');
-          console.log("Server connection failed");
+          toast({
+            title: 'Server Connected',
+            description: 'Successfully connected to the backend server',
+          });
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
+        toast({
+          title: 'Server Connection Failed',
+          description: 'Could not connect to the backend server. Please try again later.',
+          variant: 'destructive'
+        });
       }
     };
     
     checkServer();
-    
-    // Set up interval to periodically check server connection
-    const intervalId = setInterval(checkServer, 15000); // Check every 15 seconds
-    
-    return () => clearInterval(intervalId); // Clean up on unmount
   }, []);
 
   // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
       console.log("User is already logged in, redirecting to home:", user);
-      navigate('/home');
+      // Use setTimeout to ensure this runs after component mount
+      setTimeout(() => {
+        navigate('/home');
+      }, 0);
     }
   }, [user, navigate]);
 
@@ -75,6 +77,9 @@ const Index = () => {
     setIsLogin(!isLogin);
   };
 
+  // Debug rendering
+  console.log("Rendering Index component, user:", user ? "logged in" : "not logged in");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
       <div className="w-full max-w-md space-y-6 animate-fade-up">
@@ -83,6 +88,11 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
+          {serverStatus && (
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
+              Server status: {serverStatus}
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -96,8 +106,7 @@ const Index = () => {
             >
               <LoginForm 
                 onLogin={handleLogin} 
-                onToggleMode={toggleMode}
-                serverStatus={serverStatus}
+                onToggleMode={toggleMode} 
               />
             </motion.div>
           ) : (
