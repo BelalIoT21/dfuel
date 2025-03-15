@@ -29,13 +29,13 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
   const getStatusLabel = (status) => {
     switch(status) {
       case 'available':
-        return 'Available';
+        return 'Machine Available';
       case 'maintenance':
-        return 'Maintenance';
+        return 'Machine Maintenance';
       case 'in-use':
-        return 'In Use';
+        return 'Machine In Use';
       default:
-        return status;
+        return `Machine ${status}`;
     }
   };
 
