@@ -32,30 +32,32 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
       const healthResponse = await apiService.checkHealth();
       console.log("Health check response:", healthResponse);
       
-      // The server logs show MongoDB is connected but our frontend isn't detecting it
-      // Let's check this response more carefully or assume connected if server is running
-      if (healthResponse.data) {
-        // If we received any data from the health endpoint, assume database is connected
+      // Check if we have a proper database status in the response
+      if (healthResponse.data && healthResponse.data.database) {
+        const dbConnected = healthResponse.data.database.connected;
+        
         return {
           serverRunning: true,
-          databaseConnected: true,
-          message: 'Server is running and database is connected'
+          databaseConnected: dbConnected,
+          message: dbConnected 
+            ? 'Server is running and database is connected' 
+            : 'Server is running but database connection failed'
         };
       } else {
+        // Fallback if database status is not in the response
+        console.log("Database status not found in health check response, assuming not connected");
         return {
           serverRunning: true,
           databaseConnected: false,
-          message: 'Server is running but database connection failed'
+          message: 'Server is running but cannot verify database connection'
         };
       }
     } catch (healthError) {
       console.error("Health check failed:", healthError);
-      // If health endpoint failed but server is running, assume database is also connected
-      // This is based on your logs showing MongoDB is connected
       return {
         serverRunning: true,
-        databaseConnected: true,
-        message: 'Server is running and database is assumed connected'
+        databaseConnected: false,
+        message: 'Server is running but health check failed'
       };
     }
   } catch (error) {
