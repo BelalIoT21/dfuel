@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import { User } from '../models/User';
@@ -236,12 +237,18 @@ export const getAllBookings = async (req: Request, res: Response) => {
     
     // Format the response to include machine name and user name
     const formattedBookings = bookings.map(booking => {
+      // Use type assertions to access populated fields
+      const machineDoc = booking.machine as unknown as { name: string; type: string };
+      const userDoc = booking.user as unknown as { name: string; email: string };
+      
       return {
         _id: booking._id,
-        machineName: booking.machine ? booking.machine.name : 'Unknown Machine',
-        machineType: booking.machine ? booking.machine.type : 'Unknown Type',
-        userName: booking.user ? booking.user.name : 'Unknown User',
-        userEmail: booking.user ? booking.user.email : 'Unknown Email',
+        machineId: booking.machine,
+        machineName: machineDoc && machineDoc.name ? machineDoc.name : 'Unknown Machine',
+        machineType: machineDoc && machineDoc.type ? machineDoc.type : 'Unknown Type',
+        userId: booking.user,
+        userName: userDoc && userDoc.name ? userDoc.name : 'Unknown User',
+        userEmail: userDoc && userDoc.email ? userDoc.email : 'Unknown Email',
         date: booking.date,
         time: booking.time,
         status: booking.status,
