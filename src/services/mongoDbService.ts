@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 class MongoDbService {
@@ -164,7 +163,7 @@ class MongoDbService {
     
     try {
       console.log(`Getting user by ID from MongoDB: ${id}`);
-      const response = await apiService.request('GET', `/users/${id}`);
+      const response = await apiService.getUserById(id);
       if (response.data) {
         // Ensure consistent format
         return {
@@ -187,14 +186,14 @@ class MongoDbService {
     
     try {
       console.log(`Updating user ${id} in MongoDB:`, updates);
-      const response = await apiService.request('PUT', `/users/${id}`, updates);
+      const response = await apiService.updateUser(id, updates);
       
       // Invalidate users cache on successful update
-      if (response.success || response.data) {
+      if (response.success) {
         this.cache.users = null;
       }
       
-      return (response.success || response.data) ? true : false;
+      return response.success || false;
     } catch (error) {
       console.error(`Error updating user ${id} in MongoDB:`, error);
       return false;
@@ -262,14 +261,14 @@ class MongoDbService {
     
     try {
       console.log(`Updating certifications for user ${userId} in MongoDB: adding ${machineId}`);
-      const response = await apiService.request('POST', `/users/${userId}/certifications`, { machineId });
+      const response = await apiService.addCertification(userId, machineId);
       
       // Invalidate users cache on successful update
-      if (response.success || response.data?.success) {
+      if (response.success) {
         this.cache.users = null;
       }
       
-      return (response.success || response.data?.success) ? true : false;
+      return response.success || false;
     } catch (error) {
       console.error(`Error updating certifications for user ${userId} in MongoDB:`, error);
       return false;

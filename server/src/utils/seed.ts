@@ -147,13 +147,12 @@ export const seedDatabase = async () => {
     adminUser.certifications = createdMachines.map(machine => machine._id.toString());
     await adminUser.save();
 
-    // Add specific certifications to regular user - make sure to include Bambu Lab
+    // Add specific certifications to regular user
     console.log('Adding certifications to regular user...');
     regularUser.certifications = [
       machineMap['Laser Cutter'],
       machineMap['Ultimaker'],
       machineMap['X1 E Carbon 3D Printer'],
-      machineMap['Bambu Lab X1 E'], // Include Bambu Lab explicitly
       machineMap['Safety Cabinet'],
       machineMap['Safety Course']
     ];

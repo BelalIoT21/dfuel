@@ -55,8 +55,20 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding certification for machine ID: ${machineId} to user ID: ${userId}`);
       
-      const success = await certificationService.addCertification(userId, machineId);
-      console.log(`CertificationService addCertification result: ${success}`);
+      // First try MongoDB directly
+      let success = false;
+      try {
+        success = await mongoDbService.updateUserCertifications(userId, machineId);
+        console.log(`MongoDB addCertification result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB certification error:", mongoError);
+      }
+      
+      // If MongoDB direct call fails, try certification service (which tries all options)
+      if (!success) {
+        success = await certificationService.addCertification(userId, machineId);
+        console.log(`CertificationService addCertification result: ${success}`);
+      }
       
       if (success) {
         toast({
@@ -98,9 +110,24 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading(machineId);
     
     try {
-      // Use the certification service directly which handles all the different scenarios
-      const success = await certificationService.removeCertification(userId, machineId);
-      console.log(`CertificationService removeCertification result: ${success}`);
+      // First try direct MongoDB
+      let success = false;
+      try {
+        const userDoc = await mongoDbService.getUserById(userId);
+        if (userDoc) {
+          const updatedCertifications = userDoc.certifications.filter(id => id !== machineId);
+          success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
+          console.log(`MongoDB removeCertification result: ${success}`);
+        }
+      } catch (mongoError) {
+        console.error("MongoDB remove certification error:", mongoError);
+      }
+      
+      // If MongoDB fails, try certification service
+      if (!success) {
+        success = await certificationService.removeCertification(userId, machineId);
+        console.log(`CertificationService removeCertification result: ${success}`);
+      }
       
       if (success) {
         toast({
@@ -140,7 +167,18 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     
     setIsClearing(true);
     try {
-      const success = await certificationService.clearAllCertifications(user.id);
+      let success = false;
+      try {
+        success = await mongoDbService.updateUser(user.id, { certifications: [] });
+        console.log(`MongoDB clearCertifications result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB error clearing certifications:", mongoError);
+      }
+      
+      if (!success) {
+        success = await localStorageService.updateUser(user.id, { certifications: [] });
+        console.log(`LocalStorage clearCertifications result: ${success}`);
+      }
       
       if (success) {
         toast({
@@ -177,10 +215,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     switch (machineId) {
       case "1": return "Laser Cutter";
       case "2": return "Ultimaker";
-      case "3": return "X1 E Carbon 3D Printer";
-      case "4": return "Bambu Lab X1 E";
-      case "5": return "Safety Cabinet";
-      case "6": return "Safety Course";
+      case "3": return "Safety Cabinet";
+      case "4": return "Bambu Lab X1 E"; // Added ID 4
+      case "5": return "Bambu Lab X1 E";
+      case "6": return "Machine Safety Course";
       default: return `Machine ${machineId}`;
     }
   };
