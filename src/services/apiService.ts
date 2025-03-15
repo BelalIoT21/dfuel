@@ -1,7 +1,5 @@
 
-// Add the missing certification methods to the apiService
 import axios from 'axios';
-import { getUserToken } from '@/utils/storage';
 
 // Define the API base URL
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
@@ -13,18 +11,22 @@ interface ApiResponse {
 }
 
 export class ApiService {
+  private token: string | null = null;
+
+  // Set the token directly
+  setToken(token: string | null) {
+    this.token = token;
+  }
+
   // Make a generic API request
   async request(method: string, endpoint: string, data?: any, headers?: any): Promise<ApiResponse> {
     try {
       console.log(`Making API request: ${method} ${API_BASE_URL}${endpoint}${headers ? ' with auth token' : ''}`);
       
-      // Get the authorization token
-      const token = getUserToken();
-      
       // Set up the headers
       const requestHeaders = {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
         ...headers,
       };
       
@@ -53,6 +55,19 @@ export class ApiService {
         success: false
       };
     }
+  }
+  
+  // Auth related methods
+  async login(email: string, password: string): Promise<ApiResponse> {
+    return this.request('POST', '/auth/login', { email, password });
+  }
+  
+  async register(userData: { email: string, password: string, name: string }): Promise<ApiResponse> {
+    return this.request('POST', '/auth/register', userData);
+  }
+  
+  async getCurrentUser(): Promise<ApiResponse> {
+    return this.request('GET', '/auth/current');
   }
   
   // Simple ping method to check API connectivity
