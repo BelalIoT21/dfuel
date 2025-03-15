@@ -1,8 +1,10 @@
+
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
 import { bookingService } from "@/services/bookingService";
 import userDatabase from "@/services/userDatabase";
+import { isWeb } from "@/utils/platform";
 
 interface StatsOverviewProps {
   allUsers?: any[];
@@ -10,22 +12,25 @@ interface StatsOverviewProps {
 }
 
 export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) => {
-  const [bookingsCount, setBookingsCount] = useState(0);
+  const [bookingsCount, setBookingsCount] = useState<number | string>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
+  const [error, setError] = useState(false);
   
   // Fetch the actual bookings count
   useEffect(() => {
     const fetchBookingsCount = async () => {
       try {
         setIsLoading(true);
+        setError(false);
         // Try fetching all bookings including pending ones
         const bookings = await bookingService.getAllBookings();
         console.log("Fetched bookings:", bookings);
         setBookingsCount(bookings.length);
       } catch (error) {
         console.error("Error fetching bookings count:", error);
-        setBookingsCount(0);
+        setError(true);
+        setBookingsCount('--');
       } finally {
         setIsLoading(false);
       }
@@ -45,7 +50,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
           // Otherwise fetch from database
           console.log("Fetching users for stats overview");
           const users = await userDatabase.getAllUsers();
-          setUserCount(users.length);
+          setUserCount(users.length || 0);
         } catch (error) {
           console.error("Error fetching users:", error);
           setUserCount(0);
