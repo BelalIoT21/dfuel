@@ -8,7 +8,12 @@ import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
 import { seedDatabase } from './utils/seed';  // Import the seed utility
 import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
-import { requestLogger, apiLogger } from './utils/logger'; // Import our new logger
+import { 
+  requestLogger, 
+  apiLogger, 
+  fileLogger, 
+  setupGlobalErrorLogging 
+} from './utils/logger'; // Import our enhanced logger
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -22,8 +27,13 @@ import healthRoutes from './routes/healthRoutes';
 // Load environment variables
 dotenv.config();
 
+// Setup global error logging
+setupGlobalErrorLogging();
+
 // Connect to MongoDB
 connectDB().then(async () => {
+  console.log('MongoDB connected successfully');
+  
   // Ensure admin user exists
   await ensureAdminUser();
   
@@ -34,6 +44,9 @@ connectDB().then(async () => {
       .then(() => console.log('Database seeded successfully!'))
       .catch(err => console.error('Error seeding database:', err));
   }
+})
+.catch(err => {
+  console.error('Failed to connect to MongoDB:', err);
 });
 
 const app = express();
@@ -49,7 +62,8 @@ app.use(cors({
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
-app.use(requestLogger); // Use our custom request logger
+app.use(requestLogger); // Console request logging
+app.use(fileLogger); // File request logging
 app.use(cookieParser());
 app.use(apiLogger); // Add detailed API logging
 
@@ -64,7 +78,12 @@ app.use('/api/health', healthRoutes);
 
 // Health check endpoint (root level)
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Log all API routes for debugging
@@ -108,6 +127,8 @@ app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`Health check available at: http://localhost:${PORT}/health`);
   console.log(`API base URL: http://localhost:${PORT}/api`);
+  console.log(`Logs are being saved to ./logs directory`);
 });
 
 export default app;
+
