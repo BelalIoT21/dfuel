@@ -37,6 +37,13 @@ export const useAuthFunctions = (
         return true;
       }
       
+      // Check if the error is a 404, which means the API endpoint might not exist
+      if (apiResponse.status === 404) {
+        console.log("API endpoint not found, trying localStorage");
+      } else if (apiResponse.error) {
+        console.error("API login error:", apiResponse.error);
+      }
+      
       // Fallback to local storage if API fails
       console.log("API login failed, trying localStorage");
       const userData = await userDatabase.authenticate(email, password);

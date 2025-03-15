@@ -11,7 +11,8 @@ export const loginUser = async (req: Request, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      console.log('Validation errors:', errors.array());
+      return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
     }
 
     const { email, password } = req.body;
@@ -50,6 +51,10 @@ export const loginUser = async (req: Request, res: Response) => {
 
     console.log(`Login successful for user: ${email}`);
 
+    // Generate JWT token
+    const token = generateToken(user._id.toString());
+    console.log('Generated token successfully');
+
     // Update last login time
     user.lastLogin = new Date();
     await user.save();
@@ -63,7 +68,7 @@ export const loginUser = async (req: Request, res: Response) => {
         isAdmin: user.isAdmin,
         certifications: user.certifications,
       },
-      token: generateToken(user._id),
+      token: token,
     });
   } catch (error) {
     console.error('Error in loginUser:', error);
