@@ -1,12 +1,23 @@
+
 import { User, Booking, MachineStatus, UserWithoutSensitiveInfo } from '../types/database';
-import { userKey, bookingsKey, machineStatusKey } from '../utils/storage';
+import { storage } from '../utils/storage';
+
+// Define storage keys
+const userKey = 'learnit_users';
+const bookingsKey = 'learnit_bookings';
+const machineStatusKey = 'learnit_machine_status';
 
 class LocalStorageService {
   // User operations
   
   getAllUsers(): User[] {
-    const storedData = localStorage.getItem(userKey);
-    return storedData ? JSON.parse(storedData) : [];
+    try {
+      const storedData = localStorage.getItem(userKey);
+      return storedData ? JSON.parse(storedData) : [];
+    } catch (error) {
+      console.error('Error getting users from localStorage:', error);
+      return [];
+    }
   }
   
   getAllUsersWithoutSensitiveInfo(): UserWithoutSensitiveInfo[] {
