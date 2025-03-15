@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
-import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { checkServerHealth } from '@/utils/serverConnection';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,36 +20,26 @@ const Index = () => {
       try {
         console.log("Checking server health...");
         
-        // First, check if basic server is running (just a ping)
-        try {
-          const response = await fetch('http://localhost:4000/');
-          
-          if (response.ok) {
-            console.log("Basic server connection OK");
-            
-            // Then check the database connection via the health endpoint
-            try {
-              const healthResponse = await apiService.checkHealth();
-              console.log("Health check response:", healthResponse);
-              
-              if (healthResponse.data && healthResponse.data.status === 'success') {
-                setServerStatus('connected');
-                console.log("Server fully connected with database");
-              } else {
-                console.warn("Server is running but database may have issues");
-                setServerStatus('connected'); // Still mark as connected since basic functionality works
-              }
-            } catch (healthError) {
-              console.error("Health check failed:", healthError);
-              // Even if health check fails, basic server is running
-              setServerStatus('connected');
-            }
+        const healthStatus = await checkServerHealth();
+        console.log("Server health check result:", healthStatus);
+        
+        if (healthStatus.serverRunning) {
+          if (healthStatus.databaseConnected) {
+            setServerStatus('connected');
+            console.log("Server fully connected with database");
           } else {
-            throw new Error('Server not responding');
+            // Server is running but database is not connected
+            setServerStatus('disconnected');
+            console.warn("Server is running but database is not connected");
+            toast({
+              title: 'Database Connection Failed',
+              description: 'The server is running but cannot connect to MongoDB. Please check your database connection.',
+              variant: 'destructive'
+            });
           }
-        } catch (serverError) {
-          console.error("Basic server connection failed:", serverError);
+        } else {
           setServerStatus('disconnected');
+          console.error("Basic server connection failed");
           toast({
             title: 'Server Connection Failed',
             description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',

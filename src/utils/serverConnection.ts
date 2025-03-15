@@ -32,6 +32,7 @@ export const checkServerHealth = async (): Promise<ServerStatus> => {
       try {
         const healthResponse = await apiService.checkHealth();
         
+        // Specifically check MongoDB connection status from health response
         if (healthResponse.data && 
             healthResponse.data.database && 
             healthResponse.data.database.connected) {
