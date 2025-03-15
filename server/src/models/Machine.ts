@@ -12,6 +12,13 @@ export interface IMachine extends mongoose.Document {
   difficulty?: string;
   imageUrl?: string;
   
+  // New fields for enhanced machine information
+  details?: string;
+  specifications?: string;
+  certificationInstructions?: string;
+  linkedCourseId?: string;
+  linkedQuizId?: string;
+  
   // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
   removeBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -51,6 +58,22 @@ const machineSchema = new mongoose.Schema<IMachine>(
       type: String,
     },
     imageUrl: {
+      type: String,
+    },
+    // New fields for enhanced machine information
+    details: {
+      type: String,
+    },
+    specifications: {
+      type: String,
+    },
+    certificationInstructions: {
+      type: String,
+    },
+    linkedCourseId: {
+      type: String,
+    },
+    linkedQuizId: {
       type: String,
     },
   },

@@ -51,7 +51,12 @@ export const createMachine = async (req: Request, res: Response) => {
       status, 
       requiresCertification, 
       difficulty, 
-      imageUrl
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
     } = req.body;
 
     const machine = new Machine({
@@ -61,7 +66,12 @@ export const createMachine = async (req: Request, res: Response) => {
       status: status || 'Available',
       requiresCertification: requiresCertification !== undefined ? requiresCertification : true,
       difficulty,
-      imageUrl
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
     });
 
     const createdMachine = await machine.save();
@@ -123,7 +133,12 @@ export const updateMachine = async (req: Request, res: Response) => {
       maintenanceNote,
       requiresCertification, 
       difficulty, 
-      imageUrl
+      imageUrl,
+      details,
+      specifications,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
     } = req.body;
     
     // Update fields if provided
@@ -135,6 +150,11 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (requiresCertification !== undefined) machine.requiresCertification = requiresCertification;
     if (difficulty) machine.difficulty = difficulty;
     if (imageUrl) machine.imageUrl = imageUrl;
+    if (details !== undefined) machine.details = details;
+    if (specifications !== undefined) machine.specifications = specifications;
+    if (certificationInstructions !== undefined) machine.certificationInstructions = certificationInstructions;
+    if (linkedCourseId !== undefined) machine.linkedCourseId = linkedCourseId;
+    if (linkedQuizId !== undefined) machine.linkedQuizId = linkedQuizId;
     
     const updatedMachine = await machine.save();
     res.json(updatedMachine);

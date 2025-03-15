@@ -37,4 +37,9 @@ export interface MongoMachine {
   difficulty: string;
   maintenanceNote?: string;
   imageUrl?: string;
+  details?: string;
+  specifications?: string;
+  certificationInstructions?: string;
+  linkedCourseId?: string;
+  linkedQuizId?: string;
 }

@@ -3,17 +3,15 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { apiService } from '@/services/apiService';
+import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
+import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -23,9 +21,11 @@ const AdminMachines = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [machinesList, setMachinesList] = useState<any[]>([]);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
-  // Form state for new machine
-  const [formData, setFormData] = useState({
+  // Form state for new/edit machine
+  const [formData, setFormData] = useState<MachineFormData>({
     name: '',
     description: '',
     type: 'Cutting',
@@ -33,9 +33,32 @@ const AdminMachines = () => {
     requiresCertification: true,
     difficulty: 'Intermediate',
     imageUrl: '/placeholder.svg',
+    details: '',
+    specifications: '',
+    certificationInstructions: '',
+    linkedCourseId: '',
+    linkedQuizId: '',
   });
   
+  // Fetch machines and users on component mount
   useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        const fetchedMachines = await machineDatabaseService.getAllMachines();
+        if (fetchedMachines && fetchedMachines.length > 0) {
+          setMachinesList(fetchedMachines);
+        } else {
+          // Fallback to mock data if API fails
+          setMachinesList(machines);
+        }
+        setInitialLoadComplete(true);
+      } catch (error) {
+        console.error("Error fetching machines:", error);
+        setMachinesList(machines);
+        setInitialLoadComplete(true);
+      }
+    };
+
     const fetchUsers = async () => {
       try {
         const users = await userDatabase.getAllUsers();
@@ -45,6 +68,7 @@ const AdminMachines = () => {
       }
     };
     
+    fetchMachines();
     fetchUsers();
   }, []);
   
@@ -62,8 +86,8 @@ const AdminMachines = () => {
     );
   }
 
-  // Filter out equipment and safety cabinets, only show actual machines
-  const filteredMachines = machines
+  // Filter machines based on search term
+  const filteredMachines = machinesList
     .filter(machine => 
       machine.type !== 'Equipment' && 
       machine.type !== 'Safety Cabinet'
@@ -73,33 +97,15 @@ const AdminMachines = () => {
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleSwitchChange = (id: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [id]: checked }));
-  };
-
   const handleAddMachine = async () => {
     try {
       setIsSubmitting(true);
       
       // Call the API to create a new machine
-      const response = await apiService.request(
-        'machines', 
-        'POST', 
-        formData, 
-        true
-      );
+      const newMachine = await machineDatabaseService.createMachine(formData);
       
-      if (response.error) {
-        throw new Error(response.error);
+      if (!newMachine) {
+        throw new Error("Failed to create machine");
       }
       
       toast({
@@ -107,6 +113,10 @@ const AdminMachines = () => {
         description: `${formData.name} has been added successfully.`
       });
       
+      // Update the machines list
+      setMachinesList(prev => [...prev, newMachine]);
+      
+      // Reset form and state
       setIsAddingMachine(false);
       setFormData({
         name: '',
@@ -116,10 +126,12 @@ const AdminMachines = () => {
         requiresCertification: true,
         difficulty: 'Intermediate',
         imageUrl: '/placeholder.svg',
+        details: '',
+        specifications: '',
+        certificationInstructions: '',
+        linkedCourseId: '',
+        linkedQuizId: '',
       });
-      
-      // Reload the page to show the new machine
-      window.location.reload();
     } catch (error) {
       console.error("Error adding machine:", error);
       toast({
@@ -134,34 +146,36 @@ const AdminMachines = () => {
 
   const handleEditMachine = (id: string) => {
     setEditingMachineId(id);
-    const machine = machines.find(m => m.id === id);
+    const machine = machinesList.find(m => m.id === id || m._id === id);
     if (machine) {
       setFormData({
         name: machine.name,
         description: machine.description || '',
         type: machine.type || 'Cutting',
-        status: 'Available',
-        requiresCertification: machine.requiresCertification || true,
+        status: machine.status || 'Available',
+        requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
         difficulty: machine.difficulty || 'Intermediate',
-        imageUrl: machine.image || '/placeholder.svg',
+        imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
+        details: machine.details || '',
+        specifications: machine.specifications || '',
+        certificationInstructions: machine.certificationInstructions || '',
+        linkedCourseId: machine.linkedCourseId || '',
+        linkedQuizId: machine.linkedQuizId || '',
       });
     }
   };
 
   const handleSaveEdit = async () => {
+    if (!editingMachineId) return;
+    
     try {
       setIsSubmitting(true);
       
       // Call the API to update the machine
-      const response = await apiService.request(
-        `machines/${editingMachineId}`, 
-        'PUT', 
-        formData, 
-        true
-      );
+      const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
       
-      if (response.error) {
-        throw new Error(response.error);
+      if (!updatedMachine) {
+        throw new Error("Failed to update machine");
       }
       
       toast({
@@ -169,6 +183,16 @@ const AdminMachines = () => {
         description: `${formData.name} has been updated successfully.`
       });
       
+      // Update the machines list
+      setMachinesList(prev => 
+        prev.map(m => 
+          (m.id === editingMachineId || m._id === editingMachineId) 
+            ? { ...m, ...updatedMachine } 
+            : m
+        )
+      );
+      
+      // Reset form and state
       setEditingMachineId(null);
       setFormData({
         name: '',
@@ -178,10 +202,12 @@ const AdminMachines = () => {
         requiresCertification: true,
         difficulty: 'Intermediate',
         imageUrl: '/placeholder.svg',
+        details: '',
+        specifications: '',
+        certificationInstructions: '',
+        linkedCourseId: '',
+        linkedQuizId: '',
       });
-      
-      // Reload the page to show the updated machine
-      window.location.reload();
     } catch (error) {
       console.error("Error updating machine:", error);
       toast({
@@ -196,15 +222,10 @@ const AdminMachines = () => {
 
   const handleDeleteMachine = async (id: string) => {
     try {
-      const response = await apiService.request(
-        `machines/${id}`, 
-        'DELETE', 
-        undefined, 
-        true
-      );
+      const success = await machineDatabaseService.deleteMachine(id);
       
-      if (response.error) {
-        throw new Error(response.error);
+      if (!success) {
+        throw new Error("Failed to delete machine");
       }
       
       toast({
@@ -212,8 +233,8 @@ const AdminMachines = () => {
         description: "The machine has been deleted successfully."
       });
       
-      // Reload the page to update the machine list
-      window.location.reload();
+      // Update the machines list
+      setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
     } catch (error) {
       console.error("Error deleting machine:", error);
       toast({
@@ -274,227 +295,29 @@ const AdminMachines = () => {
         </Card>
         
         {isAddingMachine && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Add New Machine</CardTitle>
-              <CardDescription>Enter the details for the new machine</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Machine Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter machine name"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="type">Machine Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => handleSelectChange('type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select machine type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cutting">Cutting</SelectItem>
-                      <SelectItem value="Printing">Printing</SelectItem>
-                      <SelectItem value="Electronics">Electronics</SelectItem>
-                      <SelectItem value="Woodworking">Woodworking</SelectItem>
-                      <SelectItem value="Metalworking">Metalworking</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Enter machine description"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => handleSelectChange('status', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Available">Available</SelectItem>
-                      <SelectItem value="Maintenance">Maintenance</SelectItem>
-                      <SelectItem value="Out of Order">Out of Order</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty Level</Label>
-                  <Select
-                    value={formData.difficulty}
-                    onValueChange={(value) => handleSelectChange('difficulty', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="requiresCertification"
-                    checked={formData.requiresCertification}
-                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
-                  />
-                  <Label htmlFor="requiresCertification">Requires Certification</Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleInputChange}
-                    placeholder="Enter image URL"
-                  />
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={handleAddMachine} disabled={isSubmitting}>
-                    {isSubmitting ? 'Adding...' : 'Add Machine'}
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsAddingMachine(false)}>Cancel</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <MachineForm
+            formData={formData}
+            setFormData={setFormData}
+            isSubmitting={isSubmitting}
+            onSubmit={handleAddMachine}
+            onCancel={() => setIsAddingMachine(false)}
+            title="Add New Machine"
+            description="Enter the details for the new machine"
+            submitLabel="Add Machine"
+          />
         )}
         
         {editingMachineId && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Edit Machine</CardTitle>
-              <CardDescription>Update the details for this machine</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Machine Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter machine name"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="type">Machine Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => handleSelectChange('type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select machine type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cutting">Cutting</SelectItem>
-                      <SelectItem value="Printing">Printing</SelectItem>
-                      <SelectItem value="Electronics">Electronics</SelectItem>
-                      <SelectItem value="Woodworking">Woodworking</SelectItem>
-                      <SelectItem value="Metalworking">Metalworking</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Enter machine description"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => handleSelectChange('status', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Available">Available</SelectItem>
-                      <SelectItem value="Maintenance">Maintenance</SelectItem>
-                      <SelectItem value="Out of Order">Out of Order</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty Level</Label>
-                  <Select
-                    value={formData.difficulty}
-                    onValueChange={(value) => handleSelectChange('difficulty', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="requiresCertification"
-                    checked={formData.requiresCertification}
-                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
-                  />
-                  <Label htmlFor="requiresCertification">Requires Certification</Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleInputChange}
-                    placeholder="Enter image URL"
-                  />
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <Button onClick={handleSaveEdit} disabled={isSubmitting}>
-                    {isSubmitting ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                  <Button variant="outline" onClick={() => setEditingMachineId(null)}>Cancel</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <MachineForm
+            formData={formData}
+            setFormData={setFormData}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSaveEdit}
+            onCancel={() => setEditingMachineId(null)}
+            title="Edit Machine"
+            description="Update the details for this machine"
+            submitLabel="Save Changes"
+          />
         )}
         
         <Card>
@@ -504,13 +327,18 @@ const AdminMachines = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {filteredMachines.length > 0 ? (
+              {!initialLoadComplete ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p>Loading machines...</p>
+                </div>
+              ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => (
-                  <div key={machine.id} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
+                  <div key={machine.id || machine._id} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
                     <div className="flex-shrink-0 w-full md:w-1/4">
                       <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                         <img
-                          src={machine.image}
+                          src={machine.imageUrl || machine.image || '/placeholder.svg'}
                           alt={machine.name}
                           className="w-full h-full object-cover"
                         />
@@ -523,25 +351,41 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Users Certified: {getUsersCertifiedCount(machine.id)}
+                          Type: {machine.type || 'Unknown'}
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
+                          Difficulty: {machine.difficulty || 'Beginner'}
+                        </div>
+                        <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                          Users Certified: {getUsersCertifiedCount(machine.id || machine._id)}
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                          Bookings: {getBookingsThisMonth(machine.id)}
+                          Bookings: {getBookingsThisMonth(machine.id || machine._id)}
                         </div>
+                        {machine.linkedCourseId && (
+                          <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                            Has Course
+                          </div>
+                        )}
+                        {machine.linkedQuizId && (
+                          <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
+                            Has Quiz
+                          </div>
+                        )}
                       </div>
                       
                       <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id)}>
+                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id || machine._id)}>
                           Edit
                         </Button>
                         <Button size="sm" variant="outline" asChild>
-                          <Link to={`/machine/${machine.id}`}>View</Link>
+                          <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline" 
                           className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteMachine(machine.id)}
+                          onClick={() => handleDeleteMachine(machine.id || machine._id)}
                         >
                           Delete
                         </Button>

@@ -2,6 +2,21 @@
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
+export interface MachineData {
+  name: string;
+  type: string;
+  description: string;
+  status: string;
+  requiresCertification?: boolean;
+  difficulty?: string;
+  imageUrl?: string;
+  details?: string;
+  specifications?: string;
+  certificationInstructions?: string;
+  linkedCourseId?: string;
+  linkedQuizId?: string;
+}
+
 /**
  * Service that handles all machine-related database operations.
  */
@@ -30,7 +45,7 @@ export class MachineDatabaseService extends BaseService {
     }
   }
 
-  async createMachine(machineData: any): Promise<any> {
+  async createMachine(machineData: MachineData): Promise<any> {
     try {
       const response = await apiService.request('machines', 'POST', machineData, true);
       return response.data;
@@ -40,7 +55,7 @@ export class MachineDatabaseService extends BaseService {
     }
   }
 
-  async updateMachine(machineId: string, machineData: any): Promise<any> {
+  async updateMachine(machineId: string, machineData: Partial<MachineData>): Promise<any> {
     try {
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
       return response.data;
