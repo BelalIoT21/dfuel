@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,13 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Set default admin credentials for development convenience
+  const setAdminCredentials = () => {
+    setEmail('admin@learnit.com');
+    setPassword('admin123');
+  };
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -68,11 +76,18 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     if (!validateForm()) return;
     
     try {
+      setIsLoading(true);
       await onLogin(email, password);
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError('Authentication failed. Please try again.');
+      setFormError(
+        error instanceof Error 
+          ? error.message 
+          : 'Authentication failed. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,7 +150,15 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
             {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
           </motion.div>
           
-          <motion.div className="text-right" variants={itemAnimation}>
+          <motion.div className="flex justify-between items-center" variants={itemAnimation}>
+            <button
+              type="button" 
+              onClick={setAdminCredentials}
+              className="text-xs text-purple-600 hover:underline"
+            >
+              Use default admin
+            </button>
+            
             <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
               <DialogTrigger asChild>
                 <button
@@ -153,8 +176,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </motion.div>
         </motion.form>

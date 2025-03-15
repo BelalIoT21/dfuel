@@ -26,6 +26,8 @@ export const ensureAdminUser = async () => {
       
       await newAdmin.save();
       console.log('Default admin user created successfully');
+    } else {
+      console.log(`Admin user already exists with email: ${adminEmail}`);
     }
   } catch (error) {
     console.error('Error ensuring admin user exists:', error);
