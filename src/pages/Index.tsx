@@ -25,6 +25,27 @@ const Index = () => {
           const response = await fetch('http://localhost:4000/');
           if (response.ok) {
             console.log("Basic server connection OK");
+            
+            // Then check the DB connection via the health endpoint
+            try {
+              const healthResponse = await apiService.checkHealth();
+              console.log("Health check response:", healthResponse);
+              
+              if (healthResponse.data && healthResponse.data.database && healthResponse.data.database.connected) {
+                setServerStatus('connected');
+                console.log("Server fully connected with database");
+              } else {
+                setServerStatus('disconnected');
+                toast({
+                  title: 'Database Connection Issue',
+                  description: 'Backend server is running but the database connection is not established.',
+                  variant: 'destructive'
+                });
+              }
+            } catch (healthError) {
+              console.error("Health check failed:", healthError);
+              setServerStatus('disconnected');
+            }
           } else {
             throw new Error('Server not responding');
           }
@@ -36,40 +57,10 @@ const Index = () => {
             description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
             variant: 'destructive'
           });
-          return;
-        }
-        
-        // Then check the DB connection via the health endpoint
-        const response = await apiService.checkHealth();
-        if (response.data) {
-          console.log("Server health check:", response.data);
-          
-          // Check if database is connected
-          if (response.data.database && response.data.database.connected) {
-            setServerStatus('connected');
-            toast({
-              title: 'Server Connected',
-              description: `Successfully connected to the backend server with MongoDB at ${response.data.database.host}`,
-            });
-          } else {
-            setServerStatus('disconnected');
-            toast({
-              title: 'Database Connection Issue',
-              description: 'Backend server is running but the database connection is not established.',
-              variant: 'destructive'
-            });
-          }
-        } else {
-          throw new Error('Invalid health check response');
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
-        toast({
-          title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
-          variant: 'destructive'
-        });
       }
     };
     
@@ -118,6 +109,7 @@ const Index = () => {
 
   // Debug rendering
   console.log("Rendering Index component, user:", user ? "logged in" : "not logged in");
+  console.log("Current server status:", serverStatus);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
