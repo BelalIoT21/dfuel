@@ -34,13 +34,25 @@ router.get('/all', protect, admin, getAllBookings);
 // Get booking by ID
 router.get('/:id', protect, getBookingById);
 
-// Update booking status (admin only)
+// Update booking status (admin only) - original endpoint
 router.put(
   '/:id/status',
   protect,
   admin,
   [
     param('id').notEmpty().withMessage('Booking ID is required'),
+    body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected']).withMessage('Valid status is required')
+  ],
+  updateBookingStatus
+);
+
+// Alternative update booking status endpoint for client-generated IDs
+router.put(
+  '/update-status',
+  protect,
+  admin,
+  [
+    body('bookingId').notEmpty().withMessage('Booking ID is required'),
     body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected']).withMessage('Valid status is required')
   ],
   updateBookingStatus

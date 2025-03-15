@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
@@ -144,27 +143,36 @@ class ApiService {
     return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
   }
   
+  // Certification endpoints
   async addCertification(userId: string, machineId: string) {
+    console.log(`Adding certification for user ${userId}, machine ${machineId}`);
+    // Use the correct endpoint format based on the server routes
     return this.request<{ success: boolean }>(
-      `certifications`, 
+      'certifications', 
       'POST', 
       { userId, machineId }
     );
   }
   
-  async addBooking(userId: string, machineId: string, date: string, time: string) {
+  async removeCertification(userId: string, machineId: string) {
+    console.log(`Removing certification for user ${userId}, machine ${machineId}`);
+    // The DELETE method might need different handling for the body
     return this.request<{ success: boolean }>(
-      `bookings`, 
-      'POST', 
-      { userId, machineId, date, time }
+      'certifications', 
+      'DELETE', 
+      { userId, machineId }
     );
   }
   
-  async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.request<{ success: boolean }>(
-      `machines/${machineId}/status`, 
-      'PUT', 
-      { status, note }
+  async getUserCertifications(userId: string) {
+    return this.request<string[]>(`certifications/user/${userId}`, 'GET');
+  }
+  
+  async checkCertification(userId: string, machineId: string) {
+    return this.request<boolean>(
+      'certifications/check', 
+      'GET', 
+      { userId, machineId }
     );
   }
   
@@ -174,11 +182,35 @@ class ApiService {
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
-    return this.request<any>(
-      `bookings/${bookingId}/status`, 
-      'PUT', 
-      { status }
-    );
+    // For client-generated IDs, ensure they're properly formatted
+    console.log(`Updating booking status: ${bookingId} to ${status}`);
+    
+    // Try endpoint with /:id/status format first
+    try {
+      const response = await this.request<any>(
+        `bookings/${bookingId}/status`, 
+        'PUT', 
+        { status }
+      );
+      
+      if (!response.error) {
+        return response;
+      }
+    } catch (error) {
+      console.log(`Error with standard endpoint: ${error}`);
+    }
+    
+    // Try alternative endpoint if first one fails
+    try {
+      return await this.request<any>(
+        `bookings/update-status`, 
+        'PUT', 
+        { bookingId, status }
+      );
+    } catch (error) {
+      console.log(`Error with alternative endpoint: ${error}`);
+      throw error;
+    }
   }
   
   async cancelBooking(bookingId: string) {
@@ -201,6 +233,23 @@ class ApiService {
   
   async getMachineStatus(machineId: string) {
     return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
+  }
+  
+  // Safety certification management
+  async addSafetyCertification(userId: string) {
+    return this.request<{ success: boolean }>(
+      'certifications/safety', 
+      'POST', 
+      { userId }
+    );
+  }
+  
+  async removeSafetyCertification(userId: string) {
+    return this.request<{ success: boolean }>(
+      'certifications/safety', 
+      'DELETE', 
+      { userId }
+    );
   }
 }
 

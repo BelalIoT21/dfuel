@@ -1,11 +1,8 @@
 
 import { apiService } from '../apiService';
-import { BaseService } from './baseService';
-import { userDatabaseService } from './userService';
-import { isWeb } from '../../utils/platform';
-import mongoDbService from '../mongoDbService';
-import { toast } from '../../components/ui/use-toast';
 import { localStorageService } from '../localStorageService';
+import { BaseService } from './baseService';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Service that handles all booking-related database operations.
@@ -13,288 +10,169 @@ import { localStorageService } from '../localStorageService';
 export class BookingDatabaseService extends BaseService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
-      console.log(`Attempting to create booking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
-      
-      // First try to save directly to MongoDB if not in web environment
-      if (!isWeb) {
-        try {
-          console.log("Attempting to save booking directly to MongoDB");
-          const success = await mongoDbService.addUserBooking(userId, {
-            id: `booking-${Date.now()}`,
-            machineId,
-            date,
-            time,
-            status: 'Pending'
-          });
-          
-          if (success) {
-            console.log("Booking saved successfully to MongoDB");
-            return true;
-          }
-        } catch (mongoError) {
-          console.error("MongoDB error, will try API next:", mongoError);
-        }
-      }
-      
-      // Next try the API
-      try {
-        const response = await apiService.request('bookings', 'POST', { 
-          userId,
-          machineId, 
-          date, 
-          time 
-        });
-        
-        if (response.data) {
-          console.log("Booking created successfully via API:", response.data);
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error, falling back to memory store:", apiError);
-      }
-      
-      // Use in-memory fallback as last resort
-      console.log("Using in-memory fallback for booking");
-      
-      // Memory fallback
-      const user = await userDatabaseService.findUserById(userId);
-      if (user) {
-        if (!user.bookings) {
-          user.bookings = [];
-        }
-        
-        const booking = {
-          id: `booking-${Date.now()}`,
-          machineId,
-          date,
-          time,
-          status: 'Pending' as const
-        };
-        
-        user.bookings.push(booking);
-        console.log("Booking saved in memory:", booking);
-        
-        // Show toast notification about fallback
-        if (!isWeb) {
-          toast({
-            title: "Booking saved locally",
-            description: "Your booking has been saved locally and is pending approval.",
-            variant: "default"
-          });
-        }
-        
+      const response = await apiService.addBooking(userId, machineId, date, time);
+      if (response.data?.success) {
         return true;
       }
       
-      console.error("Could not find user to add booking to");
-      return false;
+      throw new Error('Failed to add booking through API');
     } catch (error) {
-      console.error("Fatal error in addBooking:", error);
-      return false;
-    }
-  }
-
-  async getUserBookings(userId: string) {
-    try {
-      console.log(`Getting bookings for user ${userId}`);
+      console.error("API error, falling back to localStorage booking:", error);
       
-      // First try API
+      // Fallback to localStorage
       try {
-        const response = await apiService.request('bookings', 'GET');
-        if (response && response.data) {
-          console.log("Retrieved bookings from API:", response.data.length);
-          return response.data;
-        }
-      } catch (apiError) {
-        console.error("API error when getting bookings:", apiError);
-      }
-      
-      // Then try to get bookings from MongoDB if not in web environment
-      if (!isWeb) {
-        try {
-          const user = await mongoDbService.getUserById(userId);
-          if (user && user.bookings && user.bookings.length > 0) {
-            console.log("Retrieved bookings from MongoDB:", user.bookings);
-            return user.bookings;
+        const bookings = localStorageService.getBookings();
+        const newBooking = {
+          id: `booking-${Date.now()}`,
+          userId,
+          machineId,
+          date,
+          time,
+          status: 'Pending',
+          createdAt: new Date().toISOString()
+        };
+        
+        bookings.push(newBooking);
+        
+        // Update the bookings
+        const success = localStorageService.saveBookings(bookings);
+        
+        // Update the user
+        const user = localStorageService.findUserById(userId);
+        if (user && success) {
+          if (!user.bookings) {
+            user.bookings = [];
           }
-        } catch (mongoError) {
-          console.error("MongoDB error when getting bookings:", mongoError);
+          user.bookings.push(newBooking);
+          localStorageService.updateUser(userId, { bookings: user.bookings });
         }
+        
+        return success;
+      } catch (storageError) {
+        console.error("LocalStorage error:", storageError);
+        toast({
+          title: "Error",
+          description: "Failed to add booking",
+          variant: "destructive"
+        });
+        return false;
       }
-      
-      // For web environment or as fallback, use memory store
-      const user = await userDatabaseService.findUserById(userId);
-      console.log("Retrieved bookings from memory:", user?.bookings?.length || 0);
-      return user?.bookings || [];
-    } catch (error) {
-      console.error("Error getting user bookings:", error);
-      return [];
     }
   }
   
-  async updateBookingStatus(bookingId: string, status: 'Approved' | 'Rejected' | 'Completed' | 'Canceled'): Promise<boolean> {
+  async getUserBookings(userId: string) {
     try {
-      console.log(`Updating booking ${bookingId} status to ${status}`);
+      const response = await apiService.getUserBookings(userId);
+      if (response.data && !response.error) {
+        return response.data;
+      }
       
-      // Check if this is a client-generated ID
-      const isClientId = bookingId.startsWith('booking-');
+      throw new Error('Failed to get user bookings through API');
+    } catch (error) {
+      console.error("API error, falling back to localStorage bookings:", error);
       
-      // Try API first with the appropriate endpoint format
+      // Fallback to localStorage
+      const bookings = localStorageService.getBookings();
+      return bookings.filter(booking => booking.userId === userId);
+    }
+  }
+  
+  async getAllBookings() {
+    try {
+      const response = await apiService.getAllBookings();
+      console.log("Retrieved all bookings from API:", response);
+      
+      if (response.data && !response.error) {
+        return response.data;
+      }
+      
+      throw new Error('Failed to get all bookings through API');
+    } catch (error) {
+      console.error("API error, falling back to localStorage bookings:", error);
+      
+      // Fallback to localStorage
+      const bookings = localStorageService.getBookings();
+      console.log("Retrieved all bookings from local storage:", bookings.length);
+      console.log("Retrieved all bookings from local database:", bookings.length);
+      return bookings;
+    }
+  }
+  
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    console.log(`Updating booking ${bookingId} status to ${status}`);
+    try {
+      // First, try the API
+      const response = await apiService.updateBookingStatus(bookingId, status);
+      if (response.data && !response.error) {
+        console.log("Successfully updated booking status via API");
+        return true;
+      }
+      
+      throw new Error('Failed to update booking status through API');
+    } catch (apiError) {
+      console.error("API error accessing booking:", apiError);
+      
       try {
-        const endpoint = isClientId
-          ? `bookings/${bookingId}/status`
-          : `bookings/${bookingId}/status`;
+        // Try localStorage fallback
+        console.log("Trying localStorage fallback for booking status update");
+        const success = localStorageService.updateBookingStatus(bookingId, status);
+        
+        if (success) {
+          console.log("Successfully updated booking status in localStorage");
           
-        const response = await apiService.request(endpoint, 'PUT', { status });
-        if (response && !response.error) {
-          console.log("Booking status updated via API:", response.data);
+          // Now update the user's booking list
+          const bookings = localStorageService.getBookings();
+          const booking = bookings.find(b => b.id === bookingId);
+          
+          if (booking) {
+            const user = localStorageService.findUserById(booking.userId);
+            if (user && user.bookings) {
+              const updatedBookings = user.bookings.map(b => 
+                b.id === bookingId ? { ...b, status } : b
+              );
+              
+              localStorageService.updateUser(booking.userId, { bookings: updatedBookings });
+            }
+          }
+          
           return true;
         }
-      } catch (apiError) {
-        console.error("API error when updating booking status:", apiError);
-      }
-      
-      // Then try MongoDB directly if not in web environment
-      if (!isWeb) {
+        
+        throw new Error('Failed to update booking status in localStorage');
+      } catch (storageError) {
+        console.error("Error accessing local storage:", storageError);
+        
+        // Final attempt: Directly manipulate the in-memory data if possible
         try {
-          const success = await mongoDbService.updateBookingStatus(bookingId, status);
-          if (success) {
-            console.log("Booking status updated in MongoDB");
-            return true;
-          }
-        } catch (mongoError) {
-          console.error("MongoDB error when updating booking status:", mongoError);
-        }
-      }
-      
-      // Direct local storage access for client-generated IDs
-      if (isClientId) {
-        try {
-          const users = await localStorageService.getAll('users');
-          let updated = false;
-          
-          for (const user of users) {
-            if (user.bookings && Array.isArray(user.bookings)) {
+          const allUsers = localStorageService.getAllUsers();
+          for (const user of allUsers) {
+            if (user.bookings) {
               const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
-              if (bookingIndex >= 0) {
+              if (bookingIndex !== -1) {
                 user.bookings[bookingIndex].status = status;
-                await localStorageService.update('users', user.id, user);
-                console.log(`Updated booking ${bookingId} status to ${status} in local storage`);
-                updated = true;
-                break;
+                localStorageService.updateUser(user.id, { bookings: user.bookings });
+                console.log(`Updated booking status directly in user ${user.id}`);
+                return true;
               }
             }
           }
           
-          if (updated) {
-            return true;
-          }
-        } catch (storageError) {
-          console.error("Error accessing local storage:", storageError);
+          throw new Error('Could not find booking in any user');
+        } catch (finalError) {
+          console.error("Error updating booking status:", finalError);
+          toast({
+            title: "Error",
+            description: "Failed to update booking status",
+            variant: "destructive"
+          });
+          return false;
         }
       }
-      
-      // Finally try local users and their bookings
-      const allUsers = await userDatabaseService.getAllUsers();
-      
-      let updated = false;
-      for (const user of allUsers) {
-        if (user.bookings) {
-          const bookingIndex = user.bookings.findIndex(b => b.id === bookingId);
-          if (bookingIndex >= 0) {
-            user.bookings[bookingIndex].status = status;
-            
-            // Update the user in memory
-            await userDatabaseService.updateUser(user.id, user);
-            console.log(`Updated booking ${bookingId} status to ${status} in memory`);
-            updated = true;
-            break;
-          }
-        }
-      }
-      
-      if (!updated) {
-        console.error("Could not find booking to update status");
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error updating booking status:", error);
-      return false;
     }
   }
   
-  async getAllPendingBookings(): Promise<any[]> {
-    try {
-      console.log("Getting all bookings");
-      
-      // Try API first
-      try {
-        const response = await apiService.request('bookings/all', 'GET');
-        if (response && response.data) {
-          console.log("Retrieved all bookings from API:", response.data.length);
-          return response.data;
-        }
-      } catch (apiError) {
-        console.error("API error when getting all bookings:", apiError);
-      }
-      
-      // Fall back to local users and their bookings
-      const allUsers = await userDatabaseService.getAllUsers();
-      const allBookings = [];
-      
-      for (const user of allUsers) {
-        if (user.bookings && user.bookings.length > 0) {
-          for (const booking of user.bookings) {
-            allBookings.push({
-              ...booking,
-              userName: user.name,
-              userEmail: user.email,
-              userId: user.id,
-              // Add additional fields to match MongoDB response format
-              _id: booking.id,
-              machineName: this.getMachineName(booking.machineId), // Use helper method to get proper machine name
-              machineType: this.getMachineType(booking.machineId),
-            });
-          }
-        }
-      }
-      
-      console.log("Retrieved all bookings from local storage:", allBookings.length);
-      return allBookings;
-    } catch (error) {
-      console.error("Error getting all bookings:", error);
-      return [];
-    }
-  }
-  
-  // Helper method to get machine name by ID
-  private getMachineName(machineId: string): string {
-    const machines = [
-      { id: '1', name: 'Laser Cutter' },
-      { id: '2', name: 'Ultimaker' },
-      { id: '3', name: 'X1 E Carbon 3D Printer' },
-      { id: '4', name: 'Bambu Lab X1 E' },
-      { id: '5', name: 'Soldering Station' }
-    ];
-    
-    const machine = machines.find(m => m.id === machineId);
-    return machine ? machine.name : `Machine ${machineId}`;
-  }
-  
-  // Helper method to get machine type by ID
-  private getMachineType(machineId: string): string {
-    const machines = [
-      { id: '1', type: 'Cutting' },
-      { id: '2', type: 'Printing' },
-      { id: '3', type: 'Printing' },
-      { id: '4', type: 'Printing' },
-      { id: '5', type: 'Electronics' }
-    ];
-    
-    const machine = machines.find(m => m.id === machineId);
-    return machine ? machine.type : 'Unknown Type';
+  async cancelBooking(bookingId: string): Promise<boolean> {
+    return this.updateBookingStatus(bookingId, 'Canceled');
   }
 }
 
