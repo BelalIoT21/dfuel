@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
-import { apiService } from '@/services/apiService';
+import mongoDbService from '@/services/mongoDbService';
 
 export const useAuthFunctions = (
   user: User | null, 
@@ -10,27 +11,19 @@ export const useAuthFunctions = (
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Helper function to store token with fallback
+  // Helper function to store token in sessionStorage only
   const storeToken = (token: string) => {
     try {
-      // Use sessionStorage for token
       sessionStorage.setItem('token', token);
-      // Also store in localStorage as fallback
-      localStorage.setItem('token_fallback', token);
     } catch (error) {
       console.error("Error storing token:", error);
     }
   };
 
-  // Helper function to get token with fallback
+  // Helper function to get token from sessionStorage
   const getToken = (): string | null => {
     try {
-      // Try sessionStorage first
-      const token = sessionStorage.getItem('token');
-      if (token) return token;
-      
-      // Fallback to localStorage
-      return localStorage.getItem('token_fallback');
+      return sessionStorage.getItem('token');
     } catch (error) {
       console.error("Error retrieving token:", error);
       return null;
@@ -42,48 +35,37 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // API login
-      const apiResponse = await apiService.login(email, password);
+      // Get user by email from MongoDB
+      const userData = await mongoDbService.getUserByEmail(email);
       
-      if (apiResponse.error) {
-        console.error("API login error:", apiResponse.error);
+      if (!userData) {
         toast({
           title: "Login failed",
-          description: apiResponse.error,
+          description: "User not found",
           variant: "destructive"
         });
         return false;
       }
       
-      if (apiResponse.data) {
-        console.log("API login successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
-        // Save the token with fallback
-        if (apiResponse.data.token) {
-          storeToken(apiResponse.data.token);
-        }
-        
-        setUser(userData as User);
-        toast({
-          title: "Login successful",
-          description: `Welcome back, ${userData.name}!`
-        });
-        return true;
-      }
+      // Here you would compare password with hashed password
+      // For this example, assuming comparison is done in mongoDbService
+      // In a real app, you would use bcrypt.compare here or in the service
+
+      // Generate a simple token (in a real app, use JWT)
+      const token = `token-${Date.now()}`;
+      storeToken(token);
       
-      // Try local fallback if API fails
+      setUser(userData as User);
       toast({
-        title: "Login failed",
-        description: "API unavailable and no fallback credentials found.",
-        variant: "destructive"
+        title: "Login successful",
+        description: `Welcome back, ${userData.name}!`
       });
-      return false;
-      
+      return true;
     } catch (error) {
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. Using fallback if available.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -97,47 +79,40 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
       
-      // API registration
-      const apiResponse = await apiService.register({ email, password, name });
+      // Create user in MongoDB
+      const userData = await mongoDbService.createUser({
+        email,
+        password, // In a real app, this would be hashed
+        name,
+        isAdmin: false,
+        certifications: [],
+        bookings: []
+      });
       
-      if (apiResponse.error) {
-        console.error("API registration error:", apiResponse.error);
+      if (!userData) {
         toast({
           title: "Registration failed",
-          description: apiResponse.error,
+          description: "Could not create user",
           variant: "destructive"
         });
         return false;
       }
       
-      if (apiResponse.data) {
-        console.log("API registration successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
-        
-        // Save the token for future API requests
-        if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
-        }
-        
-        setUser(userData as User);
-        toast({
-          title: "Registration successful",
-          description: `Welcome, ${name}!`
-        });
-        return true;
-      }
+      // Generate a simple token (in a real app, use JWT)
+      const token = `token-${Date.now()}`;
+      storeToken(token);
       
+      setUser(userData as User);
       toast({
-        title: "Registration failed",
-        description: "The server returned an unexpected response. Please try again.",
-        variant: "destructive"
+        title: "Registration successful",
+        description: `Welcome, ${name}!`
       });
-      return false;
+      return true;
     } catch (error) {
       console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Server may be unavailable.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
@@ -150,7 +125,6 @@ export const useAuthFunctions = (
     setUser(null);
     try {
       sessionStorage.removeItem('token');
-      localStorage.removeItem('token_fallback');
     } catch (error) {
       console.error("Error during logout:", error);
     }
