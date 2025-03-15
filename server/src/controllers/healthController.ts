@@ -20,7 +20,9 @@ export const healthCheck = (req: Request, res: Response) => {
     hostname: os.hostname(),
     platform: os.platform(),
     nodeVersion: process.version,
-    cpuCores: os.cpus().length
+    cpuCores: os.cpus().length,
+    freeMemory: os.freemem(),
+    totalMemory: os.totalmem()
   };
   
   res.status(200).json({ 

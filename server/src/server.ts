@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -56,8 +55,10 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: '*', // Allow all origins for testing
-  credentials: true
+  origin: '*', // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
@@ -76,7 +77,7 @@ app.use('/api/certifications', certificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health', healthRoutes);
 
-// Health check endpoint (root level)
+// Health check endpoint (root level for easy access)
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
@@ -84,6 +85,11 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Ping endpoint (simple endpoint for connection checks)
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 // Log all API routes for debugging
@@ -122,13 +128,22 @@ app._router.stack.forEach((middleware: {
 app.use(notFound);
 app.use(errorHandler);
 
+// Keep the server running even if errors occur
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process, just log the error
+});
+
 // Start the server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`Health check available at: http://localhost:${PORT}/health`);
   console.log(`API base URL: http://localhost:${PORT}/api`);
   console.log(`Logs are being saved to ./logs directory`);
 });
 
-export default app;
+// Ensure the server stays alive
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds
 
+export default app;

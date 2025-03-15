@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 
 interface ConnectionConfig {
@@ -6,20 +5,25 @@ interface ConnectionConfig {
   timeout: number;
   retryAttempts: number;
   retryDelay: number;
+  keepAliveInterval: number;
 }
 
 // Default configuration
 const defaultConfig: ConnectionConfig = {
   apiUrl: 'http://localhost:4000/api',
   timeout: 10000,
-  retryAttempts: 2,
-  retryDelay: 1000
+  retryAttempts: 3,
+  retryDelay: 2000,
+  keepAliveInterval: 30000 // 30 seconds
 };
 
 class ConnectionManager {
   private config: ConnectionConfig;
   private isConnected: boolean = false;
   private connectionListeners: ((status: boolean) => void)[] = [];
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
   
   constructor() {
     // Load config from localStorage if available, otherwise use defaults
@@ -28,6 +32,63 @@ class ConnectionManager {
     
     // Initialize with a connection check
     this.checkConnection();
+    
+    // Start keepalive
+    this.startKeepAlive();
+  }
+  
+  // Start the keepalive ping
+  private startKeepAlive(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+    }
+    
+    this.keepAliveTimer = setInterval(() => {
+      // Use the ping endpoint for keep-alive checks
+      this.pingServer();
+    }, this.config.keepAliveInterval);
+    
+    // Clean up on window unload
+    window.addEventListener('beforeunload', () => {
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer);
+      }
+    });
+  }
+  
+  // Lightweight ping to keep the connection alive
+  private async pingServer(): Promise<void> {
+    try {
+      const pingUrl = `${this.config.apiUrl.replace(/\/api\/?$/, '')}/ping`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // Short timeout for pings
+      
+      const response = await fetch(pingUrl, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        console.warn('Server ping failed, will check connection');
+        this.checkConnection();
+      } else {
+        // If we were disconnected before, update the status
+        if (!this.isConnected) {
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.notifyListeners();
+          console.log('Server connection restored');
+        }
+      }
+    } catch (error) {
+      console.warn('Server ping failed:', error);
+      if (this.isConnected) {
+        // Only trigger a full connection check if we were previously connected
+        this.checkConnection();
+      }
+    }
   }
   
   // Get the current connection status
@@ -44,6 +105,7 @@ class ConnectionManager {
   public setApiUrl(url: string): void {
     this.config.apiUrl = url;
     this.saveConfig();
+    this.reconnectAttempts = 0; // Reset reconnect attempts on manual URL change
     this.checkConnection();
   }
   
@@ -51,6 +113,7 @@ class ConnectionManager {
   public resetToDefault(): void {
     this.config = { ...defaultConfig };
     this.saveConfig();
+    this.reconnectAttempts = 0;
     this.checkConnection();
   }
   
@@ -79,9 +142,10 @@ class ConnectionManager {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
       
-      console.log(`Checking connection to: ${this.config.apiUrl}/health`);
+      const healthUrl = `${this.config.apiUrl.replace(/\/api\/?$/, '')}/health`;
+      console.log(`Checking connection to: ${healthUrl}`);
       
-      const response = await fetch(`${this.config.apiUrl.replace(/\/api\/?$/, '')}/health`, {
+      const response = await fetch(healthUrl, {
         method: 'GET',
         signal: controller.signal
       });
@@ -102,6 +166,11 @@ class ConnectionManager {
         console.log('Could not parse health check response as JSON');
       }
       
+      // Reset reconnect attempts on successful connection
+      if (this.isConnected) {
+        this.reconnectAttempts = 0;
+      }
+      
       // Only notify if the status changed
       if (wasConnected !== this.isConnected) {
         this.notifyListeners();
@@ -117,6 +186,9 @@ class ConnectionManager {
             description: `Server responded with status ${response.status}`,
             variant: "destructive"
           });
+          
+          // Schedule a reconnection attempt
+          this.scheduleReconnect();
         }
       }
       
@@ -136,9 +208,29 @@ class ConnectionManager {
           description: error instanceof Error ? error.message : "Could not connect to the server",
           variant: "destructive"
         });
+        
+        // Schedule a reconnection attempt
+        this.scheduleReconnect();
       }
       
       return false;
+    }
+  }
+  
+  // Schedule a reconnection attempt
+  private scheduleReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      
+      const delay = this.config.retryDelay * this.reconnectAttempts; // Exponential backoff
+      console.log(`Scheduling reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+      
+      setTimeout(() => {
+        console.log(`Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+        this.checkConnection();
+      }, delay);
+    } else {
+      console.log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached. Giving up automatic reconnection.`);
     }
   }
   
@@ -180,6 +272,7 @@ class ConnectionManager {
       this.isConnected = true;
       if (!wasConnected) {
         this.notifyListeners();
+        this.reconnectAttempts = 0;
       }
       
       // Handle error responses
@@ -220,6 +313,7 @@ class ConnectionManager {
       this.isConnected = false;
       if (wasConnected) {
         this.notifyListeners();
+        this.scheduleReconnect();
       }
       
       return {
