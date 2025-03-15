@@ -41,7 +41,16 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       try {
         const fetchedMachines = await machineService.getMachines();
         console.log('Fetched machines for UsersTable:', fetchedMachines.length);
-        setAllMachines(fetchedMachines);
+        
+        // Filter out duplicates
+        const uniqueMachines = Array.from(
+          new Map(fetchedMachines.map(m => [m._id || m.id, m])).values()
+        ).filter(machine => {
+          // Remove CNC Mill from the list
+          return machine.name.toLowerCase() !== "cnc mill";
+        });
+        
+        setAllMachines(uniqueMachines);
         
         // Create a map of machine IDs to names for quick lookup
         const namesMap = {};
@@ -51,7 +60,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         namesMap["3"] = "Safety Cabinet";
         
         // Add all machine names
-        fetchedMachines.forEach(machine => {
+        uniqueMachines.forEach(machine => {
           const id = machine._id || machine.id;
           if (id) {
             namesMap[id] = machine.name;
@@ -59,23 +68,32 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         });
         
         // Add local machines as fallback
-        machines.forEach(machine => {
-          if (!namesMap[machine.id]) {
-            namesMap[machine.id] = machine.name;
-          }
-        });
+        machines
+          .filter(m => m.name.toLowerCase() !== "cnc mill")
+          .forEach(machine => {
+            if (!namesMap[machine.id]) {
+              namesMap[machine.id] = machine.name;
+            }
+          });
         
         console.log('Created machine name map with', Object.keys(namesMap).length, 'entries');
         setMachineNames(namesMap);
       } catch (error) {
         console.error('Error fetching machines:', error);
-        setAllMachines(machines); // Fallback to local data
+        
+        // Fallback to local data (filtered)
+        const filteredMachines = machines.filter(m => m.name.toLowerCase() !== "cnc mill");
+        setAllMachines(filteredMachines);
         
         // Create a map of local machine IDs to names for quick lookup
         const namesMap = {};
-        machines.forEach(machine => {
+        filteredMachines.forEach(machine => {
           namesMap[machine.id] = machine.name;
         });
+        // Add special cases
+        namesMap["6"] = "Machine Safety Course";
+        namesMap["3"] = "Safety Cabinet";
+        
         setMachineNames(namesMap);
       }
     };
@@ -109,6 +127,16 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   };
 
   const handleDeleteUser = async (userId: string) => {
+    if (!userId) {
+      console.error("Cannot delete user: user ID is undefined");
+      toast({
+        title: "Error",
+        description: "User ID is missing. Cannot delete user.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setDeletingUserId(userId);
     
     try {

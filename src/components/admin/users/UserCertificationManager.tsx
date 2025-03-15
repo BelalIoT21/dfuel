@@ -26,7 +26,12 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     const loadMachines = async () => {
       try {
         const machines = await machineService.getMachines();
-        setAllMachines(machines);
+        // Filter out duplicates by ID
+        const uniqueMachines = Array.from(
+          new Map(machines.map(m => [m._id || m.id, m])).values()
+        );
+        console.log(`Loaded ${uniqueMachines.length} unique machines for certification manager`);
+        setAllMachines(uniqueMachines);
       } catch (error) {
         console.error("Error loading machines:", error);
       }
@@ -37,7 +42,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   const handleAddCertification = async (userId: string, machineId: string) => {
     if (!userId) {
-      console.error("Cannot add certification: user ID is undefined");
+      console.error(`Cannot add certification: user ID is undefined for user`, user);
       toast({
         title: "Error",
         description: "User ID is missing. Cannot add certification.",
@@ -139,7 +144,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   const handleMachineSafetyCourse = async (userId: string) => {
     if (!userId) {
-      console.error("Cannot add safety course: user ID is undefined");
+      // Make sure to log the user object for debugging
+      console.error("Cannot add safety course: user ID is undefined", user);
       toast({
         title: "Error",
         description: "User ID is missing. Cannot add safety course.",
@@ -347,7 +353,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveMachineSafetyCourse(user.id)}
+                    onClick={() => handleRemoveMachineSafetyCourse(user.id || user._id)}
                     disabled={loading === 'machineSafety'}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -358,7 +364,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleMachineSafetyCourse(user.id)}
+                    onClick={() => handleMachineSafetyCourse(user.id || user._id)}
                     disabled={loading === 'machineSafety'}
                   >
                     {loading === 'machineSafety' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -378,7 +384,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveCertification(user.id, "3")}
+                    onClick={() => handleRemoveCertification(user.id || user._id, "3")}
                     disabled={loading === "3"}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -389,7 +395,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleAddCertification(user.id, "3")}
+                    onClick={() => handleAddCertification(user.id || user._id, "3")}
                     disabled={loading === "3" || !hasMachineSafetyCourse}
                     className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
@@ -407,7 +413,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveCertification(user.id, "5")}
+                    onClick={() => handleRemoveCertification(user.id || user._id, "5")}
                     disabled={loading === "5"}
                     className="bg-red-50 hover:bg-red-100 border-red-200"
                   >
@@ -418,7 +424,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleAddCertification(user.id, "5")}
+                    onClick={() => handleAddCertification(user.id || user._id, "5")}
                     disabled={loading === "5" || !hasMachineSafetyCourse}
                     className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
@@ -429,9 +435,17 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               </div>
             </div>
             
-            {/* MongoDB machines */}
+            {/* MongoDB machines - filtered to avoid duplicates */}
             {allMachines
-              .filter(m => m._id && m._id !== "5" && m._id !== "6" && m._id !== "3")
+              .filter(m => {
+                // Skip special machines and duplicates that we handle manually
+                return m._id && 
+                       m._id !== "5" && 
+                       m._id !== "6" && 
+                       m._id !== "3" && 
+                       // Skip CNC Mill
+                       m.name.toLowerCase() !== "cnc mill";
+              })
               .map(machine => (
                 <div key={machine._id} className="flex justify-between items-center border p-2 rounded">
                   <span>{machine.name}</span>
@@ -440,7 +454,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveCertification(user.id, machine._id)}
+                        onClick={() => handleRemoveCertification(user.id || user._id, machine._id)}
                         disabled={loading === machine._id}
                         className="bg-red-50 hover:bg-red-100 border-red-200"
                       >
@@ -451,7 +465,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAddCertification(user.id, machine._id)}
+                        onClick={() => handleAddCertification(user.id || user._id, machine._id)}
                         disabled={loading === machine._id || !hasMachineSafetyCourse}
                         className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                       >
@@ -463,9 +477,18 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 </div>
               ))}
             
-            {/* Local machines */}
+            {/* Local machines - filtered to avoid duplicates */}
             {machines
-              .filter(m => m.id !== "5" && m.id !== "6" && m.id !== "3")
+              .filter(m => {
+                // Skip special machines and duplicates that we handle manually
+                return m.id !== "5" && 
+                       m.id !== "6" && 
+                       m.id !== "3" && 
+                       // Skip machines that exist in MongoDB
+                       !allMachines.some(dbMachine => dbMachine.name === m.name) &&
+                       // Skip CNC Mill
+                       m.name.toLowerCase() !== "cnc mill";
+              })
               .map(machine => (
                 <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
                   <span>{machine.name}</span>
@@ -474,7 +497,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveCertification(user.id, machine.id)}
+                        onClick={() => handleRemoveCertification(user.id || user._id, machine.id)}
                         disabled={loading === machine.id}
                         className="bg-red-50 hover:bg-red-100 border-red-200"
                       >
@@ -485,7 +508,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAddCertification(user.id, machine.id)}
+                        onClick={() => handleAddCertification(user.id || user._id, machine.id)}
                         disabled={loading === machine.id || !hasMachineSafetyCourse}
                         className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                       >
@@ -504,7 +527,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 variant="outline"
                 size="sm"
                 className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                onClick={handleClearAllCertifications}
+                onClick={() => handleClearAllCertifications()}
                 disabled={isClearing}
               >
                 {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
