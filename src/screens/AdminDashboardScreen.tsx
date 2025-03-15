@@ -7,8 +7,8 @@ import { useAuth } from '../context/AuthContext';
 const AdminDashboardScreen = ({ navigation }) => {
   const { user } = useAuth();
 
+  // Check if user is admin and redirect non-admins
   if (!user?.isAdmin) {
-    // Redirect non-admin users to home
     React.useEffect(() => {
       navigation.replace('Home');
     }, [navigation]);
@@ -67,14 +67,14 @@ const AdminDashboardScreen = ({ navigation }) => {
             <Button 
               mode="contained" 
               style={styles.actionButton}
-              onPress={() => console.log("Manage Users")}
+              onPress={() => navigateToScreen('AdminUsers')}
             >
               Manage Users
             </Button>
             <Button 
               mode="contained" 
               style={styles.actionButton}
-              onPress={() => console.log("Manage Machines")}
+              onPress={() => navigateToScreen('AdminMachines')}
             >
               Manage Machines
             </Button>
