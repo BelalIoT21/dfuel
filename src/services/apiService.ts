@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 import { logger } from '../utils/logger';
@@ -6,8 +5,7 @@ import { logger } from '../utils/logger';
 // API logger instance
 const apiLogger = logger.child('API');
 
-// API endpoints configuration with localhost as primary for local development
-// and relative path as fallback for deployed environments
+// API endpoints configuration - prioritize localhost:4000/api
 const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
@@ -33,7 +31,7 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${BASE_URL}/${endpoint}`;
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
@@ -124,7 +122,7 @@ class ApiService {
       if (!endpoint.includes('health')) {
         toast({
           title: `API Error`,
-          description: "Could not connect to server. Please ensure the backend server is running.",
+          description: "Could not connect to server. Please ensure the backend server is running at http://localhost:4000.",
           variant: 'destructive'
         });
       }
@@ -137,7 +135,6 @@ class ApiService {
     }
   }
   
-  // Auth endpoints
   async login(email: string, password: string) {
     apiLogger.info('Attempting login via API for:', { email });
     return this.request<{ token: string, user: any }>(
@@ -158,7 +155,6 @@ class ApiService {
     );
   }
   
-  // Health check endpoint
   async checkHealth() {
     return this.request<{ status: string, message: string }>(
       'health',
@@ -168,7 +164,6 @@ class ApiService {
     );
   }
   
-  // User endpoints
   async getCurrentUser() {
     return this.request<any>('users/me', 'GET');
   }
@@ -185,7 +180,6 @@ class ApiService {
     );
   }
   
-  // Additional methods to support databaseService
   async getUserByEmail(email: string) {
     return this.request<any>(`users/email/${email}`, 'GET');
   }
@@ -198,10 +192,8 @@ class ApiService {
     return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
   }
   
-  // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
-    // Use the correct endpoint format based on the server routes
     return this.request<{ success: boolean }>(
       'certifications', 
       'POST', 
@@ -211,7 +203,6 @@ class ApiService {
   
   async removeCertification(userId: string, machineId: string) {
     console.log(`Removing certification for user ${userId}, machine ${machineId}`);
-    // The DELETE method might need different handling for the body
     return this.request<{ success: boolean }>(
       'certifications', 
       'DELETE', 
@@ -231,7 +222,6 @@ class ApiService {
     );
   }
   
-  // Booking endpoints
   async getAllBookings() {
     return this.request<any[]>('bookings/all', 'GET');
   }
@@ -249,10 +239,8 @@ class ApiService {
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
-    // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
-    // Try endpoint with /:id/status format first
     try {
       const response = await this.request<any>(
         `bookings/${bookingId}/status`, 
@@ -267,7 +255,6 @@ class ApiService {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
-    // Try alternative endpoint if first one fails
     try {
       return await this.request<any>(
         `bookings/update-status`, 
@@ -284,7 +271,6 @@ class ApiService {
     return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
   }
   
-  // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
     return this.request<void>(
       'admin/credentials', 
@@ -293,7 +279,6 @@ class ApiService {
     );
   }
   
-  // Dashboard endpoints
   async getAllUsers() {
     return this.request<any[]>('users', 'GET');
   }
@@ -302,7 +287,6 @@ class ApiService {
     return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
   }
   
-  // Safety certification management
   async addSafetyCertification(userId: string) {
     return this.request<{ success: boolean }>(
       'certifications/safety', 
@@ -349,5 +333,4 @@ class ApiService {
   }
 }
 
-// Create and export a singleton instance
 export const apiService = new ApiService();

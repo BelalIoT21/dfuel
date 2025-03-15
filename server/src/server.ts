@@ -7,8 +7,8 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { seedDatabase } from './utils/seed';  // Import the seed utility
-import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
+import { seedDatabase } from './utils/seed';
+import { ensureAdminUser } from './controllers/auth/adminController';
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -39,11 +39,31 @@ connectDB().then(async () => {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Get allowed origins from environment variable or use default
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ['http://localhost:8080'];
+  
+console.log('CORS allowed origins:', allowedOrigins);
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: '*', // Allow all origins for testing
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      console.log('Request origin:', origin);
+      console.log('Origin', origin, 'is allowed by CORS policy');
+      callback(null, true);
+    } else {
+      console.log('Request origin:', origin);
+      console.log('Origin', origin, 'is NOT allowed by CORS policy');
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true
 }));
 app.use(helmet({
@@ -105,6 +125,7 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`API is available at http://localhost:${PORT}/api`);
 });
 
 export default app;
