@@ -12,7 +12,7 @@ export interface MongoUser {
     machineId: string;
     date: string;
     time: string;
-    status: 'Pending' | 'Approved' | 'Completed' | 'Canceled';
+    status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
   }[];
   lastLogin: string;
   resetCode?: {
