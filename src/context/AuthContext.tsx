@@ -1,56 +1,44 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
-import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { login, register, logout } = useAuthFunctions(user, setUser);
 
-  // Debug render
-  console.log("Rendering AuthProvider");
-
+  // Load user from tokens on initial load (web) or storage (native)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        console.log("Loading user from storage/API");
+        // For native, still try to get from AsyncStorage
         const storedUser = await storage.getItem('learnit_user');
         
         if (storedUser) {
-          console.log("User found in storage");
-          const parsedUser = JSON.parse(storedUser);
-          console.log("Stored user:", parsedUser);
-          setUser(parsedUser);
+          setUser(JSON.parse(storedUser));
         } else {
-          console.log("No user in storage, checking token");
+          // For web, try to get from token
           const token = localStorage.getItem('token');
           if (token) {
             try {
-              console.log("Token found, getting current user from API");
               const response = await apiService.getCurrentUser();
-              console.log("Current user API response:", response);
               if (response.data && response.data.user) {
-                console.log("Setting user from API response");
                 setUser(response.data.user);
               }
             } catch (error) {
               console.error('Error getting current user:', error);
             }
-          } else {
-            console.log("No token found");
           }
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
       } finally {
-        console.log("Setting loading to false");
         setLoading(false);
       }
     };
@@ -58,6 +46,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadUser();
   }, []);
 
+  // Login function
+  const login = async (email: string, password: string) => {
+    try {
+      const authenticatedUser = await userDatabase.authenticate(email, password);
+      
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
+        return true;
+      } else {
+        throw new Error('Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  };
+
+  // Register function
+  const register = async (email: string, password: string, name: string) => {
+    try {
+      const newUser = await userDatabase.registerUser(email, password, name);
+      
+      if (newUser) {
+        setUser(newUser);
+        // For native, still store in AsyncStorage
+        await storage.setItem('learnit_user', JSON.stringify(newUser));
+        return true;
+      } else {
+        throw new Error('Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    await storage.removeItem('learnit_user');
+  };
+
+  // Add certification
   const addCertification = async (machineId: string) => {
     if (!user) return false;
     
@@ -65,12 +99,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const success = await userDatabase.addCertification(user.id, machineId);
       
       if (success) {
+        // Update local user state with new certification
         const updatedUser = {
           ...user,
           certifications: [...user.certifications, machineId]
         };
         
         setUser(updatedUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
@@ -82,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Update profile
   const updateProfile = async (name: string, email: string) => {
     if (!user) return false;
     
@@ -91,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (success) {
         const updatedUser = { ...user, name, email };
         setUser(updatedUser);
+        // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
@@ -102,10 +140,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Change password
   const changePassword = async (currentPassword: string, newPassword: string) => {
     if (!user) return false;
     
     try {
+      // First verify the current password
       const authenticatedUser = await userDatabase.authenticate(user.email, currentPassword);
       
       if (!authenticatedUser) {
@@ -120,10 +160,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Stub functions for password reset to maintain interface compatibility
-  const requestPasswordReset = async () => false;
-  const resetPassword = async () => false;
+  // Password reset functions
+  const requestPasswordReset = async (email: string) => {
+    try {
+      return await userDatabase.requestPasswordReset(email);
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      return false;
+    }
+  };
 
+  const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
+    try {
+      return await userDatabase.resetPassword(email, resetCode, newPassword);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
+    }
+  };
+
+  // Combine all functions into the auth context value
   const value: AuthContextType = {
     user,
     loading,
@@ -136,8 +192,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     requestPasswordReset,
     resetPassword,
   };
-
-  console.log("AuthProvider state:", { user: user?.name, isAdmin: user?.isAdmin, loading });
 
   return (
     <AuthContext.Provider value={value}>

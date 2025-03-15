@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { registerUser, getUserProfile } from '../controllers/authController';
+import { registerUser, forgotPassword, resetPassword, getUserProfile } from '../controllers/authController';
 import { loginUser } from '../controllers/auth/loginController';
 import { protect } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
@@ -32,6 +32,26 @@ router.post(
     body('password').notEmpty().withMessage('Password is required')
   ],
   loginUser
+);
+
+// Forgot password
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email')
+  ],
+  forgotPassword
+);
+
+// Reset password
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    body('resetCode').notEmpty().withMessage('Reset code is required'),
+    body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+  ],
+  resetPassword
 );
 
 // Get user profile

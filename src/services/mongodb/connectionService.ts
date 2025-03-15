@@ -13,10 +13,8 @@ class MongoConnectionService {
   private initialized: boolean = false;
   
   constructor() {
-    // Use a hardcoded URI in browser environments
-    this.uri = typeof process !== 'undefined' && process.env && process.env.MONGODB_URI 
-      ? process.env.MONGODB_URI 
-      : 'mongodb://localhost:27017/learnit';
+    // Try to get URI from environment or use default
+    this.uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
   

@@ -1,3 +1,4 @@
+
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -164,6 +165,67 @@ class UserDatabase {
       toast({
         title: "Password Change Error",
         description: "Could not change password in MongoDB",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }
+  
+  async requestPasswordReset(email: string) {
+    try {
+      // Get user from MongoDB
+      const user = await mongoDbService.getUserByEmail(email);
+      if (!user) {
+        console.log(`User ${email} not found in MongoDB for password reset`);
+        return false;
+      }
+      
+      // Generate reset code
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Update user with reset code in MongoDB
+      const result = await mongoDbService.updateUser(user.id, { resetCode });
+      console.log(`Password reset requested for ${email}:`, result ? "success" : "failed");
+      return result;
+    } catch (error) {
+      console.error('Error in requestPasswordReset:', error);
+      toast({
+        title: "Password Reset Error",
+        description: "Could not request password reset in MongoDB",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string) {
+    try {
+      // Get user from MongoDB
+      const user = await mongoDbService.getUserByEmail(email);
+      if (!user) {
+        console.log(`User ${email} not found in MongoDB for password reset verification`);
+        return false;
+      }
+      
+      // Verify reset code
+      if (!user.resetCode || user.resetCode !== resetCode) {
+        console.log(`Invalid reset code for user ${email}`);
+        return false;
+      }
+      
+      // Update password and clear reset code in MongoDB
+      const result = await mongoDbService.updateUser(user.id, { 
+        password: newPassword,
+        resetCode: null
+      });
+      
+      console.log(`Password reset for ${email}:`, result ? "success" : "failed");
+      return result;
+    } catch (error) {
+      console.error('Error in resetPassword:', error);
+      toast({
+        title: "Password Reset Error",
+        description: "Could not reset password in MongoDB",
         variant: "destructive"
       });
       return false;
