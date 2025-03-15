@@ -378,6 +378,92 @@ export class BookingService {
       return false;
     }
   }
+  
+  // Delete a booking
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    console.log(`BookingService.deleteBooking: bookingId=${bookingId}`);
+    
+    try {
+      // Try MongoDB first if not in web environment
+      if (!isWeb) {
+        try {
+          const success = await mongoDbService.deleteBooking(bookingId);
+          if (success) {
+            console.log("Successfully deleted booking via MongoDB");
+            toast({
+              title: "Booking Deleted",
+              description: "The booking has been successfully deleted."
+            });
+            return true;
+          }
+        } catch (mongoError) {
+          console.error("MongoDB error deleting booking:", mongoError);
+        }
+      }
+      
+      // Try API next
+      try {
+        const response = await apiService.request(`bookings/${bookingId}`, 'DELETE');
+        if (response && !response.error) {
+          console.log("Successfully deleted booking via API");
+          toast({
+            title: "Booking Deleted",
+            description: "The booking has been successfully deleted."
+          });
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API error deleting booking:", apiError);
+      }
+      
+      // Finally try localStorage
+      try {
+        // Need to find the user with this booking
+        const allUsers = localStorageService.getAllUsers();
+        const bookings = localStorageService.getBookings();
+        
+        const bookingIndex = bookings.findIndex(b => b.id === bookingId);
+        if (bookingIndex !== -1) {
+          // Remove from bookings collection
+          bookings.splice(bookingIndex, 1);
+          localStorageService.saveBookings(bookings);
+          
+          // Find and update user
+          for (const user of allUsers) {
+            if (user.bookings) {
+              const userBookingIndex = user.bookings.findIndex(b => b.id === bookingId);
+              if (userBookingIndex !== -1) {
+                user.bookings.splice(userBookingIndex, 1);
+                localStorageService.updateUser(user.id, { bookings: user.bookings });
+                console.log(`Removed booking from user ${user.id}`);
+                
+                toast({
+                  title: "Booking Deleted",
+                  description: "The booking has been successfully deleted."
+                });
+                
+                return true;
+              }
+            }
+          }
+        }
+        
+        console.error("Could not find booking in localStorage");
+        return false;
+      } catch (storageError) {
+        console.error("LocalStorage error deleting booking:", storageError);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error in BookingService.deleteBooking:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem deleting the booking.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }
 }
 
 // Create a singleton instance

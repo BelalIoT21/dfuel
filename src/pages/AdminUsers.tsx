@@ -41,7 +41,13 @@ const AdminUsers = () => {
   }
 
   const handleUserAdded = (newUser: UserWithoutSensitiveInfo) => {
+    // Add the new user to the existing users array and refresh
     setUsers([...users, newUser]);
+  };
+  
+  const handleUserDeleted = () => {
+    // Refresh the users list after a user is deleted
+    fetchUsers();
   };
 
   return (
@@ -74,6 +80,7 @@ const AdminUsers = () => {
               users={users} 
               searchTerm={searchTerm}
               onCertificationAdded={fetchUsers}
+              onUserDeleted={handleUserDeleted}
             />
           </CardContent>
         </Card>

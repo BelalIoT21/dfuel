@@ -4,15 +4,34 @@ import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
 import { useState, useEffect } from 'react';
 import { machineService } from '@/services/machineService';
+import { Button } from "@/components/ui/button";
+import { Trash2, AlertCircle, Loader2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import userDatabase from '@/services/userDatabase';
+import mongoDbService from '@/services/mongoDbService';
 
 interface UsersTableProps {
   users: any[];
   searchTerm: string;
   onCertificationAdded: () => void;
+  onUserDeleted?: () => void;
 }
 
-export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTableProps) => {
+export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDeleted }: UsersTableProps) => {
   const [allMachines, setAllMachines] = useState<any[]>([]);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -30,8 +49,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Helper function to get machine name by ID
@@ -48,6 +67,54 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
     // Fallback to local data
     const localMachine = machines.find(m => m.id === certId);
     return localMachine ? localMachine.name : `Machine ${certId}`;
+  };
+  
+  // Delete user
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUserId(userId);
+    
+    try {
+      // Try MongoDB first
+      let success = false;
+      try {
+        success = await mongoDbService.deleteUser(userId);
+        console.log(`MongoDB deleteUser result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB error deleting user:", mongoError);
+      }
+      
+      // If MongoDB fails, use user database service
+      if (!success) {
+        success = await userDatabase.deleteUser(userId);
+      }
+      
+      if (success) {
+        toast({
+          title: "User Deleted",
+          description: "User has been permanently deleted.",
+        });
+        
+        // Refresh the user list
+        if (onUserDeleted) {
+          onUserDeleted();
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete user.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while deleting user.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingUserId(null);
+    }
   };
 
   return (
@@ -97,10 +164,48 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
                   </div>
                 </TableCell>
                 <TableCell>
-                  <UserCertificationManager 
-                    user={user} 
-                    onCertificationAdded={onCertificationAdded}
-                  />
+                  <div className="flex items-center gap-2">
+                    <UserCertificationManager 
+                      user={user} 
+                      onCertificationAdded={onCertificationAdded}
+                    />
+                    
+                    {!user.isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-red-200 hover:bg-red-50 text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

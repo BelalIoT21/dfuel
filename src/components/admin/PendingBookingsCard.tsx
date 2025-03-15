@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Calendar, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import mongoDbService from '@/services/mongoDbService';
@@ -19,48 +19,85 @@ export const PendingBookingsCard = ({
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected') => {
+  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
     setProcessingBookingId(bookingId);
     
     try {
-      console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${action}`);
+      console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
-      // Try MongoDB first (direct database access)
-      let success = false;
-      try {
-        success = await mongoDbService.updateBookingStatus(bookingId, action);
-        console.log(`MongoDB updateBookingStatus result: ${success}`);
-      } catch (mongoError) {
-        console.error("MongoDB update booking error:", mongoError);
-      }
-      
-      // If MongoDB fails, try the regular service
-      if (!success) {
-        success = await bookingService.updateBookingStatus(bookingId, action);
-      }
-      
-      if (success) {
-        toast({
-          title: `Booking ${action}`,
-          description: `The booking has been ${action.toLowerCase()} successfully.`
-        });
+      if (action === 'Deleted') {
+        // Handle booking deletion
+        let success = false;
         
-        // After updating, trigger refresh of the bookings list
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
+        try {
+          // Try MongoDB first for direct database deletion
+          success = await mongoDbService.deleteBooking(bookingId);
+          console.log(`MongoDB deleteBooking result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB delete booking error:", mongoError);
+        }
+        
+        // If MongoDB fails, try the regular service
+        if (!success) {
+          success = await bookingService.deleteBooking(bookingId);
+        }
+        
+        if (success) {
+          toast({
+            title: "Booking Deleted",
+            description: "The booking has been deleted successfully."
+          });
+          
+          // After deleting, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to delete booking",
+            variant: "destructive"
+          });
         }
       } else {
-        toast({
-          title: "Error",
-          description: `Failed to update booking status`,
-          variant: "destructive"
-        });
+        // Handle approval/rejection
+        // Try MongoDB first (direct database access)
+        let success = false;
+        try {
+          success = await mongoDbService.updateBookingStatus(bookingId, action);
+          console.log(`MongoDB updateBookingStatus result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB update booking error:", mongoError);
+        }
+        
+        // If MongoDB fails, try the regular service
+        if (!success) {
+          success = await bookingService.updateBookingStatus(bookingId, action);
+        }
+        
+        if (success) {
+          toast({
+            title: `Booking ${action}`,
+            description: `The booking has been ${action.toLowerCase()} successfully.`
+          });
+          
+          // After updating, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to update booking status`,
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
-      console.error(`Error ${action.toLowerCase()} booking:`, error);
+      console.error(`Error processing booking action:`, error);
       toast({
         title: "Error",
-        description: `An error occurred while ${action.toLowerCase()} the booking`,
+        description: `An error occurred while processing the booking`,
         variant: "destructive"
       });
     } finally {
@@ -117,6 +154,16 @@ export const PendingBookingsCard = ({
                 >
                   {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-200 hover:bg-gray-50 text-gray-700"
+                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
+                  disabled={processingBookingId === booking.id}
+                >
+                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                  Delete
                 </Button>
               </div>
             </div>

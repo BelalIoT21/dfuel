@@ -2,6 +2,8 @@
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
+import { localStorageService } from './localStorageService';
+import mongoDbService from './mongoDbService';
 
 class UserDatabase {
   // User methods
@@ -35,6 +37,53 @@ class UserDatabase {
   
   async resetPassword(email: string, resetCode: string, newPassword: string) {
     return userService.resetPassword(email, resetCode, newPassword);
+  }
+  
+  // Delete user
+  async deleteUser(userId: string) {
+    try {
+      // Try MongoDB first
+      try {
+        const success = await mongoDbService.deleteUser(userId);
+        if (success) {
+          console.log(`Successfully deleted user ${userId} from MongoDB`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error(`MongoDB error deleting user ${userId}:`, mongoError);
+      }
+      
+      // Try localStorage as fallback
+      try {
+        // Get user to check if admin (don't allow admin deletion)
+        const user = localStorageService.findUserById(userId);
+        if (!user) {
+          console.log(`User ${userId} not found in localStorage`);
+          return false;
+        }
+        
+        if (user.isAdmin) {
+          console.log(`Cannot delete admin user ${userId}`);
+          return false;
+        }
+        
+        // Delete user bookings from the bookings collection
+        const allBookings = localStorageService.getBookings();
+        const updatedBookings = allBookings.filter(booking => booking.userId !== userId);
+        localStorageService.saveBookings(updatedBookings);
+        
+        // Delete the user
+        localStorageService.deleteUser(userId);
+        console.log(`Successfully deleted user ${userId} from localStorage`);
+        return true;
+      } catch (storageError) {
+        console.error(`LocalStorage error deleting user ${userId}:`, storageError);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error deleting user ${userId}:`, error);
+      return false;
+    }
   }
   
   // Certification methods

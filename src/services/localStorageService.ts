@@ -1,151 +1,112 @@
-import { User, UserWithoutSensitiveInfo } from '../types/database';
-import { toast } from '@/components/ui/use-toast';
-
-const USERS_KEY = 'learnit_users';
-const BOOKINGS_KEY = 'learnit_bookings';
-const MACHINE_STATUSES_KEY = 'learnit_machine_statuses';
+import { User, Booking, MachineStatus, UserWithoutSensitiveInfo } from '../types/database';
+import { userKey, bookingsKey, machineStatusKey } from '../utils/storage';
 
 class LocalStorageService {
-  // User methods
+  // User operations
+  
   getAllUsers(): User[] {
-    try {
-      const usersJson = localStorage.getItem(USERS_KEY);
-      return usersJson ? JSON.parse(usersJson) : [];
-    } catch (error) {
-      console.error('Error getting users from localStorage:', error);
-      return [];
-    }
+    const storedData = localStorage.getItem(userKey);
+    return storedData ? JSON.parse(storedData) : [];
   }
-
+  
   getAllUsersWithoutSensitiveInfo(): UserWithoutSensitiveInfo[] {
     const users = this.getAllUsers();
-    return users.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      isAdmin: user.isAdmin,
-      certifications: user.certifications,
-      bookings: user.bookings,
-      lastLogin: user.lastLogin
-    }));
+    return users.map(({ password, resetCode, ...rest }) => rest);
   }
-
-  getUsers(): User[] {
-    return this.getAllUsers();
-  }
-
+  
   findUserByEmail(email: string): User | undefined {
-    try {
-      const users = this.getAllUsers();
-      return users.find(user => user.email === email);
-    } catch (error) {
-      console.error('Error finding user by email in localStorage:', error);
-      return undefined;
-    }
+    const users = this.getAllUsers();
+    return users.find(user => user.email.toLowerCase() === email.toLowerCase());
   }
-
+  
   findUserById(id: string): User | undefined {
-    try {
-      const users = this.getAllUsers();
-      return users.find(user => user.id === id);
-    } catch (error) {
-      console.error('Error finding user by id in localStorage:', error);
-      return undefined;
-    }
+    const users = this.getAllUsers();
+    return users.find(user => user.id === id);
   }
-
-  getAll(key: string): any[] {
-    if (key === 'users') return this.getAllUsers();
-    if (key === 'bookings') return this.getBookings();
-    return [];
-  }
-
-  update(key: string, id: string, data: any): boolean {
-    if (key === 'users') return this.updateUser(id, data);
-    return false;
-  }
-
+  
   addUser(user: User): boolean {
     try {
       const users = this.getAllUsers();
+      
+      // Check if user with same email already exists
+      if (users.some(u => u.email.toLowerCase() === user.email.toLowerCase())) {
+        return false;
+      }
+      
       users.push(user);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      localStorage.setItem(userKey, JSON.stringify(users));
       return true;
     } catch (error) {
       console.error('Error adding user to localStorage:', error);
       return false;
     }
   }
-
+  
   updateUser(id: string, updates: Partial<User>): boolean {
     try {
       const users = this.getAllUsers();
       const userIndex = users.findIndex(user => user.id === id);
-
+      
       if (userIndex === -1) {
-        console.error(`User with id ${id} not found in localStorage`);
         return false;
       }
-
-      // Merge existing user with updates
+      
+      // Apply updates to user
       users[userIndex] = { ...users[userIndex], ...updates };
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+      
+      localStorage.setItem(userKey, JSON.stringify(users));
       return true;
     } catch (error) {
       console.error('Error updating user in localStorage:', error);
       return false;
     }
   }
-
-  removeUser(id: string): boolean {
+  
+  deleteUser(id: string): boolean {
     try {
-      let users = this.getAllUsers();
-      users = users.filter(user => user.id !== id);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-      return true;
-    } catch (error) {
-      console.error('Error removing user from localStorage:', error);
-      return false;
-    }
-  }
-
-  addCertification(userId: string, machineId: string): boolean {
-    try {
-      const user = this.findUserById(userId);
-      if (!user) return false;
+      const users = this.getAllUsers();
+      const userIndex = users.findIndex(user => user.id === id);
       
-      if (!user.certifications.includes(machineId)) {
-        user.certifications.push(machineId);
-        return this.updateUser(userId, { certifications: user.certifications });
+      if (userIndex === -1) {
+        return false;
       }
       
-      return true; // Already certified
+      // Check if user is admin, don't allow deletion
+      if (users[userIndex].isAdmin) {
+        return false;
+      }
+      
+      // Remove user
+      users.splice(userIndex, 1);
+      
+      localStorage.setItem(userKey, JSON.stringify(users));
+      return true;
     } catch (error) {
-      console.error('Error in localStorage.addCertification:', error);
+      console.error('Error deleting user from localStorage:', error);
       return false;
     }
   }
-
+  
   getBookings(): any[] {
     try {
-      const bookingsJson = localStorage.getItem(BOOKINGS_KEY);
+      const bookingsJson = localStorage.getItem(bookingsKey);
       return bookingsJson ? JSON.parse(bookingsJson) : [];
     } catch (error) {
       console.error('Error getting bookings from localStorage:', error);
       return [];
     }
   }
-
+  
   saveBookings(bookings: any[]): boolean {
     try {
-      localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings));
+      localStorage.setItem(bookingsKey, JSON.stringify(bookings));
       return true;
     } catch (error) {
       console.error('Error saving bookings to localStorage:', error);
       return false;
     }
   }
-
+  
   updateBookingStatus(bookingId: string, status: string): boolean {
     try {
       const bookings = this.getBookings();
@@ -163,10 +124,10 @@ class LocalStorageService {
       return false;
     }
   }
-
+  
   getMachineStatus(machineId: string): string | null {
     try {
-      const statusesJson = localStorage.getItem(MACHINE_STATUSES_KEY);
+      const statusesJson = localStorage.getItem(machineStatusKey);
       const statuses = statusesJson ? JSON.parse(statusesJson) : {};
       return statuses[machineId] || null;
     } catch (error) {
@@ -174,13 +135,13 @@ class LocalStorageService {
       return null;
     }
   }
-
+  
   updateMachineStatus(machineId: string, status: string): boolean {
     try {
-      const statusesJson = localStorage.getItem(MACHINE_STATUSES_KEY);
+      const statusesJson = localStorage.getItem(machineStatusKey);
       const statuses = statusesJson ? JSON.parse(statusesJson) : {};
       statuses[machineId] = status;
-      localStorage.setItem(MACHINE_STATUSES_KEY, JSON.stringify(statuses));
+      localStorage.setItem(machineStatusKey, JSON.stringify(statuses));
       return true;
     } catch (error) {
       console.error('Error updating machine status in localStorage:', error);

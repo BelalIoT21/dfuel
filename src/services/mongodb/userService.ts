@@ -87,6 +87,28 @@ class MongoUserService {
     }
   }
   
+  async deleteUser(id: string): Promise<boolean> {
+    await this.initCollection();
+    if (!this.usersCollection) return false;
+    
+    try {
+      // First check if user exists and is not an admin
+      const user = await this.getUserById(id);
+      if (!user) return false;
+      
+      if (user.isAdmin) {
+        console.error("Cannot delete admin user");
+        return false;
+      }
+      
+      const result = await this.usersCollection.deleteOne({ id });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error("Error deleting user in MongoDB:", error);
+      return false;
+    }
+  }
+  
   async updateUserCertifications(userId: string, machineId: string): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;

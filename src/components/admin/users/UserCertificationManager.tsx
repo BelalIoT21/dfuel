@@ -1,12 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
 import { machines } from '@/utils/data';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
+import { localStorageService } from '@/services/localStorageService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -17,6 +18,42 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  // Special handling for specific users that need complete cert removal
+  useEffect(() => {
+    const checkForSpecialUsers = async () => {
+      // Special handling for b.l.mishmish
+      if (user?.email?.includes('b.l.mishmish@gmail.com') && user.certifications?.length > 0) {
+        console.log(`Special handling for user ${user.name} (${user.email}): Clear all certifications`);
+        
+        try {
+          // Direct MongoDB update for b.l.mishmish
+          try {
+            const success = await mongoDbService.updateUser(user.id, { certifications: [] });
+            if (success) {
+              console.log(`Successfully cleared all certifications for ${user.email} via MongoDB`);
+              onCertificationAdded();
+              return;
+            }
+          } catch (mongoError) {
+            console.error("MongoDB error clearing certifications:", mongoError);
+          }
+          
+          // Local storage fallback
+          const updated = localStorageService.updateUser(user.id, { certifications: [] });
+          if (updated) {
+            console.log(`Successfully cleared all certifications for ${user.email} via localStorage`);
+            onCertificationAdded();
+          }
+        } catch (error) {
+          console.error("Error clearing certifications for special user:", error);
+        }
+      }
+    };
+    
+    checkForSpecialUsers();
+  }, [user?.email, user?.certifications, onCertificationAdded, user?.id, user?.name]);
 
   const handleAddCertification = async (userId: string, machineId: string) => {
     setLoading(machineId);
@@ -70,9 +107,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       // Try MongoDB first with direct user update
       let success = false;
       try {
-        const user = await mongoDbService.getUserById(userId);
-        if (user) {
-          const updatedCertifications = user.certifications.filter(id => id !== machineId);
+        const userDoc = await mongoDbService.getUserById(userId);
+        if (userDoc) {
+          const updatedCertifications = userDoc.certifications.filter(id => id !== machineId);
           success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
           console.log(`MongoDB removeCertification result: ${success}`);
         }
@@ -115,13 +152,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Adding Machine Safety Course (ID: 6) for user ${userId}`);
       
-      // Try MongoDB first with direct user update
+      // Try direct MongoDB update first
       let success = false;
       try {
-        const user = await mongoDbService.getUserById(userId);
-        if (user) {
-          if (!user.certifications.includes("6")) {
-            const updatedCertifications = [...user.certifications, "6"];
+        // Check if user exists in MongoDB
+        const userDoc = await mongoDbService.getUserById(userId);
+        if (userDoc) {
+          if (!userDoc.certifications.includes("6")) {
+            // Add the certification directly
+            const updatedCertifications = [...userDoc.certifications, "6"];
             success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
             console.log(`MongoDB addMachineSafetyCourse result: ${success}`);
           } else {
@@ -134,7 +173,22 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       // If MongoDB fails, try the certification service
       if (!success) {
-        success = await certificationService.addMachineSafetyCertification(userId);
+        // Try direct storage update first
+        const user = localStorageService.findUserById(userId);
+        if (user) {
+          if (!user.certifications.includes("6")) {
+            const updatedCertifications = [...user.certifications, "6"];
+            success = localStorageService.updateUser(userId, { certifications: updatedCertifications });
+            console.log(`LocalStorage addMachineSafetyCourse result: ${success}`);
+          } else {
+            success = true; // Already has certification
+          }
+        }
+        
+        // If direct update fails, use the service
+        if (!success) {
+          success = await certificationService.addMachineSafetyCertification(userId);
+        }
       }
       
       if (success) {
@@ -170,9 +224,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       // Try MongoDB first with direct user update
       let success = false;
       try {
-        const user = await mongoDbService.getUserById(userId);
-        if (user) {
-          const updatedCertifications = user.certifications.filter(id => id !== "6");
+        const userDoc = await mongoDbService.getUserById(userId);
+        if (userDoc) {
+          const updatedCertifications = userDoc.certifications.filter(id => id !== "6");
           success = await mongoDbService.updateUser(userId, { certifications: updatedCertifications });
           console.log(`MongoDB removeMachineSafetyCourse result: ${success}`);
         }
@@ -180,7 +234,17 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         console.error("MongoDB remove machine safety certification error:", mongoError);
       }
       
-      // If MongoDB fails, try the certification service
+      // If MongoDB fails, try local storage
+      if (!success) {
+        const user = localStorageService.findUserById(userId);
+        if (user) {
+          const updatedCertifications = user.certifications.filter(id => id !== "6");
+          success = localStorageService.updateUser(userId, { certifications: updatedCertifications });
+          console.log(`LocalStorage removeMachineSafetyCourse result: ${success}`);
+        }
+      }
+      
+      // If still no success, try the certification service
       if (!success) {
         success = await certificationService.removeMachineSafetyCertification(userId);
       }
@@ -207,6 +271,51 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       });
     } finally {
       setLoading(null);
+    }
+  };
+
+  const handleClearAllCertifications = async () => {
+    if (!user || !user.id) return;
+    
+    setIsClearing(true);
+    try {
+      // Try MongoDB first
+      let success = false;
+      try {
+        success = await mongoDbService.updateUser(user.id, { certifications: [] });
+        console.log(`MongoDB clearCertifications result: ${success}`);
+      } catch (mongoError) {
+        console.error("MongoDB error clearing certifications:", mongoError);
+      }
+      
+      // If MongoDB fails, use local storage
+      if (!success) {
+        success = await localStorageService.updateUser(user.id, { certifications: [] });
+        console.log(`LocalStorage clearCertifications result: ${success}`);
+      }
+      
+      if (success) {
+        toast({
+          title: "Certifications Cleared",
+          description: "All certifications have been removed from this user."
+        });
+        onCertificationAdded();
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to clear certifications.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error clearing certifications:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while clearing certifications.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -264,7 +373,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             <div className="flex justify-between items-center border p-2 rounded">
               <span>Bambu Lab X1 E</span>
               <div>
-                {user.certifications.includes("5") ? (
+                {user.certifications?.includes("5") ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -295,7 +404,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
                 <span>{machine.name}</span>
                 <div>
-                  {user.certifications.includes(machine.id) ? (
+                  {user.certifications?.includes(machine.id) ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -322,6 +431,23 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               </div>
             ))}
           </div>
+          
+          {/* Add Clear All Certifications button */}
+          {user.certifications?.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="w-full border-red-200 hover:bg-red-50 text-red-700"
+                onClick={handleClearAllCertifications}
+                disabled={isClearing}
+              >
+                {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Trash className="h-4 w-4 mr-2" />
+                Clear All Certifications
+              </Button>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
