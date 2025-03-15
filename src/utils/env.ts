@@ -6,9 +6,6 @@
 // Load environment variables into the application
 export const loadEnv = (): void => {
   console.log('Environment variables loaded');
-  
-  // Set default MongoDB URI for both preview and local environments
-  setEnv('MONGODB_URI', 'mongodb://localhost:27017/learnit');
 };
 
 // Set environment variables with validation
@@ -29,7 +26,7 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // Always return the same MongoDB URI for consistency
+  // For MongoDB URI, always return the same value for consistency in web env
   if (key === 'MONGODB_URI') {
     return 'mongodb://localhost:27017/learnit';
   }

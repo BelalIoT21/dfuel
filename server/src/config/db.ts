@@ -11,10 +11,7 @@ export const connectDB = async () => {
   try {
     console.log(`Server attempting to connect to MongoDB at: ${MONGODB_URI}`);
     
-    const conn = await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
-      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-    });
+    const conn = await mongoose.connect(MONGODB_URI);
     
     console.log(`MongoDB Connected on server: ${conn.connection.host}`);
     
@@ -30,7 +27,6 @@ export const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    // Don't exit process on connection error - this allows the app to work even if MongoDB isn't available
     return null;
   }
 };
