@@ -11,7 +11,6 @@ import { toast } from '@/components/ui/use-toast';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [serverInfo, setServerInfo] = useState<any>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -24,7 +23,6 @@ const Index = () => {
         if (response.data) {
           console.log("Server health check:", response.data);
           setServerStatus('connected');
-          setServerInfo(response.data);
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
@@ -35,7 +33,7 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
+          description: 'Could not connect to the backend server. Please try again later.',
           variant: 'destructive'
         });
       }
@@ -82,14 +80,6 @@ const Index = () => {
               Server status: {serverStatus}
             </div>
           )}
-          
-          {/* API URL information for debugging */}
-          <div className="mt-2 text-xs text-gray-500 break-all">
-            <p>API URL: {window.location.origin.includes('localhost') 
-              ? 'http://localhost:4000/api' 
-              : `${window.location.origin}/api`}
-            </p>
-          </div>
         </div>
 
         <AnimatePresence mode="wait">

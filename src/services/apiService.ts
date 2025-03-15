@@ -1,38 +1,11 @@
+
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
-// Define API URLs - allow fallback paths to help in different environments
-const API_URLS = {
-  local: 'http://localhost:4000/api',
-  development: window.location.origin.includes('localhost') 
-    ? 'http://localhost:4000/api' 
-    : `${window.location.origin}/api`,
-  production: `${window.location.origin}/api`
-};
-
-// Get the proper URL based on environment or default to local
-const getApiUrl = () => {
-  const environment = process.env.NODE_ENV || 'development';
-  console.log('Current environment:', environment);
-  
-  // For safety, check if we're in a browser environment
-  if (typeof window === 'undefined') {
-    return API_URLS.local;
-  }
-
-  // Try to detect if we're running in the same domain as the server
-  // This helps with deployment scenarios
-  if (environment === 'production') {
-    return API_URLS.production;
-  }
-  
-  // In development, prefer localhost:4000
-  return API_URLS.local;
-};
-
-// Set the base URL and log it for debugging
-const BASE_URL = getApiUrl();
-console.log('API service configured with base URL:', BASE_URL);
+// Try to connect to local API first, but have a fallback to relative path
+const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+let currentEndpointIndex = 0;
+let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
 interface ApiResponse<T> {
   data: T | null;
@@ -41,6 +14,12 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
+  private async switchEndpoint() {
+    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
+    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+    console.log(`Switching to API endpoint: ${BASE_URL}`);
+  }
+
   private async request<T>(
     endpoint: string, 
     method: string = 'GET', 
@@ -63,96 +42,83 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
-        mode: 'cors',
       };
       
-      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+      if (data && (method === 'POST' || method === 'PUT')) {
         options.body = JSON.stringify(data);
       }
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       
-      // Check if server is reachable first for non-health endpoints (avoid infinite loop)
-      if (!endpoint.includes('health')) {
+      // Try with retry and endpoint switching logic
+      let response;
+      let retryCount = 0;
+      const maxRetries = API_ENDPOINTS.length;
+      
+      while (retryCount < maxRetries) {
         try {
-          // Make a lightweight fetch to see if the server responds at all
-          const pingResponse = await fetch(`${BASE_URL}/health`, {
-            method: 'GET',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-cache',
-          });
+          response = await fetch(url, options);
+          break; // If successful, exit the retry loop
+        } catch (fetchError) {
+          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
+          retryCount++;
           
-          if (!pingResponse.ok) {
-            console.warn(`Server health check failed with status ${pingResponse.status}`);
+          if (retryCount < maxRetries) {
+            // Try a different endpoint before giving up
+            this.switchEndpoint();
+            const newUrl = `${BASE_URL}/${endpoint}`;
+            console.log(`Retrying with endpoint: ${newUrl}`);
           } else {
-            console.log('Server is reachable');
+            throw fetchError; // All retries failed, propagate the error
           }
-        } catch (pingError) {
-          console.warn('Cannot reach server:', pingError);
-          // We continue with the actual request, as the ping is just informational
         }
       }
       
-      // Actual API request with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      if (!response) {
+        throw new Error('Failed to connect to any API endpoints');
+      }
       
-      try {
-        options.signal = controller.signal;
-        const response = await fetch(url, options);
-        clearTimeout(timeoutId);
+      // Handle empty responses gracefully
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json') && response.status !== 204) {
+        const text = await response.text();
+        responseData = text ? JSON.parse(text) : null;
+      } else {
+        responseData = null;
+      }
+      
+      if (!response.ok) {
+        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
+        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
-        if (!response) {
-          throw new Error('Failed to connect to API endpoint');
-        }
-        
-        // Handle empty responses gracefully
-        let responseData;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json') && response.status !== 204) {
-          const text = await response.text();
-          responseData = text ? JSON.parse(text) : null;
-        } else {
-          responseData = null;
-        }
-        
-        if (!response.ok) {
-          const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-          console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
-          
+        if (response.status === 404) {
           return {
             data: null,
-            error: errorMessage,
+            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
             status: response.status
           };
         }
         
-        return {
-          data: responseData,
-          error: null,
-          status: response.status
-        };
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        console.error(`API fetch failed: ${url}`, fetchError);
-        
-        if (fetchError.name === 'AbortError') {
-          return {
-            data: null,
-            error: 'Request timed out after 10 seconds',
-            status: 408
-          };
-        }
-        
-        throw fetchError;
+        throw new Error(errorMessage);
       }
+      
+      return {
+        data: responseData,
+        error: null,
+        status: response.status
+      };
     } catch (error) {
       console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        console.error('API error:', error);
+        const { toast } = useToast();
+        toast({
+          title: `API Error`,
+          description: "Could not connect to server. Using local storage fallback.",
+          variant: 'destructive'
+        });
       }
       
       return {
@@ -166,7 +132,6 @@ class ApiService {
   // Auth endpoints
   async login(email: string, password: string) {
     console.log('Attempting login via API for:', email);
-    console.log('Using base URL:', BASE_URL);
     return this.request<{ token: string, user: any }>(
       'auth/login', 
       'POST', 
@@ -187,7 +152,6 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    console.log('Checking server health at:', `${BASE_URL}/health`);
     return this.request<{ status: string, message: string }>(
       'health',
       'GET',
