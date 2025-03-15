@@ -3,11 +3,6 @@ import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
-import { storage } from '@/utils/storage';
-import { logger } from '@/utils/logger';
-
-// Create a hook-specific logger
-const authLogger = logger.child('AuthFunctions');
 
 export const useAuthFunctions = (
   user: User | null, 
@@ -19,35 +14,45 @@ export const useAuthFunctions = (
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      authLogger.info("Login attempt for:", { email });
+      console.log("Login attempt for:", email);
       
       // API login
       const apiResponse = await apiService.login(email, password);
       
       if (apiResponse.error) {
-        authLogger.error("API login error:", apiResponse.error);
-        toast({
-          title: "Login failed",
-          description: apiResponse.error,
-          variant: "destructive"
-        });
+        console.error("API login error:", apiResponse.error);
+        
+        // Check if it's a 404 error (endpoint not found)
+        if (apiResponse.status === 404) {
+          const apiUrl = apiResponse.error.includes('http') 
+            ? apiResponse.error.split('Endpoint not found:')[1]?.split('.')[0]?.trim() 
+            : 'API server';
+          
+          toast({
+            title: "Server connection error",
+            description: `Cannot connect to authentication server. Is your server running at ${apiUrl}?`,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: apiResponse.error,
+            variant: "destructive"
+          });
+        }
         return false;
       }
       
       if (apiResponse.data) {
-        authLogger.info("API login successful for:", { email });
+        console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
-        // Save the token for future API requests in sessionStorage
+        // Save the token for future API requests
         if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
-          authLogger.debug("Token saved to sessionStorage");
+          // Store token in localStorage for persistence
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        // Also save to storage for persistence
-        await storage.setItem('learnit_user', JSON.stringify(userData));
-        authLogger.debug("User data saved to persistent storage");
-        
         toast({
           title: "Login successful",
           description: `Welcome back, ${userData.name}!`
@@ -55,7 +60,7 @@ export const useAuthFunctions = (
         return true;
       }
       
-      authLogger.warn("Login failed - unexpected response format");
+      // If we get here, the API returned no data and no error, which is odd
       toast({
         title: "Login failed",
         description: "The server returned an unexpected response. Please try again.",
@@ -64,10 +69,10 @@ export const useAuthFunctions = (
       return false;
       
     } catch (error) {
-      authLogger.error("Error during login:", error);
+      console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. Please ensure the server is running.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -79,13 +84,13 @@ export const useAuthFunctions = (
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      authLogger.info("Registration attempt for:", { email });
+      console.log("Registration attempt for:", email);
       
       // API registration
       const apiResponse = await apiService.register({ email, password, name });
       
       if (apiResponse.error) {
-        authLogger.error("API registration error:", apiResponse.error);
+        console.error("API registration error:", apiResponse.error);
         toast({
           title: "Registration failed",
           description: apiResponse.error,
@@ -95,18 +100,15 @@ export const useAuthFunctions = (
       }
       
       if (apiResponse.data) {
-        authLogger.info("API registration successful for:", { email });
+        console.log("API registration successful:", apiResponse.data);
         const userData = apiResponse.data.user;
         
-        // Save the token for future API requests in sessionStorage
+        // Save the token for future API requests
         if (apiResponse.data.token) {
-          sessionStorage.setItem('token', apiResponse.data.token);
-          authLogger.debug("Token saved to sessionStorage");
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
-        await storage.setItem('learnit_user', JSON.stringify(userData));
-        
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -114,7 +116,6 @@ export const useAuthFunctions = (
         return true;
       }
       
-      authLogger.warn("Registration failed - unexpected response format");
       toast({
         title: "Registration failed",
         description: "The server returned an unexpected response. Please try again.",
@@ -122,10 +123,10 @@ export const useAuthFunctions = (
       });
       return false;
     } catch (error) {
-      authLogger.error("Error during registration:", error);
+      console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Please ensure the server is running.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -135,9 +136,8 @@ export const useAuthFunctions = (
   };
 
   const logout = () => {
-    authLogger.info("User logged out");
     setUser(null);
-    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
     toast({
       description: "Logged out successfully."
     });

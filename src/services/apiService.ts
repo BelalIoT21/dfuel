@@ -1,14 +1,6 @@
-import { getEnv } from '../utils/env';
-import { toast } from '../components/ui/use-toast';
-import { logger } from '../utils/logger';
-
-// API logger instance
-const apiLogger = logger.child('API');
-
-// API endpoints configuration - prioritize localhost:4000/api
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
-let currentEndpointIndex = 0;
-let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+import { toast } from '@/components/ui/use-toast';
+import { apiConnection } from './api/apiConnection';
+import { apiLogger } from './api/apiLogger';
 
 interface ApiResponse<T> {
   data: T | null;
@@ -17,10 +9,37 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
-  private async switchEndpoint() {
-    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
-    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-    apiLogger.info(`Switching to API endpoint: ${BASE_URL}`);
+  // Get the current base URL
+  getBaseUrl(): string {
+    return apiConnection.getBaseUrl();
+  }
+
+  // Check if the API server is reachable
+  async checkHealth(): Promise<ApiResponse<any>> {
+    const connected = await apiConnection.checkConnection();
+    
+    if (connected) {
+      try {
+        return await this.request<{ status: string, message: string, database?: any }>(
+          'health',
+          'GET',
+          undefined,
+          false
+        );
+      } catch (error) {
+        return {
+          data: null,
+          error: 'Health check request failed',
+          status: 0
+        };
+      }
+    } else {
+      return {
+        data: null,
+        error: 'Cannot connect to API server',
+        status: 0
+      };
+    }
   }
 
   private async request<T>(
@@ -29,9 +48,14 @@ class ApiService {
     data?: any,
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
+    const startTime = performance.now();
+    
     try {
-      const url = `${BASE_URL}/${endpoint}`;
-      const token = sessionStorage.getItem('token');
+      const url = apiConnection.buildUrl(endpoint);
+      
+      apiLogger.logRequest(method, url, data);
+      
+      const token = localStorage.getItem('token');
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
@@ -45,41 +69,23 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
+        mode: 'cors',
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
+      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
         options.body = JSON.stringify(data);
       }
       
-      apiLogger.info(`${method} ${url}`, data ? { requestData: data } : 'No request body');
+      // Add a timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      options.signal = controller.signal;
       
-      // Try with retry and endpoint switching logic
-      let response;
-      let retryCount = 0;
-      const maxRetries = API_ENDPOINTS.length;
+      const response = await fetch(url, options);
+      clearTimeout(timeoutId);
       
-      while (retryCount < maxRetries) {
-        try {
-          response = await fetch(url, options);
-          break; // If successful, exit the retry loop
-        } catch (fetchError) {
-          apiLogger.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            // Try a different endpoint before giving up
-            this.switchEndpoint();
-            const newUrl = `${BASE_URL}/${endpoint}`;
-            apiLogger.info(`Retrying with endpoint: ${newUrl}`);
-          } else {
-            throw fetchError; // All retries failed, propagate the error
-          }
-        }
-      }
-      
-      if (!response) {
-        throw new Error('Failed to connect to any API endpoints');
-      }
+      const endTime = performance.now();
+      const duration = endTime - startTime;
       
       // Handle empty responses gracefully
       let responseData;
@@ -91,14 +97,15 @@ class ApiService {
         responseData = null;
       }
       
+      apiLogger.logResponse(method, url, response.status, responseData, duration);
+      
       if (!response.ok) {
         const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        apiLogger.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
           return {
             data: null,
-            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
+            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
             status: response.status
           };
         }
@@ -106,23 +113,28 @@ class ApiService {
         throw new Error(errorMessage);
       }
       
-      // Log successful response
-      apiLogger.info(`${method} ${url} - Success: ${response.status}`, 
-        responseData ? { responseData } : 'Empty response');
-      
       return {
         data: responseData,
         error: null,
         status: response.status
       };
     } catch (error) {
-      apiLogger.error(`Request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      apiLogger.logError(method, endpoint, error);
+      
+      // Check if it's an AbortError (timeout)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          data: null,
+          error: 'Request timed out. The server might be unavailable.',
+          status: 0
+        };
+      }
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
         toast({
-          title: `API Error`,
-          description: "Could not connect to server. Please ensure the backend server is running at http://localhost:4000.",
+          title: `API Error (${endpoint})`,
+          description: error instanceof Error ? error.message : 'Unknown error occurred',
           variant: 'destructive'
         });
       }
@@ -130,13 +142,16 @@ class ApiService {
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        status: error instanceof Error && 
+               (error.message.includes('Failed to fetch') || 
+                error.message.includes('Network Error')) ? 0 : 500
       };
     }
   }
   
+  // Auth endpoints
   async login(email: string, password: string) {
-    apiLogger.info('Attempting login via API for:', { email });
+    console.log('Attempting login via API for:', email);
     return this.request<{ token: string, user: any }>(
       'auth/login', 
       'POST', 
@@ -155,17 +170,10 @@ class ApiService {
     );
   }
   
-  async checkHealth() {
-    return this.request<{ status: string, message: string }>(
-      'health',
-      'GET',
-      undefined,
-      false
-    );
-  }
-  
+  // User endpoints
   async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+    console.log("Fetching current user with auth token");
+    return this.request<{ user: any }>('auth/me', 'GET');
   }
   
   async updateUser(userId: string, updates: any) {
@@ -180,6 +188,7 @@ class ApiService {
     );
   }
   
+  // Additional methods to support databaseService
   async getUserByEmail(email: string) {
     return this.request<any>(`users/email/${email}`, 'GET');
   }
@@ -192,6 +201,7 @@ class ApiService {
     return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
   }
   
+  // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
     return this.request<{ success: boolean }>(
@@ -222,6 +232,7 @@ class ApiService {
     );
   }
   
+  // Booking endpoints
   async getAllBookings() {
     return this.request<any[]>('bookings/all', 'GET');
   }
@@ -271,6 +282,7 @@ class ApiService {
     return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
   }
   
+  // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
     return this.request<void>(
       'admin/credentials', 
@@ -279,6 +291,7 @@ class ApiService {
     );
   }
   
+  // Dashboard endpoints
   async getAllUsers() {
     return this.request<any[]>('users', 'GET');
   }
@@ -287,6 +300,7 @@ class ApiService {
     return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
   }
   
+  // Safety certification management
   async addSafetyCertification(userId: string) {
     return this.request<{ success: boolean }>(
       'certifications/safety', 
@@ -331,6 +345,30 @@ class ApiService {
   async deleteMachine(machineId: string) {
     return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
   }
+  
+  // Storage-related API methods
+  async getStorageItem(key: string) {
+    return this.request<{ value: string }>(
+      `storage/${key}`,
+      'GET'
+    );
+  }
+  
+  async setStorageItem(key: string, value: string) {
+    return this.request<{ success: boolean }>(
+      'storage',
+      'POST',
+      { key, value }
+    );
+  }
+  
+  async removeStorageItem(key: string) {
+    return this.request<{ success: boolean }>(
+      `storage/${key}`,
+      'DELETE'
+    );
+  }
 }
 
+// Create and export a singleton instance
 export const apiService = new ApiService();

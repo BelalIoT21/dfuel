@@ -2,85 +2,183 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
-import userDatabase from '@/services/userDatabase';
-import { storage } from '@/utils/storage';
-import { apiService } from '@/services/apiService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
+import { apiService } from '@/services/apiService';
+import { useToast } from '@/components/ui/use-toast';
 
-// Create the auth context
+// Create the context with undefined as initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const authFunctions = useAuthFunctions(user, setUser);
+  const { login: apiLogin, register: apiRegister, logout: apiLogout, isLoading } = useAuthFunctions(user, setUser);
+  const { toast } = useToast();
 
-  // Load user from API tokens on initial load
+  // Load user from token on initial load
   useEffect(() => {
     const loadUser = async () => {
       try {
-        setLoading(true);
-        console.log("Loading user from storage...");
+        // Check if we have a token in localStorage
+        const token = localStorage.getItem('token');
         
-        // For native, try to get from AsyncStorage
-        if (!isWeb()) {
-          console.log("Native environment detected");
-          const storedUser = await storage.getItem('learnit_user');
-          
-          if (storedUser) {
-            console.log("User found in storage");
-            setUser(JSON.parse(storedUser));
-          } else {
-            console.log("No user found in storage");
+        if (!token) {
+          console.log("No token found, user is not logged in");
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Token found, attempting to load user");
+        // Try to get current user from API
+        const response = await apiService.getCurrentUser();
+        
+        if (response.error) {
+          console.error("Error loading user session:", response.error);
+          // Clear invalid token
+          if (response.status === 401) {
+            localStorage.removeItem('token');
+            toast({
+              title: "Session expired",
+              description: "Your login session has expired. Please log in again.",
+              variant: "destructive"
+            });
           }
+        } else if (response.data && response.data.user) {
+          setUser(response.data.user);
+          console.log("User loaded successfully:", response.data.user);
         } else {
-          // For web, try to get from token in sessionStorage
-          console.log("Web environment detected");
-          const token = sessionStorage.getItem('token');
-          
-          if (token) {
-            console.log("Token found, attempting to get current user");
-            try {
-              const response = await apiService.getCurrentUser();
-              if (response.data && response.data.user) {
-                console.log("User retrieved from API");
-                setUser(response.data.user);
-              } else {
-                console.log("No user data returned from API");
-              }
-            } catch (error) {
-              console.error('Error getting current user:', error);
-              console.log("No user in storage, trying token authentication");
-            }
-          } else {
-            console.log("No token found in sessionStorage");
-          }
+          // If no current user, user is not logged in
+          console.log("No active user session found");
         }
       } catch (error) {
-        console.error('Error loading user from storage:', error);
+        console.error('Error loading user session:', error);
       } finally {
         setLoading(false);
       }
     };
     
     loadUser();
-  }, []);
+  }, [toast]);
 
-  // Helper function to check if running in web environment
-  const isWeb = () => {
-    return typeof window !== 'undefined' && typeof document !== 'undefined';
+  // Login function - directly use the apiLogin from useAuthFunctions
+  const login = async (email: string, password: string) => {
+    console.log("Authenticating via API:", email);
+    return await apiLogin(email, password);
   };
 
-  // Combine auth functions with user state
+  // Register function - directly use the apiRegister from useAuthFunctions
+  const register = async (email: string, password: string, name: string) => {
+    return await apiRegister(email, password, name);
+  };
+
+  // Logout function - use the apiLogout from useAuthFunctions
+  const logout = () => {
+    apiLogout();
+  };
+
+  // Add certification
+  const addCertification = async (machineId: string) => {
+    if (!user) return false;
+    
+    try {
+      const response = await apiService.addCertification(user._id, machineId);
+      
+      if (response.data && response.data.success) {
+        // Update local user state with new certification
+        const updatedUser = {
+          ...user,
+          certifications: [...user.certifications, machineId]
+        };
+        
+        setUser(updatedUser);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error adding certification:', error);
+      return false;
+    }
+  };
+
+  // Update profile
+  const updateProfile = async (name: string, email: string) => {
+    if (!user) return false;
+    
+    try {
+      const response = await apiService.updateProfile(user._id, { name, email });
+      
+      if (response.data && response.data.success) {
+        const updatedUser = { ...user, name, email };
+        setUser(updatedUser);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      return false;
+    }
+  };
+
+  // Change password
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) return false;
+    
+    try {
+      const response = await apiService.updatePassword(user._id, currentPassword, newPassword);
+      
+      if (response.data) {
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  };
+
+  // Password reset functions
+  const requestPasswordReset = async (email: string) => {
+    try {
+      // Replace userDatabase call with apiService
+      const response = await apiService.getStorageItem(`resetCode_${email}`);
+      return response.data !== null;
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      return false;
+    }
+  };
+
+  const resetPassword = async (email: string, resetCode: string, newPassword: string) => {
+    try {
+      // This would need to be implemented in apiService
+      // For now, return false
+      return false;
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return false;
+    }
+  };
+
+  // Combine all functions into the auth context value
   const value: AuthContextType = {
     user,
-    loading,
-    ...authFunctions
+    loading: loading || isLoading,
+    login,
+    register,
+    logout,
+    addCertification,
+    updateProfile,
+    changePassword,
+    requestPasswordReset,
+    resetPassword,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

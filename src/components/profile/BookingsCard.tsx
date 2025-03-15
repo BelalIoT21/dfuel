@@ -36,16 +36,35 @@ const BookingsCard = () => {
           setBookings(userBookings || []);
         } catch (error) {
           console.error("Error loading bookings:", error);
+          loadBookingsFromStorage();
         }
       }
     };
+    
+    const loadBookingsFromStorage = () => {
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const userBookings = parsedUser.bookings || [];
+          console.log("User bookings loaded from localStorage:", userBookings);
+          setBookings(userBookings);
+        } catch (e) {
+          console.error("Error parsing user from localStorage:", e);
+          setBookings([]);
+        }
+      } else {
+        setBookings([]);
+      }
+    };
+    
     loadBookings();
   }, [user]);
   
-  const fetchMachineNames = async (machineNames: Record<string, string>) => {
-    const names: Record<string, string> = {};
+  const fetchMachineNames = async () => {
+    const names = {};
     if (bookings && bookings.length > 0) {
-      for (const booking of bookings as { machineId: string }[]) {
+      for (const booking of bookings) {
         try {
           const machineFromData = machines.find(m => m.id === booking.machineId);
           if (machineFromData) {
@@ -58,7 +77,7 @@ const BookingsCard = () => {
           }
         } catch (error) {
           console.error(`Error fetching machine ${booking.machineId}:`, error);
-          names[booking.machineId] = getMachineName(booking.machineId, names);
+          names[booking.machineId] = getMachineName(booking.machineId);
         }
       }
     }
@@ -67,7 +86,7 @@ const BookingsCard = () => {
   
   useEffect(() => {
     if (bookings.length > 0) {
-      fetchMachineNames(machineNames);
+      fetchMachineNames();
     }
   }, [bookings]);
   
@@ -114,12 +133,33 @@ const BookingsCard = () => {
       
       const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
       setBookings(updatedBookings);
-  
+      
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          parsedUser.bookings = updatedBookings;
+          localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
+        } catch (e) {
+          console.error("Error updating localStorage after deletion:", e);
+        }
+      }
     } catch (error) {
       console.error("Error deleting booking:", error);
       
       const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
       setBookings(updatedBookings);
+      
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          parsedUser.bookings = updatedBookings;
+          localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
+        } catch (e) {
+          console.error("Error updating localStorage after deletion error:", e);
+        }
+      }
       
       toast({
         title: "Booking Removed",
@@ -148,13 +188,32 @@ const BookingsCard = () => {
     } catch (error) {
       console.error("Error refreshing bookings:", error);
       
-  
+      const storedUser = localStorage.getItem('learnit_user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          const refreshedBookings = parsedUser.bookings || [];
+          setBookings(refreshedBookings);
+          
+          toast({
+            title: "Bookings Refreshed (Local)",
+            description: `Found ${refreshedBookings.length} bookings.`,
+          });
+        } catch (e) {
+          console.error("Error parsing user from localStorage:", e);
+          setBookings([]);
+        }
+      } else {
         setBookings([]);
       }
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
     }
   };
 
-  const getMachineName = (machineId, machineNames) => {
+  const getMachineName = (machineId) => {
     if (machineNames[machineId]) {
       return machineNames[machineId];
     }
