@@ -19,8 +19,12 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
-      // Use the full URL including the BASE_URL prefix
-      const url = `${BASE_URL}/${endpoint}`;
+      // Ensure endpoint doesn't start with a slash to avoid double slashes
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      
+      // Build the full URL properly
+      const url = `${BASE_URL}/${cleanEndpoint}`;
+      
       const token = localStorage.getItem('token');
       
       const headers: HeadersInit = {
@@ -37,7 +41,7 @@ class ApiService {
         credentials: 'include',
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
+      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
         options.body = JSON.stringify(data);
       }
       
@@ -59,6 +63,12 @@ class ApiService {
         console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
         
         if (response.status === 404) {
+          toast({
+            title: 'API Error',
+            description: `Endpoint not found: ${url}. Make sure your server is running on ${BASE_URL.split('/api')[0]}.`,
+            variant: 'destructive'
+          });
+          
           return {
             data: null,
             error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,

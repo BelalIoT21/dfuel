@@ -21,11 +21,21 @@ export const useAuthFunctions = (
       
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
-        toast({
-          title: "Login failed",
-          description: apiResponse.error,
-          variant: "destructive"
-        });
+        
+        // Check if it's a 404 error (endpoint not found)
+        if (apiResponse.status === 404) {
+          toast({
+            title: "Server connection error",
+            description: "Cannot connect to authentication server. Is your server running at http://localhost:4000?",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: apiResponse.error,
+            variant: "destructive"
+          });
+        }
         return false;
       }
       
@@ -36,7 +46,7 @@ export const useAuthFunctions = (
         if (apiResponse.data.token) {
           // Use sessionStorage for token, which is just for the current session
           // and doesn't persist with app refresh
-          sessionStorage.setItem('token', apiResponse.data.token);
+          localStorage.setItem('token', apiResponse.data.token);
         }
         
         setUser(userData as User);
