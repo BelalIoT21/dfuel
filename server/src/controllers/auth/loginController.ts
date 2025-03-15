@@ -59,8 +59,8 @@ export const loginUser = async (req: Request, res: Response) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Return user data in the format expected by the frontend
-    res.json({
+    // Return user data and token
+    res.status(200).json({
       user: {
         _id: user._id,
         name: user.name,

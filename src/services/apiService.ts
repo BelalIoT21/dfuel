@@ -39,7 +39,7 @@ class ApiService {
         options.body = JSON.stringify(data);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? 'with data' : '');
+      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
       const response = await fetch(url, options);
       
       // Handle empty responses gracefully
@@ -53,8 +53,17 @@ class ApiService {
       }
       
       if (!response.ok) {
-        const errorMessage = responseData?.message || 'API request failed';
+        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
         console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
+        
+        if (response.status === 404) {
+          return {
+            data: null,
+            error: `Endpoint not found: ${url}. The server might be unavailable or the API endpoint is incorrect.`,
+            status: response.status
+          };
+        }
+        
         throw new Error(errorMessage);
       }
       

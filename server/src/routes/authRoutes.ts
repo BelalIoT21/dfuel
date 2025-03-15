@@ -7,6 +7,12 @@ import { body } from 'express-validator';
 
 const router = express.Router();
 
+// Debug endpoint to test the auth routes
+router.get('/debug', (req, res) => {
+  console.log('Auth routes are working');
+  res.json({ message: 'Auth routes are working' });
+});
+
 // Register user
 router.post(
   '/register',
@@ -50,11 +56,5 @@ router.post(
 
 // Get user profile
 router.get('/me', protect, getUserProfile);
-
-// Debug endpoint to test the auth routes
-router.get('/debug', (req, res) => {
-  console.log('Auth routes are working');
-  res.json({ message: 'Auth routes are working' });
-});
 
 export default router;

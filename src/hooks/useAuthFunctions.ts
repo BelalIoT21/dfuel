@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +16,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
       
-      // Try API login
+      // API login
       const apiResponse = await apiService.login(email, password);
       
       if (apiResponse.error) {
@@ -57,7 +58,7 @@ export const useAuthFunctions = (
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -71,8 +72,18 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
       
-      // First try API registration
+      // API registration
       const apiResponse = await apiService.register({ email, password, name });
+      
+      if (apiResponse.error) {
+        console.error("API registration error:", apiResponse.error);
+        toast({
+          title: "Registration failed",
+          description: apiResponse.error,
+          variant: "destructive"
+        });
+        return false;
+      }
       
       if (apiResponse.data) {
         console.log("API registration successful:", apiResponse.data);
@@ -92,31 +103,17 @@ export const useAuthFunctions = (
         return true;
       }
       
-      // Fallback to local storage if API fails
-      console.log("API registration failed, trying localStorage");
-      const userData = await userDatabase.registerUser(email, password, name);
-      
-      if (userData) {
-        setUser(userData as User);
-        localStorage.setItem('learnit_user', JSON.stringify(userData));
-        toast({
-          title: "Registration successful",
-          description: `Welcome, ${name}!`
-        });
-        return true;
-      } else {
-        toast({
-          title: "Registration failed",
-          description: "Email already in use.",
-          variant: "destructive"
-        });
-        return false;
-      }
+      toast({
+        title: "Registration failed",
+        description: "The server returned an unexpected response. Please try again.",
+        variant: "destructive"
+      });
+      return false;
     } catch (error) {
       console.error("Error during registration:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred.",
+        description: "An unexpected error occurred. Server may be unavailable.",
         variant: "destructive"
       });
       return false;
