@@ -38,7 +38,8 @@ const Booking = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [bookingStatus, setBookingStatus] = useState<'pending' | 'form' | 'confirmed'>('form');
+  const [bookingStatus, setBookingStatus] = useState<'pending' | 'form' | 'confirmed' | 'error'>('form');
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   
@@ -98,9 +99,9 @@ const Booking = () => {
     
     try {
       setIsSubmitting(true);
+      setBookingError(null);
       console.log(`Processing booking for machine ${machine.id} on ${date} at ${time}`);
       
-      // Always use localStorage for demo purposes
       const success = await bookingDatabaseService.addBooking(user.id, machine.id, date, time);
       
       if (success) {
@@ -110,21 +111,23 @@ const Booking = () => {
           description: user.isAdmin ? "Booking was automatically approved" : "Your booking request has been received",
         });
       } else {
+        setBookingError("There was an error creating your booking. Please try again.");
         toast({
           title: "Booking Failed",
           description: "There was an error creating your booking. Please try again.",
           variant: "destructive"
         });
-        setBookingStatus('form');
+        setBookingStatus('error');
       }
     } catch (error) {
       console.error("Error creating booking:", error);
-      // Still show confirmation in development/demo mode
-      setBookingStatus('confirmed');
+      setBookingError(error instanceof Error ? error.message : "Unknown error occurred");
       toast({
-        title: "Demo Mode: Booking Confirmed",
-        description: "This is a demo. In production, this would connect to a real API.",
+        title: "Booking Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
       });
+      setBookingStatus('error');
     } finally {
       setIsSubmitting(false);
     }
@@ -136,6 +139,11 @@ const Booking = () => {
     const formattedDate = format(values.date, 'yyyy-MM-dd');
     setBookingStatus('pending');
     processBooking(formattedDate, values.time);
+  };
+  
+  const retryBooking = () => {
+    setBookingStatus('form');
+    setBookingError(null);
   };
   
   if (!machine) {
@@ -152,7 +160,7 @@ const Booking = () => {
   }
 
   const isAdmin = user?.isAdmin;
-  const dashboardLink = isAdmin ? "/admin" : "/home";
+  const dashboardLink = isAdmin ? "/admin/dashboard" : "/home";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
@@ -178,6 +186,19 @@ const Booking = () => {
                 <p className="text-gray-600">
                   Please wait while we confirm your booking request...
                 </p>
+              </div>
+            ) : bookingStatus === 'error' ? (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-red-100 text-red-600 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold mb-2 text-red-600">Booking Failed</h2>
+                <p className="text-gray-600 mb-4">
+                  {bookingError || "There was an error processing your booking. Please try again."}
+                </p>
+                <Button onClick={retryBooking}>Try Again</Button>
               </div>
             ) : bookingStatus === 'form' ? (
               <Form {...form}>

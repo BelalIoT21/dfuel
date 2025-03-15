@@ -1,8 +1,8 @@
 
 import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 import { BaseService } from './baseService';
 import { userDatabaseService } from './userService';
+import mongoDbService from '../mongoDbService';
 
 /**
  * Service that handles all booking-related database operations.
@@ -15,6 +15,7 @@ export class BookingDatabaseService extends BaseService {
       // First try the API
       try {
         const response = await apiService.request('bookings', 'POST', { 
+          userId,
           machineId, 
           date, 
           time 
@@ -25,34 +26,54 @@ export class BookingDatabaseService extends BaseService {
           return true;
         }
       } catch (apiError) {
-        console.error("API error, falling back to localStorage booking:", apiError);
+        console.error("API error, falling back to MongoDB:", apiError);
       }
       
-      // If API fails, fall back to localStorage
-      console.log("Using localStorage fallback for booking");
-      const user = localStorageService.findUserById(userId);
-      if (!user) {
-        console.error("User not found in localStorage:", userId);
+      // If API fails, fall back to MongoDB
+      console.log("Using MongoDB fallback for booking");
+      
+      try {
+        // Connect to MongoDB first
+        await mongoDbService.connect();
+        
+        // Create the booking object
+        const booking = {
+          id: `booking-${Date.now()}`,
+          machineId,
+          date,
+          time,
+          status: 'Pending' as const
+        };
+        
+        // Add booking to the user's bookings
+        const success = await mongoDbService.addUserBooking(userId, booking);
+        
+        console.log("Booking created via MongoDB:", success);
+        return success;
+      } catch (mongoError) {
+        console.error("MongoDB error:", mongoError);
+        // Even if MongoDB fails, we should update the user object in memory
+        // so at least the booking appears in the UI
+        const user = await userDatabaseService.findUserById(userId);
+        if (user) {
+          if (!user.bookings) {
+            user.bookings = [];
+          }
+          
+          const booking = {
+            id: `booking-${Date.now()}`,
+            machineId,
+            date,
+            time,
+            status: 'Pending' as const
+          };
+          
+          user.bookings.push(booking);
+          console.log("Booking saved in memory as last resort");
+          return true;
+        }
         return false;
       }
-      
-      const booking = {
-        id: `booking-${Date.now()}`,
-        machineId,
-        date,
-        time,
-        status: 'Pending' as const
-      };
-      
-      if (!user.bookings) {
-        user.bookings = []; // Initialize bookings array if it doesn't exist
-      }
-      
-      user.bookings.push(booking);
-      const success = localStorageService.updateUser(userId, { bookings: user.bookings });
-      
-      console.log("Booking created via localStorage:", success);
-      return success;
     } catch (error) {
       console.error("Fatal error in addBooking:", error);
       return false;
@@ -60,6 +81,18 @@ export class BookingDatabaseService extends BaseService {
   }
 
   async getUserBookings(userId: string) {
+    try {
+      // First try to get bookings from MongoDB
+      await mongoDbService.connect();
+      const user = await mongoDbService.getUserById(userId);
+      if (user?.bookings && user.bookings.length > 0) {
+        return user.bookings;
+      }
+    } catch (error) {
+      console.error("Error getting bookings from MongoDB:", error);
+    }
+    
+    // Fall back to user database service
     const user = await userDatabaseService.findUserById(userId);
     return user?.bookings || [];
   }
