@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { PasswordResetDialog } from './PasswordResetDialog';
 import { motion } from 'framer-motion';
+import { apiService } from '@/services/apiService';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -38,6 +39,28 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+
+  // Check server connection
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        console.log("Checking server health from login form...");
+        const response = await apiService.checkHealth();
+        if (response.data) {
+          console.log("Server health check from login form:", response.data);
+          setServerStatus('connected');
+        } else {
+          setServerStatus('disconnected');
+        }
+      } catch (error) {
+        console.error("Server connection error from login form:", error);
+        setServerStatus('disconnected');
+      }
+    };
+    
+    checkServer();
+  }, []);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -68,6 +91,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     
     if (!validateForm()) return;
     
+    if (serverStatus === 'disconnected') {
+      setFormError('Cannot login: Server is disconnected. Please try again later.');
+      return;
+    }
+    
     try {
       await onLogin(email, password);
       console.log("Login successful");
@@ -84,6 +112,19 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         <CardDescription>
           Enter your credentials to access your account
         </CardDescription>
+        {/* Server status indicator */}
+        <div className="mt-2 flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${
+            serverStatus === 'checking' ? 'bg-yellow-400' : 
+            serverStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'
+          }`}></div>
+          <span className="text-sm text-gray-600">
+            Server: {
+              serverStatus === 'checking' ? 'Checking connection...' : 
+              serverStatus === 'connected' ? 'Connected' : 'Disconnected'
+            }
+          </span>
+        </div>
       </CardHeader>
       <CardContent>
         {formError && (
@@ -154,7 +195,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={serverStatus === 'disconnected'}
+            >
               Sign In
             </Button>
           </motion.div>
