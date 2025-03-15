@@ -1,9 +1,9 @@
 
-import { MongoClient, ServerApiVersion, Db } from 'mongodb';
+import { isWeb } from '../../utils/platform';
 
 class MongoConnectionService {
-  private client: MongoClient | null = null;
-  private db: Db | null = null;
+  private client: any | null = null;
+  private db: any | null = null;
   private uri: string;
   
   constructor() {
@@ -11,9 +11,18 @@ class MongoConnectionService {
     this.uri = 'mongodb://localhost:27017/learnit';
   }
   
-  async connect(): Promise<Db | null> {
+  async connect(): Promise<any | null> {
+    // Skip MongoDB connection in browser environment
+    if (isWeb) {
+      console.log("Running in browser environment, skipping MongoDB connection");
+      return null;
+    }
+    
     try {
       if (!this.client) {
+        // Only import MongoDB in non-web environments
+        const { MongoClient, ServerApiVersion } = await import('mongodb');
+        
         this.client = new MongoClient(this.uri, {
           serverApi: {
             version: ServerApiVersion.v1,
@@ -26,22 +35,23 @@ class MongoConnectionService {
         console.log("Connected to MongoDB");
         
         this.db = this.client.db('learnit');
-
-        // No index creation here - moved to specific service files
       }
       return this.db;
     } catch (error) {
       console.error("Error connecting to MongoDB:", error);
-      // Fallback to localStorage if MongoDB connection fails
       return null;
     }
   }
   
   // Method to close the connection when the application shuts down
   async close(): Promise<void> {
-    if (this.client) {
-      await this.client.close();
-      console.log("Disconnected from MongoDB");
+    if (!isWeb && this.client) {
+      try {
+        await this.client.close();
+        console.log("Disconnected from MongoDB");
+      } catch (error) {
+        console.error("Error closing MongoDB connection:", error);
+      }
     }
   }
 }

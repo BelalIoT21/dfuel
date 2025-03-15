@@ -29,10 +29,10 @@ export class BookingDatabaseService extends BaseService {
         console.error("API error, falling back to memory store:", apiError);
       }
       
-      // Skip MongoDB in browser environment due to compatibility issues
+      // Always use in-memory fallback in web environment (no MongoDB)
       console.log("Using in-memory fallback for booking");
       
-      // Memory fallback - always use this in browser
+      // Memory fallback
       const user = await userDatabaseService.findUserById(userId);
       if (user) {
         if (!user.bookings) {
@@ -61,7 +61,7 @@ export class BookingDatabaseService extends BaseService {
   }
 
   async getUserBookings(userId: string) {
-    // For web environment, just use memory store
+    // For web environment, always use memory store
     const user = await userDatabaseService.findUserById(userId);
     return user?.bookings || [];
   }
