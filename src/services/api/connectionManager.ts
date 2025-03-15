@@ -1,6 +1,4 @@
 
-import { toast } from '@/components/ui/use-toast';
-
 interface ApiResponse<T> {
   data: T | null;
   error: string | null;
@@ -12,11 +10,23 @@ class ConnectionManager {
   private connectionStatus: 'connected' | 'disconnected' | 'checking' = 'checking';
   private maxRetries: number = 2;
   private isOffline: boolean = false;
+  private lastConnectionCheck: number = 0;
+  private connectionCheckInterval: number = 10000; // 10 seconds
 
   constructor() {
     // Use the API URL from environment or fall back to a default
     this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-    console.log('MongoDB connection URI:', import.meta.env.VITE_MONGODB_URI || 'mongodb://localhost:27017/learnit');
+    console.log('API URL:', this.baseUrl);
+    
+    // Start with offline mode if we can't connect at startup
+    this.isOffline = true;
+    
+    // Initial connection check
+    this.checkConnection().catch(() => {
+      console.log('Initial connection check failed, starting in offline mode');
+      this.isOffline = true;
+      this.connectionStatus = 'disconnected';
+    });
   }
 
   /**
@@ -24,24 +34,32 @@ class ConnectionManager {
    */
   public async checkConnection(): Promise<boolean> {
     try {
-      console.log(`Checking connection to: ${this.baseUrl}/health`);
+      // Only check if we haven't checked in the last interval
+      const now = Date.now();
+      if (now - this.lastConnectionCheck < this.connectionCheckInterval) {
+        return !this.isOffline;
+      }
+      
+      this.lastConnectionCheck = now;
       this.connectionStatus = 'checking';
+      console.log(`Checking connection to: ${this.baseUrl}/health`);
       
       const response = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        // Add a timeout to the fetch request
+        signal: AbortSignal.timeout(5000) // 5 second timeout
       });
       
       const data = await response.json();
       
       this.connectionStatus = response.ok ? 'connected' : 'disconnected';
-      console.log(`Connection check result: ${this.connectionStatus ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
-      console.log(`Health check response data:`, data);
-      
-      // Set offline mode if we can't connect
       this.isOffline = !response.ok;
+      
+      console.log(`Connection check result: ${response.ok ? 'Connected' : 'Disconnected'}, status: ${response.status}`);
+      console.log(`Health check response data:`, data);
       
       return response.ok;
     } catch (error) {
@@ -93,6 +111,9 @@ class ConnectionManager {
       const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}/${endpoint.startsWith('/') ? endpoint.substring(1) : endpoint}`;
       
       console.log(`API Request: ${options.method} ${url}`);
+      
+      // Add timeout to the request
+      options.signal = options.signal || AbortSignal.timeout(10000); // 10 second timeout
       
       // Make the request
       const response = await fetch(url, options);
