@@ -9,10 +9,6 @@ import { User } from '../models/User';
 export const healthCheck = async (req: Request, res: Response) => {
   console.log('Health check request received');
   
-  // Set CORS headers explicitly for health checks
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
   const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   
   // Get count of users in the database for debugging
@@ -43,10 +39,5 @@ export const healthCheck = async (req: Request, res: Response) => {
 // @access  Public
 export const ping = (req: Request, res: Response) => {
   console.log('Ping request received from:', req.ip);
-  
-  // Set CORS headers explicitly for ping endpoint
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
   res.status(200).json({ pong: true, time: new Date().toISOString() });
 };

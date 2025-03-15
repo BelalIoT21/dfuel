@@ -74,7 +74,7 @@ export const seedDatabase = async () => {
     console.log('Creating machines...');
     const machines = [
       {
-        name: 'Laser Cutter',
+        name: 'Epilog Laser Cutter',
         type: 'Laser Cutter',
         description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.',
         status: 'Available',
@@ -84,7 +84,7 @@ export const seedDatabase = async () => {
         specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather'
       },
       {
-        name: 'Ultimaker',
+        name: 'Ultimaker S5',
         type: '3D Printer',
         description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
         status: 'Available',
@@ -94,7 +94,7 @@ export const seedDatabase = async () => {
         specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU'
       },
       {
-        name: 'Safety Course',
+        name: 'Machine Safety Course',
         type: 'Safety Course',
         description: 'Required safety training for all makerspace users.',
         status: 'Available',
@@ -103,7 +103,7 @@ export const seedDatabase = async () => {
         imageUrl: '/machines/safety.jpg'
       },
       {
-        name: 'CNC Mill',
+        name: 'HAAS CNC Mill',
         type: 'CNC Machine',
         description: 'Industrial CNC milling machine for precision metalworking.',
         status: 'Available',
@@ -113,7 +113,7 @@ export const seedDatabase = async () => {
         specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
       },
       {
-        name: 'X1 E Carbon 3D Printer',
+        name: 'Bambu Lab X1 Carbon',
         type: '3D Printer',
         description: 'High-speed multi-material 3D printer with exceptional print quality.',
         status: 'Available',
@@ -144,9 +144,9 @@ export const seedDatabase = async () => {
         specifications: 'Cutting width: 24", Materials: Vinyl, Paper, Heat Transfer Vinyl'
       },
       {
-        name: 'Safety Cabinet',
+        name: 'Woodworking Tools',
         type: 'Workshop',
-        description: 'Full suite of safety equipment and protective gear.',
+        description: 'Full suite of woodworking hand tools and power tools.',
         status: 'Available',
         requiresCertification: true,
         difficulty: 'Intermediate',
@@ -157,8 +157,8 @@ export const seedDatabase = async () => {
     const createdMachines = await Machine.insertMany(machines);
     console.log(`Created ${createdMachines.length} machines successfully`);
 
-    // Map machine IDs to their IDs for reference (using a properly typed structure)
-    const machineMap: Record<string, string> = {};
+    // Map machine names to their IDs for reference
+    const machineMap = {};
     createdMachines.forEach(machine => {
       machineMap[machine.name] = machine._id.toString();
     });
@@ -171,19 +171,19 @@ export const seedDatabase = async () => {
     // Add specific certifications to regular user
     console.log('Adding certifications to regular user...');
     regularUser.certifications = [
-      machineMap['Laser Cutter'],
-      machineMap['Ultimaker'],
-      machineMap['Safety Course'],
-      machineMap['X1 E Carbon 3D Printer']
+      machineMap['Epilog Laser Cutter'],
+      machineMap['Ultimaker S5'],
+      machineMap['Machine Safety Course'],
+      machineMap['Bambu Lab X1 Carbon']
     ];
     await regularUser.save();
 
     // Add different certifications to test user
     console.log('Adding certifications to test user...');
     testUser.certifications = [
-      machineMap['Safety Course'],
+      machineMap['Machine Safety Course'],
       machineMap['Soldering Station'],
-      machineMap['Safety Cabinet']
+      machineMap['Woodworking Tools']
     ];
     await testUser.save();
 
@@ -202,7 +202,7 @@ export const seedDatabase = async () => {
     const bookings = [
       {
         user: regularUser._id,
-        machine: machineMap['Laser Cutter'],
+        machine: machineMap['Epilog Laser Cutter'],
         date: today,
         time: '10:00 - 12:00',
         status: 'Approved',
@@ -210,7 +210,7 @@ export const seedDatabase = async () => {
       },
       {
         user: regularUser._id,
-        machine: machineMap['Ultimaker'],
+        machine: machineMap['Ultimaker S5'],
         date: tomorrow,
         time: '14:00 - 16:00',
         status: 'Pending',
@@ -226,7 +226,7 @@ export const seedDatabase = async () => {
       },
       {
         user: testUser._id,
-        machine: machineMap['X1 E Carbon 3D Printer'],
+        machine: machineMap['Bambu Lab X1 Carbon'],
         date: nextWeek,
         time: '09:00 - 11:00',
         status: 'Pending',

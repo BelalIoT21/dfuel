@@ -7,7 +7,6 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import mongoDbService from '@/services/mongoDbService';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,69 +20,39 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
+        const response = await fetch('http://localhost:4000/api/health');
         
-        // Try direct fetch first with a timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        try {
-          const response = await fetch('http://localhost:4000/api/health', {
-            signal: controller.signal
-          });
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Server health check:", data);
+          setServerStatus('connected');
           
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Server health check:", data);
-            setServerStatus('connected');
-            
-            // Set MongoDB user count if available from health endpoint
-            if (data.mongodb && typeof data.mongodb.userCount === 'number') {
-              setDbUserCount(data.mongodb.userCount);
-              console.log("MongoDB user count from health endpoint:", data.mongodb.userCount);
-            } else {
-              // If not available from health endpoint, get it from MongoDB service
-              const count = await mongoDbService.getUserCount();
-              setDbUserCount(count);
-              console.log("MongoDB user count from service:", count);
-            }
-            
-            toast({
-              title: 'Server Connected',
-              description: 'Successfully connected to the backend server',
-            });
-            
-            return; // Exit early if successful
+          // Set MongoDB user count if available
+          if (data.mongodb && typeof data.mongodb.userCount === 'number') {
+            setDbUserCount(data.mongodb.userCount);
           }
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          console.error("Direct fetch error:", fetchError);
+          
+          toast({
+            title: 'Server Connected',
+            description: 'Successfully connected to the backend server',
+          });
+        } else {
+          throw new Error(`Server returned ${response.status}`);
         }
-        
-        // If direct fetch fails, throw an error to try the API service
-        throw new Error("Direct fetch failed");
-        
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
-        
         toast({
           title: 'Server Connection Failed',
-          description: 'Using fallback data. You can still explore the app.',
+          description: 'Could not connect to the backend server at localhost:4000. Please ensure the server is running.',
           variant: 'destructive'
         });
         
         // Try API service as fallback
         try {
-          // Get user count from the service (which has fallbacks built in)
-          const count = await mongoDbService.getUserCount();
-          setDbUserCount(count);
-          console.log("MongoDB user count from service (fallback):", count);
-          
-          // If we got a count, we can say we're connected via fallback
-          if (count > 0) {
-            setServerStatus('connected via fallback');
+          const apiResponse = await apiService.ping();
+          if (apiResponse.data && apiResponse.data.pong) {
+            setServerStatus('connected via API');
           }
         } catch (apiError) {
           console.error("API service connection also failed:", apiError);
