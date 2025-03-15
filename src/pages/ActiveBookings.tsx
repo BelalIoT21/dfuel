@@ -13,13 +13,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { apiService } from '@/services/apiService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { bookingService } from '@/services/bookingService';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const ActiveBookings = () => {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ const ActiveBookings = () => {
   const [filter, setFilter] = useState('all');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   
   // Redirect if not admin
@@ -54,7 +57,7 @@ const ActiveBookings = () => {
         
         // Fall back to direct API call
         const response = await apiService.getAllBookings();
-        if (response.data) {
+        if (response && response.data) {
           console.log('Received bookings from API:', response.data.length);
           setBookings(response.data);
         } else {
@@ -121,6 +124,9 @@ const ActiveBookings = () => {
           description: `You have ${newStatus.toLowerCase()} the booking`,
           variant: newStatus === 'Approved' ? 'default' : 'destructive',
         });
+        
+        // Close dialog if open
+        setIsDialogOpen(false);
       } else {
         throw new Error("Failed to update booking status");
       }
@@ -132,6 +138,12 @@ const ActiveBookings = () => {
         variant: "destructive",
       });
     }
+  };
+  
+  // Handle view details
+  const handleViewDetails = (booking: any) => {
+    setSelectedBooking(booking);
+    setIsDialogOpen(true);
   };
 
   // Render mobile card view for small screens
@@ -177,7 +189,13 @@ const ActiveBookings = () => {
                   </Button>
                 </div>
               ) : (
-                <Button size="sm" variant="outline" className="border-purple-200 w-full">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="border-purple-200 w-full"
+                  onClick={() => handleViewDetails(booking)}
+                >
+                  <Info className="h-4 w-4 mr-2" />
                   View Details
                 </Button>
               )}
@@ -248,7 +266,13 @@ const ActiveBookings = () => {
                       </Button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="outline" className="border-purple-200">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="border-purple-200"
+                      onClick={() => handleViewDetails(booking)}
+                    >
+                      <Info className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
                   )}
@@ -316,6 +340,74 @@ const ActiveBookings = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Booking Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          {selectedBooking && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Booking Details</DialogTitle>
+                <DialogDescription>
+                  Detailed information about this booking
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <h3 className="font-semibold mb-2">Machine</h3>
+                <p className="text-gray-700 mb-1">{selectedBooking.machineName || 'Unknown Machine'}</p>
+                <p className="text-gray-500 text-sm mb-4">Type: {selectedBooking.machineType || 'N/A'}</p>
+                
+                <h3 className="font-semibold mb-2">User</h3>
+                <p className="text-gray-700">{selectedBooking.userName || 'Unknown User'}</p>
+                <p className="text-gray-500 text-sm mb-4">{selectedBooking.userEmail || 'No email'}</p>
+                
+                <h3 className="font-semibold mb-2">Date & Time</h3>
+                <p className="text-gray-700 mb-4">
+                  {selectedBooking.date ? new Date(selectedBooking.date).toLocaleDateString() : 'Unknown Date'} at {selectedBooking.time || 'Unknown Time'}
+                </p>
+                
+                <h3 className="font-semibold mb-2">Status</h3>
+                <Badge className={getStatusBadgeClass(selectedBooking.status)}>
+                  {selectedBooking.status || 'Unknown'}
+                </Badge>
+                
+                <div className="text-gray-500 text-xs mt-6">
+                  <p>Booking ID: {selectedBooking._id || selectedBooking.id || 'Unknown'}</p>
+                  <p>Created: {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleString() : 'Unknown'}</p>
+                  <p>Last Updated: {selectedBooking.updatedAt ? new Date(selectedBooking.updatedAt).toLocaleString() : 'Unknown'}</p>
+                </div>
+              </div>
+              <DialogFooter>
+                {selectedBooking.status === 'Pending' && (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleStatusChange(selectedBooking, 'Rejected')}
+                      className="border-red-200 hover:bg-red-50 text-red-600"
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      onClick={() => handleStatusChange(selectedBooking, 'Approved')}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
+                {selectedBooking.status === 'Approved' && (
+                  <Button 
+                    onClick={() => handleStatusChange(selectedBooking, 'Completed')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Mark as Completed
+                  </Button>
+                )}
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

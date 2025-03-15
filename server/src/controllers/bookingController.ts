@@ -215,11 +215,13 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       }
       
       // Add the booked time slot to the machine
+      console.log(`Adding time slot ${timeSlot} to machine ${machine.name} (${machine._id})`);
       await machine.addBookedTimeSlot(timeSlot);
     }
     
     // If status is changing from Approved to something else, remove the booked time slot
     if (booking.status === 'Approved' && status !== 'Approved') {
+      console.log(`Removing time slot ${timeSlot} from machine ${machine.name} (${machine._id})`);
       await machine.removeBookedTimeSlot(timeSlot);
     }
     
@@ -293,7 +295,7 @@ export const getAllBookings = async (req: Request, res: Response) => {
     const bookings = await Booking.find({})
       .populate({
         path: 'machine',
-        select: 'name type'
+        select: 'name type status'
       })
       .populate({
         path: 'user',
@@ -310,11 +312,11 @@ export const getAllBookings = async (req: Request, res: Response) => {
       return {
         _id: booking._id,
         machineId: booking.machine,
-        machineName: machineDoc && machineDoc.name ? machineDoc.name : 'Unknown Machine',
-        machineType: machineDoc && machineDoc.type ? machineDoc.type : 'Unknown Type',
+        machineName: machineDoc?.name || `Unknown Machine (${booking.machine})`,
+        machineType: machineDoc?.type || 'Unknown Type',
         userId: booking.user,
-        userName: userDoc && userDoc.name ? userDoc.name : 'Unknown User',
-        userEmail: userDoc && userDoc.email ? userDoc.email : 'Unknown Email',
+        userName: userDoc?.name || 'Unknown User',
+        userEmail: userDoc?.email || 'Unknown Email',
         date: booking.date,
         time: booking.time,
         status: booking.status,

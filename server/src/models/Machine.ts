@@ -9,10 +9,10 @@ export interface IMachine extends mongoose.Document {
   requiresCertification: boolean;
   maintenanceNote?: string;
   bookedTimeSlots: string[]; // Format: YYYY-MM-DD-HH:MM
-  difficulty?: string; // Add the missing difficulty property
-  imageUrl?: string; // Add the missing imageUrl property
+  difficulty?: string;
+  imageUrl?: string;
   
-  // Add a method to add and remove booked time slots
+  // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
   removeBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
 }
@@ -65,8 +65,10 @@ machineSchema.methods.addBookedTimeSlot = async function(dateTimeSlot: string): 
     if (!this.bookedTimeSlots.includes(dateTimeSlot)) {
       this.bookedTimeSlots.push(dateTimeSlot);
       await this.save();
+      console.log(`Added time slot ${dateTimeSlot} to machine ${this.name}`);
       return true;
     }
+    console.log(`Time slot ${dateTimeSlot} already booked for machine ${this.name}`);
     return false;
   } catch (error) {
     console.error('Error adding booked time slot:', error);
@@ -80,8 +82,10 @@ machineSchema.methods.removeBookedTimeSlot = async function(dateTimeSlot: string
     if (index !== -1) {
       this.bookedTimeSlots.splice(index, 1);
       await this.save();
+      console.log(`Removed time slot ${dateTimeSlot} from machine ${this.name}`);
       return true;
     }
+    console.log(`Time slot ${dateTimeSlot} not found for machine ${this.name}`);
     return false;
   } catch (error) {
     console.error('Error removing booked time slot:', error);

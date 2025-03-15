@@ -1,3 +1,4 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoConnectionService from './mongodb/connectionService';
@@ -122,6 +123,11 @@ class MongoDbService {
   async getMachines(): Promise<MongoMachine[]> {
     if (isWeb) return [];
     return mongoMachineService.getMachines();
+  }
+  
+  async getMachineById(machineId: string): Promise<MongoMachine | null> {
+    if (isWeb) return null;
+    return mongoMachineService.getMachineById(machineId);
   }
   
   async machineExists(machineId: string): Promise<boolean> {

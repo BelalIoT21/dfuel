@@ -8,6 +8,8 @@ export class MachineService {
   // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
+      console.log(`Updating machine status: ID=${machineId}, status=${status}`);
+      
       // Check if it's a safety cabinet - always available, no status updates needed
       const machines = await this.getMachines();
       const isSafetyCabinet = machines.find(m => m.id === machineId && m.type === 'Safety Cabinet');
@@ -15,7 +17,10 @@ export class MachineService {
       
       // Try to update in MongoDB first
       const success = await mongoDbService.updateMachineStatus(machineId, status, note);
-      if (success) return true;
+      if (success) {
+        console.log(`Successfully updated machine status in MongoDB: ${machineId} → ${status}`);
+        return true;
+      }
     } catch (error) {
       console.error("Error updating machine status in MongoDB:", error);
       // Continue with localStorage if MongoDB fails
@@ -70,7 +75,33 @@ export class MachineService {
   async getMachineById(machineId: string): Promise<any | null> {
     try {
       console.log(`Getting machine by ID: ${machineId}`);
-      const allMachines = await this.getMachines();
+      
+      // Try MongoDB first
+      if (!isWeb) {
+        try {
+          const mongoMachine = await mongoDbService.getMachineById(machineId);
+          if (mongoMachine) {
+            console.log(`Found machine in MongoDB: ${mongoMachine.name}`);
+            // Get the latest status
+            const status = await this.getMachineStatus(machineId);
+            return {
+              id: mongoMachine._id,
+              name: mongoMachine.name,
+              type: mongoMachine.type === 'Safety Cabinet' ? 'Equipment' : mongoMachine.type,
+              description: mongoMachine.description,
+              status: status || mongoMachine.status || 'available',
+              requiresCertification: mongoMachine.requiresCertification,
+              difficulty: mongoMachine.difficulty,
+              imageUrl: mongoMachine.imageUrl
+            };
+          }
+        } catch (mongoError) {
+          console.error("Failed to get machine from MongoDB:", mongoError);
+        }
+      }
+      
+      // Fallback to local data
+      const allMachines = machines;
       const machine = allMachines.find(m => m.id === machineId);
       
       if (machine) {
@@ -78,7 +109,8 @@ export class MachineService {
         const status = await this.getMachineStatus(machineId);
         return {
           ...machine,
-          status: status || 'available'
+          status: status || 'available',
+          type: machine.type === 'Safety Cabinet' ? 'Equipment' : 'Machine'
         };
       }
       
@@ -98,6 +130,7 @@ export class MachineService {
         try {
           const mongoMachines = await mongoDbService.getMachines();
           if (mongoMachines && mongoMachines.length > 0) {
+            console.log(`Retrieved ${mongoMachines.length} machines from MongoDB`);
             return mongoMachines.map(machine => ({
               id: machine._id.toString(),
               name: machine.name,
@@ -145,7 +178,8 @@ export class MachineService {
             status: 'Available',
             requiresCertification: !!machine.requiresCertification,
             difficulty: machine.difficulty || 'Beginner',
-            imageUrl: machine.imageUrl || '/placeholder.svg'
+            imageUrl: machine.imageUrl || '/placeholder.svg',
+            bookedTimeSlots: []
           });
         }
       }

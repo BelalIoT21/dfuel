@@ -63,13 +63,15 @@ class MongoMachineService {
     }
   }
   
-  // New methods for machine document management
+  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) return [];
     
     try {
-      return await this.machinesCollection.find().toArray();
+      const machines = await this.machinesCollection.find().toArray();
+      console.log(`Retrieved ${machines.length} machines from MongoDB`);
+      return machines;
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
       return [];
@@ -81,9 +83,23 @@ class MongoMachineService {
     if (!this.machinesCollection) return null;
     
     try {
-      return await this.machinesCollection.findOne({ _id: machineId });
+      const machine = await this.machinesCollection.findOne({ _id: machineId });
+      console.log(`Retrieved machine from MongoDB: ${machine?.name || 'not found'}`);
+      return machine;
     } catch (error) {
       console.error("Error getting machine by ID from MongoDB:", error);
+      return null;
+    }
+  }
+  
+  async getMachineByName(machineName: string): Promise<MongoMachine | null> {
+    await this.initCollections();
+    if (!this.machinesCollection) return null;
+    
+    try {
+      return await this.machinesCollection.findOne({ name: machineName });
+    } catch (error) {
+      console.error("Error getting machine by name from MongoDB:", error);
       return null;
     }
   }
@@ -110,12 +126,17 @@ class MongoMachineService {
       const exists = await this.machineExists(machine._id);
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB`);
-        return true;
+        // Update the machine to ensure it has all properties
+        const result = await this.machinesCollection.updateOne(
+          { _id: machine._id },
+          { $set: machine }
+        );
+        return result.acknowledged;
       }
       
       // Add the machine to the collection
       const result = await this.machinesCollection.insertOne(machine);
-      console.log(`Machine with ID ${machine._id} added to MongoDB`);
+      console.log(`Machine with ID ${machine._id} added to MongoDB: ${machine.name}`);
       return result.acknowledged;
     } catch (error) {
       console.error("Error adding machine to MongoDB:", error);
