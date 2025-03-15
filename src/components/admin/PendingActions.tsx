@@ -1,17 +1,15 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { AlertTriangle, Clock, CheckCircle, XCircle, Info } from "lucide-react";
+import { AlertTriangle, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiService } from "@/services/apiService";
 import { toast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Fetch pending bookings
   useEffect(() => {
@@ -31,10 +29,6 @@ export const PendingActions = () => {
     };
 
     fetchPendingBookings();
-    
-    // Refresh every 30 seconds
-    const intervalId = setInterval(fetchPendingBookings, 30000);
-    return () => clearInterval(intervalId);
   }, []);
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
@@ -62,70 +56,6 @@ export const PendingActions = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const BookingDetailsDialog = ({ booking }: { booking: any }) => {
-    if (!booking) return null;
-    
-    return (
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Booking Details</DialogTitle>
-          <DialogDescription>
-            Review the booking details before making a decision
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">User</p>
-              <p className="font-medium">{booking.user?.name || 'Unknown'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Machine</p>
-              <p className="font-medium">{booking.machine?.name || 'Unknown'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Date</p>
-              <p>{booking.date}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Time</p>
-              <p>{booking.time}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge className="bg-yellow-500">
-                <Clock className="h-3 w-3 mr-1" />
-                {booking.status}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Requested</p>
-              <p>{new Date(booking.createdAt || Date.now()).toLocaleDateString()}</p>
-            </div>
-          </div>
-          
-          <div className="flex justify-between mt-6">
-            <Button 
-              variant="destructive"
-              className="flex items-center gap-1"
-              onClick={() => handleStatusChange(booking._id, 'Rejected')}
-            >
-              <XCircle size={16} />
-              Reject
-            </Button>
-            <Button 
-              className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
-              onClick={() => handleStatusChange(booking._id, 'Approved')}
-            >
-              <CheckCircle size={16} />
-              Approve
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    );
   };
 
   return (
@@ -159,21 +89,6 @@ export const PendingActions = () => {
                   </Badge>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="flex items-center gap-1"
-                        onClick={() => setSelectedBooking(booking)}
-                      >
-                        <Info size={14} />
-                        View Details
-                      </Button>
-                    </DialogTrigger>
-                    <BookingDetailsDialog booking={booking} />
-                  </Dialog>
-                  
                   <Button 
                     size="sm" 
                     className="bg-green-500 hover:bg-green-600 flex items-center gap-1"
