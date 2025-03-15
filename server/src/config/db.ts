@@ -65,7 +65,8 @@ export const checkDbConnection = () => {
   console.log(`MongoDB connection state: ${state} (${mongoose.connection.readyState})`);
   return {
     connected: mongoose.connection.readyState === 1,
-    state: state
+    state: state,
+    host: mongoose.connection.host || 'not connected'
   };
 };
 

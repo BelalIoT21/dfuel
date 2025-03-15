@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { apiService } from '@/services/apiService';
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
+  serverStatus?: 'connecting' | 'connected' | 'disconnected';
 }
 
 const formAnimation = {
@@ -30,7 +32,7 @@ const itemAnimation = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, onToggleMode, serverStatus = 'connecting' }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -38,25 +40,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        const response = await apiService.checkHealth();
-        if (response.data) {
-          setServerStatus('connected');
-        } else {
-          setServerStatus('disconnected');
-        }
-      } catch (error) {
-        console.error("Server connection error:", error);
-        setServerStatus('disconnected');
-      }
-    };
-    
-    checkServer();
-  }, []);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -88,7 +71,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     if (!validateForm()) return;
     
     if (serverStatus === 'disconnected') {
-      setFormError('Cannot connect to server. Please ensure the backend server is running.');
+      setFormError('Cannot connect to server. Please ensure the backend server is running and MongoDB is connected.');
       return;
     }
     
@@ -109,9 +92,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           Enter your credentials to access your account
         </CardDescription>
         {serverStatus !== 'connected' && (
-          <div className="flex items-center text-amber-500 text-sm mt-2 bg-amber-50 p-2 rounded-md">
+          <div className={`flex items-center text-sm mt-2 p-2 rounded-md ${
+            serverStatus === 'connecting' ? 'text-amber-500 bg-amber-50' : 'text-red-500 bg-red-50'
+          }`}>
             <WifiOff className="h-4 w-4 mr-2" />
-            {serverStatus === 'connecting' ? 'Checking server connection...' : 'Server disconnected. Check if backend is running.'}
+            {serverStatus === 'connecting' ? 'Checking server connection...' : 'Server disconnected. Check if backend is running with MongoDB connected.'}
           </div>
         )}
       </CardHeader>

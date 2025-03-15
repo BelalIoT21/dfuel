@@ -30,13 +30,33 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: '*', // Allow all origins for testing
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Root health check endpoint (quick response, no DB check)
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Server is running'
+  });
+});
+
+// Health check endpoint (root level)
+app.get('/health', (req, res) => {
+  const dbStatus = checkDbConnection();
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    database: dbStatus
+  });
+});
 
 // Connect to MongoDB
 const startServer = async () => {
@@ -62,16 +82,6 @@ const startServer = async () => {
     app.use('/api/admin', adminRoutes);
     app.use('/api/health', healthRoutes);
 
-    // Health check endpoint (root level)
-    app.get('/health', (req, res) => {
-      const dbStatus = checkDbConnection();
-      res.status(200).json({ 
-        status: 'ok', 
-        message: 'Server is running',
-        database: dbStatus
-      });
-    });
-
     // Error handling middleware
     app.use(notFound);
     app.use(errorHandler);
@@ -86,38 +96,6 @@ const startServer = async () => {
     process.exit(1);
   }
 };
-
-// Log all API routes for debugging
-console.log('Registered API routes:');
-// Define explicit types for middleware and handler
-app._router.stack.forEach((middleware: {
-  route?: { path: string },
-  name?: string,
-  handle?: { 
-    stack: Array<{
-      route?: { 
-        path: string, 
-        stack: Array<{ method: string }>
-      }
-    }>
-  },
-  regexp?: { toString: () => string }
-}) => {
-  if (middleware.route) {
-    console.log(`Route: ${middleware.route.path}`);
-  } else if (middleware.name === 'router') {
-    middleware.handle?.stack.forEach((handler: {
-      route?: { 
-        path: string, 
-        stack: Array<{ method: string }>
-      }
-    }) => {
-      if (handler.route) {
-        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp?.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
-      }
-    });
-  }
-});
 
 // Start the server
 startServer();

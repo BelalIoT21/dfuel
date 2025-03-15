@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -19,27 +19,66 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
+        
+        // Try the simple / endpoint first (no DB check)
+        try {
+          const response = await fetch('http://localhost:4000/');
+          if (response.ok) {
+            console.log("Basic server connection OK");
+          } else {
+            throw new Error('Server not responding');
+          }
+        } catch (error) {
+          console.error("Basic server connection failed:", error);
+          setServerStatus('disconnected');
+          toast({
+            title: 'Server Connection Failed',
+            description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        // Then check the DB connection via the health endpoint
         const response = await apiService.checkHealth();
         if (response.data) {
           console.log("Server health check:", response.data);
-          setServerStatus('connected');
-          toast({
-            title: 'Server Connected',
-            description: 'Successfully connected to the backend server',
-          });
+          
+          // Check if database is connected
+          if (response.data.database && response.data.database.connected) {
+            setServerStatus('connected');
+            toast({
+              title: 'Server Connected',
+              description: `Successfully connected to the backend server with MongoDB at ${response.data.database.host}`,
+            });
+          } else {
+            setServerStatus('disconnected');
+            toast({
+              title: 'Database Connection Issue',
+              description: 'Backend server is running but the database connection is not established.',
+              variant: 'destructive'
+            });
+          }
+        } else {
+          throw new Error('Invalid health check response');
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server. Please try again later.',
+          description: 'Could not connect to the backend server. Please ensure the server is running on port 4000.',
           variant: 'destructive'
         });
       }
     };
     
     checkServer();
+    
+    // Set up interval to periodically check server connection
+    const intervalId = setInterval(checkServer, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(intervalId); // Clean up on unmount
   }, []);
 
   // Redirect if user is already logged in
@@ -88,11 +127,17 @@ const Index = () => {
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
-              Server status: {serverStatus}
-            </div>
-          )}
+          <div className={`mt-2 text-sm ${
+            serverStatus === 'connected' ? 'text-green-600' : 
+            serverStatus === 'connecting' ? 'text-amber-600' : 'text-red-600'
+          }`}>
+            Server status: {serverStatus}
+            {serverStatus === 'disconnected' && (
+              <p className="text-xs mt-1">
+                Make sure the backend server is running on port 4000 and MongoDB is connected
+              </p>
+            )}
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -106,7 +151,8 @@ const Index = () => {
             >
               <LoginForm 
                 onLogin={handleLogin} 
-                onToggleMode={toggleMode} 
+                onToggleMode={toggleMode}
+                serverStatus={serverStatus}
               />
             </motion.div>
           ) : (
