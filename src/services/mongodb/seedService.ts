@@ -49,7 +49,7 @@ class MongoSeedService {
       const users: MongoUser[] = [
         {
           id: '1',
-          name: 'Admin User',
+          name: 'Administrator',
           email: 'admin@learnit.com',
           password: adminPassword,
           isAdmin: true,

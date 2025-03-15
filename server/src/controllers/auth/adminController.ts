@@ -17,7 +17,7 @@ export const ensureAdminUser = async () => {
       
       // Create new admin user
       const newAdmin = new User({
-        name: 'Admin User',
+        name: 'Administrator',
         email: adminEmail,
         password: adminPassword, // This will be hashed by the pre-save hook
         isAdmin: true,

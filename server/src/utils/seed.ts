@@ -38,7 +38,7 @@ export const seedDatabase = async () => {
 
     console.log('Creating admin user...');
     const adminUser = await User.create({
-      name: 'Admin',
+      name: 'Administrator',
       email: adminEmail,
       password: adminPassword,
       isAdmin: true,
