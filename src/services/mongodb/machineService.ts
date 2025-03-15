@@ -1,4 +1,3 @@
-
 import { Collection, ObjectId } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -76,7 +75,6 @@ class MongoMachineService {
     }
   }
   
-  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) return [];
@@ -160,20 +158,20 @@ class MongoMachineService {
     
     try {
       // Generate an ObjectId if _id is not provided
-      const machineToAdd = { ...machine };
+      const machineToAdd: any = { ...machine };
       if (!machineToAdd._id) {
         machineToAdd._id = new ObjectId().toString();
       }
       
       console.log(`Adding machine to MongoDB: ${machineToAdd.name}`);
-      const result = await this.machinesCollection.insertOne(machineToAdd as any);
+      const result = await this.machinesCollection.insertOne(machineToAdd);
       
       if (result.acknowledged) {
         console.log(`Successfully added machine with ID: ${result.insertedId}`);
         return {
           ...machineToAdd,
           _id: result.insertedId.toString()
-        } as MongoMachine;
+        };
       }
       return null;
     } catch (error) {
@@ -237,7 +235,6 @@ class MongoMachineService {
     }
   }
   
-  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) return;

@@ -57,7 +57,7 @@ export const createMachine = async (req: Request, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
     
-    console.log('Received machine data:', req.body);
+    console.log('Creating machine with data:', req.body);
     
     const { 
       name, 
@@ -73,6 +73,12 @@ export const createMachine = async (req: Request, res: Response) => {
       linkedCourseId,
       linkedQuizId
     } = req.body;
+
+    // Ensure required fields are present
+    if (!name || !type || !description) {
+      console.log('Missing required fields');
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
 
     const machine = new Machine({
       name,
