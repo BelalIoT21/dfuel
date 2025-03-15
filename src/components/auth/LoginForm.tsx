@@ -81,22 +81,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      
-      // Provide more helpful error messages
-      let errorMessage = 'Authentication failed. Please try again.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('No users in database')) {
-          errorMessage = 'No users found in database. Please use admin@learnit.com with password admin123.';
-          // Auto-fill the admin credentials
-          setEmail('admin@learnit.com');
-          setPassword('admin123');
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      setFormError(errorMessage);
+      setFormError(
+        error instanceof Error 
+          ? error.message 
+          : 'Authentication failed. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }

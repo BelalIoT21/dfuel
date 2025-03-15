@@ -18,7 +18,6 @@ export const useAuthFunctions = (
       console.log("Login attempt for:", email);
       
       // First try API login
-      console.log("Attempting API login...");
       const apiResponse = await apiService.login(email, password);
       
       if (apiResponse.data) {
@@ -27,9 +26,6 @@ export const useAuthFunctions = (
         // Save the token for future API requests
         if (apiResponse.data.token) {
           localStorage.setItem('token', apiResponse.data.token);
-          console.log("Token saved to localStorage");
-        } else {
-          console.warn("No token received from API");
         }
         
         setUser(userData as User);
@@ -41,24 +37,6 @@ export const useAuthFunctions = (
         return true;
       }
       
-      // Check for specific API errors
-      if (apiResponse.error || apiResponse.status >= 400) {
-        console.error("API login error:", apiResponse.error, "Status:", apiResponse.status);
-        
-        // Handle specific error codes
-        if (apiResponse.status === 401) {
-          if (apiResponse.error?.includes('No users in database')) {
-            throw new Error('No users in database. Use the default admin credentials.');
-          }
-          throw new Error('Invalid email or password');
-        } else if (apiResponse.status === 404) {
-          console.warn("API endpoint not found (404). Check server routes configuration.");
-          // Fall through to local storage login
-        } else {
-          throw new Error(apiResponse.error || 'Authentication failed');
-        }
-      }
-      
       // Fallback to local storage if API fails
       console.log("API login failed, trying localStorage");
       const userData = await userDatabase.authenticate(email, password);
@@ -67,7 +45,7 @@ export const useAuthFunctions = (
         setUser(userData as User);
         localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
-          title: "Login successful (local mode)",
+          title: "Login successful",
           description: `Welcome back, ${userData.name}!`
         });
         return true;
@@ -77,16 +55,16 @@ export const useAuthFunctions = (
           description: "Invalid credentials.",
           variant: "destructive"
         });
-        throw new Error('Invalid email or password');
+        return false;
       }
     } catch (error) {
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        description: "An unexpected error occurred.",
         variant: "destructive"
       });
-      throw error;
+      return false;
     } finally {
       setIsLoading(false);
     }
