@@ -9,20 +9,30 @@ export class CertificationService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.addCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      // Try API first
-      const response = await apiService.addCertification(userId, machineId);
-      if (response && response.data?.success) {
-        console.log('Successfully added certification via API');
-        return true;
+      // Try MongoDB first
+      try {
+        // Direct MongoDB connection is preferred
+        const success = await mongoDbService.updateUserCertifications(userId, machineId);
+        if (success) {
+          console.log('Successfully added certification via MongoDB');
+          return true;
+        }
+      } catch (mongoErr) {
+        console.error("MongoDB error adding certification:", mongoErr);
       }
-    } catch (error) {
-      console.error("Error adding certification via API:", error);
-      // Continue with localStorage if API fails
-    }
-    
-    // Fallback to localStorage
-    try {
-      // Get user first
+      
+      // Then try API
+      try {
+        const response = await apiService.addCertification(userId, machineId);
+        if (response && response.data?.success) {
+          console.log('Successfully added certification via API');
+          return true;
+        }
+      } catch (apiErr) {
+        console.error("Error adding certification via API:", apiErr);
+      }
+      
+      // Last resort - localStorage
       const user = localStorageService.findUserById(userId);
       if (!user) {
         console.error("User not found in localStorage");
@@ -41,7 +51,7 @@ export class CertificationService {
       
       return true; // User already has certification
     } catch (error) {
-      console.error("Error in localStorage fallback:", error);
+      console.error("Error in certification service:", error);
       return false;
     }
   }
@@ -50,19 +60,37 @@ export class CertificationService {
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationService.removeCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      // Try API first
-      const response = await apiService.removeCertification(userId, machineId);
-      if (response && response.data?.success) {
-        console.log('Successfully removed certification via API');
-        return true;
+      // Try MongoDB first
+      try {
+        // For MongoDB, we need a special remove certification method
+        // We'll simulate this with an update where we filter out the certificationId
+        const user = await mongoDbService.getUserById(userId);
+        if (user) {
+          // Filter out the certification
+          const updatedCertifications = user.certifications.filter(id => id !== machineId);
+          // Update the user with the new certifications list
+          const success = await mongoDbService.updateUser(user._id, { certifications: updatedCertifications });
+          if (success) {
+            console.log('Successfully removed certification via MongoDB');
+            return true;
+          }
+        }
+      } catch (mongoErr) {
+        console.error("MongoDB error removing certification:", mongoErr);
       }
-    } catch (error) {
-      console.error("Error removing certification via API:", error);
-      // Continue with localStorage if API fails
-    }
-    
-    // Fallback to localStorage
-    try {
+      
+      // Then try API
+      try {
+        const response = await apiService.removeCertification(userId, machineId);
+        if (response && response.data?.success) {
+          console.log('Successfully removed certification via API');
+          return true;
+        }
+      } catch (apiErr) {
+        console.error("Error removing certification via API:", apiErr);
+      }
+      
+      // Last resort - localStorage
       const user = localStorageService.findUserById(userId);
       if (!user) return false;
       
@@ -74,7 +102,7 @@ export class CertificationService {
       }
       return true; // Already not certified
     } catch (error) {
-      console.error("Error removing certification from localStorage:", error);
+      console.error("Error removing certification:", error);
       return false;
     }
   }
@@ -108,18 +136,33 @@ export class CertificationService {
   // Check if user has a specific certification
   async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      // Try API first
-      const response = await apiService.checkCertification(userId, machineId);
-      if (response.data !== null && response.error === null) {
-        return !!response.data;
+      // Try MongoDB first
+      try {
+        const user = await mongoDbService.getUserById(userId);
+        if (user) {
+          return user.certifications.includes(machineId);
+        }
+      } catch (mongoErr) {
+        console.error("MongoDB error checking certification:", mongoErr);
       }
+      
+      // Then try API
+      try {
+        const response = await apiService.checkCertification(userId, machineId);
+        if (response.data !== null && response.error === null) {
+          return !!response.data;
+        }
+      } catch (apiErr) {
+        console.error("Error checking certification via API:", apiErr);
+      }
+      
+      // Last resort - localStorage
+      const user = localStorageService.findUserById(userId);
+      return user ? user.certifications.includes(machineId) : false;
     } catch (error) {
-      console.error("Error checking certification via API:", error);
+      console.error("Error checking certification:", error);
+      return false;
     }
-    
-    // Final fallback to localStorage
-    const user = localStorageService.findUserById(userId);
-    return user ? user.certifications.includes(machineId) : false;
   }
 }
 

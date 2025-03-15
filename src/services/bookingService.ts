@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { localStorageService } from './localStorageService';
 import { Booking } from '../types/database';
@@ -31,17 +30,88 @@ export class BookingService {
         return false;
       }
       
-      // Use the bookingDatabaseService which has proper fallback mechanisms
-      const success = await bookingDatabaseService.addBooking(userId, machineId, date, time);
-      
-      if (success) {
-        toast({
-          title: "Booking Submitted",
-          description: "Your booking request has been submitted and is waiting for approval.",
-        });
+      // Try MongoDB first
+      if (!isWeb) {
+        try {
+          // For MongoDB, we need to create a booking record and then add it to the user's bookings
+          const booking = {
+            machineId,
+            date,
+            time,
+            status: 'Pending',
+            createdAt: new Date().toISOString()
+          };
+          
+          const success = await mongoDbService.addUserBooking(userId, booking);
+          if (success) {
+            toast({
+              title: "Booking Submitted",
+              description: "Your booking request has been submitted and is waiting for approval.",
+            });
+            return true;
+          }
+        } catch (mongoErr) {
+          console.error("MongoDB error creating booking:", mongoErr);
+        }
       }
       
-      return success;
+      // Try API next
+      try {
+        const response = await apiService.addBooking(userId, machineId, date, time);
+        if (response && response.data?.success) {
+          toast({
+            title: "Booking Submitted",
+            description: "Your booking request has been submitted and is waiting for approval.",
+          });
+          return true;
+        }
+      } catch (apiErr) {
+        console.error("API error creating booking:", apiErr);
+      }
+      
+      // Fall back to localStorage
+      try {
+        const bookings = localStorageService.getBookings();
+        const newBooking = {
+          id: `booking-${Date.now()}`,
+          userId,
+          machineId,
+          date,
+          time,
+          status: 'Pending',
+          createdAt: new Date().toISOString()
+        };
+        
+        bookings.push(newBooking);
+        
+        // Update the bookings
+        const success = localStorageService.saveBookings(bookings);
+        
+        // Update the user
+        const user = localStorageService.findUserById(userId);
+        if (user && success) {
+          if (!user.bookings) {
+            user.bookings = [];
+          }
+          user.bookings.push(newBooking);
+          localStorageService.updateUser(userId, { bookings: user.bookings });
+          
+          toast({
+            title: "Booking Submitted",
+            description: "Your booking request has been submitted and is waiting for approval.",
+          });
+        }
+        
+        return success;
+      } catch (error) {
+        console.error("Error in BookingService.createBooking local storage fallback:", error);
+        toast({
+          title: "Booking Failed",
+          description: "There was an error processing your booking. Please try again.",
+          variant: "destructive"
+        });
+        return false;
+      }
     } catch (error) {
       console.error("Error in BookingService.createBooking:", error);
       toast({
@@ -58,7 +128,7 @@ export class BookingService {
     console.log(`BookingService.getUserBookings: userId=${userId}`);
     
     try {
-      // If not in web environment, try MongoDB first
+      // Try MongoDB first if not in web environment
       if (!isWeb) {
         try {
           const mongoUser = await mongoDbService.getUserById(userId);
@@ -71,8 +141,22 @@ export class BookingService {
         }
       }
       
-      // Fall back to bookingDatabaseService which handles other fallbacks
-      return bookingDatabaseService.getUserBookings(userId);
+      // Try API next
+      try {
+        const response = await apiService.getUserBookings(userId);
+        if (response && response.data) {
+          console.log("Retrieved bookings from API:", response.data);
+          return response.data;
+        }
+      } catch (apiError) {
+        console.error("API error when getting bookings:", apiError);
+      }
+      
+      // Fall back to localStorage
+      const bookings = localStorageService.getBookings();
+      const userBookings = bookings.filter(booking => booking.userId === userId);
+      console.log("Retrieved bookings from localStorage:", userBookings);
+      return userBookings;
     } catch (error) {
       console.error("Error in BookingService.getUserBookings:", error);
       return [];
@@ -84,49 +168,7 @@ export class BookingService {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      // First check if this is a client-generated ID (usually has "booking-" prefix)
-      const isClientId = bookingId.startsWith('booking-');
-      
-      // Get booking details first to handle availability updates
-      let bookingDetails;
-      
-      // Try to get all bookings and find the one we're updating
-      const allBookings = await this.getAllBookings();
-      bookingDetails = allBookings.find(b => b.id === bookingId);
-      
-      if (!bookingDetails) {
-        console.error(`Booking not found with ID: ${bookingId}`);
-        toast({
-          title: "Error",
-          description: "Booking not found",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
-      // Try direct API call first (most reliable)
-      try {
-        // Use the appropriate endpoint format based on ID type
-        const endpoint = isClientId 
-          ? `bookings/${bookingId}/status` 
-          : `bookings/${bookingId}/status`;
-          
-        const response = await apiService.request(endpoint, 'PUT', { status });
-        
-        if (response && !response.error) {
-          console.log("Successfully updated booking status via API");
-          toast({
-            title: `Booking ${status}`,
-            description: `The booking has been ${status.toLowerCase()} successfully.`,
-            variant: status === 'Approved' ? 'default' : 'destructive',
-          });
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API request failed, trying alternative methods", apiError);
-      }
-      
-      // If API fails, try MongoDB directly if not in web environment
+      // First try MongoDB directly if not in web environment
       if (!isWeb) {
         try {
           const success = await mongoDbService.updateBookingStatus(bookingId, status);
@@ -144,12 +186,35 @@ export class BookingService {
         }
       }
       
-      // As a last resort, try to update in local storage
-      // This is especially important for client-generated IDs
+      // Try API next
       try {
-        if (isClientId) {
+        // Use the appropriate endpoint format based on ID type
+        const isClientId = bookingId.startsWith('booking-');
+        const endpoint = isClientId 
+          ? `bookings/${bookingId}/status` 
+          : `bookings/${bookingId}/status`;
+          
+        const response = await apiService.request(endpoint, 'PUT', { status });
+        
+        if (response && !response.error) {
+          console.log("Successfully updated booking status via API");
+          toast({
+            title: `Booking ${status}`,
+            description: `The booking has been ${status.toLowerCase()} successfully.`,
+            variant: status === 'Approved' ? 'default' : 'destructive',
+          });
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API request failed, trying localStorage", apiError);
+      }
+      
+      // As a last resort, try to update in local storage
+      const isClientId = bookingId.startsWith('booking-');
+      if (isClientId) {
+        try {
           // Get all users from local storage
-          const users = await localStorageService.getAll('users');
+          const users = localStorageService.getAllUsers();
           
           // Find the user with this booking
           let updated = false;
@@ -160,7 +225,7 @@ export class BookingService {
                 // Update booking status
                 user.bookings[bookingIndex].status = status;
                 // Save user back to local storage
-                await localStorageService.update('users', user.id, user);
+                localStorageService.updateUser(user.id, user);
                 updated = true;
                 break;
               }
@@ -176,20 +241,24 @@ export class BookingService {
             });
             return true;
           }
+        } catch (storageError) {
+          console.error("Local storage error when updating booking status:", storageError);
         }
-      } catch (storageError) {
-        console.error("Local storage error when updating booking status:", storageError);
       }
       
-      // Finally try the database service (which has its own fallbacks)
-      const success = await bookingDatabaseService.updateBookingStatus(bookingId, status);
-      if (success) {
-        toast({
-          title: `Booking ${status}`,
-          description: `The booking has been ${status.toLowerCase()} successfully.`,
-          variant: status === 'Approved' ? 'default' : 'destructive',
-        });
-        return true;
+      // Also update in bookings collection
+      try {
+        const success = localStorageService.updateBookingStatus(bookingId, status);
+        if (success) {
+          toast({
+            title: `Booking ${status}`,
+            description: `The booking has been ${status.toLowerCase()} successfully.`,
+            variant: status === 'Approved' ? 'default' : 'destructive',
+          });
+          return true;
+        }
+      } catch (error) {
+        console.error("Error updating booking status in bookings collection:", error);
       }
       
       console.error("All attempts to update booking status failed");
@@ -215,25 +284,7 @@ export class BookingService {
     try {
       console.log("BookingService.getAllBookings: Fetching all bookings");
       
-      // Try API first
-      try {
-        const response = await apiService.getAllBookings();
-        if (response && response.data) {
-          console.log("Retrieved all bookings from API:", response.data.length);
-          // Add machine names if missing
-          const bookingsWithNames = response.data.map(booking => {
-            if (!booking.machineName) {
-              booking.machineName = this.getMachineName(booking.machineId);
-            }
-            return booking;
-          });
-          return bookingsWithNames;
-        }
-      } catch (apiError) {
-        console.error("API error when fetching bookings:", apiError);
-      }
-      
-      // If API fails, try MongoDB directly
+      // Try MongoDB first if not in web environment
       if (!isWeb) {
         try {
           const bookings = await mongoDbService.getAllBookings();
@@ -253,9 +304,27 @@ export class BookingService {
         }
       }
       
-      // As a last resort, use bookingDatabaseService
-      const bookings = await bookingDatabaseService.getAllBookings();
-      console.log("Retrieved all bookings from local database:", bookings.length);
+      // Try API next
+      try {
+        const response = await apiService.getAllBookings();
+        if (response && response.data) {
+          console.log("Retrieved all bookings from API:", response.data.length);
+          // Add machine names if missing
+          const bookingsWithNames = response.data.map(booking => {
+            if (!booking.machineName) {
+              booking.machineName = this.getMachineName(booking.machineId);
+            }
+            return booking;
+          });
+          return bookingsWithNames;
+        }
+      } catch (apiError) {
+        console.error("API error when fetching bookings:", apiError);
+      }
+      
+      // As a last resort, use localStorage
+      const bookings = localStorageService.getBookings();
+      console.log("Retrieved all bookings from local storage:", bookings.length);
       // Make sure machine names are set correctly
       const bookingsWithNames = bookings.map(booking => {
         if (!booking.machineName) {
