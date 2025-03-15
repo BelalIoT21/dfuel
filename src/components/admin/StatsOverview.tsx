@@ -1,9 +1,8 @@
 
-import { Users, Settings, CalendarClock, UserCheck } from "lucide-react";
+import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
 import { bookingService } from "@/services/bookingService";
-import { certificationService } from "@/services/certificationService";
 
 interface StatsOverviewProps {
   allUsers: any[];
@@ -12,7 +11,6 @@ interface StatsOverviewProps {
 
 export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   const [bookingsCount, setBookingsCount] = useState(0);
-  const [totalCertifications, setTotalCertifications] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
   // Fetch the actual bookings count
@@ -35,35 +33,13 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
     fetchBookingsCount();
   }, []);
   
-  // Calculate total certifications across all users (excluding safety course)
-  useEffect(() => {
-    const calculateCertifications = () => {
-      let count = 0;
-      
-      // For each user, count their machine certifications (excluding machine safety course)
-      allUsers.forEach(user => {
-        if (user.certifications) {
-          // Filter out Machine Safety Course (ID: "6")
-          const machineCerts = user.certifications.filter(certId => 
-            certId !== "6"
-          );
-          count += machineCerts.length;
-        }
-      });
-      
-      setTotalCertifications(count);
-    };
-    
-    calculateCertifications();
-  }, [allUsers]);
-  
   // Filter out equipment - only count real machines (including Bambu Lab X1 E)
   const realMachines = machines.filter(machine => machine.type !== 'Equipment');
   
   // Basic statistics for the admin dashboard
   const stats = [
     { 
-      title: 'Total Users', 
+      title: `Total Users (${allUsers.length})`, 
       value: allUsers.length, 
       icon: <Users className="h-5 w-5 text-purple-600" />,
       change: '', 
@@ -77,13 +53,6 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
       link: '/admin/machines'
     },
     { 
-      title: 'User Certifications', 
-      value: totalCertifications,
-      icon: <UserCheck className="h-5 w-5 text-purple-600" />,
-      change: '',
-      link: '/admin/users'
-    },
-    { 
       title: 'Active Bookings', 
       value: isLoading ? '...' : bookingsCount, 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
@@ -93,7 +62,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-6">
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}

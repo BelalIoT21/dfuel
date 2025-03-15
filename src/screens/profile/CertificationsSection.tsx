@@ -40,7 +40,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     return certId !== "6";
   });
 
-  // Helper function to get machine name with special handling for ID "6"
+  // Helper function to get machine name with special handling for ID "6" and "5"
   const getMachineName = (certId: string) => {
     if (certId === "6") return "Machine Safety Course";
     if (certId === "5") return "Bambu Lab X1 E";

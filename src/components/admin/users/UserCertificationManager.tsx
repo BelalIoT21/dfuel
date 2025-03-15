@@ -82,6 +82,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleMachineSafetyCourse = async (userId: string) => {
     setLoading('machineSafety');
     try {
+      console.log("Adding machine safety course certification");
+      // Use the specific machine safety course method
       const success = await certificationService.addMachineSafetyCertification(userId);
       
       if (success) {
@@ -113,6 +115,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleRemoveMachineSafetyCourse = async (userId: string) => {
     setLoading('machineSafety');
     try {
+      console.log("Removing machine safety course certification");
+      // Use the specific machine safety course removal method
       const success = await certificationService.removeMachineSafetyCertification(userId);
       
       if (success) {
@@ -141,6 +145,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }
   };
 
+  // Check if the user has a Machine Safety Course certification
+  const hasMachineSafetyCourse = user?.certifications?.includes("6");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -160,7 +167,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             <div className="flex justify-between items-center border p-2 rounded">
               <span>Machine Safety Course</span>
               <div>
-                {user.certifications.includes("6") ? (
+                {hasMachineSafetyCourse ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -208,11 +215,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddCertification(user.id, "5")}
-                    disabled={loading === "5" || !user.certifications.includes("6")}
-                    className={!user.certifications.includes("6") ? "opacity-50" : ""}
+                    disabled={loading === "5" || !hasMachineSafetyCourse}
+                    className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                   >
                     {loading === "5" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {!user.certifications.includes("6") ? "Requires Safety Course" : "Add"}
+                    {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
                   </Button>
                 )}
               </div>
@@ -239,11 +246,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       variant="outline"
                       size="sm"
                       onClick={() => handleAddCertification(user.id, machine.id)}
-                      disabled={loading === machine.id || !user.certifications.includes("6")}
-                      className={!user.certifications.includes("6") ? "opacity-50" : ""}
+                      disabled={loading === machine.id || !hasMachineSafetyCourse}
+                      className={!hasMachineSafetyCourse ? "opacity-50" : ""}
                     >
                       {loading === machine.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {!user.certifications.includes("6") ? "Requires Safety Course" : "Add"}
+                      {!hasMachineSafetyCourse ? "Requires Safety Course" : "Add"}
                     </Button>
                   )}
                 </div>

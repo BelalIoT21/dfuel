@@ -7,9 +7,13 @@ import { bookingService } from '@/services/bookingService';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
+  onBookingStatusChange?: () => void;
 }
 
-export const PendingBookingsCard = ({ pendingBookings = [] }: PendingBookingsCardProps) => {
+export const PendingBookingsCard = ({ 
+  pendingBookings = [],
+  onBookingStatusChange
+}: PendingBookingsCardProps) => {
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   
   const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected') => {
@@ -17,8 +21,10 @@ export const PendingBookingsCard = ({ pendingBookings = [] }: PendingBookingsCar
     
     try {
       await bookingService.updateBookingStatus(bookingId, action);
-      // After updating, you would typically refresh the bookings list
-      // This would be handled by the parent component
+      // After updating, trigger refresh of the bookings list
+      if (onBookingStatusChange) {
+        onBookingStatusChange();
+      }
     } catch (error) {
       console.error(`Error ${action.toLowerCase()} booking:`, error);
     } finally {

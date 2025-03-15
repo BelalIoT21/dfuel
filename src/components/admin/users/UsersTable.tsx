@@ -80,7 +80,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded }: UsersTab
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {user.certifications && user.certifications.length > 0 ? (
-                      // Remove ALL Machine Safety Course (ID: "6") from visible certifications
+                      // Remove Machine Safety Course (ID: "6") from visible certifications
                       user.certifications
                         .filter((cert: string) => cert !== "6")
                         .map((cert: string) => (
