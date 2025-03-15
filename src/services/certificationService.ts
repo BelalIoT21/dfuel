@@ -117,45 +117,6 @@ export class CertificationService {
     return this.removeCertification(userId, SAFETY_MACHINE_ID);
   }
   
-  // Machine Safety Course certification management
-  async addMachineSafetyCertification(userId: string): Promise<boolean> {
-    console.log(`Adding machine safety course certification for user ${userId}`);
-    const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
-    
-    try {
-      // Try API first
-      const response = await apiService.addCertification(userId, MACHINE_SAFETY_ID);
-      if (response.data?.success) {
-        console.log('Successfully added machine safety certification via API');
-        return true;
-      }
-    } catch (error) {
-      console.log('API method failed, falling back to regular certification methods');
-    }
-    
-    // Fallback to regular certification methods with the machine safety ID
-    return this.addCertification(userId, MACHINE_SAFETY_ID);
-  }
-  
-  async removeMachineSafetyCertification(userId: string): Promise<boolean> {
-    console.log(`Removing machine safety course certification for user ${userId}`);
-    const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
-    
-    try {
-      // Try API first
-      const response = await apiService.removeCertification(userId, MACHINE_SAFETY_ID);
-      if (response.data?.success) {
-        console.log('Successfully removed machine safety certification via API');
-        return true;
-      }
-    } catch (error) {
-      console.log('API method failed, falling back to regular certification methods');
-    }
-    
-    // Fallback to regular certification removal with the machine safety ID
-    return this.removeCertification(userId, MACHINE_SAFETY_ID);
-  }
-  
   // Check if user has a specific certification
   async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
