@@ -1,15 +1,16 @@
+
 import { getEnv } from '../utils/env';
 import { toast } from '../components/ui/use-toast';
 
 // Use the environment variable for the API URL
 const getBaseApiUrl = () => {
-  const url = getEnv('API_URL', 'https://learnit-server.onrender.com/api');
+  const url = getEnv('API_URL', 'http://localhost:4000/api');
   
-  // Validate URL format - it should be an HTTP URL, not a MongoDB connection string
+  // Validate URL format - it should be an HTTP URL for REST API calls
   if (url.startsWith('mongodb://')) {
     console.error('Invalid API URL format. Using default API URL instead.');
-    // Reset to default in case of MongoDB URI
-    return 'https://learnit-server.onrender.com/api';
+    // Reset to default in case of MongoDB URI - the MongoDB URI is for the server only
+    return 'http://localhost:4000/api';
   }
   
   return url;
