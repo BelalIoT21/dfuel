@@ -6,7 +6,6 @@ import { apiConnection } from '@/services/api/apiConnection';
 import { toast } from '@/components/ui/use-toast';
 import mongoConnectionService from '@/services/mongodb/connectionService';
 import { Tooltip } from '@/components/ui/tooltip';
-import { getEnv } from '@/utils/env';
 
 export function ConnectionStatus() {
   const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
@@ -32,7 +31,7 @@ export function ConnectionStatus() {
         
         toast({
           title: 'Server Connection Failed',
-          description: `Could not connect to the backend server at ${apiConnection.getBaseUrl()}. Make sure your server is running.`,
+          description: `Could not connect to the backend server. Make sure your server is running.`,
           variant: 'destructive'
         });
         return;
@@ -166,9 +165,7 @@ export function ConnectionStatus() {
           ) : (
             <div>
               <p>No connection details available.</p>
-              <p className="mt-2">Current API URL: {apiConnection.getBaseUrl()}</p>
-              <p className="mt-1">Default API URL: {getEnv('API_URL')}</p>
-              <p className="mt-1">Connection Status: {serverStatus}</p>
+              <p className="mt-2">Connection Status: {serverStatus}</p>
               <p className="mt-1">Connection Checked: {apiConnection.hasConnectionBeenChecked() ? 'Yes' : 'No'}</p>
             </div>
           )}
