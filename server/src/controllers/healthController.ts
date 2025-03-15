@@ -25,6 +25,8 @@ export const healthCheck = (req: Request, res: Response) => {
     totalMemory: os.totalmem()
   };
   
+  // Always return 200 for health check, even if some components are down
+  // This helps with connection management on the client side
   res.status(200).json({ 
     status: 'success',
     message: 'Server is up and running',
@@ -36,7 +38,6 @@ export const healthCheck = (req: Request, res: Response) => {
 };
 
 // Helper function to get readable connection state name
-// Fixed: Using a type-safe approach with Record<number, string>
 const getMongoConnectionState = (state: number): string => {
   const states: Record<number, string> = {
     0: 'Disconnected',

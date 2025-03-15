@@ -5,14 +5,14 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { seedDatabase } from './utils/seed';  // Import the seed utility
-import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
+import { seedDatabase } from './utils/seed';
+import { ensureAdminUser } from './controllers/auth/adminController';
 import { 
   requestLogger, 
   apiLogger, 
   fileLogger, 
   setupGlobalErrorLogging 
-} from './utils/logger'; // Import our enhanced logger
+} from './utils/logger';
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -94,7 +94,6 @@ app.get('/ping', (req, res) => {
 
 // Log all API routes for debugging
 console.log('Registered API routes:');
-// Define explicit types for middleware and handler
 app._router.stack.forEach((middleware: {
   route?: { path: string },
   name?: string,
