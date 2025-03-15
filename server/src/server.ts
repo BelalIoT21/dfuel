@@ -68,13 +68,31 @@ app.get('/health', (req, res) => {
 
 // Log all API routes for debugging
 console.log('Registered API routes:');
-app._router.stack.forEach(middleware => {
+// Define explicit types for middleware and handler
+app._router.stack.forEach((middleware: {
+  route?: { path: string },
+  name?: string,
+  handle?: { 
+    stack: Array<{
+      route?: { 
+        path: string, 
+        stack: Array<{ method: string }>
+      }
+    }>
+  },
+  regexp?: { toString: () => string }
+}) => {
   if (middleware.route) {
     console.log(`Route: ${middleware.route.path}`);
   } else if (middleware.name === 'router') {
-    middleware.handle.stack.forEach(handler => {
+    middleware.handle?.stack.forEach((handler: {
+      route?: { 
+        path: string, 
+        stack: Array<{ method: string }>
+      }
+    }) => {
       if (handler.route) {
-        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
+        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp?.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
       }
     });
   }
