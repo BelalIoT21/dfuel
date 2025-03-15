@@ -36,7 +36,7 @@ export const StatsOverview = ({ allUsers, machines }: StatsOverviewProps) => {
   // Filter out equipment - only count real machines (including Bambu Lab X1 E)
   const realMachines = machines.filter(machine => machine.type !== 'Equipment');
   
-  // Display the actual user count
+  // Display the actual user count from the props
   const userCount = allUsers.length;
   
   // Basic statistics for the admin dashboard

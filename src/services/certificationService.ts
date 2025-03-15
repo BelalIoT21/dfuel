@@ -107,7 +107,7 @@ export class CertificationService {
     }
   }
   
-  // Safety course certification management
+  // Safety course certification management - uses the same methods as other certifications
   async addSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding safety certification for user ${userId}`);
     const SAFETY_MACHINE_ID = "5"; // Safety cabinet ID
@@ -120,7 +120,7 @@ export class CertificationService {
     return this.removeCertification(userId, SAFETY_MACHINE_ID);
   }
   
-  // Machine Safety Course certification management
+  // Machine Safety Course certification management - uses the same methods as other certifications
   async addMachineSafetyCertification(userId: string): Promise<boolean> {
     console.log(`Adding machine safety course certification for user ${userId}`);
     const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID

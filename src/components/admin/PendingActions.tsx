@@ -32,10 +32,10 @@ export const PendingActions = () => {
   }, [fetchPendingBookings]);
 
   // Handle booking status change to completely refresh the list
-  const handleBookingStatusChange = useCallback(() => {
+  const handleBookingStatusChange = useCallback(async () => {
     console.log("Booking status changed, refreshing list");
     // Force immediate refresh of the bookings list
-    fetchPendingBookings();
+    await fetchPendingBookings();
   }, [fetchPendingBookings]);
 
   return (
