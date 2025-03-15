@@ -13,29 +13,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Debug render
+  console.log("Rendering AuthProvider");
+
   useEffect(() => {
     const loadUser = async () => {
       try {
+        console.log("Loading user from storage/API");
         const storedUser = await storage.getItem('learnit_user');
         
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          console.log("User found in storage");
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Stored user:", parsedUser);
+          setUser(parsedUser);
         } else {
+          console.log("No user in storage, checking token");
           const token = localStorage.getItem('token');
           if (token) {
             try {
+              console.log("Token found, getting current user from API");
               const response = await apiService.getCurrentUser();
+              console.log("Current user API response:", response);
               if (response.data && response.data.user) {
+                console.log("Setting user from API response");
                 setUser(response.data.user);
               }
             } catch (error) {
               console.error('Error getting current user:', error);
             }
+          } else {
+            console.log("No token found");
           }
         }
       } catch (error) {
         console.error('Error loading user from storage:', error);
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };
@@ -161,6 +175,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     requestPasswordReset,
     resetPassword,
   };
+
+  console.log("AuthProvider state:", { user: user?.name, isAdmin: user?.isAdmin, loading });
 
   return (
     <AuthContext.Provider value={value}>
