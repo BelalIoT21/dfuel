@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -177,6 +176,37 @@ class MongoUserService {
       return result.modifiedCount > 0;
     } catch (error) {
       console.error("Error updating booking status in MongoDB:", error);
+      return false;
+    }
+  }
+  
+  async deleteUserBooking(bookingId: string): Promise<boolean> {
+    await this.initCollection();
+    if (!this.usersCollection) return false;
+    
+    try {
+      console.log(`Attempting to delete booking ${bookingId} from user's bookings in MongoDB`);
+      
+      // Find the user with this booking
+      const user = await this.usersCollection.findOne({
+        "bookings.id": bookingId
+      });
+      
+      if (!user) {
+        console.error(`No user found with booking ${bookingId}`);
+        return false;
+      }
+      
+      // Remove the booking from the user's bookings array
+      const result = await this.usersCollection.updateOne(
+        { "bookings.id": bookingId },
+        { $pull: { bookings: { id: bookingId } } }
+      );
+      
+      console.log(`MongoDB delete booking result: ${JSON.stringify(result)}`);
+      return result.modifiedCount > 0;
+    } catch (error) {
+      console.error("Error deleting booking in MongoDB:", error);
       return false;
     }
   }

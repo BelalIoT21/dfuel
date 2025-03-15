@@ -1,4 +1,3 @@
-
 // Facade for all database services
 import { userService } from './userService';
 import databaseService from './databaseService';
@@ -255,6 +254,62 @@ class UserDatabase {
     } catch (error) {
       console.error('Error in getMachineMaintenanceNote:', error);
       return null;
+    }
+  }
+  
+  // Delete booking method
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    try {
+      console.log(`Attempting to delete booking ${bookingId}`);
+      
+      // Try MongoDB first
+      try {
+        const success = await mongoDbService.deleteBooking(bookingId);
+        if (success) {
+          console.log(`Successfully deleted booking ${bookingId} from MongoDB`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error(`MongoDB error deleting booking ${bookingId}:`, mongoError);
+      }
+      
+      // Try localStorage as fallback
+      try {
+        // Get all bookings
+        const allBookings = localStorageService.getBookings();
+        
+        // Find the booking
+        const bookingIndex = allBookings.findIndex(b => b.id === bookingId);
+        if (bookingIndex === -1) {
+          console.log(`Booking ${bookingId} not found in localStorage`);
+          return false;
+        }
+        
+        // Get booking details before removing it
+        const booking = allBookings[bookingIndex];
+        
+        // Remove the booking from the bookings collection
+        allBookings.splice(bookingIndex, 1);
+        localStorageService.saveBookings(allBookings);
+        
+        // If userId is available, remove the booking from the user's bookings as well
+        if (booking && booking.userId) {
+          const user = localStorageService.findUserById(booking.userId);
+          if (user && user.bookings) {
+            const updatedBookings = user.bookings.filter(b => b.id !== bookingId);
+            localStorageService.updateUser(booking.userId, { bookings: updatedBookings });
+          }
+        }
+        
+        console.log(`Successfully deleted booking ${bookingId} from localStorage`);
+        return true;
+      } catch (storageError) {
+        console.error(`LocalStorage error deleting booking ${bookingId}:`, storageError);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error deleting booking ${bookingId}:`, error);
+      return false;
     }
   }
 }

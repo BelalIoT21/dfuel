@@ -70,4 +70,25 @@ bookingSchema.statics.updateStatus = async function(bookingId: string, status: s
   }
 };
 
+// Add a method to delete a booking by ID
+bookingSchema.statics.deleteBookingById = async function(bookingId: string) {
+  try {
+    // Try to find by MongoDB ID first
+    let booking;
+    let result;
+    
+    if (mongoose.Types.ObjectId.isValid(bookingId)) {
+      result = await this.findByIdAndDelete(bookingId);
+    } else {
+      // If not a valid ObjectId, it might be a client-generated ID
+      result = await this.findOneAndDelete({ clientId: bookingId });
+    }
+    
+    return !!result; // Return true if a document was deleted, false otherwise
+  } catch (error) {
+    console.error('Error in Booking.deleteBookingById:', error);
+    return false;
+  }
+};
+
 export const Booking = mongoose.model<IBooking>('Booking', bookingSchema);

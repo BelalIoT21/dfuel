@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import { User } from '../models/User';
@@ -341,6 +340,66 @@ export const getAllBookings = async (req: Request, res: Response) => {
     res.json(formattedBookings);
   } catch (error) {
     console.error('Error in getAllBookings:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Delete booking
+// @route   DELETE /api/bookings/:id
+// @access  Private/Admin
+export const deleteBooking = async (req: Request, res: Response) => {
+  try {
+    const bookingId = req.params.id;
+    console.log(`Attempting to delete booking with ID: ${bookingId}`);
+    
+    let booking;
+    
+    // Check if the ID is a valid MongoDB ObjectId
+    if (mongoose.Types.ObjectId.isValid(bookingId)) {
+      booking = await Booking.findById(bookingId);
+    } else {
+      // If not a valid ObjectId, it might be a client-generated ID
+      console.log('Not a valid ObjectId, looking up by client-side ID');
+      booking = await Booking.findOne({ 'clientId': bookingId });
+    }
+    
+    if (!booking) {
+      console.log(`No booking found with ID ${bookingId}`);
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+    
+    // Check if user is authorized (admin or booking owner)
+    if (booking.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to delete this booking' });
+    }
+    
+    // If the booking was approved, free up the time slot
+    if (booking.status === 'Approved') {
+      const machine = await Machine.findById(booking.machine);
+      if (machine) {
+        const dateObj = new Date(booking.date);
+        const formattedDate = dateObj.toISOString().split('T')[0];
+        const timeSlot = `${formattedDate}-${booking.time}`;
+        await machine.removeBookedTimeSlot(timeSlot);
+      }
+    }
+    
+    // Remove booking reference from user's bookings array
+    await User.findByIdAndUpdate(
+      booking.user,
+      { $pull: { bookings: booking._id } }
+    );
+    
+    // Delete the booking
+    await booking.deleteOne();
+    
+    console.log(`Successfully deleted booking ${bookingId}`);
+    res.json({ success: true, message: 'Booking deleted successfully' });
+  } catch (error) {
+    console.error('Error in deleteBooking:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
