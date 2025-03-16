@@ -18,6 +18,7 @@ export const useProfileFunctions = (
         // Update user context with new certification
         const updatedUser = { ...user, certifications: [...user.certifications, machineId] };
         setUser(updatedUser);
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       } else {
         toast({
@@ -46,6 +47,7 @@ export const useProfileFunctions = (
       if (success) {
         const updatedUser = { ...user, ...details };
         setUser(updatedUser);
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
         toast({
           title: "Profile updated",
           description: "Your profile has been updated successfully."

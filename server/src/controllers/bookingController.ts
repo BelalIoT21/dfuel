@@ -165,14 +165,10 @@ export const getBookingById = async (req: Request, res: Response) => {
 export const updateBookingStatus = async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-    const bookingId = req.params.id || req.body.bookingId;
+    const bookingId = req.params.id;
     
     if (!status) {
       return res.status(400).json({ message: 'Status is required' });
-    }
-    
-    if (!bookingId) {
-      return res.status(400).json({ message: 'Booking ID is required' });
     }
     
     console.log(`Updating booking ${bookingId} status to ${status}`);
@@ -186,25 +182,18 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
     
     // Check if the ID is a valid MongoDB ObjectId
     if (mongoose.Types.ObjectId.isValid(bookingId)) {
-      console.log(`Looking up booking by MongoDB ObjectId: ${bookingId}`);
       booking = await Booking.findById(bookingId);
     } else {
       // If not a valid ObjectId, it might be a client-generated ID
-      console.log(`Not a valid ObjectId, looking up by client-side ID: ${bookingId}`);
-      booking = await Booking.findOne({ 
-        $or: [
-          { 'clientId': bookingId },
-          { 'id': bookingId }
-        ]
-      });
+      // Look for it using a different field (for compatibility with client-side bookings)
+      console.log('Not a valid ObjectId, looking up by client-side ID');
+      booking = await Booking.findOne({ 'clientId': bookingId });
     }
     
     if (!booking) {
       console.log(`No booking found with ID ${bookingId}`);
       return res.status(404).json({ message: 'Booking not found' });
     }
-    
-    console.log(`Found booking: ${booking._id}, current status: ${booking.status}`);
     
     const machine = await Machine.findById(booking.machine);
     if (!machine) {

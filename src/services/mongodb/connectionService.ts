@@ -1,10 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService';
-import { getEnv } from '../../utils/env';
-import { apiService } from '../apiService';
-import { toast } from '@/components/ui/use-toast';
+import mongoSeedService from './seedService'; 
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -13,109 +10,187 @@ class MongoConnectionService {
   private isConnecting: boolean = false;
   private connectionPromise: Promise<any | null> | null = null;
   private initialized: boolean = false;
-  private serverConnected: boolean = false;
+  private connectionAttempts: number = 0;
+  private maxConnectionAttempts: number = 3;
   
   constructor() {
-    // Get MongoDB URI from environment variables
-    this.uri = getEnv('MONGODB_URI', 'mongodb://localhost:27017/learnit');
+    // Updated to use the localhost MongoDB instance
+    this.uri = 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
-    
-    // Check server connection status initially
+  }
+  
+  async connect(): Promise<any | null> {
+    // Skip MongoDB connection in browser environment
     if (isWeb) {
-      this.checkServerConnection();
+      console.log("Running in browser environment, skipping MongoDB connection");
+      return null;
+    }
+    
+    // If we're already connecting, return the existing promise
+    if (this.isConnecting && this.connectionPromise) {
+      console.log("MongoDB connection already in progress, waiting...");
+      return this.connectionPromise;
+    }
+    
+    // Check if we've exceeded the maximum number of connection attempts
+    if (this.connectionAttempts >= this.maxConnectionAttempts) {
+      console.warn(`Maximum connection attempts (${this.maxConnectionAttempts}) reached. Using fallback data.`);
+      return null;
+    }
+    
+    try {
+      if (!this.client) {
+        this.isConnecting = true;
+        this.connectionAttempts++;
+        console.log(`Attempting to connect to MongoDB at ${this.uri} (Attempt ${this.connectionAttempts}/${this.maxConnectionAttempts})...`);
+        
+        // Create a new connection promise
+        this.connectionPromise = new Promise(async (resolve, reject) => {
+          try {
+            // Only import MongoDB in non-web environments
+            const { MongoClient, ServerApiVersion } = await import('mongodb');
+            
+            this.client = new MongoClient(this.uri, {
+              serverApi: {
+                version: ServerApiVersion.v1,
+                strict: true,
+                deprecationErrors: true,
+              },
+              // Add connection timeout
+              connectTimeoutMS: 5000, 
+              socketTimeoutMS: 45000
+            });
+            
+            await this.client.connect();
+            console.log("Connected to MongoDB successfully");
+            
+            this.db = this.client.db('learnit');
+            console.log(`Connected to database: ${this.db.databaseName}`);
+            
+            // List collections for debugging
+            const collections = await this.db.listCollections().toArray();
+            console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
+            
+            // Initialize seed data if not already done
+            if (!this.initialized) {
+              await this.initializeData();
+              this.initialized = true;
+            }
+            
+            // Reset connection attempts on success
+            this.connectionAttempts = 0;
+            resolve(this.db);
+          } catch (error) {
+            console.error("Error connecting to MongoDB:", error);
+            this.isConnecting = false;
+            this.connectionPromise = null;
+            
+            if (this.client) {
+              try {
+                await this.client.close();
+                this.client = null;
+                this.db = null;
+              } catch (closeError) {
+                console.error("Error closing MongoDB client:", closeError);
+              }
+            }
+            
+            reject(error);
+          }
+        });
+        
+        // Wait for the connection to complete
+        const result = await this.connectionPromise;
+        this.isConnecting = false;
+        return result;
+      }
+      return this.db;
+    } catch (error) {
+      console.error("Error connecting to MongoDB:", error);
+      this.isConnecting = false;
+      this.connectionPromise = null;
+      return null;
     }
   }
   
-  /**
-   * Check if the server is connected (for web)
-   */
-  async checkServerConnection(): Promise<boolean> {
-    if (!isWeb) return true;
+  // New method to initialize data
+  private async initializeData(): Promise<void> {
+    try {
+      console.log("Initializing MongoDB with seed data...");
+      
+      // First seed machines (as they're referenced by users and bookings)
+      await mongoMachineService.seedDefaultMachines();
+      
+      // Then seed users and bookings
+      await mongoSeedService.seedUsers();
+      await mongoSeedService.seedBookings();
+      
+      console.log("Seed data initialization complete");
+    } catch (error) {
+      console.error("Error initializing seed data:", error);
+    }
+  }
+  
+  // Method to close the connection when the application shuts down
+  async close(): Promise<void> {
+    if (!isWeb && this.client) {
+      try {
+        await this.client.close();
+        console.log("Disconnected from MongoDB");
+        this.client = null;
+        this.db = null;
+      } catch (error) {
+        console.error("Error closing MongoDB connection:", error);
+      }
+    }
+  }
+
+  // Get the database instance
+  async getDb(): Promise<any | null> {
+    if (this.db) {
+      return this.db;
+    }
+    
+    return this.connect();
+  }
+  
+  // Check if the database connection is active
+  async isConnected(): Promise<boolean> {
+    if (isWeb) return false;
     
     try {
-      const healthCheck = await apiService.checkHealth();
-      this.serverConnected = !!healthCheck.data;
-      return this.serverConnected;
+      if (!this.client) {
+        return false;
+      }
+      
+      // Try a simple command to test the connection
+      await this.db.command({ ping: 1 });
+      console.log("MongoDB connection is active");
+      return true;
     } catch (error) {
-      console.error("Error checking server connection:", error);
-      this.serverConnected = false;
+      console.error("MongoDB connection check failed:", error);
       return false;
     }
   }
   
-  async connect(): Promise<any | null> {
-    // In web environment, we don't connect directly to MongoDB - this is handled by the server
-    if (isWeb) {
-      console.log("Running in browser environment, using server API for MongoDB access");
-      const serverConnected = await this.checkServerConnection();
-      if (!serverConnected) {
-        toast({
-          title: "Database Connection",
-          description: "Could not connect to the database server. Using API instead.",
-          variant: "default"
-        });
-      } else {
-        toast({
-          title: "Database Connection",
-          description: "Connected to the database through the server API.",
-          variant: "default"
-        });
+  // Reset connection state (useful for retrying)
+  async resetConnection(): Promise<void> {
+    if (this.client) {
+      try {
+        await this.client.close();
+      } catch (error) {
+        console.error("Error closing MongoDB connection during reset:", error);
       }
-      return null;
     }
     
-    // Implementation for native platforms would be here
-    return null;
-  }
-  
-  async close(): Promise<void> {
-    // No direct MongoDB connection in web environment
-    if (isWeb) {
-      console.log("No MongoDB connection to close in web environment");
-      return;
-    }
-    
-    // Implementation for native platforms would be here
-  }
-
-  async getDb(): Promise<any | null> {
-    // In web environment, we don't access the DB directly
-    if (isWeb) {
-      console.log("Web environment - using API for MongoDB access");
-      return null;
-    }
-    
-    // Implementation for native platforms would be here
-    return null;
-  }
-  
-  async isConnected(): Promise<boolean> {
-    // Web environment doesn't connect directly to MongoDB
-    if (isWeb) {
-      return this.serverConnected;
-    }
-    
-    // Implementation for native platforms would be here
-    return false;
-  }
-  
-  /**
-   * Get the connection status
-   */
-  getConnectionStatus(): { 
-    connected: boolean, 
-    initialized: boolean, 
-    uri: string, 
-    isWeb: boolean 
-  } {
-    return {
-      connected: isWeb ? this.serverConnected : false,
-      initialized: this.initialized,
-      uri: this.uri,
-      isWeb
-    };
+    this.client = null;
+    this.db = null;
+    this.isConnecting = false;
+    this.connectionPromise = null;
+    this.connectionAttempts = 0;
   }
 }
 
+// Create a singleton instance
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;

@@ -1,9 +1,11 @@
+
 import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
+import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
-import { apiService } from '@/services/apiService';
+import mongoDbService from '@/services/mongoDbService';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -21,13 +23,13 @@ export const PendingBookingsCard = ({
     setProcessingBookingId(bookingId);
     
     try {
-      console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
+      console.log(`Booking action initiated: bookingId=${bookingId}, action=${action}`);
       
       if (action === 'Deleted') {
-        // Use direct API call to delete the booking
-        const response = await apiService.request(`bookings/${bookingId}`, 'DELETE');
+        // Use booking service to delete the booking
+        const success = await bookingService.deleteBooking(bookingId);
         
-        if (response && !response.error) {
+        if (success) {
           toast({
             title: "Booking Removed",
             description: "The booking has been removed from the system."
@@ -37,16 +39,15 @@ export const PendingBookingsCard = ({
           if (onBookingStatusChange) {
             onBookingStatusChange();
           }
-          
-          return;
+        } else {
+          throw new Error("Failed to delete booking");
         }
-        
-        throw new Error('Failed to delete booking');
       } else {
-        // Handle approval/rejection via direct API call
-        const response = await apiService.updateBookingStatus(bookingId, action);
+        // Handle approval/rejection using bookingService instead of direct MongoDB call
+        const success = await bookingService.updateBookingStatus(bookingId, action);
+        console.log(`bookingService.updateBookingStatus result: ${success}`);
         
-        if (response && !response.error) {
+        if (success) {
           toast({
             title: `Booking ${action}`,
             description: `The booking has been ${action.toLowerCase()} successfully.`
@@ -56,11 +57,9 @@ export const PendingBookingsCard = ({
           if (onBookingStatusChange) {
             onBookingStatusChange();
           }
-          
-          return;
+        } else {
+          throw new Error(`Could not ${action.toLowerCase()} booking`);
         }
-        
-        throw new Error(`Failed to ${action.toLowerCase()} booking`);
       }
     } catch (error) {
       console.error(`Error processing booking action:`, error);
@@ -95,10 +94,10 @@ export const PendingBookingsCard = ({
           </div>
           
           {pendingBookings.map((booking) => (
-            <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+            <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
               <div>
                 <p className="font-medium text-purple-800">
-                  {booking.machineName || `Machine ${booking.machineId}`}
+                  {booking.machineName || `Machine ${booking.machineId || booking.machine}`}
                 </p>
                 <p className="text-sm text-gray-500">
                   {booking.userName || 'User'} • {booking.date} at {booking.time}
@@ -109,30 +108,30 @@ export const PendingBookingsCard = ({
                   variant="outline"
                   size="sm"
                   className="border-green-200 hover:bg-green-50 text-green-700"
-                  onClick={() => handleBookingAction(booking.id, 'Approved')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Approved')}
+                  disabled={processingBookingId === booking.id || processingBookingId === booking._id}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                  {(processingBookingId === booking.id || processingBookingId === booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                   Approve
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => handleBookingAction(booking.id, 'Rejected')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Rejected')}
+                  disabled={processingBookingId === booking.id || processingBookingId === booking._id}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                  {(processingBookingId === booking.id || processingBookingId === booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Deleted')}
+                  disabled={processingBookingId === booking.id || processingBookingId === booking._id}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                  {(processingBookingId === booking.id || processingBookingId === booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
                   Delete
                 </Button>
               </div>
