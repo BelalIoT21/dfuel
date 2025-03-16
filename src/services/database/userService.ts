@@ -1,6 +1,5 @@
 
 import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 import { User, UserWithoutSensitiveInfo } from '../../types/database';
 import { BaseService } from './baseService';
 
@@ -9,27 +8,37 @@ import { BaseService } from './baseService';
  */
 export class UserDatabaseService extends BaseService {
   async getAllUsers(): Promise<UserWithoutSensitiveInfo[]> {
-    return this.apiRequest<UserWithoutSensitiveInfo[]>(
-      () => apiService.getAllUsers(),
-      () => localStorageService.getAllUsersWithoutSensitiveInfo(),
-      "API error in getAllUsers"
-    ) || [];
+    try {
+      const response = await apiService.getAllUsers();
+      if (response.data) {
+        return response.data;
+      }
+      console.error("API returned no data for getAllUsers");
+      return [];
+    } catch (error) {
+      console.error("API error in getAllUsers:", error);
+      return [];
+    }
   }
   
   async findUserByEmail(email: string): Promise<User | undefined> {
-    return this.apiRequest<User>(
-      () => apiService.getUserByEmail(email),
-      () => localStorageService.findUserByEmail(email),
-      "API error in findUserByEmail"
-    );
+    try {
+      const response = await apiService.getUserByEmail(email);
+      return response.data;
+    } catch (error) {
+      console.error("API error in findUserByEmail:", error);
+      return undefined;
+    }
   }
   
   async findUserById(id: string): Promise<User | undefined> {
-    return this.apiRequest<User>(
-      () => apiService.getUserById(id),
-      () => localStorageService.findUserById(id),
-      "API error in findUserById"
-    );
+    try {
+      const response = await apiService.getUserById(id);
+      return response.data;
+    } catch (error) {
+      console.error("API error in findUserById:", error);
+      return undefined;
+    }
   }
   
   async authenticate(email: string, password: string): Promise<UserWithoutSensitiveInfo | null> {
@@ -44,26 +53,11 @@ export class UserDatabaseService extends BaseService {
         }
         return response.data.user;
       }
+      return null;
     } catch (error) {
-      console.error("API error, falling back to localStorage auth:", error);
+      console.error("API authentication error:", error);
+      return null;
     }
-    
-    // Fallback to localStorage
-    console.log("Falling back to localStorage authentication");
-    const user = localStorageService.findUserByEmail(email);
-    if (user && user.password === password) {
-      console.log("LocalStorage authentication successful");
-      // Update last login time
-      user.lastLogin = new Date().toISOString();
-      localStorageService.updateUser(user.id, { lastLogin: user.lastLogin });
-      
-      const { password: _, resetCode: __, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    } else {
-      console.log("LocalStorage authentication failed");
-    }
-    
-    return null;
   }
   
   async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
@@ -78,36 +72,11 @@ export class UserDatabaseService extends BaseService {
         }
         return response.data.user;
       }
+      return null;
     } catch (error) {
-      console.error("API error, falling back to localStorage registration:", error);
-    }
-    
-    // Fallback to localStorage
-    console.log("Falling back to localStorage registration");
-    // Check if user already exists
-    const existingUser = localStorageService.findUserByEmail(email);
-    if (existingUser) {
-      console.log("User already exists in localStorage");
+      console.error("API registration error:", error);
       return null;
     }
-    
-    // Create new user
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      password,
-      name,
-      isAdmin: false,
-      certifications: [],
-      bookings: [],
-      lastLogin: new Date().toISOString(),
-    };
-    
-    localStorageService.addUser(newUser);
-    console.log("User added to localStorage");
-    
-    const { password: _, resetCode: __, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
   }
   
   async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
@@ -115,9 +84,28 @@ export class UserDatabaseService extends BaseService {
       const response = await apiService.updateProfile(userId, updates);
       return response.data?.success || false;
     } catch (error) {
-      console.error("API error, falling back to localStorage update:", error);
-      // Fallback to localStorage
-      return localStorageService.updateUser(userId, updates);
+      console.error("API error updating profile:", error);
+      return false;
+    }
+  }
+  
+  async requestPasswordReset(email: string): Promise<boolean> {
+    try {
+      const response = await apiService.requestPasswordReset(email);
+      return response.data?.success || false;
+    } catch (error) {
+      console.error("API error requesting password reset:", error);
+      return false;
+    }
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string): Promise<boolean> {
+    try {
+      const response = await apiService.resetPassword(email, resetCode, newPassword);
+      return response.data?.success || false;
+    } catch (error) {
+      console.error("API error resetting password:", error);
+      return false;
     }
   }
 }
