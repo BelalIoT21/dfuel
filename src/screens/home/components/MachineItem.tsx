@@ -36,6 +36,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     machineType = "Safety Cabinet";
   } else if (machine.id === "6") {
     machineType = "Safety Course";
+  } else if (machine.id === "7") {
+    machineType = "3D Printer";
   } else if (!machineType || machineType.trim() === '') {
     machineType = "Machine";
   }

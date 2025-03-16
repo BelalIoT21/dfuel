@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { User } from '@/types/database';
@@ -6,34 +5,65 @@ import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
+import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Use the auth functions hook to manage authentication
+  const { login: loginFn, register: registerFn, logout: logoutFn } = useAuthFunctions(user, setUser);
 
-  // Load user from tokens on initial load (web) or storage (native)
+  // Load user from tokens on initial load
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // For native, still try to get from AsyncStorage
-        const storedUser = await storage.getItem('learnit_user');
+        // Check for token in localStorage first
+        const token = localStorage.getItem('token');
         
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        } else {
-          // For web, try to get from token
-          const token = localStorage.getItem('token');
-          if (token) {
-            try {
-              const response = await apiService.getCurrentUser();
-              if (response.data && response.data.user) {
-                setUser(response.data.user);
+        if (token) {
+          console.log('Found auth token, attempting to get current user...');
+          try {
+            // Set the token in the API service
+            apiService.setToken(token);
+            
+            // Try to get current user with the token
+            const response = await apiService.getCurrentUser();
+            
+            if (response.data) {
+              console.log('Successfully retrieved current user from API');
+              // Ensure the user data has id field (from _id if needed)
+              const userData = {
+                ...response.data,
+                id: response.data._id || response.data.id
+              };
+              setUser(userData);
+            } else {
+              // If the token is invalid, remove it
+              console.log('Token might be invalid, removing it');
+              localStorage.removeItem('token');
+              apiService.setToken(null);
+              
+              // As a fallback, try to get from storage
+              const storedUser = await storage.getItem('learnit_user');
+              if (storedUser) {
+                console.log('Retrieved user data from storage');
+                setUser(JSON.parse(storedUser));
               }
-            } catch (error) {
-              console.error('Error getting current user:', error);
             }
+          } catch (error) {
+            console.error('Error getting current user with token:', error);
+            localStorage.removeItem('token');
+            apiService.setToken(null);
+          }
+        } else {
+          // Try to get from storage as a backup
+          const storedUser = await storage.getItem('learnit_user');
+          if (storedUser) {
+            console.log('Retrieved user data from storage');
+            setUser(JSON.parse(storedUser));
           }
         }
       } catch (error) {
@@ -48,47 +78,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Login function
   const login = async (email: string, password: string) => {
-    try {
-      const authenticatedUser = await userDatabase.authenticate(email, password);
-      
-      if (authenticatedUser) {
-        setUser(authenticatedUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(authenticatedUser));
-        return true;
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    return await loginFn(email, password);
   };
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
-    try {
-      const newUser = await userDatabase.registerUser(email, password, name);
-      
-      if (newUser) {
-        setUser(newUser);
-        // For native, still store in AsyncStorage
-        await storage.setItem('learnit_user', JSON.stringify(newUser));
-        return true;
-      } else {
-        throw new Error('Registration failed');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
+    return await registerFn(email, password, name);
   };
 
   // Logout function
   const logout = async () => {
-    setUser(null);
-    localStorage.removeItem('token');
-    await storage.removeItem('learnit_user');
+    await logoutFn();
   };
 
   // Add certification
@@ -183,9 +183,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     loading,
-    login,
-    register,
-    logout,
+    login: loginFn,
+    register: registerFn,
+    logout: logoutFn,
     addCertification,
     updateProfile,
     changePassword,

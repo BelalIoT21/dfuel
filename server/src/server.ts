@@ -42,15 +42,34 @@ const PORT = process.env.PORT || 4000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Enhanced CORS configuration
 app.use(cors({
-  origin: '*', // Allow all origins for testing
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow any origin
+    console.log('Request origin:', origin);
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(helmet({
   contentSecurityPolicy: false // Disable CSP for development
 }));
 app.use(morgan('dev'));
 app.use(cookieParser());
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url} from ${req.ip}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  if (req.method !== 'GET') {
+    console.log('Body:', JSON.stringify(req.body));
+  }
+  next();
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -105,6 +124,7 @@ app.use(errorHandler);
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`API available at http://localhost:${PORT}/api`);
 });
 
 export default app;
