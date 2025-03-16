@@ -9,14 +9,19 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is not admin and redirect if needed
-    if (user && !user.isAdmin) {
-      console.log('Non-admin user attempted to access admin dashboard, redirecting...');
-      navigate('/dashboard');
+    // If no user is logged in, redirect to login page
+    if (!user) {
+      navigate('/');
+      return;
+    }
+    
+    // If user is not an admin, redirect to home dashboard
+    if (!user.isAdmin) {
+      navigate('/home');
     }
   }, [user, navigate]);
 
-  // If user is not logged in or not admin, don't render the dashboard
+  // Show loading or nothing until redirection happens
   if (!user || !user.isAdmin) {
     return null;
   }

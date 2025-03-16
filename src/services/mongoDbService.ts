@@ -1,23 +1,36 @@
-import mongoUserService from './mongodb/userService';
-import mongoMachineService from './mongodb/machineService';
-import mongoSeedService from './mongodb/seedService';
-import { isWeb } from '../utils/platform';
+import { apiService } from './apiService';
 import { toast } from '@/components/ui/use-toast';
 
 class MongoDbService {
   async getAllUsers() {
-    if (isWeb) return null;
+    if (isWeb) {
+      try {
+        const response = await apiService.getAllUsers();
+        return response.data || [];
+      } catch (error) {
+        console.error("API error getting all users:", error);
+        return [];
+      }
+    }
     
     try {
       return await mongoUserService.getUsers();
     } catch (error) {
       console.error("Error getting all users from MongoDB:", error);
-      return null;
+      return [];
     }
   }
   
   async getUserById(userId: string) {
-    if (isWeb) return null;
+    if (isWeb) {
+      try {
+        const response = await apiService.getUserById(userId);
+        return response.data;
+      } catch (error) {
+        console.error(`API error getting user ${userId}:`, error);
+        return null;
+      }
+    }
     
     try {
       return await mongoUserService.getUserById(userId);
@@ -28,7 +41,15 @@ class MongoDbService {
   }
   
   async getUserByEmail(email: string) {
-    if (isWeb) return null;
+    if (isWeb) {
+      try {
+        const response = await apiService.getUserByEmail(email);
+        return response.data;
+      } catch (error) {
+        console.error(`API error getting user by email ${email}:`, error);
+        return null;
+      }
+    }
     
     try {
       return await mongoUserService.getUserByEmail(email);
@@ -39,7 +60,15 @@ class MongoDbService {
   }
   
   async createUser(user: any) {
-    if (isWeb) return null;
+    if (isWeb) {
+      try {
+        const response = await apiService.register(user);
+        return response.data?.user || null;
+      } catch (error) {
+        console.error("API error creating user:", error);
+        return null;
+      }
+    }
     
     try {
       return await mongoUserService.createUser(user);
@@ -50,7 +79,15 @@ class MongoDbService {
   }
   
   async updateUser(userId: string, updates: any) {
-    if (isWeb) return false;
+    if (isWeb) {
+      try {
+        const response = await apiService.updateProfile(userId, updates);
+        return response.data?.success || false;
+      } catch (error) {
+        console.error(`API error updating user ${userId}:`, error);
+        return false;
+      }
+    }
     
     try {
       const result = await mongoUserService.updateUser(userId, updates);
@@ -62,7 +99,15 @@ class MongoDbService {
   }
   
   async updateUserCertifications(userId: string, machineId: string) {
-    if (isWeb) return false;
+    if (isWeb) {
+      try {
+        const response = await apiService.addCertification(userId, machineId);
+        return response.data?.success || false;
+      } catch (error) {
+        console.error(`API error updating certifications for user ${userId}:`, error);
+        return false;
+      }
+    }
     
     try {
       return await mongoUserService.updateUserCertifications(userId, machineId);
@@ -73,7 +118,15 @@ class MongoDbService {
   }
   
   async getAllBookings() {
-    if (isWeb) return [];
+    if (isWeb) {
+      try {
+        const response = await apiService.getAllBookings();
+        return response.data || [];
+      } catch (error) {
+        console.error("API error getting all bookings:", error);
+        return [];
+      }
+    }
     
     try {
       const users = await mongoUserService.getUsers();
@@ -98,13 +151,22 @@ class MongoDbService {
     }
   }
   
-  async updateBookingStatus(bookingId: string, status: string) {
-    if (isWeb) return false;
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    console.log(`MongoDB.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
-      return await mongoUserService.updateBookingStatus(bookingId, status);
+      // Try the primary endpoint format first
+      const response = await apiService.updateBookingStatus(bookingId, status);
+      
+      if (!response.error && response.data) {
+        console.log(`Successfully updated booking status in MongoDB: ${bookingId} → ${status}`);
+        return true;
+      }
+      
+      console.error("API response error:", response.error || "No data returned");
+      return false;
     } catch (error) {
-      console.error(`Error updating booking ${bookingId} status in MongoDB:`, error);
+      console.error("MongoDB error in updateBookingStatus:", error);
       return false;
     }
   }
