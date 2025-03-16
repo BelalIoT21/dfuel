@@ -165,25 +165,8 @@ class ApiService {
     return this.request('DELETE', '/bookings/clear-all');
   }
   
-  async removeCertification(userId: string, machineId: string) {
-    return this.request('DELETE', `/certifications`, { userId, machineId });
-  }
-
-  // Add missing booking-related API methods
-  async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.request('POST', '/bookings', { userId, machineId, date, time });
-  }
-  
-  async getUserBookings(userId: string) {
-    return this.request('GET', `/bookings?userId=${userId}`);
-  }
-  
-  async getAllBookings() {
-    return this.request('GET', '/bookings/all');
-  }
-
-  async updateBookingStatus(bookingId: string, status: string) {
-    return this.request('PUT', `/bookings/update-status`, { bookingId, status });
+  async ping() {
+    return this.request('GET', '/health', undefined, false);
   }
 }
 
