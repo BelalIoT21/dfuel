@@ -67,36 +67,15 @@ const userSchema = new mongoose.Schema<IUser>(
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
-    return;
   }
 
-  try {
-    console.log(`Hashing password for user: ${this.email}`);
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    console.log(`Password hashed successfully for user: ${this.email}`);
-    next();
-  } catch (error) {
-    console.error(`Error hashing password: ${error}`);
-    // Fix: Convert unknown error to appropriate type for next()
-    next(error instanceof Error ? error : new Error(String(error)));
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Match password method
 userSchema.methods.matchPassword = async function (enteredPassword: string) {
-  try {
-    console.log(`Comparing password for user: ${this.email}`);
-    console.log(`Input password length: ${enteredPassword.length}`);
-    console.log(`Stored password hash starts with: ${this.password.substring(0, 20)}...`);
-    
-    const isMatch = await bcrypt.compare(enteredPassword, this.password);
-    console.log(`Password match result: ${isMatch}`);
-    return isMatch;
-  } catch (error) {
-    console.error(`Error comparing password: ${error}`);
-    return false;
-  }
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
 export const User = mongoose.model<IUser>('User', userSchema);

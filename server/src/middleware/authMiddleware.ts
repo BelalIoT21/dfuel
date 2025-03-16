@@ -16,9 +16,9 @@ declare global {
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token;
 
-  try {
-    // Check for token in Authorization header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // Check for token in Authorization header
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
@@ -27,22 +27,17 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
       // Get user from the token
       req.user = await User.findById((decoded as any).id).select('-password');
-      
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
       next();
-    } else {
-      // No token found
-      return res.status(401).json({ message: 'Not authorized, no token' });
+    } catch (error) {
+      console.error(error);
+      res.status(401);
+      throw new Error('Not authorized, token failed');
     }
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ 
-      message: 'Not authorized, token failed', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
+  }
+
+  if (!token) {
+    res.status(401);
+    throw new Error('Not authorized, no token');
   }
 };
 
@@ -51,6 +46,7 @@ export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
-    res.status(403).json({ message: 'Not authorized as an admin' });
+    res.status(403);
+    throw new Error('Not authorized as an admin');
   }
 };

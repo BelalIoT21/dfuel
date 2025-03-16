@@ -17,46 +17,6 @@ const timeSlots = [
   '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'
 ];
 
-// Use short IDs for easier handling
-const idMapping: Record<string, string> = {
-  "67d5fd3c50bbb3312ae0fb1e": "1", // Laser Cutter
-  "67d5fd3c50bbb3312ae0fb1f": "5", // Bambu Lab
-  "67d5fd3c50bbb3312ae0fb20": "2", // Ultimaker
-  "67d5fd3c50bbb3312ae0fb21": "3", // Safety Cabinet
-  "67d5fd3c50bbb3312ae0fb22": "6", // Safety Course
-  "67d5fd3c50bbb3312ae0fb23": "4", // Another Bambu Lab
-};
-
-// Reverse mapping for converting short IDs to MongoDB IDs
-const reverseIdMapping: Record<string, string> = {
-  "1": "67d5fd3c50bbb3312ae0fb1e", // Laser Cutter
-  "5": "67d5fd3c50bbb3312ae0fb1f", // Bambu Lab
-  "2": "67d5fd3c50bbb3312ae0fb20", // Ultimaker
-  "3": "67d5fd3c50bbb3312ae0fb21", // Safety Cabinet
-  "6": "67d5fd3c50bbb3312ae0fb22", // Safety Course
-  "4": "67d5fd3c50bbb3312ae0fb23", // Another Bambu Lab
-};
-
-// Define machine types for consistent identification
-const machineTypeMapping: Record<string, string> = {
-  "1": "Laser Cutter",
-  "2": "3D Printer", // Ultimaker
-  "3": "Safety Cabinet",
-  "4": "3D Printer", // Bambu Lab
-  "5": "3D Printer", // Bambu Lab
-  "6": "Safety Course",
-};
-
-// Hardcoded machines data for fallback
-const hardcodedMachines = {
-  "1": { id: "1", name: "Laser Cutter", type: "Laser Cutter" },
-  "2": { id: "2", name: "Ultimaker", type: "3D Printer" },
-  "3": { id: "3", name: "Safety Cabinet", type: "Safety Cabinet" },
-  "4": { id: "4", name: "Bambu Lab X1 E", type: "3D Printer" },
-  "5": { id: "5", name: "Bambu Lab X1 E", type: "3D Printer" },
-  "6": { id: "6", name: "Machine Safety Course", type: "Safety Course" }
-};
-
 const BookingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,101 +41,30 @@ const BookingPage = () => {
         if (!id) return;
         setLoading(true);
         setError(null);
-        
-        console.log(`Starting to load machine with ID: ${id}`);
-        
-        // First try a direct lookup with the given ID (could be short or long)
-        let foundMachine = null;
-        let machineId = id;
-        
-        // For simple numeric IDs, try directly with hardcoded data first
-        if (id.length <= 2 && hardcodedMachines[id]) {
-          console.log(`Found machine in hardcoded data with ID: ${id}`);
-          foundMachine = hardcodedMachines[id];
-        } 
-        // For long MongoDB IDs, try to get the short version
-        else if (id.length > 10 && idMapping[id]) {
-          machineId = idMapping[id];
-          console.log(`Converted long ID ${id} to short ID ${machineId}`);
-          foundMachine = hardcodedMachines[machineId];
-        }
-        
-        // If we don't have a machine yet, try the API
-        if (!foundMachine) {
-          console.log(`Trying API fetch for machine ID: ${machineId}`);
-          try {
-            // Try with current ID
-            foundMachine = await machineService.getMachineById(machineId);
-            
-            // If that fails and we have a short ID, try with the long version
-            if (!foundMachine && machineId.length <= 2 && reverseIdMapping[machineId]) {
-              const longId = reverseIdMapping[machineId];
-              console.log(`Trying API fetch with long ID: ${longId}`);
-              foundMachine = await machineService.getMachineById(longId);
-            }
-          } catch (apiError) {
-            console.error(`API fetch error:`, apiError);
-            // Fall back to hardcoded data if API fails
-            foundMachine = hardcodedMachines[machineId] || hardcodedMachines[id];
-            console.log(`Falling back to hardcoded data: ${foundMachine ? 'success' : 'failed'}`);
-          }
-        }
-        
-        // If we still don't have a machine, try one last fallback to hardcoded data
-        if (!foundMachine) {
-          console.log(`Last resort: trying hardcoded machines for ID: ${id}`);
-          foundMachine = hardcodedMachines[id];
-        }
-        
-        // If we found a machine, process it
+        console.log(`Attempting to load machine with ID: ${id}`);
+        const foundMachine = await machineService.getMachineById(id);
         if (foundMachine) {
           console.log(`Successfully loaded machine:`, foundMachine);
-          
-          // Check if it's a non-bookable machine type
-          if (foundMachine.type === 'Safety Cabinet' || foundMachine.type === 'Safety Course') {
-            setError(`${foundMachine.name} is not bookable. Please select a different machine.`);
-            setMachine(foundMachine);
-            setLoading(false);
-            return;
-          }
-          
           setMachine(foundMachine);
           
           // Fetch existing bookings to determine availability
-          try {
-            const allBookings = await bookingService.getAllBookings();
-            console.log(`Retrieved ${allBookings.length} bookings`);
-            
-            // Match bookings to this machine (using both short and long IDs)
-            const machineBookings = allBookings.filter(booking => {
-              const bookingMachineId = booking.machineId;
-              return (
-                bookingMachineId === id || 
-                bookingMachineId === machineId || 
-                bookingMachineId === foundMachine.id ||
-                (idMapping[bookingMachineId] && idMapping[bookingMachineId] === machineId) ||
-                (reverseIdMapping[bookingMachineId] && reverseIdMapping[bookingMachineId] === machineId)
-              ) && (
-                booking.status === 'Approved' || booking.status === 'Pending'
-              );
-            });
-            
-            // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
-            const bookedDateTimeSlots = machineBookings.map(booking => 
-              `${booking.date}-${booking.time}`
-            );
-            setBookedSlots(bookedDateTimeSlots);
-            
-            // Update available time slots when date changes
-            updateAvailableTimeSlots(selectedDate);
-          } catch (bookingError) {
-            console.error("Error loading bookings:", bookingError);
-            // Continue with empty bookings
-            setBookedSlots([]);
-          }
+          const allBookings = await bookingService.getAllBookings();
+          const machineBookings = allBookings.filter(
+            booking => booking.machineId === id && 
+            (booking.status === 'Approved' || booking.status === 'Pending')
+          );
+          
+          // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
+          const bookedDateTimeSlots = machineBookings.map(booking => 
+            `${booking.date}-${booking.time}`
+          );
+          setBookedSlots(bookedDateTimeSlots);
+          
+          // Update available time slots when date changes
+          updateAvailableTimeSlots(selectedDate);
         } else {
           console.error(`Machine not found with ID: ${id}`);
-          setError('Machine not found or is not bookable');
+          setError('Machine not found');
         }
       } catch (err) {
         console.error('Error loading machine:', err);
@@ -240,20 +129,9 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       console.log('Submitting booking...');
-      
-      // Use short machine ID (1, 2, etc.) for booking when available
-      let bookingMachineId = machine.id || id;
-      
-      // Ensure we're using a short ID format for consistency
-      if (bookingMachineId.length > 5 && idMapping[bookingMachineId]) {
-        bookingMachineId = idMapping[bookingMachineId];
-      }
-      
-      console.log(`Creating booking with machine ID: ${bookingMachineId}`);
-      
       const success = await bookingService.createBooking(
         user.id,
-        bookingMachineId,
+        machine.id,
         formattedDate,
         selectedTime
       );
@@ -292,19 +170,25 @@ const BookingPage = () => {
     setError(null);
     setLoading(true);
     setTimeout(() => {
-      window.location.reload(); // Simple reload approach to retry
+      if (id) {
+        machineService.getMachineById(id)
+          .then(data => {
+            if (data) {
+              setMachine(data);
+              setLoading(false);
+            } else {
+              setError('Machine not found');
+              setLoading(false);
+            }
+          })
+          .catch((error) => {
+            console.error("Error in retry:", error);
+            setError('Failed to load machine details');
+            setLoading(false);
+          });
+      }
     }, 1000);
   };
-
-  useEffect(() => {
-    if (machine && (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course')) {
-      const timeout = setTimeout(() => {
-        navigate(`/machine/${machine.id || id}`);
-      }, 3000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [machine, navigate, id]);
 
   if (loading) {
     return (
@@ -342,22 +226,6 @@ const BookingPage = () => {
           <p className="text-gray-600 mb-4">We couldn't find the machine you're looking for.</p>
           <Button onClick={() => navigate('/home')}>
             Return to Home
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (machine.type === 'Safety Cabinet' || machine.type === 'Safety Course') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-        <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold text-orange-600 mb-2">Not Bookable</h1>
-          <p className="text-gray-600 mb-4">
-            {machine.name} is not a bookable resource. You will be redirected to the machine details page.
-          </p>
-          <Button onClick={() => navigate(`/machine/${machine.id || id}`)}>
-            Go to Machine Details
           </Button>
         </div>
       </div>

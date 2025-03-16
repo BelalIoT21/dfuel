@@ -13,14 +13,12 @@ export const getUserProfile = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
 
-    console.log('Getting profile for user:', req.user._id);
     const user = await User.findById(req.user._id).select('-password').populate('bookings');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log('Found user profile, returning data');
     // Return the user data in a consistent format
     res.json({
       _id: user._id,
@@ -52,11 +50,9 @@ export const getUserBookings = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authorized, no token' });
     }
 
-    console.log('Getting bookings for user:', req.user._id);
     // Find all bookings for this user
     const bookings = await Booking.find({ user: req.user._id }).populate('machine', 'name type');
     
-    console.log(`Found ${bookings.length} bookings for user`);
     // Return the bookings
     res.json(bookings);
   } catch (error) {

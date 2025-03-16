@@ -17,9 +17,7 @@ export const useAuthFunctions = (
       console.log("Login attempt for:", email);
       
       // API login
-      console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
-      console.log("API login response:", apiResponse);
       
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
@@ -34,31 +32,17 @@ export const useAuthFunctions = (
       if (apiResponse.data) {
         console.log("API login successful:", apiResponse.data);
         const userData = apiResponse.data.user;
-        
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          console.log("Saving token to localStorage");
           localStorage.setItem('token', apiResponse.data.token);
-          // Also set the token in the API service
-          apiService.setToken(apiResponse.data.token);
-        } else {
-          console.error("No token received from API");
         }
         
-        // Transform MongoDB _id to id if needed
-        const normalizedUser = {
-          ...userData,
-          id: userData._id || userData.id
-        };
-        
-        console.log("Setting user data in state:", normalizedUser);
-        setUser(normalizedUser as User);
-        
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Login successful",
-          description: `Welcome back, ${normalizedUser.name}!`
+          description: `Welcome back, ${userData.name}!`
         });
-        
         return true;
       }
       
@@ -107,21 +91,11 @@ export const useAuthFunctions = (
         
         // Save the token for future API requests
         if (apiResponse.data.token) {
-          console.log("Saving token to localStorage");
           localStorage.setItem('token', apiResponse.data.token);
-        } else {
-          console.error("No token received from API");
         }
         
-        // Transform MongoDB _id to id if needed
-        const normalizedUser = {
-          ...userData,
-          id: userData._id || userData.id
-        };
-        
-        console.log("Setting user data in state after registration:", normalizedUser);
-        setUser(normalizedUser as User);
-        
+        setUser(userData as User);
+        localStorage.setItem('learnit_user', JSON.stringify(userData));
         toast({
           title: "Registration successful",
           description: `Welcome, ${name}!`
@@ -149,13 +123,9 @@ export const useAuthFunctions = (
   };
 
   const logout = () => {
-    console.log("Logging out user");
     setUser(null);
-    // Remove all auth data
+    localStorage.removeItem('learnit_user');
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Clear the token from API service
-    apiService.setToken(null);
     toast({
       description: "Logged out successfully."
     });

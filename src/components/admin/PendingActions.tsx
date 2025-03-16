@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
 import { Loader2, RefreshCw } from 'lucide-react';
-import mongoDbService from '@/services/mongoDbService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,29 +15,13 @@ export const PendingActions = () => {
   const fetchPendingBookings = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log("Fetching pending bookings for admin dashboard");
       
-      // Try MongoDB first for direct database access
-      let allBookings = [];
-      try {
-        console.log("Fetching bookings directly from MongoDB");
-        // Check if mongoDbService has the getAllBookings method
-        if (typeof mongoDbService.getAllBookings === 'function') {
-          allBookings = await mongoDbService.getAllBookings();
-          console.log(`Found ${allBookings.length} bookings in MongoDB`);
-        } else {
-          console.log("mongoDbService.getAllBookings is not available, skipping MongoDB fetch");
-        }
-      } catch (mongoError) {
-        console.error("MongoDB booking fetch error:", mongoError);
-      }
+      // Use the bookingService to get all bookings
+      const allBookings = await bookingService.getAllBookings();
+      console.log(`Found ${allBookings.length} total bookings`);
       
-      // If MongoDB fails or returns empty, use the service
-      if (!allBookings || allBookings.length === 0) {
-        console.log("Falling back to bookingService");
-        allBookings = await bookingService.getAllBookings();
-        console.log(`Found ${allBookings.length} total bookings via bookingService`);
-      }
-      
+      // Filter for pending bookings only
       const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
       console.log(`Found ${pendingOnly.length} pending bookings`);
       
@@ -46,20 +29,25 @@ export const PendingActions = () => {
     } catch (error) {
       console.error('Error fetching pending bookings:', error);
       setPendingBookings([]);
+      toast({
+        title: "Error",
+        description: "Failed to load pending bookings",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [toast]);
   
   useEffect(() => {
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 10 seconds
+    // Set up polling to refresh pending bookings every 30 seconds
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 10000);
+    }, 30000);
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
@@ -67,7 +55,6 @@ export const PendingActions = () => {
   // Handle booking status change to completely refresh the list
   const handleBookingStatusChange = useCallback(async () => {
     console.log("Booking status changed, refreshing list");
-    // Force immediate refresh of the bookings list
     await fetchPendingBookings();
   }, [fetchPendingBookings]);
 
@@ -105,15 +92,11 @@ export const PendingActions = () => {
             <Loader2 className="h-6 w-6 text-purple-600 animate-spin mb-2" />
             <p>Loading pending bookings...</p>
           </div>
-        ) : pendingBookings.length > 0 ? (
+        ) : (
           <PendingBookingsCard 
             pendingBookings={pendingBookings}
             onBookingStatusChange={handleBookingStatusChange}
           />
-        ) : (
-          <div className="text-center p-4 bg-white rounded-lg shadow">
-            <p className="text-gray-500">No pending bookings to approve</p>
-          </div>
         )}
       </div>
     </div>

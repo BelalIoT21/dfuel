@@ -53,20 +53,30 @@ class MongoSeedService {
           email: 'admin@learnit.com',
           password: adminPassword,
           isAdmin: true,
-          certifications: ['1', '2', '3', '4', '5', '6'], // All machines by default
+          certifications: ['1', '2', '3', '4', '5'], // All machines
           bookings: [],
           lastLogin: new Date().toISOString()
         },
         {
           id: '2',
-          name: 'Bilal Mishmish',
-          email: 'b.l.mishmish@gmail.com',
+          name: 'John Doe',
+          email: 'john@example.com',
           password: userPassword,
           isAdmin: false,
-          certifications: ['1', '2', '3', '5', '6'],
+          certifications: ['1', '2'], // Laser Cutter and 3D Printer
           bookings: [],
           lastLogin: new Date().toISOString()
         },
+        {
+          id: '3',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          password: userPassword,
+          isAdmin: false,
+          certifications: ['3', '4'], // CNC Router and Vinyl Cutter
+          bookings: [],
+          lastLogin: new Date().toISOString()
+        }
       ];
       
       // Insert users into database
@@ -118,16 +128,6 @@ class MongoSeedService {
       nextWeek.setDate(nextWeek.getDate() + 7);
       const nextWeekStr = nextWeek.toISOString().split('T')[0];
       
-      // Machine names mapped to consistent IDs 
-      const machineMap: Record<string, string> = {
-        'Laser Cutter': '1',
-        'Ultimaker': '2',
-        'X1 E Carbon 3D Printer': '3',
-        'Bambu Lab X1 E': '4',
-        'Safety Cabinet': '5',
-        'Safety Course': '6',
-      };
-      
       // Create sample bookings and assign to users
       for (const user of users) {
         if (user.id === '1') {
@@ -136,7 +136,52 @@ class MongoSeedService {
         }
         
         const bookings = [];
-
+        
+        // Create bookings for user "John Doe"
+        if (user.id === '2') {
+          bookings.push({
+            id: `booking-${user.id}-1`,
+            machineId: '1', // Laser Cutter
+            date: today,
+            time: '10:00 - 12:00',
+            status: 'Approved'
+          });
+          
+          bookings.push({
+            id: `booking-${user.id}-2`,
+            machineId: '2', // 3D Printer
+            date: tomorrowStr,
+            time: '14:00 - 16:00',
+            status: 'Pending'
+          });
+        }
+        
+        // Create bookings for user "Jane Smith"
+        if (user.id === '3') {
+          bookings.push({
+            id: `booking-${user.id}-1`,
+            machineId: '3', // CNC Router
+            date: today,
+            time: '13:00 - 15:00',
+            status: 'Pending'
+          });
+          
+          bookings.push({
+            id: `booking-${user.id}-2`,
+            machineId: '4', // Vinyl Cutter
+            date: nextWeekStr,
+            time: '09:00 - 11:00',
+            status: 'Approved'
+          });
+          
+          bookings.push({
+            id: `booking-${user.id}-3`,
+            machineId: '5', // Soldering Station
+            date: tomorrowStr,
+            time: '16:00 - 18:00',
+            status: 'Completed'
+          });
+        }
         
         // Add bookings to user
         user.bookings = bookings;
@@ -153,97 +198,6 @@ class MongoSeedService {
       console.log("Successfully seeded bookings");
     } catch (error) {
       console.error("Error seeding bookings:", error);
-    }
-  }
-  
-  // Seed machines if needed
-  async seedMachines(): Promise<void> {
-    await this.initCollections();
-    if (!this.machinesCollection) return;
-    
-    try {
-      // Check if machines already exist
-      const machineCount = await this.machinesCollection.countDocuments();
-      if (machineCount > 0) {
-        console.log(`${machineCount} machines already exist in the database, skipping machine seeding`);
-        return;
-      }
-      
-      console.log("Seeding machines...");
-      
-      // Create sample machines with consistent IDs
-      const machines: MongoMachine[] = [
-        {
-          _id: '1',
-          name: 'Laser Cutter',
-          type: 'Laser Cutter',
-          description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/laser-cutter.jpg',
-          specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather'
-        },
-        {
-          _id: '2',
-          name: 'Ultimaker',
-          type: '3D Printer',
-          description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/3d-printer.jpg',
-          specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU'
-        },
-        {
-          _id: '3',
-          name: 'X1 E Carbon 3D Printer',
-          type: '3D Printer',
-          description: 'High-speed multi-material 3D printer with exceptional print quality.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/bambu-printer.jpg',
-          specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS'
-        },
-        {
-          _id: '4',
-          name: 'Bambu Lab X1 E',
-          type: '3D Printer',
-          description: 'Next-generation 3D printing technology',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Advanced',
-          imageUrl: '/machines/cnc-mill.jpg',
-          specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics'
-        },
-        {
-          _id: '5',
-          name: 'Safety Cabinet',
-          type: 'Workshop',
-          description: 'Full suite of safety equipment and protective gear.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/woodworking.jpg'
-        },
-        {
-          _id: '6',
-          name: 'Safety Course',
-          type: 'Safety Course',
-          description: 'Required safety training for all makerspace users.',
-          status: 'Available',
-          requiresCertification: false,
-          difficulty: 'Beginner',
-          imageUrl: '/machines/safety.jpg'
-        }
-      ];
-      
-      // Insert machines into database
-      await this.machinesCollection.insertMany(machines);
-      console.log(`Successfully seeded ${machines.length} machines`);
-    } catch (error) {
-      console.error("Error seeding machines:", error);
     }
   }
 }

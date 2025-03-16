@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -34,67 +33,15 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   
   useEffect(() => {
     const fetchMachines = async () => {
       try {
         const fetchedMachines = await machineService.getMachines();
-        console.log('Fetched machines for UsersTable:', fetchedMachines.length);
-        
-        // Filter out duplicates
-        const uniqueMachines = Array.from(
-          new Map(fetchedMachines.map(m => [m._id || m.id, m])).values()
-        ).filter(machine => {
-          // Remove CNC Mill from the list
-          return machine.name.toLowerCase() !== "cnc mill";
-        });
-        
-        setAllMachines(uniqueMachines);
-        
-        // Create a map of machine IDs to names for quick lookup
-        const namesMap = {};
-        
-        // Add special cases with consistent naming
-        namesMap["6"] = "Machine Safety Course";
-        namesMap["3"] = "Safety Cabinet";
-        
-        // Add all machine names
-        uniqueMachines.forEach(machine => {
-          const id = machine._id || machine.id;
-          if (id) {
-            namesMap[id] = machine.name;
-          }
-        });
-        
-        // Add local machines as fallback
-        machines
-          .filter(m => m.name.toLowerCase() !== "cnc mill")
-          .forEach(machine => {
-            if (!namesMap[machine.id]) {
-              namesMap[machine.id] = machine.name;
-            }
-          });
-        
-        console.log('Created machine name map with', Object.keys(namesMap).length, 'entries');
-        setMachineNames(namesMap);
+        setAllMachines(fetchedMachines);
       } catch (error) {
         console.error('Error fetching machines:', error);
-        
-        // Fallback to local data (filtered)
-        const filteredMachines = machines.filter(m => m.name.toLowerCase() !== "cnc mill");
-        setAllMachines(filteredMachines);
-        
-        // Create a map of local machine IDs to names for quick lookup
-        const namesMap = {};
-        filteredMachines.forEach(machine => {
-          namesMap[machine.id] = machine.name;
-        });
-        // Add special cases
-        namesMap["6"] = "Machine Safety Course";
-        namesMap["3"] = "Safety Cabinet";
-        
-        setMachineNames(namesMap);
+        setAllMachines(machines); // Fallback to local data
       }
     };
     
@@ -108,35 +55,18 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   );
 
   const getMachineName = (certId: string) => {
-    // Consistent handling of special machines
     if (certId === "6") return "Machine Safety Course";
+    if (certId === "5") return "Bambu Lab X1 E";
     if (certId === "3") return "Safety Cabinet";
     
-    return machineNames[certId] || `Machine ${certId}`;
-  };
-
-  // Group certifications for display
-  const groupCertifications = (certifications: string[]) => {
-    if (!certifications || certifications.length === 0) return { regular: [], safety: false, machineSafety: false };
+    const machine = allMachines.find(m => m.id === certId);
+    if (machine) return machine.name;
     
-    const regular = certifications.filter(cert => cert !== "3" && cert !== "6");
-    const safety = certifications.includes("3");
-    const machineSafety = certifications.includes("6");
-    
-    return { regular, safety, machineSafety };
+    const localMachine = machines.find(m => m.id === certId);
+    return localMachine ? localMachine.name : `Machine ${certId}`;
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!userId) {
-      console.error("Cannot delete user: user ID is undefined");
-      toast({
-        title: "Error",
-        description: "User ID is missing. Cannot delete user.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setDeletingUserId(userId);
     
     try {
@@ -200,101 +130,89 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         </TableHeader>
         <TableBody>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map((user) => {
-              const { regular, safety, machineSafety } = groupCertifications(user.certifications);
-              
-              return (
-                <TableRow key={user.id || user._id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      user.isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {user.isAdmin ? 'Admin' : 'User'}
-                    </span>
-                  </TableCell>
-                  <TableCell>{new Date(user.lastLogin).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {regular.length > 0 ? (
-                        regular.map((cert: string) => (
+            filteredUsers.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    user.isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {user.isAdmin ? 'Admin' : 'User'}
+                  </span>
+                </TableCell>
+                <TableCell>{new Date(user.lastLogin).toLocaleString()}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {user.certifications && user.certifications.length > 0 ? (
+                      user.certifications
+                        .filter((cert: string) => cert !== "6")
+                        .map((cert: string) => (
                           <span 
                             key={cert} 
                             className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                            title={cert}
                           >
                             {getMachineName(cert)}
                           </span>
                         ))
-                      ) : (
-                        !safety && !machineSafety && (
-                          <span className="text-xs text-gray-500">None</span>
-                        )
-                      )}
-                      {machineSafety && (
-                        <span 
-                          className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
-                        >
-                          Safety Course
-                        </span>
-                      )}
-                      {safety && (
-                        <span 
-                          className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded"
-                        >
-                          Safety Cabinet
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <UserCertificationManager 
-                        user={user} 
-                        onCertificationAdded={onCertificationAdded}
-                      />
-                      
-                      {!user.isAdmin && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-red-200 hover:bg-red-50 text-red-700"
+                    ) : (
+                      <span className="text-xs text-gray-500">None</span>
+                    )}
+                    {user.certifications?.includes("6") && (
+                      <span 
+                        className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded"
+                      >
+                        Safety Course
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <UserCertificationManager 
+                      user={user} 
+                      onCertificationAdded={onCertificationAdded}
+                    />
+                    
+                    {!user.isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-red-200 hover:bg-red-50 text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the user "{user.name}" and all their data, including bookings and certifications. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
-                                onClick={() => handleDeleteUser(user.id || user._id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                {deletingUserId === (user.id || user._id) ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                )}
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
           ) : (
             <TableRow>
               <TableCell colSpan={6} className="text-center py-4 text-gray-500">

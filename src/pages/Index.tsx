@@ -11,7 +11,6 @@ import { toast } from '@/components/ui/use-toast';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [dbUserCount, setDbUserCount] = useState<number | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -20,43 +19,23 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        const response = await fetch('http://localhost:4000/api/health');
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Server health check:", data);
+        const response = await apiService.checkHealth();
+        if (response.data) {
+          console.log("Server health check:", response.data);
           setServerStatus('connected');
-          
-          // Set MongoDB user count if available
-          if (data.mongodb && typeof data.mongodb.userCount === 'number') {
-            setDbUserCount(data.mongodb.userCount);
-          }
-          
           toast({
             title: 'Server Connected',
             description: 'Successfully connected to the backend server',
           });
-        } else {
-          throw new Error(`Server returned ${response.status}`);
         }
       } catch (error) {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server at localhost:4000. Please ensure the server is running.',
+          description: 'Could not connect to the backend server. Please try again later.',
           variant: 'destructive'
         });
-        
-        // Try API service as fallback
-        try {
-          const apiResponse = await apiService.ping();
-          if (apiResponse.data && apiResponse.data.pong) {
-            setServerStatus('connected via API');
-          }
-        } catch (apiError) {
-          console.error("API service connection also failed:", apiError);
-        }
       }
     };
     
@@ -73,8 +52,7 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    const success = await login(email, password);
-    console.log("Login success:", success);
+    await login(email, password);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
@@ -98,13 +76,8 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus.includes('connected') ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`mt-2 text-sm ${serverStatus === 'connected' ? 'text-green-600' : 'text-red-600'}`}>
               Server status: {serverStatus}
-            </div>
-          )}
-          {dbUserCount !== null && (
-            <div className="mt-1 text-sm text-blue-600">
-              MongoDB users: {dbUserCount}
             </div>
           )}
         </div>
