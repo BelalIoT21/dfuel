@@ -22,13 +22,28 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     const fetchBookingsCount = async () => {
       try {
         setIsLoading(true);
-        // Try fetching all bookings including pending ones
-        const bookings = await bookingService.getAllBookings();
-        console.log("Fetched bookings:", bookings);
-        setBookingsCount(bookings.length);
-      } catch (error) {
-        console.error("Error fetching bookings count:", error);
-        setBookingsCount(0);
+        // Try API first for bookings
+        try {
+          const response = await apiService.getAllBookings();
+          if (response.success && Array.isArray(response.data)) {
+            console.log("Fetched bookings from API:", response.data.length);
+            setBookingsCount(response.data.length);
+            setIsLoading(false);
+            return;
+          }
+        } catch (apiError) {
+          console.error("Error fetching bookings from API:", apiError);
+        }
+        
+        // Fallback to bookingService
+        try {
+          const bookings = await bookingService.getAllBookings();
+          console.log("Fetched bookings:", bookings);
+          setBookingsCount(bookings.length);
+        } catch (error) {
+          console.error("Error fetching bookings count:", error);
+          setBookingsCount(0);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -73,16 +88,21 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Create a normalized list of machines for consistent counting
-  const normalizedMachines = Array.isArray(machines) ? machines : [];
-  
-  // Filter out only machines with IDs 5 and 6 (safety cabinet and any other special equipment)
-  const filteredMachines = normalizedMachines.filter(machine => {
-    const id = machine.id || machine._id;
-    return id !== '5' && id !== '6';
-  });
-  
-  console.log("Filtered machines:", filteredMachines.length, "from total:", normalizedMachines.length);
+  // Ensure consistent machine count by using a standardized filtering approach
+  const getMachineCount = () => {
+    // Start with the machines array from props
+    const normalizedMachines = Array.isArray(machines) ? machines : [];
+    console.log("Total machines before filtering:", normalizedMachines.length);
+    
+    // Only filter out machines with IDs 5 and 6 (safety cabinet and safety course)
+    const filteredMachines = normalizedMachines.filter(machine => {
+      const id = machine.id || machine._id;
+      return id !== '5' && id !== '6' && id !== 5 && id !== 6;
+    });
+    
+    console.log("Filtered machines count:", filteredMachines.length);
+    return filteredMachines.length;
+  };
   
   // Basic statistics for the admin dashboard
   const stats = [
@@ -95,7 +115,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     },
     { 
       title: 'Total Machines', 
-      value: filteredMachines.length, 
+      value: getMachineCount(), 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '',
       link: '/admin/machines'

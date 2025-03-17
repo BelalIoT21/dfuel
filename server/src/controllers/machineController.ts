@@ -6,7 +6,17 @@ import mongoose from 'mongoose';
 // Get all machines
 export const getMachines = async (req: Request, res: Response) => {
   try {
-    const machines = await Machine.find({});
+    // Check if we should filter special machines (5 and 6)
+    const filterSpecial = req.query.filterSpecial === 'true';
+    
+    let query = {};
+    if (filterSpecial) {
+      // Filter out machines 5 and 6 if requested
+      query = { _id: { $nin: ['5', '6'] } };
+    }
+    
+    const machines = await Machine.find(query);
+    console.log(`Retrieved ${machines.length} machines${filterSpecial ? ' (filtered)' : ''}`);
     
     // Normalize status field for all machines before sending response
     const normalizedMachines = machines.map(machine => {

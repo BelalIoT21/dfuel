@@ -24,18 +24,19 @@ export const createAdminUser = async () => {
       throw new Error('ADMIN_PASSWORD is not defined in environment variables');
     }
 
-    // Create admin user from .env credentials
+    // Create admin user from .env credentials with all certifications
     const adminUser = new User({
       _id: '1',
       name: 'Admin',
       email: process.env.ADMIN_EMAIL,
       password: adminPassword,
       isAdmin: true,
-      certifications: ['1', '2', '3', '4', '5', '6'], // Give admin all certifications
+      certifications: ['1', '2', '3', '4', '5', '6'], // Ensure all six certifications
     });
 
     await adminUser.save();
     console.log('Admin user created successfully:', adminUser.email);
+    console.log('Admin certifications:', adminUser.certifications);
   } catch (error) {
     console.error('Error in createAdminUser:', error);
     throw error; // Re-throw the error for handling elsewhere

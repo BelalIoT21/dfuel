@@ -76,6 +76,28 @@ export class SeedService {
           imageUrl: '/machines/cnc-mill.jpg',
           specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics',
         },
+        {
+          _id: '5', // Safety cabinet
+          name: 'Safety Cabinet',
+          type: 'Safety Equipment',
+          description: 'Store hazardous materials safely.',
+          status: 'Available',
+          requiresCertification: true,
+          difficulty: 'Basic',
+          imageUrl: '/machines/safety-cabinet.jpg',
+          specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
+        },
+        {
+          _id: '6', // Safety course
+          name: 'Safety Course',
+          type: 'Certification',
+          description: 'Basic safety training for the makerspace.',
+          status: 'Available',
+          requiresCertification: false,
+          difficulty: 'Basic',
+          imageUrl: '/machines/safety-course.jpg',
+          specifications: 'Duration: 1 hour, Required for all makerspace users',
+        },
       ];
 
       const createdMachines = await Machine.insertMany(machines);
