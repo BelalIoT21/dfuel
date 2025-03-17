@@ -82,6 +82,9 @@ const machineSchema = new mongoose.Schema<IMachine>(
     linkedQuizId: {
       type: String,
     },
+    note: {
+      type: String,
+    },
   },
   {
     timestamps: true,

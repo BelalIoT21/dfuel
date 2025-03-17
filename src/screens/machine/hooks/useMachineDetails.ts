@@ -34,9 +34,21 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Special handling for X1 E Carbon 3D Printer (ID: 3)
-        if (machineId === "3") {
+        // Handle machine types based on ID
+        if (machineId === "1") {
+          machineData.type = "Laser Cutter";
+        } else if (machineId === "2") {
           machineData.type = "3D Printer";
+        } else if (machineId === "3") {
+          machineData.type = "X1 E Carbon 3D Printer";
+          machineData.type = "3D Printer";
+        } else if (machineId === "4") {
+          machineData.type = "Bambu Lab X1 E";
+          machineData.type = "3D Printer";
+        } else if (machineId === "5") {
+          machineData.type = "Safety Cabinet";
+        } else if (machineId === "6") {
+          machineData.type = "Safety Course";
         }
         
         // Get machine status from MongoDB

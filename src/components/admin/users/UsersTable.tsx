@@ -56,14 +56,18 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         // Create a map of machine IDs to names for quick lookup
         const namesMap: {[key: string]: string} = {};
         
-        // Add special cases with consistent naming
+        // Add fixed machine names for specific IDs
+        namesMap["1"] = "Laser Cutter";
+        namesMap["2"] = "Ultimaker";
+        namesMap["3"] = "X1 E Carbon 3D Printer";
+        namesMap["4"] = "Bambu Lab X1 E";
+        namesMap["5"] = "Safety Cabinet";
         namesMap["6"] = "Machine Safety Course";
-        namesMap["3"] = "Safety Cabinet";
         
         // Add all machine names
         uniqueMachines.forEach(machine => {
           const id = machine._id || machine.id;
-          if (id) {
+          if (id && !namesMap[id.toString()]) {
             namesMap[id.toString()] = machine.name;
           }
         });
@@ -88,12 +92,19 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         
         // Create a map of local machine IDs to names for quick lookup
         const namesMap: {[key: string]: string} = {};
-        filteredMachines.forEach(machine => {
-          namesMap[machine.id] = machine.name;
-        });
-        // Add special cases
+        // Add fixed machine names for specific IDs
+        namesMap["1"] = "Laser Cutter";
+        namesMap["2"] = "Ultimaker";
+        namesMap["3"] = "X1 E Carbon 3D Printer";
+        namesMap["4"] = "Bambu Lab X1 E";
+        namesMap["5"] = "Safety Cabinet";
         namesMap["6"] = "Machine Safety Course";
-        namesMap["3"] = "Safety Cabinet";
+        
+        filteredMachines.forEach(machine => {
+          if (!namesMap[machine.id]) {
+            namesMap[machine.id] = machine.name;
+          }
+        });
         
         setMachineNames(namesMap);
       }
@@ -122,9 +133,13 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   console.log('UsersTable: Filtered users:', filteredUsers.length);
 
   const getMachineName = (certId: string) => {
-    // Consistent handling of special machines
+    // Consistent machine names for specific IDs
+    if (certId === "1") return "Laser Cutter";
+    if (certId === "2") return "Ultimaker";
+    if (certId === "3") return "X1 E Carbon 3D Printer";
+    if (certId === "4") return "Bambu Lab X1 E";
+    if (certId === "5") return "Safety Cabinet";
     if (certId === "6") return "Machine Safety Course";
-    if (certId === "3") return "Safety Cabinet";
     
     return machineNames[certId] || `Machine ${certId}`;
   };
@@ -133,8 +148,8 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   const groupCertifications = (certifications: string[]) => {
     if (!certifications || certifications.length === 0) return { regular: [], safety: false, machineSafety: false };
     
-    const regular = certifications.filter(cert => cert !== "3" && cert !== "6");
-    const safety = certifications.includes("3");
+    const regular = certifications.filter(cert => cert !== "5" && cert !== "6");
+    const safety = certifications.includes("5");
     const machineSafety = certifications.includes("6");
     
     return { regular, safety, machineSafety };

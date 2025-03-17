@@ -30,10 +30,22 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     }
   };
 
-  // Handle special machine types
+  // Properly set machine types based on ID
   let machineType = machine.type;
-  if (machine.id === "3") {
+  const machineId = String(machine.id);
+  
+  if (machineId === "1") {
+    machineType = "Laser Cutter";
+  } else if (machineId === "2") {
+    machineType = "3D Printer";
+  } else if (machineId === "3") {
     machineType = "X1 E Carbon 3D Printer";
+  } else if (machineId === "4") {
+    machineType = "Bambu Lab X1 E";
+  } else if (machineId === "5") {
+    machineType = "Safety Cabinet";
+  } else if (machineId === "6") {
+    machineType = "Safety Course";
   } else if (!machineType || machineType.trim() === '') {
     machineType = "Machine";
   }

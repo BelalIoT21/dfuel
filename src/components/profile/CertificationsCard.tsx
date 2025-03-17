@@ -10,6 +10,16 @@ import { certificationService } from '@/services/certificationService';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
+// Define known machines with correct ID mappings
+const MACHINE_NAMES = {
+  "1": "Laser Cutter",
+  "2": "Ultimaker",
+  "3": "X1 E Carbon 3D Printer",
+  "4": "Bambu Lab X1 E",
+  "5": "Safety Cabinet",
+  "6": "Machine Safety Course"
+};
+
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -46,16 +56,19 @@ const CertificationsCard = () => {
       
       console.log("User certifications in CertificationsCard:", userCerts);
       
-      // Format the machines for display
+      // Format the machines for display with correct names
       const formattedMachines = allCertifications.map(machine => {
         const machineId = machine.id.toString();
         const certDate = user?.certificationDates?.[machineId] 
           ? new Date(user.certificationDates[machineId])
           : new Date();
         
+        // Use our predefined machine names
+        const machineName = MACHINE_NAMES[machineId] || machine.name;
+        
         return {
           id: machineId,
-          name: machine.name,
+          name: machineName,
           certified: userCerts.includes(machineId),
           date: format(certDate, 'dd/MM/yyyy'),
           bookable: machineId !== "5" && machineId !== "6" // Safety Cabinet and Safety Course aren't bookable

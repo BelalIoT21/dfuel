@@ -63,13 +63,47 @@ const MachineActions = ({
     });
   }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId]);
 
+  const handleTakeCourse = () => {
+    // If not Safety Course and user doesn't have Safety Course certification
+    if (!isSafetyCourse && !hasMachineSafetyCert && !isAdmin) {
+      Alert.alert(
+        "Safety Course Required",
+        "You need to complete the Machine Safety Course first before taking this course.",
+        [
+          { text: "OK" }
+        ]
+      );
+      return;
+    }
+    
+    // Proceed with course
+    onTakeCourse();
+  };
+
+  const handleTakeQuiz = () => {
+    // If not Safety Course and user doesn't have Safety Course certification
+    if (!isSafetyCourse && !hasMachineSafetyCert && !isAdmin) {
+      Alert.alert(
+        "Safety Course Required",
+        "You need to complete the Machine Safety Course first before taking this quiz.",
+        [
+          { text: "OK" }
+        ]
+      );
+      return;
+    }
+    
+    // Proceed with quiz
+    onTakeQuiz();
+  };
+
   return (
     <View style={styles.actionContainer}>
       <Button 
         mode="contained" 
         icon="book-open-variant" 
         style={styles.actionButton}
-        onPress={onTakeCourse}
+        onPress={handleTakeCourse}
       >
         Safety Course
       </Button>
@@ -78,7 +112,7 @@ const MachineActions = ({
         mode="contained" 
         icon="clipboard-list" 
         style={styles.actionButton}
-        onPress={onTakeQuiz}
+        onPress={handleTakeQuiz}
       >
         Take Quiz
       </Button>

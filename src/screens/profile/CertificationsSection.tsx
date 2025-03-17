@@ -11,7 +11,7 @@ interface CertificationsSectionProps {
   user: User;
 }
 
-// Define known machines to avoid excessive API calls
+// Define known machines with correct ID mappings
 const KNOWN_MACHINES = {
   "1": { name: "Laser Cutter", type: "Laser Cutter" },
   "2": { name: "Ultimaker", type: "3D Printer" },
@@ -56,7 +56,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     const types: Record<string, string> = {};
     
     try {
-      // First populate with known machines
+      // First populate with known machines - ensure correct ID mapping
       Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
         names[id] = machine.name;
         types[id] = machine.type;

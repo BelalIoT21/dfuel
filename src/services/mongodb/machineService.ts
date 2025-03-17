@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -250,7 +251,7 @@ class MongoMachineService {
           { 
             _id: '1', 
             name: 'Laser Cutter', 
-            type: 'Cutting', 
+            type: 'Laser Cutter', 
             status: 'Available', 
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
@@ -298,9 +299,25 @@ class MongoMachineService {
       } else {
         console.log(`Found ${count} existing machines in MongoDB, skipping seed`);
         
-        // Remove machines 5 and 6 if they exist
+        // Make sure machine IDs 1-4 have the correct names
+        const updates = [
+          { _id: '1', name: 'Laser Cutter', type: 'Laser Cutter' },
+          { _id: '2', name: 'Ultimaker', type: '3D Printer' },
+          { _id: '3', name: 'X1 E Carbon 3D Printer', type: '3D Printer' },
+          { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' }
+        ];
+        
+        for (const update of updates) {
+          await this.machinesCollection.updateOne(
+            { _id: update._id },
+            { $set: { name: update.name, type: update.type } },
+            { upsert: true }
+          );
+        }
+        
+        // Remove machines 5 and 6 if they exist (they're special machines not stored here)
         await this.machinesCollection.deleteMany({ _id: { $in: ['5', '6'] } });
-        console.log("Removed machines 5 and 6 if they existed");
+        console.log("Updated machine names and removed safety machines if needed");
       }
     } catch (error) {
       console.error("Error seeding default machines to MongoDB:", error);
