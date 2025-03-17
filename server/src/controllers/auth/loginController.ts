@@ -1,5 +1,6 @@
+
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // Changed from bcrypt to bcryptjs
 import User from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
 
