@@ -40,6 +40,10 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Update lastLogin time
+    user.lastLogin = new Date();
+    await user.save();
+
     // Generate token
     const token = generateToken(user._id.toString());
 

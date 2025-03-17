@@ -26,7 +26,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
+  // Check server connection and set up auto-refresh
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -47,10 +49,26 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-    const intervalId = setInterval(checkServerStatus, 5000); // Check every 5 seconds
+    const serverCheckInterval = setInterval(checkServerStatus, 5000); // Check every 5 seconds
     
-    return () => clearInterval(intervalId);
-  }, [toast]);
+    return () => clearInterval(serverCheckInterval);
+  }, []);
+
+  // Set up auto-refresh for machine statuses
+  useEffect(() => {
+    // Only auto-refresh if the feature is enabled and server is connected
+    if (!autoRefreshEnabled || !isServerConnected) return;
+    
+    console.log("Setting up auto-refresh for machine statuses");
+    const refreshInterval = setInterval(() => {
+      if (!isRefreshing) {
+        console.log("Auto-refreshing machine statuses...");
+        refreshMachineStatuses();
+      }
+    }, 15000); // Auto-refresh every 15 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [isServerConnected, autoRefreshEnabled, isRefreshing]);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
@@ -104,10 +122,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       setMachineData(updatedMachineData);
       
-      toast({
-        title: "Refreshed",
-        description: "Machine statuses have been refreshed"
-      });
+      // Only show toast for manual refreshes
+      if (!autoRefreshEnabled) {
+        toast({
+          title: "Refreshed",
+          description: "Machine statuses have been refreshed"
+        });
+      }
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
       toast({
@@ -224,15 +245,38 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   Server: Disconnected
                 </span>
               )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={refreshMachineStatuses}
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
-                Refresh
-              </Button>
+              <div className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setAutoRefreshEnabled(!autoRefreshEnabled);
+                    if (!autoRefreshEnabled) {
+                      toast({
+                        title: "Auto-refresh enabled",
+                        description: "Machine statuses will refresh automatically"
+                      });
+                    } else {
+                      toast({
+                        title: "Auto-refresh disabled",
+                        description: "Machine statuses will need manual refresh"
+                      });
+                    }
+                  }}
+                  className={`mr-2 ${autoRefreshEnabled ? 'border-green-500 text-green-700' : 'border-gray-300'}`}
+                >
+                  {autoRefreshEnabled ? 'Auto On' : 'Auto Off'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshMachineStatuses}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+                  Refresh
+                </Button>
+              </div>
             </div>
           </div>
           <CardDescription>Current status of all machines</CardDescription>

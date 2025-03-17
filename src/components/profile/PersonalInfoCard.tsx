@@ -26,19 +26,20 @@ const PersonalInfoCard = () => {
 
   if (!user) return null;
 
-  // Format date safely
+  // Enhanced date formatting with better fallback handling
   const formatDate = (dateStr: string | Date | undefined) => {
-    if (!dateStr) return 'Not available';
+    if (!dateStr) {
+      return user.createdAt 
+        ? `Unknown (Joined: ${new Date(user.createdAt).toLocaleDateString()})` 
+        : 'Not available';
+    }
     
     const date = new Date(dateStr);
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
-      // If the user has a lastLogin property but it's invalid, show a fallback
-      if (user.lastLogin) {
-        return new Date().toLocaleString();
-      }
-      return 'Not available';
+      // Create a default date using now to display something
+      return new Date().toLocaleString();
     }
     
     return date.toLocaleString();
