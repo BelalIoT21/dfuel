@@ -112,6 +112,7 @@ export const updateMachine = async (req: Request, res: Response) => {
           break;
         case 'in-use':
         case 'in use':
+        case 'out of order':
           normalizedStatus = 'In Use';
           break;
         default:
@@ -161,6 +162,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
         break;
       case 'in-use':
       case 'in use':
+      case 'out of order':
         normalizedStatus = 'In Use';
         break;
       default:

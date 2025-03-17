@@ -60,6 +60,12 @@ class MongoMachineService {
     
     try {
       const status = await this.machineStatusesCollection.findOne({ machineId });
+      
+      // Convert "Out of Order" to "in-use" for client display
+      if (status && status.status && status.status.toLowerCase() === 'out of order') {
+        status.status = 'in-use';
+      }
+      
       console.log(`Machine status for ${machineId}: ${status ? status.status : 'not found'}`);
       return status;
     } catch (error) {
@@ -76,10 +82,16 @@ class MongoMachineService {
     }
     
     try {
-      console.log(`Updating status for machine ${machineId} to ${status}`);
+      // Convert "out of order" to "in-use" for the database
+      let normalizedStatus = status;
+      if (status.toLowerCase() === 'out of order') {
+        normalizedStatus = 'in-use';
+      }
+      
+      console.log(`Updating status for machine ${machineId} to ${normalizedStatus}`);
       const result = await this.machineStatusesCollection.updateOne(
         { machineId },
-        { $set: { machineId, status, note, updatedAt: new Date() } },
+        { $set: { machineId, status: normalizedStatus, note, updatedAt: new Date() } },
         { upsert: true }
       );
       
@@ -91,9 +103,17 @@ class MongoMachineService {
       
       // Also update the machine document if it exists
       if (this.machinesCollection) {
+        // Convert to proper case for Machine collection
+        let dbStatus = 'Available';
+        if (normalizedStatus.toLowerCase() === 'maintenance') {
+          dbStatus = 'Maintenance';
+        } else if (normalizedStatus.toLowerCase() === 'in-use' || normalizedStatus.toLowerCase() === 'in use') {
+          dbStatus = 'In Use';
+        }
+        
         await this.machinesCollection.updateOne(
           { _id: machineId },
-          { $set: { status } }
+          { $set: { status: dbStatus } }
         );
       }
       

@@ -101,12 +101,13 @@ class MongoDbService {
     
     return await mongoUserService.clearCertifications(userId);
   }
-
+  
   async getMachines() {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const response = await apiService.get('machines');
+        const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+        const response = await apiService.get(`machines?t=${timestamp}`);
         if (response.data && Array.isArray(response.data)) {
           console.log(`API returned ${response.data.length} machines`);
           return response.data;
@@ -131,7 +132,8 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const response = await apiService.get(`machines/${machineId}`);
+        const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+        const response = await apiService.get(`machines/${machineId}?t=${timestamp}`);
         if (response.data) {
           return response.data;
         }
@@ -154,12 +156,16 @@ class MongoDbService {
     }
   }
 
-  async getMachineStatus(machineId: string) {
+  async getMachineStatus(machineId: string, timestamp = new Date().getTime()) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const response = await apiService.get(`machines/${machineId}/status`);
+        const response = await apiService.get(`machines/${machineId}/status?t=${timestamp}`);
         if (response.data) {
+          // Convert "Out of Order" to "in-use" for client display
+          if (response.data.status && response.data.status.toLowerCase() === 'out of order') {
+            response.data.status = 'in-use';
+          }
           return response.data;
         }
       } catch (error) {
@@ -174,6 +180,12 @@ class MongoDbService {
       }
       const status = await mongoMachineService.getMachineStatus(machineId);
       console.log(`MongoDB returned status for machine ${machineId}: ${status ? status.status : 'no status'}`);
+      
+      // Convert "Out of Order" to "in-use" for client display
+      if (status && status.status && status.status.toLowerCase() === 'out of order') {
+        status.status = 'in-use';
+      }
+      
       return status;
     } catch (error) {
       console.error(`Error getting status for machine ${machineId}:`, error);
@@ -189,10 +201,16 @@ class MongoDbService {
         const token = localStorage.getItem('token');
         apiService.setToken(token);
         
+        // Convert "out of order" to "in-use" for the server
+        let normalizedStatus = status;
+        if (status && status.toLowerCase() === 'out of order') {
+          normalizedStatus = 'in-use';
+        }
+        
         // Make sure we're sending the string status in the correct format
-        console.log(`Sending machine status update via API: ${machineId}, status: ${status}`);
+        console.log(`Sending machine status update via API: ${machineId}, status: ${normalizedStatus}`);
         const response = await apiService.put(`machines/${machineId}/status`, { 
-          status, 
+          status: normalizedStatus, 
           maintenanceNote: note 
         });
         console.log("API response:", response.data);
@@ -209,12 +227,14 @@ class MongoDbService {
         return false;
       }
       
-      // Format status to match what MongoDB expects
-      // Use lowercase for internal tracking to be consistent
-      const formattedStatus = status.toLowerCase();
+      // Convert "out of order" to "in-use" for the database
+      let normalizedStatus = status.toLowerCase();
+      if (normalizedStatus === 'out of order') {
+        normalizedStatus = 'in-use';
+      }
       
-      console.log(`MongoDbService: Updating status for machine ${machineId} to ${formattedStatus}`);
-      const success = await mongoMachineService.updateMachineStatus(machineId, formattedStatus, note);
+      console.log(`MongoDbService: Updating status for machine ${machineId} to ${normalizedStatus}`);
+      const success = await mongoMachineService.updateMachineStatus(machineId, normalizedStatus, note);
       console.log(`MongoDB update machine status result: ${success}`);
       return success;
     } catch (error) {

@@ -14,7 +14,8 @@ export const useMachineData = (user, navigation) => {
   const checkServerConnection = useCallback(async () => {
     try {
       console.log("Checking server connection status for machine data...");
-      const response = await fetch('http://localhost:4000/api/health');
+      const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+      const response = await fetch(`http://localhost:4000/api/health?t=${timestamp}`);
       const isConnected = response.ok;
       setIsServerConnected(isConnected);
       console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
@@ -29,10 +30,10 @@ export const useMachineData = (user, navigation) => {
   const loadMachineData = useCallback(async (force = false) => {
     console.log("Loading machine data...");
     
-    // Don't refresh if we just did so recently (within 2 seconds), unless forced
+    // Don't refresh if we just did so recently (within 1 second), unless forced
     const now = new Date();
     const timeSinceLastRefresh = now.getTime() - lastRefreshTime.getTime();
-    if (!force && timeSinceLastRefresh < 2000) {
+    if (!force && timeSinceLastRefresh < 1000) {
       console.log("Skipping refresh, too soon since last refresh");
       return;
     }
@@ -65,7 +66,13 @@ export const useMachineData = (user, navigation) => {
           console.log("Loading status for machine:", machine.id);
           // Try to get status directly from MongoDB or API with cache bypass
           const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
-          const status = statusData ? statusData.status : 'available';
+          let status = statusData ? statusData.status : 'available';
+          
+          // Make sure "out of order" is converted to "in-use" for client display
+          if (status && status.toLowerCase() === 'out of order') {
+            status = 'in-use';
+          }
+          
           console.log("Status for machine", machine.id, ":", status);
           return {
             ...machine,
@@ -107,11 +114,11 @@ export const useMachineData = (user, navigation) => {
       // Force load on initial render
       loadMachineData(true);
       
-      // Set up auto-refresh interval (every 15 seconds)
+      // Set up auto-refresh interval (every 10 seconds)
       const refreshInterval = setInterval(() => {
         console.log("Auto-refreshing machine data...");
-        loadMachineData();
-      }, 15000);
+        loadMachineData(true);
+      }, 10000);
       
       // Clean up interval on unmount
       return () => {
