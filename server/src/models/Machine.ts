@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 export interface IMachine extends mongoose.Document {

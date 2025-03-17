@@ -107,35 +107,6 @@ export class CertificationDatabaseService extends BaseService {
     }
   }
   
-  async clearUserCertifications(userId: string): Promise<boolean> {
-    try {
-      const response = await apiService.delete(`certifications/clear/${userId}`);
-      if (response.data?.success) {
-        toast({
-          title: "Success",
-          description: "Certifications cleared successfully",
-        });
-        return true;
-      }
-      
-      toast({
-        title: "Error",
-        description: response.error || "Failed to clear certifications",
-        variant: "destructive"
-      });
-      
-      return false;
-    } catch (error) {
-      console.error("API error clearing certifications:", error);
-      toast({
-        title: "Error",
-        description: "Failed to clear certifications",
-        variant: "destructive"
-      });
-      return false;
-    }
-  }
-  
   async addSafetyCertification(userId: string): Promise<boolean> {
     const SAFETY_MACHINE_ID = "5"; // Safety cabinet ID
     return this.addCertification(userId, SAFETY_MACHINE_ID);
