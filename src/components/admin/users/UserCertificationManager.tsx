@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
-import { certificationService } from '@/services/certificationService';
 import { certificationDatabaseService } from '@/services/database/certificationService';
 
 interface UserCertificationManagerProps {
@@ -33,39 +33,33 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     return user._id?.toString() || user.id?.toString();
   };
 
+  // Function to refresh certifications
+  const refreshCertifications = async () => {
+    const userId = getUserId();
+    try {
+      console.log("Loading certifications for user ID:", userId);
+      
+      // Get fresh certifications from MongoDB
+      const certs = await certificationDatabaseService.getUserCertifications(userId);
+      console.log("Received certifications from service:", certs);
+      
+      // Always convert to strings
+      const formattedCerts = certs.map(cert => cert.toString());
+      setUserCertifications(formattedCerts);
+    } catch (error) {
+      console.error("Error refreshing certifications:", error);
+      // Fall back to user object
+      const certifications = user.certifications 
+        ? user.certifications.map((cert: any) => cert.toString())
+        : [];
+      setUserCertifications(certifications);
+    }
+  };
+
   // Load user certifications on dialog open
   useEffect(() => {
     if (open && user) {
-      const loadCertifications = async () => {
-        const userId = getUserId();
-        try {
-          console.log("Loading certifications for user ID:", userId);
-          
-          // Get fresh certifications from MongoDB
-          const certs = await certificationService.getUserCertifications(userId);
-          console.log("Received certifications from service:", certs);
-          
-          if (certs && certs.length > 0) {
-            // Make sure all certifications are converted to strings
-            setUserCertifications(certs.map(c => c.toString()));
-          } else {
-            // Fall back to user object
-            const certifications = user.certifications 
-              ? user.certifications.map((cert: any) => cert.toString())
-              : [];
-            setUserCertifications(certifications);
-          }
-        } catch (error) {
-          console.error("Error loading certifications:", error);
-          // Fall back to user object
-          const certifications = user.certifications 
-            ? user.certifications.map((cert: any) => cert.toString())
-            : [];
-          setUserCertifications(certifications);
-        }
-      };
-      
-      loadCertifications();
+      refreshCertifications();
     }
   }, [open, user]);
 
@@ -88,24 +82,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.addCertification(userId, certificationId);
       
       if (success) {
-        // Update local state
-        setUserCertifications(prev => {
-          if (!prev.includes(certificationId)) {
-            return [...prev, certificationId];
-          }
-          return prev;
-        });
-        
-        toast({
-          title: "Certification Added",
-          description: `User certification for ${CERTIFICATIONS.find(c => c.id === certificationId)?.name} has been added.`
-        });
+        // Refresh certifications instead of manually updating state
+        await refreshCertifications();
         onCertificationAdded();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add certification."
-        });
       }
     } catch (error) {
       console.error("Error adding certification:", error);
@@ -137,19 +116,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.removeCertification(userId, certificationId);
       
       if (success) {
-        // Update local state
-        setUserCertifications(prev => prev.filter(id => id !== certificationId));
-        
-        toast({
-          title: "Certification Removed",
-          description: `User certification for ${CERTIFICATIONS.find(c => c.id === certificationId)?.name} has been removed.`
-        });
+        // Refresh certifications instead of manually updating state
+        await refreshCertifications();
         onCertificationAdded();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to remove certification."
-        });
       }
     } catch (error) {
       console.error("Error removing certification:", error);
@@ -181,19 +150,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.clearUserCertifications(userId);
       
       if (success) {
-        // Update local state
-        setUserCertifications([]);
-        
-        toast({
-          title: "Certifications Cleared",
-          description: "All certifications have been removed from this user."
-        });
+        // Refresh certifications instead of manually updating state
+        await refreshCertifications();
         onCertificationAdded();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to clear certifications."
-        });
       }
     } catch (error) {
       console.error("Error clearing certifications:", error);
@@ -204,11 +163,6 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     } finally {
       setIsClearing(false);
     }
-  };
-
-  // Helper function to determine if user has a certification
-  const hasCertification = (certificationId: string) => {
-    return userCertifications.includes(certificationId);
   };
 
   return (
@@ -266,34 +220,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 variant="outline"
                 size="sm"
                 className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                onClick={() => {
-                  setIsClearing(true);
-                  certificationDatabaseService.clearUserCertifications(getUserId())
-                    .then(success => {
-                      if (success) {
-                        setUserCertifications([]);
-                        toast({
-                          title: "Certifications Cleared",
-                          description: "All certifications have been removed from this user."
-                        });
-                        onCertificationAdded();
-                      } else {
-                        toast({
-                          title: "Error",
-                          description: "Failed to clear certifications."
-                        });
-                      }
-                      setIsClearing(false);
-                    })
-                    .catch(error => {
-                      console.error("Error clearing certifications:", error);
-                      toast({
-                        title: "Error",
-                        description: "An unexpected error occurred while clearing certifications."
-                      });
-                      setIsClearing(false);
-                    });
-                }}
+                onClick={handleClearAllCertifications}
                 disabled={isClearing}
               >
                 {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

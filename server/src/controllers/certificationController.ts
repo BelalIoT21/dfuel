@@ -40,7 +40,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     // Add the certification and store the current date
     user.certifications.push(machineId);
     
-    // Record certification date if certificationDates exists
+    // Record certification date
     if (!user.certificationDates) {
       user.certificationDates = {};
     }
@@ -146,7 +146,12 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
       return;
     }
     
+    // Clear all certifications
     user.certifications = [];
+    
+    // Clear certification dates
+    user.certificationDates = {};
+    
     await user.save();
     
     res.status(200).json({ 

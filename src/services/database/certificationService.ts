@@ -23,6 +23,10 @@ export class CertificationDatabaseService extends BaseService {
       if (response.data?.success) {
         if (response.data.message === 'User already has this certification') {
           console.log(`User ${userId} already has certification ${machineId}`);
+          toast({
+            title: "Info",
+            description: "User already has this certification",
+          });
         } else {
           toast({
             title: "Success",
@@ -32,6 +36,7 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
+      console.error("API error adding certification:", response.error);
       toast({
         title: "Error",
         description: response.error || "Failed to add certification",
@@ -40,7 +45,7 @@ export class CertificationDatabaseService extends BaseService {
       
       return false;
     } catch (error) {
-      console.error("API error adding certification:", error);
+      console.error("Error adding certification:", error);
       toast({
         title: "Error",
         description: "Failed to add certification",
@@ -63,6 +68,10 @@ export class CertificationDatabaseService extends BaseService {
       if (response.data?.success) {
         if (response.data.message === 'User does not have this certification') {
           console.log(`User ${userId} does not have certification ${machineId}`);
+          toast({
+            title: "Info",
+            description: "User does not have this certification",
+          });
         } else {
           toast({
             title: "Success",
@@ -72,6 +81,7 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
+      console.error("API error removing certification:", response.error);
       toast({
         title: "Error",
         description: response.error || "Failed to remove certification",
@@ -80,7 +90,7 @@ export class CertificationDatabaseService extends BaseService {
       
       return false;
     } catch (error) {
-      console.error("API error removing certification:", error);
+      console.error("Error removing certification:", error);
       toast({
         title: "Error",
         description: "Failed to remove certification",
@@ -98,7 +108,7 @@ export class CertificationDatabaseService extends BaseService {
       const response = await apiService.get(`certifications/user/${stringUserId}`);
       if (response.data && Array.isArray(response.data)) {
         // Ensure all certification IDs are strings
-        return response.data.map(cert => cert.toString());
+        return response.data.map(cert => cert.toString ? cert.toString() : String(cert));
       }
       
       if (response.error) {
@@ -107,7 +117,7 @@ export class CertificationDatabaseService extends BaseService {
       
       return [];
     } catch (error) {
-      console.error("API error getting certifications:", error);
+      console.error("Error getting certifications:", error);
       return [];
     }
   }
@@ -117,7 +127,7 @@ export class CertificationDatabaseService extends BaseService {
       const response = await apiService.get(`certifications/check/${userId}/${machineId}`);
       return !!response.data;
     } catch (error) {
-      console.error("API error checking certification:", error);
+      console.error("Error checking certification:", error);
       return false;
     }
   }
@@ -141,7 +151,7 @@ export class CertificationDatabaseService extends BaseService {
       
       return false;
     } catch (error) {
-      console.error("API error clearing certifications:", error);
+      console.error("Error clearing certifications:", error);
       toast({
         title: "Error",
         description: "Failed to clear certifications",
