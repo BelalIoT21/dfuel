@@ -1,5 +1,4 @@
 
-import mongoDbService from './mongoDbService';
 import { apiService } from './apiService';
 
 const CERTIFICATIONS = {
@@ -21,28 +20,20 @@ export class CertificationService {
         return false;
       }
 
-      // Try API first with correct endpoint format
-      try {
-        // Use POST with body instead of params for add operation
-        const response = await apiService.post('/certifications', {
-          userId,
-          machineId: certificationId
-        });
-        
-        console.log("API certification response:", response);
-        if (response.data && response.data.success) {
-          console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
-          return true;
-        }
-      } catch (error) {
-        console.error("API certification error:", error);
-      }
-
-      // Use MongoDB as fallback
-      const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
-      console.log(`MongoDB addCertification result: ${mongoSuccess}`);
+      // Make API call to add certification
+      const response = await apiService.post('/certifications', {
+        userId,
+        machineId: certificationId
+      });
       
-      return mongoSuccess;
+      console.log("API certification response:", response);
+      if (response.data && response.data.success) {
+        console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
+        return true;
+      }
+      
+      console.error("API certification error:", response.error || "Unknown error");
+      return false;
     } catch (error) {
       console.error('Error adding certification:', error);
       return false;
@@ -58,25 +49,17 @@ export class CertificationService {
         return false;
       }
 
-      // Try direct API call first with the correct format
-      try {
-        // Use the DELETE method with the appropriate URL format
-        const response = await apiService.delete(`certifications/${userId}/${certificationId}`);
-        
-        console.log("API remove certification response:", response);
-        if (response.data && response.data.success) {
-          console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
-          return true;
-        }
-      } catch (error) {
-        console.error("API certification removal error:", error);
-      }
-
-      // Use MongoDB as fallback
-      const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
-      console.log(`MongoDB removeCertification result: ${mongoSuccess}`);
+      // Make API call to remove certification
+      const response = await apiService.delete(`/certifications/${userId}/${certificationId}`);
       
-      return mongoSuccess;
+      console.log("API remove certification response:", response);
+      if (response.data && response.data.success) {
+        console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
+        return true;
+      }
+      
+      console.error("API certification removal error:", response.error || "Unknown error");
+      return false;
     } catch (error) {
       console.error('Certification removal failed:', error);
       return false;
@@ -92,24 +75,17 @@ export class CertificationService {
         return false;
       }
 
-      // Try API first
-      try {
-        const response = await apiService.delete(`certifications/clear/${userId}`);
-        
-        console.log("API clear certifications response:", response);
-        if (response.data && response.data.success) {
-          console.log(`API clear certifications succeeded for user ${userId}`);
-          return true;
-        }
-      } catch (error) {
-        console.error("API clear certifications error:", error);
-      }
-
-      // Use MongoDB as fallback
-      const success = await mongoDbService.clearUserCertifications(userId);
-      console.log(`MongoDB clearAllCertifications result: ${success}`);
+      // Make API call to clear certifications
+      const response = await apiService.delete(`/certifications/clear/${userId}`);
       
-      return success;
+      console.log("API clear certifications response:", response);
+      if (response.data && response.data.success) {
+        console.log(`API clear certifications succeeded for user ${userId}`);
+        return true;
+      }
+      
+      console.error("API clear certifications error:", response.error || "Unknown error");
+      return false;
     } catch (error) {
       console.error('Error clearing certifications:', error);
       return false;
@@ -125,25 +101,16 @@ export class CertificationService {
         return [];
       }
       
-      // Try API first
-      try {
-        const response = await apiService.get(`certifications/user/${userId}`);
-        console.log("API get certifications response:", response);
-        if (response.data && Array.isArray(response.data)) {
-          return response.data;
-        }
-      } catch (error) {
-        console.error("API get certifications error:", error);
+      // Make API call to get user certifications
+      const response = await apiService.get(`/certifications/user/${userId}`);
+      console.log("API get certifications response:", response);
+      
+      if (response.data && Array.isArray(response.data)) {
+        return response.data;
       }
       
-      // Use MongoDB as fallback
-      try {
-        const user = await mongoDbService.getUserById(userId);
-        return user?.certifications || [];
-      } catch (error) {
-        console.error("MongoDB get user certifications error:", error);
-        return [];
-      }
+      console.error("API get certifications error:", response.error || "Unknown error");
+      return [];
     } catch (error) {
       console.error('Error getting certifications:', error);
       return [];

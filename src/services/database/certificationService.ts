@@ -11,6 +11,7 @@ export class CertificationDatabaseService extends BaseService {
     console.log(`CertificationDatabaseService.addCertification: userId=${userId}, machineId=${machineId}`);
     try {
       const response = await apiService.post('certifications', { userId, machineId });
+      
       if (response.data?.success) {
         toast({
           title: "Success",
@@ -19,13 +20,11 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      if (response.error) {
-        toast({
-          title: "Error",
-          description: response.error || "Failed to add certification",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: response.error || "Failed to add certification",
+        variant: "destructive"
+      });
       
       return false;
     } catch (error) {
@@ -43,6 +42,7 @@ export class CertificationDatabaseService extends BaseService {
     console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);
     try {
       const response = await apiService.delete(`certifications/${userId}/${machineId}`);
+      
       if (response.data?.success) {
         toast({
           title: "Success",
@@ -51,13 +51,11 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      if (response.error) {
-        toast({
-          title: "Error",
-          description: response.error || "Failed to remove certification",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error",
+        description: response.error || "Failed to remove certification",
+        variant: "destructive"
+      });
       
       return false;
     } catch (error) {
