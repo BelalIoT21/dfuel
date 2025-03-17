@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { User } from '@/types/database'; // Adjust the import path as needed
+import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
 
@@ -35,11 +36,10 @@ export const useAuthFunctions = (
       }
   
       // Validate the response structure
-      const nestedData = apiResponse.data?.data; // Access the nested `data` object
-      const userData = nestedData?.user;
-      const token = nestedData?.token;
+      const userData = apiResponse.data?.data?.user;
+      const token = apiResponse.data?.data?.token;
   
-      if (!userData || !userData._id || !userData.name || !userData.email || !token) {
+      if (!userData || !userData._id || !token) {
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Login failed",
@@ -108,12 +108,11 @@ export const useAuthFunctions = (
       }
   
       // Extract data from the correct response structure
-      const responseData = apiResponse.data?.data; // Access the nested data
-      const userData = responseData?.user; // Directly access user object
-      const token = userData?.token; // Get token from user object
+      const userData = apiResponse.data?.data?.user;
+      const token = apiResponse.data?.data?.token;
   
       // Validate required fields
-      if (!userData?._id || !userData?.email || !token) {
+      if (!userData || !userData._id || !token) {
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Registration failed",

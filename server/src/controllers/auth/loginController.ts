@@ -19,14 +19,7 @@ interface UserResponse {
   createdAt: Date; // Added createdAt
 }
 
-interface LoginResponse {
-  data: {
-    user: UserResponse;
-    token: string;
-  }
-}
-
-export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response<LoginResponse | { message: string }>) => {
+export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response) => {
   try {
     const { email, password } = req.body;
 
