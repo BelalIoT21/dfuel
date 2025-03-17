@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Check server connection status once on mount
+  // Check server connection status on mount
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -50,20 +49,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     checkServerStatus();
   }, []);
 
-  // Auto-refresh machine statuses on component mount and after 10 seconds
+  // Initial load of machine statuses on component mount
   useEffect(() => {
-    // Immediately refresh on mount
-    console.log("Initial machine status refresh on component mount");
+    console.log("MachineStatus component mounted, fetching machine statuses");
     refreshMachineStatuses();
-    
-    // Set a timer for another refresh after 10 seconds
-    const timer = setTimeout(() => {
-      console.log("Performing second machine status refresh after delay");
-      refreshMachineStatuses();
-    }, 10000);
-    
-    // Clean up the timer when component unmounts
-    return () => clearTimeout(timer);
   }, []);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
@@ -92,16 +81,31 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         setIsServerConnected(false);
       }
       
+      if (!isServerConnected) {
+        console.log("Server not connected, skipping machine status refresh");
+        setIsRefreshing(false);
+        return;
+      }
+      
+      console.log("Refreshing machine statuses for machines 1-4");
+      
       // Get fresh data for each machine directly from the API
+      const filteredMachines = machineData.filter(machine => {
+        const machineId = parseInt(machine.id || machine._id);
+        return machineId >= 1 && machineId <= 4; // Only fetch machines 1-4
+      });
+      
       const updatedMachineData = await Promise.all(
-        machineData.map(async (machine) => {
+        filteredMachines.map(async (machine) => {
           try {
             // Use direct fetch instead of service to bypass any caching
             const machineId = machine.id || machine._id;
+            console.log(`Fetching status for machine ${machineId}`);
             const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
             
             if (response.ok) {
               const machineData = await response.json();
+              console.log(`Received data for machine ${machineId}:`, machineData);
               return {
                 ...machine,
                 status: machineData.status?.toLowerCase() || 'available',
@@ -116,7 +120,21 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         })
       );
       
-      setMachineData(updatedMachineData);
+      console.log("Updated machine data:", updatedMachineData);
+      
+      // Only update machine data for machines 1-4, keep others as they are
+      const finalMachineData = machineData.map(machine => {
+        const machineId = parseInt(machine.id || machine._id);
+        if (machineId >= 1 && machineId <= 4) {
+          const updatedMachine = updatedMachineData.find(m => 
+            (m.id || m._id) === (machine.id || machine._id)
+          );
+          return updatedMachine || machine;
+        }
+        return machine;
+      });
+      
+      setMachineData(finalMachineData);
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
       toast({
