@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
 
-  // Check server connection status
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -38,12 +36,11 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-    const intervalId = setInterval(checkServerStatus, 30000); // Check every 30 seconds
+    const intervalId = setInterval(checkServerStatus, 30000);
     
     return () => clearInterval(intervalId);
   }, []);
 
-  // Sort machines by type
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
     if (b.type === 'Equipment' || b.type === 'Safety Cabinet') return -1;
@@ -60,11 +57,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const refreshMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      // This would typically make API calls to refresh the statuses
-      // For now, we'll just simulate a refresh by waiting and showing a notification
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Check server connection status
       const response = await apiService.checkHealth();
       setIsServerConnected(!!response.data);
       
@@ -92,7 +86,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     try {
       console.log(`Updating machine ${selectedMachine.id} status to ${selectedStatus}`);
       
-      // Update machine status using machineService which will use MongoDB
       const success = await machineService.updateMachineStatus(
         selectedMachine.id, 
         selectedStatus,
@@ -102,7 +95,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       if (success) {
         console.log(`Successfully updated machine ${selectedMachine.id} status`);
         
-        // Update local state
         setMachineData(machineData.map(machine => 
           machine.id === selectedMachine.id 
             ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
@@ -132,9 +124,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     }
   };
 
-  // Function to get displayed machine type
   const getMachineType = (machine) => {
-    // Handle special machine types
     if (machine.id === "5") {
       return "Safety Cabinet";
     } else if (machine.id === "6") {
@@ -143,7 +133,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       return "X1 E Carbon 3D Printer";
     }
     
-    // Return machine type or "Machine" if it's empty/undefined
     return machine.type || "Machine";
   };
 
