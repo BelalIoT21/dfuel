@@ -73,8 +73,11 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Filter out equipment - only count real machines (including Bambu Lab X1 E)
-  const realMachines = machines.filter(machine => machine.type !== 'Equipment');
+  // Filter out machines 5 and 6
+  const filteredMachines = machines.filter(machine => {
+    const machineId = machine.id || machine._id;
+    return machineId !== '5' && machineId !== '6';
+  });
   
   // Basic statistics for the admin dashboard
   const stats = [
@@ -87,7 +90,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     },
     { 
       title: 'Total Machines', 
-      value: realMachines.length, 
+      value: filteredMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '',
       link: '/admin/machines'

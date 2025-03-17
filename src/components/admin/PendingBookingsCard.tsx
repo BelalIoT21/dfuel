@@ -1,157 +1,114 @@
 
 import { useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Check, X, CalendarClock } from 'lucide-react';
 import { bookingService } from '@/services/bookingService';
-import { useToast } from '@/hooks/use-toast';
-import mongoDbService from '@/services/mongoDbService';
+import { formatDate } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
-interface PendingBookingsCardProps {
-  pendingBookings?: any[];
-  onBookingStatusChange?: () => void;
-}
+export function PendingBookingsCard({ pendingBookings, onBookingStatusChange }) {
+  const [processing, setProcessing] = useState<{[key: string]: boolean}>({});
 
-export const PendingBookingsCard = ({ 
-  pendingBookings = [],
-  onBookingStatusChange
-}: PendingBookingsCardProps) => {
-  const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
-  const { toast } = useToast();
-  
-  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
-    setProcessingBookingId(bookingId);
-    
+  const handleUpdateStatus = async (bookingId: string, status: string) => {
     try {
-      console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
+      setProcessing(prev => ({ ...prev, [bookingId]: true }));
+      console.log(`Updating booking ${bookingId} to ${status}`);
       
-      if (action === 'Deleted') {
-        // Use MongoDB to delete the booking
-        await mongoDbService.deleteBooking(bookingId);
-        
+      const success = await bookingService.updateBookingStatus(bookingId, status);
+      
+      if (success) {
         toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from the system."
+          title: "Status Updated",
+          description: `The booking has been ${status.toLowerCase()}.`,
         });
         
-        // After deleting, trigger refresh of the bookings list
+        // Trigger parent refresh
         if (onBookingStatusChange) {
           onBookingStatusChange();
         }
       } else {
-        // Handle approval/rejection
-        console.log(`Updating booking status: ID=${bookingId}, new status=${action}`);
-        // Try API first
-        let success = false;
-        try {
-          success = await bookingService.updateBookingStatus(bookingId, action);
-          console.log(`API updateBookingStatus result: ${success}`);
-        } catch (apiError) {
-          console.error("API error updating booking status:", apiError);
-        }
-        
-        // If API fails, try MongoDB directly
-        if (!success) {
-          success = await mongoDbService.updateBookingStatus(bookingId, action);
-          console.log(`MongoDB updateBookingStatus result: ${success}`);
-        }
-        
-        if (success) {
-          toast({
-            title: `Booking ${action}`,
-            description: `The booking has been ${action.toLowerCase()} successfully.`
-          });
-          
-          // After updating, trigger refresh of the bookings list
-          if (onBookingStatusChange) {
-            onBookingStatusChange();
-          }
-        } else {
-          toast({
-            title: "Action Failed",
-            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Update Failed",
+          description: "There was a problem updating the booking status.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error(`Error processing booking action:`, error);
-      
+      console.error(`Error updating booking status:`, error);
       toast({
-        title: "Error",
-        description: "An error occurred while processing the booking",
+        title: "Update Failed",
+        description: "There was a problem updating the booking status.",
         variant: "destructive"
       });
     } finally {
-      setProcessingBookingId(null);
+      setProcessing(prev => ({ ...prev, [bookingId]: false }));
     }
   };
-  
-  if (pendingBookings.length === 0) {
-    return (
-      <Card className="border-purple-100">
-        <CardContent className="p-4 text-center">
-          <p className="text-gray-500">No pending bookings to approve</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+
+  // Format the date for display
+  const getFormattedDate = (dateString: string) => {
+    try {
+      return formatDate(new Date(dateString));
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
-    <Card className="border-purple-100">
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-5 w-5 text-purple-600" />
-            <h3 className="font-medium">Pending Booking Requests</h3>
-          </div>
-          
-          {pendingBookings.map((booking) => (
-            <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
-              <div>
-                <p className="font-medium text-purple-800">
-                  {booking.machineName || `Machine ${booking.machineId}`}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {booking.userName || 'User'} • {booking.date} at {booking.time}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-green-200 hover:bg-green-50 text-green-700"
-                  onClick={() => handleBookingAction(booking.id, 'Approved')}
-                  disabled={processingBookingId === booking.id}
-                >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                  Approve
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => handleBookingAction(booking.id, 'Rejected')}
-                  disabled={processingBookingId === booking.id}
-                >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
-                  Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
-                  disabled={processingBookingId === booking.id}
-                >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
-                  Delete
-                </Button>
+    <div className="space-y-4">
+      {pendingBookings.map((booking) => (
+        <div
+          key={booking._id || booking.id}
+          className="p-4 bg-white rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow"
+        >
+          <div className="flex flex-col sm:flex-row justify-between gap-3">
+            <div>
+              <h3 className="font-medium text-gray-900">
+                {booking.userName || 'User'} • {booking.machineName || `Machine ${booking.machineId}`}
+              </h3>
+              <div className="mt-1 text-sm text-gray-500 flex flex-wrap items-center gap-2">
+                <CalendarClock className="h-3.5 w-3.5 text-gray-400" />
+                <span>
+                  {getFormattedDate(booking.date)} at {booking.time}
+                </span>
+                {booking.status && (
+                  <Badge 
+                    variant="outline"
+                    className="ml-2 capitalize text-xs bg-purple-50 text-purple-700 border-purple-200"
+                  >
+                    {booking.status}
+                  </Badge>
+                )}
               </div>
             </div>
-          ))}
+            
+            <div className="flex items-center gap-2 self-end sm:self-center">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-500 text-green-600 hover:bg-green-50"
+                onClick={() => handleUpdateStatus(booking._id || booking.id, 'Approved')}
+                disabled={processing[booking._id || booking.id]}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Approve
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
+                onClick={() => handleUpdateStatus(booking._id || booking.id, 'Rejected')}
+                disabled={processing[booking._id || booking.id]}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Reject
+              </Button>
+            </div>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
-};
+}
