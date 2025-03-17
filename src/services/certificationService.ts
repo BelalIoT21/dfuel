@@ -24,6 +24,7 @@ export class CertificationService {
       // Try API first with correct endpoint format
       try {
         const response = await apiService.addCertification(userId, certificationId);
+        console.log("API certification response:", response);
         if (response.data && response.data.success) {
           console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
           return true;
@@ -55,6 +56,7 @@ export class CertificationService {
       // Try direct API call first with the updated endpoint format
       try {
         const response = await apiService.removeCertification(userId, certificationId);
+        console.log("API remove certification response:", response);
         if (response.data && response.data.success) {
           console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
           return true;
@@ -86,6 +88,7 @@ export class CertificationService {
       // Try API first with the updated endpoint format
       try {
         const response = await apiService.clearCertifications(userId);
+        console.log("API clear certifications response:", response);
         if (response.data && response.data.success) {
           console.log(`API clear certifications succeeded for user ${userId}`);
           return true;

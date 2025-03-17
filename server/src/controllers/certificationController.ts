@@ -1,47 +1,41 @@
 
 import { Request, Response } from 'express';
 import User from '../models/User';
-import { Machine } from '../models/Machine';
 
-// @desc    Add certification to user
-// @route   POST /api/certifications
-// @access  Private/Admin
+// Add certification
 export const addCertification = async (req: Request, res: Response) => {
   try {
     const { userId, machineId } = req.body;
-    
-    // Validate input
+
     if (!userId || !machineId) {
       return res.status(400).json({ message: 'User ID and Machine ID are required' });
     }
-    
-    // Check if machine exists
-    const machine = await Machine.findById(machineId);
-    if (!machine) {
-      return res.status(404).json({ message: 'Machine not found' });
-    }
-    
-    // Check if user exists
+
+    // Find the user
     const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Check if user already has certification
+
+    // Check if the certification already exists
     if (user.certifications.includes(machineId)) {
-      return res.status(400).json({ message: 'User already has this certification' });
+      return res.status(200).json({ 
+        success: true, 
+        message: 'User already has this certification' 
+      });
     }
-    
-    // Add certification
+
+    // Add the certification
     user.certifications.push(machineId);
     await user.save();
-    
-    res.json({ 
-      message: 'Certification added successfully', 
-      certifications: user.certifications 
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Certification added successfully' 
     });
   } catch (error) {
-    console.error('Error in addCertification:', error);
+    console.error('Error adding certification:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -49,39 +43,44 @@ export const addCertification = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Remove certification from user
-// @route   DELETE /api/certifications
-// @access  Private/Admin
+// Remove certification
 export const removeCertification = async (req: Request, res: Response) => {
   try {
-    const { userId, machineId } = req.body;
-    
-    // Validate input
+    // Get params from URL
+    const { userId, machineId } = req.params;
+
+    console.log(`Removing certification for user ${userId}, machine ${machineId}`);
+
     if (!userId || !machineId) {
       return res.status(400).json({ message: 'User ID and Machine ID are required' });
     }
-    
-    // Check if user exists
+
+    // Find the user
     const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Check if user has certification
-    if (!user.certifications.includes(machineId)) {
-      return res.status(400).json({ message: 'User does not have this certification' });
+
+    // Check if the user has the certification
+    const index = user.certifications.indexOf(machineId);
+    if (index === -1) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'User does not have this certification' 
+      });
     }
-    
-    // Remove certification
-    user.certifications = user.certifications.filter(cert => cert !== machineId);
+
+    // Remove the certification
+    user.certifications.splice(index, 1);
     await user.save();
-    
-    res.json({ 
-      message: 'Certification removed successfully', 
-      certifications: user.certifications 
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Certification removed successfully' 
     });
   } catch (error) {
-    console.error('Error in removeCertification:', error);
+    console.error('Error removing certification:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -89,25 +88,25 @@ export const removeCertification = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Get user certifications
-// @route   GET /api/certifications/user/:userId
-// @access  Private/Admin
+// Get user certifications
 export const getUserCertifications = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.userId).select('certifications');
-    
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find the user
+    const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    // Get machine details for each certification
-    const machines = await Machine.find({
-      _id: { $in: user.certifications }
-    }).select('name type');
-    
-    res.json(machines);
+
+    res.status(200).json(user.certifications);
   } catch (error) {
-    console.error('Error in getUserCertifications:', error);
+    console.error('Error getting user certifications:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -115,27 +114,61 @@ export const getUserCertifications = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Check if user has certification
-// @route   GET /api/certifications/check
-// @access  Private
+// Check certification
 export const checkCertification = async (req: Request, res: Response) => {
   try {
-    const { machineId } = req.query;
-    
-    if (!machineId) {
-      return res.status(400).json({ message: 'Machine ID is required' });
+    const { userId, machineId } = req.params;
+
+    if (!userId || !machineId) {
+      return res.status(400).json({ message: 'User ID and Machine ID are required' });
     }
-    
-    const user = await User.findById(req.user._id);
+
+    // Find the user
+    const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    const hasCertification = user.certifications.includes(machineId as string);
-    
-    res.json({ hasCertification });
+
+    // Check if the user has the certification
+    const hasCertification = user.certifications.includes(machineId);
+
+    res.status(200).json(hasCertification);
   } catch (error) {
-    console.error('Error in checkCertification:', error);
+    console.error('Error checking certification:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// Clear all certifications for a user
+export const clearUserCertifications = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find the user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Clear certifications
+    user.certifications = [];
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'All certifications cleared successfully' 
+    });
+  } catch (error) {
+    console.error('Error clearing certifications:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 

@@ -1,5 +1,4 @@
 import { getEnv } from '../utils/env';
-import { useToast } from '../hooks/use-toast';
 
 // Try to connect to local API first, but have a fallback to relative path
 const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
@@ -118,12 +117,7 @@ class ApiService {
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        const { toast } = useToast();
-        toast({
-          title: `API Error`,
-          description: "Could not connect to server. Using local storage fallback.",
-          variant: 'destructive'
-        });
+        console.error("Could not connect to server. Using local storage fallback.");
       }
       
       return {
@@ -196,20 +190,21 @@ class ApiService {
   }
   
   // Certification endpoints
-  async addCertification(userId: string, machineId: string) {
-    console.log(`Adding certification for user ${userId}, machine ${machineId}`);
+  async addCertification(userId: string, certificationId: string) {
+    console.log(`Adding certification for user ${userId}, machine ${certificationId}`);
     return this.request<{ success: boolean }>(
       'certifications', 
       'POST', 
-      { userId, machineId }
+      { userId, machineId: certificationId }
     );
   }
   
-  // Fix the removeCertification method to use query parameters instead of body for DELETE
+  // Fixed removeCertification to properly format the request
   async removeCertification(userId: string, machineId: string) {
     console.log(`API: Removing certification for user ${userId}, machine ${machineId}`);
+    // Use a different approach for DELETE requests with parameters
     return this.request<{ success: boolean }>(
-      `certifications?userId=${userId}&machineId=${machineId}`, 
+      `certifications/${userId}/${machineId}`, 
       'DELETE'
     );
   }
@@ -218,7 +213,7 @@ class ApiService {
   async clearCertifications(userId: string) {
     console.log(`Clearing all certifications for user ${userId}`);
     return this.request<{ success: boolean }>(
-      `certifications/clear?userId=${userId}`,
+      `certifications/clear/${userId}`,
       'DELETE'
     );
   }

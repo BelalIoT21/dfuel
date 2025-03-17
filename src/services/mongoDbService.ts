@@ -1,219 +1,105 @@
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
-import mongoSeedService from './mongodb/seedService';
 import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
 
 class MongoDbService {
-  async getAllUsers() {
+  async getUsers() {
     if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
+      console.log('MongoDB access attempted from web environment, using API fallback');
       try {
         const response = await apiService.getAllUsers();
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          console.log(`API returned ${response.data.length} users`);
-          return response.data.map(user => ({
-            id: user._id?.toString() || user.id?.toString() || '',
-            name: user.name || '',
-            email: user.email || '',
-            isAdmin: user.isAdmin || false,
-            certifications: user.certifications || [],
-            bookings: user.bookings || [],
-            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
-          }));
-        }
-      } catch (error) {
-        console.error("Error getting users from API:", error);
-      }
-      return [];
-    }
-    
-    try {
-      const users = await mongoUserService.getUsers();
-      console.log(`MongoDB returned ${users?.length || 0} users`);
-      return users || [];
-    } catch (error) {
-      console.error("Error getting all users from MongoDB:", error);
-      return [];
-    }
-  }
-
-  async getUserById(userId: string) {
-    if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
-      try {
-        const response = await apiService.getUserById(userId);
         if (response.data) {
-          const user = response.data;
-          return {
-            id: user._id?.toString() || user.id?.toString() || '',
-            name: user.name || '',
-            email: user.email || '',
-            isAdmin: user.isAdmin || false,
-            certifications: user.certifications || [],
-            bookings: user.bookings || [],
-            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
-          };
+          console.log('API returned', response.data.length, 'users');
+          return response.data;
         }
       } catch (error) {
-        console.error(`Error getting user ${userId} from API:`, error);
+        console.error("Error fetching users from API:", error);
       }
-      return null;
+      return [];
     }
     
-    try {
-      if (!userId) {
-        console.error("Invalid userId passed to getUserById");
-        return null;
-      }
-      const user = await mongoUserService.getUserById(userId);
-      console.log(`MongoDB ${user ? 'found' : 'did not find'} user ${userId}`);
-      return user;
-    } catch (error) {
-      console.error(`Error getting user ${userId} from MongoDB:`, error);
-      return null;
-    }
+    const users = await mongoUserService.getUsers();
+    console.log('Retrieved', users.length, 'users from MongoDB');
+    return users;
   }
 
   async getUserByEmail(email: string) {
     if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
       try {
         const response = await apiService.getUserByEmail(email);
         if (response.data) {
-          const user = response.data;
-          return {
-            id: user._id?.toString() || user.id?.toString() || '',
-            name: user.name || '',
-            email: user.email || '',
-            isAdmin: user.isAdmin || false,
-            certifications: user.certifications || [],
-            bookings: user.bookings || [],
-            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
-          };
+          return response.data;
         }
       } catch (error) {
-        console.error(`Error getting user with email ${email} from API:`, error);
+        console.error("Error fetching user by email from API:", error);
       }
       return null;
     }
     
-    try {
-      if (!email) {
-        console.error("Invalid email passed to getUserByEmail");
-        return null;
+    return await mongoUserService.getUserByEmail(email);
+  }
+
+  async getUserById(userId: string) {
+    if (isWeb) {
+      try {
+        const response = await apiService.getUserById(userId);
+        if (response.data) {
+          return response.data;
+        }
+      } catch (error) {
+        console.error("Error fetching user by ID from API:", error);
       }
-      const user = await mongoUserService.getUserByEmail(email);
-      console.log(`MongoDB ${user ? 'found' : 'did not find'} user with email ${email}`);
-      return user;
-    } catch (error) {
-      console.error(`Error getting user with email ${email} from MongoDB:`, error);
       return null;
     }
+    
+    return await mongoUserService.getUserById(userId);
   }
 
-  async updateUserCertifications(userId: string, certificationId: string) {
-    if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
-      try {
-        console.log(`MongoDbService: Adding certification ${certificationId} to user ${userId}`);
-        const response = await apiService.addCertification(userId, certificationId);
-        if (response.data && response.data.success) {
-          console.log(`API addCertification result: success`);
-          return true;
-        }
-        
-        if (response.error && response.status === 404) {
-          console.error(`API endpoint not found, certification may not be addable: ${response.error}`);
-        }
-      } catch (error) {
-        console.error(`Error adding certification via API:`, error);
-      }
-      return false;
-    }
+  async updateUserCertifications(userId: string, machineId: string) {
+    console.log(`MongoDbService: updateUserCertifications for user ${userId}, machine ${machineId}`);
     
-    try {
-      if (!userId || !certificationId) {
-        console.error("Invalid userId or certificationId passed to updateUserCertifications");
+    if (isWeb) {
+      try {
+        const response = await apiService.addCertification(userId, machineId);
+        return response.data && response.data.success;
+      } catch (error) {
+        console.error("Error updating user certifications via API:", error);
         return false;
       }
-      console.log(`MongoDbService: Adding certification ${certificationId} to user ${userId}`);
-      const success = await mongoUserService.updateUserCertifications(userId, certificationId);
-      console.log(`MongoDB add certification result: ${success}`);
-      return success;
-    } catch (error) {
-      console.error(`Error updating certifications for user ${userId}:`, error);
-      return false;
     }
+    
+    return await mongoUserService.addCertification(userId, machineId);
   }
 
-  async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
-    if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
-      try {
-        console.log(`MongoDbService: Removing certification ${certificationId} from user ${userId}`);
-        const response = await apiService.removeCertification(userId, certificationId);
-        if (response.data && response.data.success) {
-          console.log(`API removeCertification result: success`);
-          return true;
-        }
-        
-        if (response.error && response.status === 404) {
-          console.error(`API endpoint not found, certification may not be removable: ${response.error}`);
-        }
-      } catch (error) {
-        console.error(`Error removing certification via API:`, error);
-      }
-      return false;
-    }
+  async removeUserCertification(userId: string, machineId: string) {
+    console.log(`MongoDbService: removeUserCertification for user ${userId}, machine ${machineId}`);
     
-    try {
-      if (!userId || !certificationId) {
-        console.error("Invalid userId or certificationId passed to removeUserCertification");
+    if (isWeb) {
+      try {
+        const response = await apiService.removeCertification(userId, machineId);
+        return response.data && response.data.success;
+      } catch (error) {
+        console.error("Error removing user certification via API:", error);
         return false;
       }
-      console.log(`MongoDbService: Removing certification ${certificationId} from user ${userId}`);
-      const success = await mongoUserService.removeUserCertification(userId, certificationId);
-      console.log(`MongoDB remove certification result: ${success}`);
-      return success;
-    } catch (error) {
-      console.error(`Error removing certification ${certificationId} from user ${userId}:`, error);
-      return false;
     }
+    
+    return await mongoUserService.removeCertification(userId, machineId);
   }
 
   async clearUserCertifications(userId: string) {
     if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        console.log(`MongoDbService: Clearing all certifications for user ${userId}`);
         const response = await apiService.clearCertifications(userId);
-        if (response.data && response.data.success) {
-          console.log(`API clearCertifications result: success`);
-          return true;
-        }
-        
-        if (response.error && response.status === 404) {
-          console.error(`API endpoint not found, certifications may not be clearable: ${response.error}`);
-        }
+        return response.data && response.data.success;
       } catch (error) {
-        console.error(`Error clearing certifications via API:`, error);
-      }
-      return false;
-    }
-    
-    try {
-      if (!userId) {
-        console.error("Invalid userId passed to clearUserCertifications");
+        console.error("Error clearing user certifications via API:", error);
         return false;
       }
-      const success = await mongoUserService.clearUserCertifications(userId);
-      console.log(`MongoDB clear certifications result: ${success}`);
-      return success;
-    } catch (error) {
-      console.error(`Error clearing certifications for user ${userId}:`, error);
-      return false;
     }
+    
+    return await mongoUserService.clearCertifications(userId);
   }
 
   async getMachines() {
