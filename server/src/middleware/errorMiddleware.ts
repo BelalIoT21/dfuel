@@ -5,8 +5,8 @@ import { Request, Response, NextFunction } from 'express';
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
   // Add CORS headers for 404 responses
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
@@ -17,8 +17,8 @@ export const notFound = (req: Request, res: Response, next: NextFunction) => {
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   // Add CORS headers for error responses
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   // Determine status code (default to 500 if not set)
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
@@ -26,25 +26,14 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
   // Log the error for debugging
   console.error(`Error: ${err.message}`);
   if (process.env.NODE_ENV !== 'production') {
-    console.error(err);
+    console.error(err.stack);
   }
   
-  // If the error has additional properties (like a MongoDB validation error), include them
-  const errorResponse: any = {
+  res.status(statusCode);
+  res.json({
     message: err.message,
     stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
     path: req.originalUrl,
     method: req.method
-  };
-  
-  // Add any additional error details if they exist
-  if ((err as any).errors) {
-    errorResponse.errors = (err as any).errors;
-  }
-  
-  if ((err as any).error) {
-    errorResponse.error = (err as any).error;
-  }
-
-  res.status(statusCode).json(errorResponse);
+  });
 };
