@@ -81,7 +81,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
 
     // Map status values to proper format for MongoDB
-    let normalizedStatus = 'Available';
+    let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
     switch(status.toLowerCase()) {
       case 'available':
         normalizedStatus = 'Available';
