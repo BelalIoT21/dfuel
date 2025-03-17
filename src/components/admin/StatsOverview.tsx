@@ -79,6 +79,8 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     return id !== '5' && id !== '6' && machine.type !== 'Equipment';
   });
   
+  console.log("Filtered machines:", realMachines.length, "from total:", machines.length);
+  
   // Basic statistics for the admin dashboard
   const stats = [
     { 
