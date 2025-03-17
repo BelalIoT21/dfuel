@@ -29,6 +29,12 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
     console.error(err.stack);
   }
   
+  // For rate limiting responses, ensure proper content type
+  const isRateLimit = statusCode === 429;
+  if (isRateLimit) {
+    res.setHeader('Content-Type', 'application/json');
+  }
+  
   res.status(statusCode);
   res.json({
     message: err.message,

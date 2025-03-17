@@ -213,8 +213,16 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       });
       
       if (response.ok) {
-        const result = await response.json();
-        console.log('Update result:', result);
+        const responseText = await response.text();
+        let responseData;
+        try {
+          // Only try to parse as JSON if the response is not empty
+          responseData = responseText ? JSON.parse(responseText) : {};
+        } catch (parseError) {
+          console.warn('Unable to parse response as JSON:', responseText);
+          responseData = { message: responseText };
+        }
+        console.log('Update result:', responseData);
         
         // Update the machine data in state
         setMachineData(machineData.map(machine => 
@@ -234,9 +242,32 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         
         setIsMachineStatusDialogOpen(false);
       } else {
-        const errorData = await response.json();
-        console.error('Update failed:', errorData);
-        setUpdateError(`Failed to update machine status: ${errorData.message || 'Unknown error'}`);
+        const statusCode = response.status;
+        let errorMessage = `Request failed with status: ${statusCode}`;
+        
+        // For rate limit errors, show a specific message
+        if (statusCode === 429) {
+          errorMessage = "Rate limit exceeded. Please wait before trying again.";
+        } else {
+          // Try to parse error message from JSON response, but handle non-JSON responses
+          try {
+            const responseText = await response.text();
+            if (responseText) {
+              try {
+                const errorData = JSON.parse(responseText);
+                errorMessage = errorData.message || errorMessage;
+              } catch (parseError) {
+                // If it's not JSON, use the text directly
+                errorMessage = responseText;
+              }
+            }
+          } catch (e) {
+            console.error("Error reading response:", e);
+          }
+        }
+        
+        console.error('Update failed:', errorMessage);
+        setUpdateError(`Failed to update machine status: ${errorMessage}`);
         
         toast({
           title: "Update Failed",
