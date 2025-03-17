@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -26,89 +26,31 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Check server connection status function
-  const checkServerStatus = useCallback(async () => {
-    try {
-      console.log("Checking server connection status...");
-      const response = await fetch('http://localhost:4000/api/health');
-      
-      if (response.ok) {
-        console.log("Server connected successfully!");
-        setIsServerConnected(true);
-        return true;
-      } else {
-        console.log("Server responded with error:", response.status);
-        setIsServerConnected(false);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error checking server connection:", error);
-      setIsServerConnected(false);
-      return false;
-    }
-  }, []);
-
-  // Refresh machine statuses function
-  const refreshMachineStatuses = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      // Check server connection
-      const isConnected = await checkServerStatus();
-      if (!isConnected) {
-        console.log("Server not connected, can't refresh machine statuses");
-        setIsRefreshing(false);
-        return;
-      }
-      
-      // Get fresh data for each machine directly from the API
-      console.log("Fetching updated machine data...");
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`http://localhost:4000/api/machines`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch machines: ${response.status}`);
-      }
-      
-      const freshMachines = await response.json();
-      console.log("Received fresh machine data:", freshMachines.length, "machines");
-      
-      // Update the machine data state
-      setMachineData(freshMachines.map(machine => ({
-        ...machine,
-        // Use clientStatus if available, otherwise convert status
-        status: machine.clientStatus || 
-                (machine.status === 'Out of Order' || machine.status === 'In Use' ? 
-                'in-use' : machine.status?.toLowerCase() || 'available')
-      })));
-      
-      toast({
-        title: "Refreshed",
-        description: "Machine statuses have been updated"
-      });
-    } catch (error) {
-      console.error("Error refreshing machine statuses:", error);
-      toast({
-        title: "Error",
-        description: "Failed to refresh machine statuses",
-        variant: "destructive"
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [checkServerStatus, setMachineData, toast]);
-
   // Check server connection and set up auto-refresh
   useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        console.log("Checking server connection status...");
+        const response = await fetch('http://localhost:4000/api/health');
+        
+        if (response.ok) {
+          console.log("Server connected successfully!");
+          setIsServerConnected(true);
+        } else {
+          console.log("Server responded with error:", response.status);
+          setIsServerConnected(false);
+        }
+      } catch (error) {
+        console.error("Error checking server connection:", error);
+        setIsServerConnected(false);
+      }
+    };
+    
     checkServerStatus();
     const serverCheckInterval = setInterval(checkServerStatus, 5000); // Check every 5 seconds
     
     return () => clearInterval(serverCheckInterval);
-  }, [checkServerStatus]);
+  }, []);
 
   // Set up auto-refresh for machine statuses - always enabled
   useEffect(() => {
@@ -117,12 +59,14 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     
     console.log("Setting up auto-refresh for machine statuses");
     const refreshInterval = setInterval(() => {
-      console.log("Auto-refreshing machine statuses...");
-      refreshMachineStatuses();
+      if (!isRefreshing) {
+        console.log("Auto-refreshing machine statuses...");
+        refreshMachineStatuses();
+      }
     }, 15000); // Auto-refresh every 15 seconds
     
     return () => clearInterval(refreshInterval);
-  }, [isServerConnected, refreshMachineStatuses]);
+  }, [isServerConnected, isRefreshing]);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
@@ -136,6 +80,54 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setMaintenanceNote(machine.maintenanceNote || '');
     setUpdateError(null);
     setIsMachineStatusDialogOpen(true);
+  };
+
+  const refreshMachineStatuses = async () => {
+    setIsRefreshing(true);
+    try {
+      // Check server connection
+      try {
+        const response = await fetch('http://localhost:4000/api/health');
+        setIsServerConnected(response.ok);
+      } catch (error) {
+        console.error("Error checking server connection:", error);
+        setIsServerConnected(false);
+      }
+      
+      // Get fresh data for each machine directly from the API
+      const updatedMachineData = await Promise.all(
+        machineData.map(async (machine) => {
+          try {
+            // Use direct fetch instead of service to bypass any caching
+            const machineId = machine.id || machine._id;
+            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
+            
+            if (response.ok) {
+              const machineData = await response.json();
+              return {
+                ...machine,
+                status: machineData.status?.toLowerCase() || 'available',
+                maintenanceNote: machineData.maintenanceNote || ''
+              };
+            }
+            return machine;
+          } catch (error) {
+            console.error(`Error refreshing machine ${machine.id || machine._id}:`, error);
+            return machine;
+          }
+        })
+      );
+      
+      setMachineData(updatedMachineData);
+    } catch (error) {
+      console.error("Error refreshing machine statuses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh machine statuses"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const saveMachineStatus = async () => {
@@ -186,9 +178,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         });
         
         setIsMachineStatusDialogOpen(false);
-        
-        // Refresh all machine statuses to ensure everything is in sync
-        setTimeout(() => refreshMachineStatuses(), 1000);
       } else {
         const errorData = await response.json();
         console.error('Update failed:', errorData);
@@ -264,10 +253,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             {sortedMachineData.length > 0 ? (
               sortedMachineData.map((machine) => {
                 const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
-                const machineType = machine.type === "5" || machine._id === "5" ? "Safety Cabinet" : 
-                                   machine.type === "6" || machine._id === "6" ? "Safety Course" :
-                                   machine.type === "3" || machine._id === "3" ? "X1 E Carbon 3D Printer" : 
-                                   machine.type || "Machine";
+                const machineType = getMachineType(machine);
                 
                 return (
                   <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">

@@ -6,7 +6,7 @@ export interface IMachine extends mongoose.Document {
   name: string;
   type: string;
   description: string;
-  status: 'Available' | 'Maintenance' | 'Out of Order' | 'In Use';
+  status: 'Available' | 'Maintenance' | 'Out of Order';
   requiresCertification: boolean;
   maintenanceNote?: string;
   bookedTimeSlots: string[]; // Format: YYYY-MM-DD-HH:MM
@@ -46,7 +46,7 @@ const machineSchema = new mongoose.Schema<IMachine>(
     },
     status: {
       type: String,
-      enum: ['Available', 'Maintenance', 'Out of Order', 'In Use'],
+      enum: ['Available', 'Maintenance', 'Out of Order'],
       default: 'Available',
     },
     requiresCertification: {

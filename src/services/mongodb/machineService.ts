@@ -77,22 +77,9 @@ class MongoMachineService {
     
     try {
       console.log(`Updating status for machine ${machineId} to ${status}`);
-      
-      // Convert status to match what the database expects
-      let dbStatus = status;
-      if (status.toLowerCase() === 'in-use' || status.toLowerCase() === 'in use') {
-        dbStatus = 'In Use';
-      } else if (status.toLowerCase() === 'available') {
-        dbStatus = 'Available';
-      } else if (status.toLowerCase() === 'maintenance') {
-        dbStatus = 'Maintenance';
-      } else if (status.toLowerCase() === 'out of order') {
-        dbStatus = 'Out of Order';
-      }
-      
       const result = await this.machineStatusesCollection.updateOne(
         { machineId },
-        { $set: { machineId, status: dbStatus, note, updatedAt: new Date() } },
+        { $set: { machineId, status, note, updatedAt: new Date() } },
         { upsert: true }
       );
       
@@ -106,7 +93,7 @@ class MongoMachineService {
       if (this.machinesCollection) {
         await this.machinesCollection.updateOne(
           { _id: machineId },
-          { $set: { status: dbStatus } }
+          { $set: { status } }
         );
       }
       

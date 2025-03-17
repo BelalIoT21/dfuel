@@ -209,10 +209,12 @@ class MongoDbService {
         return false;
       }
       
-      // Format status for MongoDB - maintain the original status value
-      // since conversion will happen in the machineService layer
-      console.log(`MongoDbService: Updating status for machine ${machineId} to ${status}`);
-      const success = await mongoMachineService.updateMachineStatus(machineId, status, note);
+      // Format status to match what MongoDB expects
+      // Use lowercase for internal tracking to be consistent
+      const formattedStatus = status.toLowerCase();
+      
+      console.log(`MongoDbService: Updating status for machine ${machineId} to ${formattedStatus}`);
+      const success = await mongoMachineService.updateMachineStatus(machineId, formattedStatus, note);
       console.log(`MongoDB update machine status result: ${success}`);
       return success;
     } catch (error) {
