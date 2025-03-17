@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
 import { SeedService } from './utils/seed';
-import { createAdminUser } from './controllers/adminController'; // Ensure this import is correct
+import { createAdminUser } from './controllers/adminController'; 
 
 // Routes
 import authRoutes from './routes/authRoutes';
