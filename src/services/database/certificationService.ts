@@ -11,7 +11,7 @@ export class CertificationDatabaseService extends BaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationDatabaseService.addCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      const response = await apiService.addCertification(userId, machineId);
+      const response = await apiService.post('certifications', { userId, machineId });
       if (response.data?.success) {
         return true;
       }
@@ -47,7 +47,7 @@ export class CertificationDatabaseService extends BaseService {
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      const response = await apiService.removeCertification(userId, machineId);
+      const response = await apiService.delete(`certifications/${userId}/${machineId}`);
       if (response.data?.success) {
         return true;
       }
@@ -82,7 +82,7 @@ export class CertificationDatabaseService extends BaseService {
   
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      const response = await apiService.getUserCertifications(userId);
+      const response = await apiService.get(`certifications/user/${userId}`);
       if (response.data) {
         return response.data;
       }

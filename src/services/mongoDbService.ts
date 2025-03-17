@@ -1,3 +1,4 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import { isWeb } from '../utils/platform';
@@ -8,7 +9,7 @@ class MongoDbService {
     if (isWeb) {
       console.log('MongoDB access attempted from web environment, using API fallback');
       try {
-        const response = await apiService.getAllUsers();
+        const response = await apiService.get('users');
         if (response.data) {
           console.log('API returned', response.data.length, 'users');
           return response.data;
@@ -27,7 +28,7 @@ class MongoDbService {
   async getUserByEmail(email: string) {
     if (isWeb) {
       try {
-        const response = await apiService.getUserByEmail(email);
+        const response = await apiService.get(`users/email/${email}`);
         if (response.data) {
           return response.data;
         }
@@ -43,7 +44,7 @@ class MongoDbService {
   async getUserById(userId: string) {
     if (isWeb) {
       try {
-        const response = await apiService.getUserById(userId);
+        const response = await apiService.get(`users/${userId}`);
         if (response.data) {
           return response.data;
         }
@@ -61,7 +62,7 @@ class MongoDbService {
     
     if (isWeb) {
       try {
-        const response = await apiService.addCertification(userId, machineId);
+        const response = await apiService.post('certifications', { userId, machineId });
         return response.data && response.data.success;
       } catch (error) {
         console.error("Error updating user certifications via API:", error);
@@ -77,7 +78,7 @@ class MongoDbService {
     
     if (isWeb) {
       try {
-        const response = await apiService.removeCertification(userId, machineId);
+        const response = await apiService.delete(`certifications/${userId}/${machineId}`);
         return response.data && response.data.success;
       } catch (error) {
         console.error("Error removing user certification via API:", error);
@@ -91,7 +92,7 @@ class MongoDbService {
   async clearUserCertifications(userId: string) {
     if (isWeb) {
       try {
-        const response = await apiService.clearCertifications(userId);
+        const response = await apiService.delete(`certifications/clear/${userId}`);
         return response.data && response.data.success;
       } catch (error) {
         console.error("Error clearing user certifications via API:", error);
@@ -106,7 +107,7 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const response = await apiService.getAllMachines();
+        const response = await apiService.get('machines');
         if (response.data && Array.isArray(response.data)) {
           console.log(`API returned ${response.data.length} machines`);
           return response.data;
@@ -130,6 +131,14 @@ class MongoDbService {
   async getMachineById(machineId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.get(`machines/${machineId}`);
+        if (response.data) {
+          return response.data;
+        }
+      } catch (error) {
+        console.error(`Error getting machine ${machineId} from API:`, error);
+      }
       return null;
     }
     try {
@@ -149,6 +158,14 @@ class MongoDbService {
   async getMachineStatus(machineId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.get(`machines/${machineId}/status`);
+        if (response.data) {
+          return response.data;
+        }
+      } catch (error) {
+        console.error(`Error getting status for machine ${machineId} from API:`, error);
+      }
       return null;
     }
     try {
@@ -168,7 +185,13 @@ class MongoDbService {
   async updateMachineStatus(machineId: string, status: string, note?: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
-      return false;
+      try {
+        const response = await apiService.put(`machines/${machineId}/status`, { status, maintenanceNote: note });
+        return response.data?.success || false;
+      } catch (error) {
+        console.error(`Error updating status for machine ${machineId} via API:`, error);
+        return false;
+      }
     }
     try {
       if (!machineId || !status) {
@@ -188,7 +211,13 @@ class MongoDbService {
   async deleteUser(userId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
-      return false;
+      try {
+        const response = await apiService.delete(`users/${userId}`);
+        return response.status === 200;
+      } catch (error) {
+        console.error(`Error deleting user ${userId} via API:`, error);
+        return false;
+      }
     }
     try {
       if (!userId) {

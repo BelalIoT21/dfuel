@@ -2,6 +2,7 @@
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
+import { apiService } from './apiService';
 
 export class MachineService {
   // Update machine status - prioritize MongoDB
@@ -19,6 +20,16 @@ export class MachineService {
       if (isSafetyCabinet) {
         console.log("Safety Cabinet is always available, not updating status");
         return true;
+      }
+      
+      if (isWeb) {
+        // Use API for web
+        try {
+          const response = await apiService.put(`machines/${machineId}/status`, { status, maintenanceNote: note });
+          return response.data?.success || false;
+        } catch (error) {
+          console.error("API error updating machine status:", error);
+        }
       }
       
       // Update in MongoDB
@@ -44,6 +55,18 @@ export class MachineService {
       if (machineId === "5") {
         console.log("Safety Cabinet is always available");
         return 'available';
+      }
+
+      if (isWeb) {
+        // Use API for web
+        try {
+          const response = await apiService.get(`machines/${machineId}/status`);
+          if (response.data) {
+            return response.data.status;
+          }
+        } catch (error) {
+          console.error("API error getting machine status:", error);
+        }
       }
       
       // Get from MongoDB
@@ -73,6 +96,18 @@ export class MachineService {
       if (machineId === "5") {
         return undefined;
       }
+
+      if (isWeb) {
+        // Use API for web
+        try {
+          const response = await apiService.get(`machines/${machineId}/status`);
+          if (response.data) {
+            return response.data.note;
+          }
+        } catch (error) {
+          console.error("API error getting machine maintenance note:", error);
+        }
+      }
       
       // Get from MongoDB
       const status = await mongoDbService.getMachineStatus(machineId);
@@ -97,6 +132,23 @@ export class MachineService {
         return null;
       }
       
+      if (isWeb) {
+        // Use API for web
+        try {
+          const response = await apiService.get(`machines/${machineId}`);
+          if (response.data) {
+            // Get the latest status
+            const status = await this.getMachineStatus(machineId);
+            return {
+              ...response.data,
+              status: status || 'available'
+            };
+          }
+        } catch (error) {
+          console.error("API error getting machine by ID:", error);
+        }
+      }
+      
       // For native, use MongoDB
       if (!isWeb) {
         const mongoMachine = await mongoDbService.getMachineById(machineId);
@@ -117,7 +169,7 @@ export class MachineService {
         }
       }
       
-      // For web or if MongoDB fails, use the static machines data
+      // Fallback to the static machines data
       const machine = machines.find(m => m.id === machineId);
       
       if (machine) {
@@ -141,6 +193,21 @@ export class MachineService {
   // Helper method to get machines
   async getMachines(): Promise<any[]> {
     try {
+      if (isWeb) {
+        // Use API for web
+        try {
+          const response = await apiService.get('machines');
+          if (response.data && Array.isArray(response.data)) {
+            return response.data.map(machine => ({
+              ...machine,
+              type: machine.type || "Machine" // Default type if undefined
+            }));
+          }
+        } catch (error) {
+          console.error("API error getting machines:", error);
+        }
+      }
+      
       if (!isWeb) {
         // For native, use MongoDB
         const mongoMachines = await mongoDbService.getMachines();
@@ -159,7 +226,7 @@ export class MachineService {
         }
       }
       
-      // For web or if MongoDB fails, use the static machines data
+      // Fallback to static machines data
       return machines.map(machine => ({
         ...machine,
         type: machine.type || "Machine" // Default type if undefined

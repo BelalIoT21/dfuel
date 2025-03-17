@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { certificationService } from '../../../services/certificationService';
 
@@ -48,14 +48,18 @@ const MachineActions = ({
     setCertifiedState(isCertified);
   }, [isCertified]);
 
-  console.log('MachineActions props:', {
-    isCertified: certifiedState,
-    machineStatus,
-    machineType,
-    isBookable,
-    canGetCertified,
-    isAdmin
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log('MachineActions props:', {
+      isCertified: certifiedState,
+      machineStatus,
+      machineType,
+      isBookable,
+      canGetCertified,
+      isAdmin,
+      hasMachineSafetyCert
+    });
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert]);
 
   return (
     <View style={styles.actionContainer}>

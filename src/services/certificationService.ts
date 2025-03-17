@@ -24,7 +24,7 @@ export class CertificationService {
       // Try API first with correct endpoint format
       try {
         // Use POST with body instead of params for add operation
-        const response = await apiService.post('/api/certifications', {
+        const response = await apiService.post('/certifications', {
           userId,
           machineId: certificationId
         });
@@ -60,8 +60,8 @@ export class CertificationService {
 
       // Try direct API call first with the correct format
       try {
-        // Changed to use the DELETE method with an encoded URL
-        const response = await apiService.delete(`/api/certifications/${userId}/${certificationId}`);
+        // Use the DELETE method with the appropriate URL format
+        const response = await apiService.delete(`certifications/${userId}/${certificationId}`);
         
         console.log("API remove certification response:", response);
         if (response.data && response.data.success) {
@@ -94,7 +94,7 @@ export class CertificationService {
 
       // Try API first
       try {
-        const response = await apiService.delete(`/api/certifications/clear/${userId}`);
+        const response = await apiService.delete(`certifications/clear/${userId}`);
         
         console.log("API clear certifications response:", response);
         if (response.data && response.data.success) {
@@ -127,7 +127,7 @@ export class CertificationService {
       
       // Try API first
       try {
-        const response = await apiService.get(`/api/certifications/user/${userId}`);
+        const response = await apiService.get(`certifications/user/${userId}`);
         console.log("API get certifications response:", response);
         if (response.data && Array.isArray(response.data)) {
           return response.data;

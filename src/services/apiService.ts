@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -128,12 +129,28 @@ class ApiService {
     }
   }
   
+  // Implement GET, POST, PUT, DELETE methods for convenience
+  async get<T>(endpoint: string, authRequired: boolean = true): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, 'GET', undefined, authRequired);
+  }
+  
+  async post<T>(endpoint: string, data: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, 'POST', data, authRequired);
+  }
+  
+  async put<T>(endpoint: string, data: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, 'PUT', data, authRequired);
+  }
+  
+  async delete<T>(endpoint: string, data?: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, 'DELETE', data, authRequired);
+  }
+  
   // Auth endpoints
   async login(email: string, password: string) {
     console.log('Attempting login via API for:', email);
-    return this.request<{ token: string, user: any }>(
+    return this.post<{ token: string, user: any }>(
       'auth/login', 
-      'POST', 
       { email, password },
       false
     );
@@ -141,9 +158,8 @@ class ApiService {
   
   async register(userData: any) {
     console.log('Attempting registration via API for:', userData.email);
-    return this.request<{ token: string, user: any }>(
+    return this.post<{ token: string, user: any }>(
       'auth/register', 
-      'POST', 
       userData,
       false
     );
@@ -151,111 +167,90 @@ class ApiService {
   
   // Health check endpoint
   async checkHealth() {
-    return this.request<{ status: string, message: string }>(
+    return this.get<{ status: string, message: string }>(
       'health',
-      'GET',
-      undefined,
       false
     );
   }
   
   // User endpoints
   async getCurrentUser() {
-    return this.request<any>('users/me', 'GET');
+    return this.get<any>('users/me');
   }
   
   async updateUser(userId: string, updates: any) {
-    return this.request<any>(`users/${userId}`, 'PUT', updates);
+    return this.put<any>(`users/${userId}`, updates);
   }
   
   async updatePassword(userId: string, currentPassword: string, newPassword: string) {
-    return this.request<void>(
+    return this.put<void>(
       `users/${userId}/password`, 
-      'PUT', 
       { currentPassword, newPassword }
     );
   }
   
   // Additional methods to support databaseService
   async getUserByEmail(email: string) {
-    return this.request<any>(`users/email/${email}`, 'GET');
+    return this.get<any>(`users/email/${email}`);
   }
   
   async getUserById(userId: string) {
-    return this.request<any>(`users/${userId}`, 'GET');
+    return this.get<any>(`users/${userId}`);
   }
   
   async updateProfile(userId: string, updates: any) {
-    return this.request<{ success: boolean }>(`users/${userId}/profile`, 'PUT', updates);
+    return this.put<{ success: boolean }>(`users/${userId}/profile`, updates);
   }
   
   // Certification endpoints
   async addCertification(userId: string, certificationId: string) {
     console.log(`Adding certification for user ${userId}, machine ${certificationId}`);
-    return this.request<{ success: boolean }>(
+    return this.post<{ success: boolean }>(
       'certifications', 
-      'POST', 
       { userId, machineId: certificationId }
     );
   }
   
-  // Fixed removeCertification to properly format the request
   async removeCertification(userId: string, machineId: string) {
     console.log(`API: Removing certification for user ${userId}, machine ${machineId}`);
-    // Use a different approach for DELETE requests with parameters
-    return this.request<{ success: boolean }>(
-      `certifications/${userId}/${machineId}`, 
-      'DELETE'
-    );
+    return this.delete<{ success: boolean }>(`certifications/${userId}/${machineId}`);
   }
 
-  // Add clearCertifications method
   async clearCertifications(userId: string) {
     console.log(`Clearing all certifications for user ${userId}`);
-    return this.request<{ success: boolean }>(
-      `certifications/clear/${userId}`,
-      'DELETE'
-    );
+    return this.delete<{ success: boolean }>(`certifications/clear/${userId}`);
   }
   
   async getUserCertifications(userId: string) {
-    return this.request<string[]>(`certifications/user/${userId}`, 'GET');
+    return this.get<string[]>(`certifications/user/${userId}`);
   }
   
   async checkCertification(userId: string, machineId: string) {
-    return this.request<boolean>(
-      'certifications/check', 
-      'GET', 
-      { userId, machineId }
-    );
+    return this.get<boolean>(`certifications/check/${userId}/${machineId}`);
   }
   
   // Booking endpoints
   async getAllBookings() {
-    return this.request<any[]>('bookings/all', 'GET');
+    return this.get<any[]>('bookings/all');
   }
   
   async getUserBookings(userId: string) {
-    return this.request<any[]>(`bookings`, 'GET');
+    return this.get<any[]>(`bookings`);
   }
   
   async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.request<{ success: boolean }>(
+    return this.post<{ success: boolean }>(
       'bookings', 
-      'POST', 
       { machineId, date, time }
     );
   }
   
   async updateBookingStatus(bookingId: string, status: string) {
-    // For client-generated IDs, ensure they're properly formatted
     console.log(`Updating booking status: ${bookingId} to ${status}`);
     
-    // Try endpoint with /:id/status format first
     try {
-      const response = await this.request<any>(
+      const response = await this.put<any>(
         `bookings/${bookingId}/status`, 
-        'PUT', 
         { status }
       );
       
@@ -266,11 +261,9 @@ class ApiService {
       console.log(`Error with standard endpoint: ${error}`);
     }
     
-    // Try alternative endpoint if first one fails
     try {
-      return await this.request<any>(
+      return await this.put<any>(
         `bookings/update-status`, 
-        'PUT', 
         { bookingId, status }
       );
     } catch (error) {
@@ -280,71 +273,66 @@ class ApiService {
   }
   
   async cancelBooking(bookingId: string) {
-    return this.request<any>(`bookings/${bookingId}/cancel`, 'PUT');
+    return this.put<any>(`bookings/${bookingId}/cancel`);
   }
   
   // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
-    return this.request<void>(
+    return this.put<void>(
       'admin/credentials', 
-      'PUT', 
       { email, password }
     );
   }
   
   // Dashboard endpoints
   async getAllUsers() {
-    return this.request<any[]>('users', 'GET');
+    return this.get<any[]>('users');
   }
   
   async getMachineStatus(machineId: string) {
-    return this.request<{ status: string, note?: string }>(`machines/${machineId}/status`, 'GET');
+    return this.get<{ status: string, note?: string }>(`machines/${machineId}/status`);
   }
   
   // Safety certification management
   async addSafetyCertification(userId: string) {
-    return this.request<{ success: boolean }>(
+    return this.post<{ success: boolean }>(
       'certifications/safety', 
-      'POST', 
       { userId }
     );
   }
   
   async removeSafetyCertification(userId: string) {
-    return this.request<{ success: boolean }>(
+    return this.delete<{ success: boolean }>(
       'certifications/safety', 
-      'DELETE', 
       { userId }
     );
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.request<{ success: boolean }>(
+    return this.put<{ success: boolean }>(
       `machines/${machineId}/status`, 
-      'PUT', 
-      { status, maintenanceNote: note }, 
-      true
+      { status, maintenanceNote: note }
     );
   }
   
   async getAllMachines() {
-    return this.request<any[]>('machines', 'GET', undefined, true);
+    return this.get<any[]>('machines');
   }
   
   async getMachineById(machineId: string) {
-    return this.request<any>(`machines/${machineId}`, 'GET', undefined, true);
+    return this.get<any>(`machines/${machineId}`);
   }
   
   async createMachine(machineData: any) {
-    return this.request<any>('machines', 'POST', machineData, true);
+    return this.post<any>('machines', machineData);
   }
   
   async updateMachine(machineId: string, machineData: any) {
-    return this.request<any>(`machines/${machineId}`, 'PUT', machineData, true);
+    return this.put<any>(`machines/${machineId}`, machineData);
   }
   
   async deleteMachine(machineId: string) {
-    return this.request<{ success: boolean }>(`machines/${machineId}`, 'DELETE', undefined, true);
+    return this.delete<{ success: boolean }>(`machines/${machineId}`);
   }
 }
 
