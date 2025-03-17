@@ -73,10 +73,10 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Filter out machines 5 and 6, and only count real machines (not Equipment)
+  // Only filter out machines 5 and 6, but not by type
   const realMachines = machines.filter(machine => {
     const id = machine.id || machine._id;
-    return id !== '5' && id !== '6' && machine.type !== 'Equipment';
+    return id !== '5' && id !== '6';
   });
   
   console.log("Filtered machines:", realMachines.length, "from total:", machines.length);
