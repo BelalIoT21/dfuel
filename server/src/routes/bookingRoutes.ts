@@ -51,6 +51,6 @@ router.put(
 router.put('/:id/cancel', protect, cancelBooking);
 
 // Delete booking (admin only)
-router.delete('/:id', protect, deleteBooking);
+router.delete('/:id', protect, admin, deleteBooking);
 
 export default router;

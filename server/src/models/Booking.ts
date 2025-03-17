@@ -8,6 +8,8 @@ export interface IBooking extends mongoose.Document {
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
   clientId?: string; // Optional client-side ID
+  userName?: string; // Added field to store user name
+  machineName?: string; // Added field to store machine name
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +42,12 @@ const bookingSchema = new mongoose.Schema<IBooking>(
     clientId: {
       type: String,
       index: true, // Add index for faster queries
+    },
+    userName: {
+      type: String,
+    },
+    machineName: {
+      type: String,
     },
   },
   {

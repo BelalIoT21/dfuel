@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import User from '../models/User';
@@ -54,7 +55,7 @@ export const createBooking = async (req: Request, res: Response) => {
     // For admin users, bypass booking slot check
     if (!req.user.isAdmin) {
       // Check if the time slot is already booked
-      if (machine.bookedTimeSlots.includes(timeSlot)) {
+      if (machine.bookedTimeSlots && machine.bookedTimeSlots.includes(timeSlot)) {
         return res.status(400).json({ message: 'This time slot is already booked' });
       }
       
@@ -75,21 +76,30 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
-    // Create booking
+    // Get user name
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Create booking with user and machine names
     const booking = new Booking({
       user: req.user._id,
       machine: machineId,
       date,
       time,
       // Auto-approve bookings made by admins
-      status: req.user.isAdmin ? 'Approved' : 'Pending'
+      status: req.user.isAdmin ? 'Approved' : 'Pending',
+      // Add user and machine names
+      userName: user.name,
+      machineName: machine.name
     });
     
     const createdBooking = await booking.save();
     console.log('Created booking in MongoDB:', createdBooking);
     
     // If admin auto-approved, add to machine's booked time slots
-    if (req.user.isAdmin) {
+    if (req.user.isAdmin && machine.addBookedTimeSlot) {
       await machine.addBookedTimeSlot(timeSlot);
     }
     
@@ -322,11 +332,12 @@ export const getAllBookings = async (req: Request, res: Response) => {
       
       return {
         _id: booking._id,
+        id: booking._id, // for client compatibility
         machineId: booking.machine,
-        machineName: machineDoc?.name || `Unknown Machine (${booking.machine})`,
+        machineName: booking.machineName || machineDoc?.name || `Unknown Machine (${booking.machine})`,
         machineType: machineDoc?.type || 'Unknown Type',
         userId: booking.user,
-        userName: userDoc?.name || 'Unknown User',
+        userName: booking.userName || userDoc?.name || 'Unknown User',
         userEmail: userDoc?.email || 'Unknown Email',
         date: booking.date,
         time: booking.time,
@@ -379,7 +390,7 @@ export const deleteBooking = async (req: Request, res: Response) => {
     // If the booking was approved, free up the time slot
     if (booking.status === 'Approved') {
       const machine = await Machine.findById(booking.machine);
-      if (machine) {
+      if (machine && machine.removeBookedTimeSlot) {
         const dateObj = new Date(booking.date);
         const formattedDate = dateObj.toISOString().split('T')[0];
         const timeSlot = `${formattedDate}-${booking.time}`;

@@ -43,3 +43,17 @@ export interface MongoMachine {
   linkedCourseId?: string;
   linkedQuizId?: string;
 }
+
+export interface MongoBooking {
+  _id?: string;
+  user: string;
+  machine: string;
+  date: Date;
+  time: string;
+  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
+  userName?: string;
+  machineName?: string;
+  clientId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

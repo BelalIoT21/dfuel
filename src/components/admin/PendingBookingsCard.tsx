@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import mongoDbService from '@/services/mongoDbService';
+import { format } from 'date-fns';
 
 interface PendingBookingsCardProps {
   pendingBookings?: any[];
@@ -87,6 +88,14 @@ export const PendingBookingsCard = ({
     }
   };
   
+  const formatBookingDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMM dd, yyyy');
+    } catch (error) {
+      return dateString;
+    }
+  };
+  
   if (pendingBookings.length === 0) {
     return (
       <Card className="border-purple-100">
@@ -107,13 +116,13 @@ export const PendingBookingsCard = ({
           </div>
           
           {pendingBookings.map((booking) => (
-            <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+            <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
               <div>
                 <p className="font-medium text-purple-800">
-                  {booking.machineName || `Machine ${booking.machineId}`}
+                  {booking.machineName || `Machine ${booking.machineId || booking.machine}`}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {booking.userName || 'User'} • {booking.date} at {booking.time}
+                  {booking.userName || 'User'} • {formatBookingDate(booking.date)} at {booking.time}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -121,30 +130,30 @@ export const PendingBookingsCard = ({
                   variant="outline"
                   size="sm"
                   className="border-green-200 hover:bg-green-50 text-green-700"
-                  onClick={() => handleBookingAction(booking.id, 'Approved')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Approved')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                   Approve
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => handleBookingAction(booking.id, 'Rejected')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Rejected')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
                   Reject
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id, 'Deleted')}
-                  disabled={processingBookingId === booking.id}
+                  onClick={() => handleBookingAction(booking.id || booking._id, 'Deleted')}
+                  disabled={processingBookingId === (booking.id || booking._id)}
                 >
-                  {processingBookingId === booking.id ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
                   Delete
                 </Button>
               </div>

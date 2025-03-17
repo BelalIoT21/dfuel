@@ -5,6 +5,7 @@ import { Booking } from '../../../server/src/models/Booking';
 import { User } from '../../../server/src/models/User';
 import { Machine } from '../../../server/src/models/Machine';
 import mongoConnectionService from './connectionService';
+import { MongoBooking } from './types';
 
 class MongoBookingService {
   private bookingsCollection: Collection | null = null;
@@ -108,7 +109,7 @@ class MongoBookingService {
       const clientId = `booking-${Date.now()}`;
       
       // Create booking object
-      const booking = {
+      const booking: MongoBooking = {
         user: userId,
         machine: machineId,
         date: new Date(date),
@@ -200,10 +201,19 @@ class MongoBookingService {
     const enrichedBookings = [];
     
     for (const booking of bookings) {
-      let userId = booking.user;
-      let machineId = booking.machine;
-      
       try {
+        // If booking already has userName and machineName, use those
+        if (booking.userName && booking.machineName) {
+          enrichedBookings.push({
+            ...booking,
+            id: booking._id.toString(), // Add id field for client compatibility
+          });
+          continue;
+        }
+        
+        let userId = booking.user;
+        let machineId = booking.machine;
+        
         // Convert string IDs to ObjectId if needed
         if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId)) {
           userId = new mongoose.Types.ObjectId(userId);
@@ -220,12 +230,16 @@ class MongoBookingService {
         // Add user and machine details to booking
         enrichedBookings.push({
           ...booking,
+          id: booking._id.toString(), // Add id field for client compatibility
           userName: user?.name || 'Unknown User',
           machineName: machine?.name || 'Unknown Machine',
         });
       } catch (error) {
         console.error("Error enriching booking with details:", error);
-        enrichedBookings.push(booking);
+        enrichedBookings.push({
+          ...booking,
+          id: booking._id.toString(), // Add id field for client compatibility
+        });
       }
     }
     
