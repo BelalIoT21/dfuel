@@ -20,13 +20,14 @@ export class CertificationService {
         return false;
       }
 
-      // Fix: remove extra slash in API endpoint
       const response = await apiService.post('certifications', {
         userId,
         machineId: certificationId
       });
       
       console.log("API certification response:", response);
+      
+      // Consider both success cases: newly added or already had it
       if (response.data && response.data.success) {
         console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
@@ -49,10 +50,11 @@ export class CertificationService {
         return false;
       }
 
-      // Fix: remove extra slash in API endpoint
       const response = await apiService.delete(`certifications/${userId}/${certificationId}`);
       
       console.log("API remove certification response:", response);
+      
+      // Consider both success cases: removed or didn't have it
       if (response.data && response.data.success) {
         console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
@@ -75,7 +77,6 @@ export class CertificationService {
         return false;
       }
 
-      // Fix: remove extra slash in API endpoint
       const response = await apiService.delete(`certifications/clear/${userId}`);
       
       console.log("API clear certifications response:", response);
@@ -101,7 +102,6 @@ export class CertificationService {
         return [];
       }
       
-      // Fix: remove extra slash in API endpoint
       const response = await apiService.get(`certifications/user/${userId}`);
       console.log("API get certifications response:", response);
       
@@ -126,7 +126,6 @@ export class CertificationService {
         return false;
       }
       
-      // Fix: remove extra slash in API endpoint
       const response = await apiService.get(`certifications/check/${userId}/${machineId}`);
       console.log("API check certification response:", response);
       

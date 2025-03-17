@@ -12,11 +12,16 @@ export class CertificationDatabaseService extends BaseService {
     try {
       const response = await apiService.post('certifications', { userId, machineId });
       
+      // Both newly added and already had it are considered success
       if (response.data?.success) {
-        toast({
-          title: "Success",
-          description: "Certification added successfully",
-        });
+        if (response.data.message === 'User already has this certification') {
+          console.log(`User ${userId} already has certification ${machineId}`);
+        } else {
+          toast({
+            title: "Success",
+            description: "Certification added successfully",
+          });
+        }
         return true;
       }
       
@@ -43,11 +48,16 @@ export class CertificationDatabaseService extends BaseService {
     try {
       const response = await apiService.delete(`certifications/${userId}/${machineId}`);
       
+      // Both removed and didn't have it are considered success
       if (response.data?.success) {
-        toast({
-          title: "Success",
-          description: "Certification removed successfully",
-        });
+        if (response.data.message === 'User does not have this certification') {
+          console.log(`User ${userId} does not have certification ${machineId}`);
+        } else {
+          toast({
+            title: "Success",
+            description: "Certification removed successfully",
+          });
+        }
         return true;
       }
       

@@ -20,7 +20,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
     }
 
     // Format the lastLogin date as ISO string if it exists
-    const lastLogin = user.lastLogin ? user.lastLogin.toISOString() : new Date().toISOString();
+    const lastLogin = user.lastLogin 
+      ? new Date(user.lastLogin).toISOString() 
+      : new Date().toISOString();
 
     // Return the user data in a consistent format
     res.json({
