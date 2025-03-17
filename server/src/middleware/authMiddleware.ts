@@ -1,9 +1,8 @@
-
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User';
+import User from '../models/User';
 
-// Extend Request to include user property
+// Extend Express Request interface
 declare global {
   namespace Express {
     interface Request {
@@ -12,41 +11,40 @@ declare global {
   }
 }
 
-// Protect routes - check for valid JWT
+// Protect routes with JWT authentication
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
   let token;
 
+  // Get token from header
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, no token provided' });
+  }
+
   try {
-    // Check for token in Authorization header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
 
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+    // Find user by ID
+    const user = await User.findById(decoded.id).select('-password');
 
-      // Get user from the token
-      req.user = await User.findById((decoded as any).id).select('-password');
-      
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      next();
-    } else {
-      // No token found
-      return res.status(401).json({ message: 'Not authorized, no token' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+
+    // Attach user to request object
+    req.user = user;
+    next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ 
-      message: 'Not authorized, token failed', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
+    console.error('Error in protect middleware:', error);
+    res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
 
-// Admin middleware - check if user is admin
+// Admin middleware
 export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.isAdmin) {
     next();

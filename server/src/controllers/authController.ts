@@ -4,6 +4,3 @@ export { registerUser } from './auth/registerController';
 export { loginUser } from './auth/loginController';
 export { forgotPassword, resetPassword } from './auth/passwordController';
 export { getUserProfile } from './auth/profileController';
-
-// Export the auto-seed function for direct use in routes or middleware if needed
-export { ensureAdminUser } from './auth/adminController';

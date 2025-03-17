@@ -1,43 +1,29 @@
 
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { User } from '../models/User';
 
-// @desc    Get server health status
-// @route   GET /api/health
-// @access  Public
-export const healthCheck = async (req: Request, res: Response) => {
-  console.log('Health check request received');
+// Health check controller
+export const healthCheck = (req: Request, res: Response) => {
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   
-  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  // Add CORS headers explicitly for health check
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   
-  // Get count of users in the database for debugging
-  let userCount = 0;
-  try {
-    userCount = await User.countDocuments();
-    console.log(`MongoDB has ${userCount} users`);
-  } catch (err) {
-    console.error('Error counting users:', err);
-  }
-  
-  res.status(200).json({
-    status: 'ok',
+  res.status(200).json({ 
+    status: 'success',
+    message: 'Server is up and running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
     mongodb: {
-      status: dbStatus,
-      userCount
+      status: mongoStatus,
+      host: mongoose.connection.host || 'not connected',
+      database: mongoose.connection.name || 'not connected',
+      readyState: mongoose.connection.readyState
     },
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    version: process.version
+    server: {
+      port: process.env.PORT || 4000,
+      environment: process.env.NODE_ENV || 'development'
+    }
   });
-};
-
-// @desc    Simple ping endpoint
-// @route   GET /api/health/ping
-// @access  Public
-export const ping = (req: Request, res: Response) => {
-  console.log('Ping request received from:', req.ip);
-  res.status(200).json({ pong: true, time: new Date().toISOString() });
 };

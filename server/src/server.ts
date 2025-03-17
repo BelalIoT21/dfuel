@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,8 +6,8 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { seedDatabase } from './utils/seed';  // Import the seed utility
-import { ensureAdminUser } from './controllers/auth/adminController'; // Import admin seeder
+import { SeedService } from './utils/seed';
+import { createAdminUser } from './controllers/adminController'; // Ensure this import is correct
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -25,14 +24,23 @@ dotenv.config();
 // Connect to MongoDB
 connectDB().then(async () => {
   // Ensure admin user exists
-  await ensureAdminUser();
-  
-  // Seed the database after connection
+  console.log('Ensuring admin user exists...');
+  try {
+    await createAdminUser();
+    console.log('Admin user seeding completed.');
+  } catch (err) {
+    console.error('Error seeding admin user:', err);
+  }
+
+  // Seed the database after connection (only in development)
   if (process.env.NODE_ENV !== 'production') {
-    console.log('Seeding database with initial data...');
-    seedDatabase()
-      .then(() => console.log('Database seeded successfully!'))
-      .catch(err => console.error('Error seeding database:', err));
+    console.log('Checking if database needs seeding...');
+    try {
+      await SeedService.seedDatabase();
+      console.log('Database seeding completed (if needed)');
+    } catch (err) {
+      console.error('Error seeding database:', err);
+    }
   }
 });
 
@@ -64,7 +72,6 @@ app.use(cookieParser());
 // Log all incoming requests for debugging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url} from ${req.ip}`);
-  console.log('Headers:', JSON.stringify(req.headers));
   if (req.method !== 'GET') {
     console.log('Body:', JSON.stringify(req.body));
   }
@@ -83,38 +90,6 @@ app.use('/api/health', healthRoutes);
 // Health check endpoint (root level)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
-});
-
-// Log all API routes for debugging
-console.log('Registered API routes:');
-// Define explicit types for middleware and handler
-app._router.stack.forEach((middleware: {
-  route?: { path: string },
-  name?: string,
-  handle?: { 
-    stack: Array<{
-      route?: { 
-        path: string, 
-        stack: Array<{ method: string }>
-      }
-    }>
-  },
-  regexp?: { toString: () => string }
-}) => {
-  if (middleware.route) {
-    console.log(`Route: ${middleware.route.path}`);
-  } else if (middleware.name === 'router') {
-    middleware.handle?.stack.forEach((handler: {
-      route?: { 
-        path: string, 
-        stack: Array<{ method: string }>
-      }
-    }) => {
-      if (handler.route) {
-        console.log(`${handler.route.stack[0].method.toUpperCase()} /api${middleware.regexp?.toString().split('/')[1].replace('\\', '')}${handler.route.path}`);
-      }
-    });
-  }
 });
 
 // Error handling middleware

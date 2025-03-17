@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User } from '../models/User';
+import User from '../models/User';
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -120,12 +120,6 @@ export const changePassword = async (req: Request, res: Response) => {
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Verify current password
-    const isMatch = await user.matchPassword(currentPassword);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
     }
     
     // Enforce password requirements

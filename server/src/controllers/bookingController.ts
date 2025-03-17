@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
-import { User } from '../models/User';
+import User from '../models/User';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
 

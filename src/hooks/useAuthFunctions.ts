@@ -1,26 +1,29 @@
-
 import { useState } from 'react';
-import { User } from '@/types/database';
+import { User } from '@/types/database'; // Adjust the import path as needed
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
 
 export const useAuthFunctions = (
-  user: User | null, 
+  user: User | null,
   setUser: React.Dispatch<React.SetStateAction<User | null>>
 ) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Handles user login.
+   */
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       console.log("Login attempt for:", email);
-      
-      // API login
+  
+      // API login request
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
-      console.log("API login response:", apiResponse);
-      
+      console.log("API login response:", JSON.stringify(apiResponse, null, 2));
+  
+      // Handle API errors
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
         toast({
@@ -30,46 +33,44 @@ export const useAuthFunctions = (
         });
         return false;
       }
-      
-      if (apiResponse.data) {
-        console.log("API login successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
-        
-        // Save the token for future API requests
-        if (apiResponse.data.token) {
-          console.log("Saving token to localStorage");
-          localStorage.setItem('token', apiResponse.data.token);
-          // Also set the token in the API service
-          apiService.setToken(apiResponse.data.token);
-        } else {
-          console.error("No token received from API");
-        }
-        
-        // Transform MongoDB _id to id if needed
-        const normalizedUser = {
-          ...userData,
-          id: userData._id || userData.id
-        };
-        
-        console.log("Setting user data in state:", normalizedUser);
-        setUser(normalizedUser as User);
-        
+  
+      // Validate the response structure
+      const nestedData = apiResponse.data?.data; // Access the nested `data` object
+      const userData = nestedData?.user;
+      const token = nestedData?.token;
+  
+      if (!userData || !userData._id || !userData.name || !userData.email || !token) {
+        console.error("API response is missing required fields:", apiResponse);
         toast({
-          title: "Login successful",
-          description: `Welcome back, ${normalizedUser.name}!`
+          title: "Login failed",
+          description: "The server returned incomplete data. Please try again.",
+          variant: "destructive"
         });
-        
-        return true;
+        return false;
       }
-      
-      // If we get here, the API returned no data and no error, which is odd
+  
+      // Normalize user data (map `_id` to `id` for consistency)
+      const normalizedUser = {
+        ...userData,
+        id: String(userData._id), // Convert _id to string if necessary
+      };
+  
+      console.log("Setting user data in state:", normalizedUser);
+  
+      // Save the token for future API requests
+      console.log("Saving token to localStorage");
+      localStorage.setItem('token', token);
+      apiService.setToken(token); // Set token in API service
+  
+      setUser(normalizedUser as User); // Update the user state
+  
+      // Show success message
       toast({
-        title: "Login failed",
-        description: "The server returned an unexpected response. Please try again.",
-        variant: "destructive"
+        title: "Login successful",
+        description: `Welcome back, ${normalizedUser.name}!`
       });
-      return false;
-      
+  
+      return true;
     } catch (error) {
       console.error("Error during login:", error);
       toast({
@@ -83,14 +84,19 @@ export const useAuthFunctions = (
     }
   };
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  /**
+   * Handles user registration.
+   */
+  const register = async (email: string, password: string, name?: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       console.log("Registration attempt for:", email);
-      
-      // API registration
+  
+      // API registration request
       const apiResponse = await apiService.register({ email, password, name });
-      
+      console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
+  
+      // Handle API errors
       if (apiResponse.error) {
         console.error("API registration error:", apiResponse.error);
         toast({
@@ -100,46 +106,50 @@ export const useAuthFunctions = (
         });
         return false;
       }
-      
-      if (apiResponse.data) {
-        console.log("API registration successful:", apiResponse.data);
-        const userData = apiResponse.data.user;
-        
-        // Save the token for future API requests
-        if (apiResponse.data.token) {
-          console.log("Saving token to localStorage");
-          localStorage.setItem('token', apiResponse.data.token);
-        } else {
-          console.error("No token received from API");
-        }
-        
-        // Transform MongoDB _id to id if needed
-        const normalizedUser = {
-          ...userData,
-          id: userData._id || userData.id
-        };
-        
-        console.log("Setting user data in state after registration:", normalizedUser);
-        setUser(normalizedUser as User);
-        
+  
+      // Extract data from the correct response structure
+      const responseData = apiResponse.data?.data; // Access the nested data
+      const userData = responseData?.user; // Directly access user object
+      const token = userData?.token; // Get token from user object
+  
+      // Validate required fields
+      if (!userData?._id || !userData?.email || !token) {
+        console.error("API response is missing required fields:", apiResponse);
         toast({
-          title: "Registration successful",
-          description: `Welcome, ${name}!`
+          title: "Registration failed",
+          description: "The server returned incomplete data. Please try again.",
+          variant: "destructive"
         });
-        return true;
+        return false;
       }
-      
+  
+      // Normalize user data
+      const normalizedUser = {
+        id: String(userData._id),
+        name: userData.name || name || 'User',
+        email: userData.email,
+        isAdmin: userData.isAdmin || false,
+        certifications: userData.certifications || []
+      };
+  
+      console.log("Setting user data:", normalizedUser);
+  
+      // Save token and update state
+      localStorage.setItem('token', token);
+      apiService.setToken(token);
+      setUser(normalizedUser);
+  
       toast({
-        title: "Registration failed",
-        description: "The server returned an unexpected response. Please try again.",
-        variant: "destructive"
+        title: "Registration successful",
+        description: `Welcome, ${normalizedUser.name}!`
       });
-      return false;
+  
+      return true;
     } catch (error) {
-      console.error("Error during registration:", error);
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Server may be unavailable.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -148,14 +158,23 @@ export const useAuthFunctions = (
     }
   };
 
+  /**
+   * Handles user logout.
+   */
   const logout = () => {
     console.log("Logging out user");
+
+    // Clear user state
     setUser(null);
-    // Remove all auth data
+
+    // Remove all auth-related data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+
     // Clear the token from API service
     apiService.setToken(null);
+
+    // Show success message
     toast({
       description: "Logged out successfully."
     });

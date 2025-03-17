@@ -1,7 +1,7 @@
 
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
-import mongoSeedService from './seedService';
+import mongoSeedService from './seedService'; 
 
 class MongoConnectionService {
   private client: any | null = null;
@@ -10,9 +10,11 @@ class MongoConnectionService {
   private isConnecting: boolean = false;
   private connectionPromise: Promise<any | null> | null = null;
   private initialized: boolean = false;
+  private connectionAttempts: number = 0;
+  private maxConnectionAttempts: number = 3;
   
   constructor() {
-    // In a real application, this would come from environment variables
+    // Updated to use the localhost MongoDB instance
     this.uri = 'mongodb://localhost:27017/learnit';
     console.log(`MongoDB connection URI: ${this.uri}`);
   }
@@ -20,7 +22,7 @@ class MongoConnectionService {
   async connect(): Promise<any | null> {
     // Skip MongoDB connection in browser environment
     if (isWeb) {
-      console.log("Running in browser environment, using server API for MongoDB access");
+      console.log("Running in browser environment, skipping MongoDB connection");
       return null;
     }
     
@@ -30,10 +32,17 @@ class MongoConnectionService {
       return this.connectionPromise;
     }
     
+    // Check if we've exceeded the maximum number of connection attempts
+    if (this.connectionAttempts >= this.maxConnectionAttempts) {
+      console.warn(`Maximum connection attempts (${this.maxConnectionAttempts}) reached. Using fallback data.`);
+      return null;
+    }
+    
     try {
       if (!this.client) {
         this.isConnecting = true;
-        console.log(`Attempting to connect to MongoDB at ${this.uri}...`);
+        this.connectionAttempts++;
+        console.log(`Attempting to connect to MongoDB at ${this.uri} (Attempt ${this.connectionAttempts}/${this.maxConnectionAttempts})...`);
         
         // Create a new connection promise
         this.connectionPromise = new Promise(async (resolve, reject) => {
@@ -46,7 +55,10 @@ class MongoConnectionService {
                 version: ServerApiVersion.v1,
                 strict: true,
                 deprecationErrors: true,
-              }
+              },
+              // Add connection timeout
+              connectTimeoutMS: 5000, 
+              socketTimeoutMS: 45000
             });
             
             await this.client.connect();
@@ -65,11 +77,24 @@ class MongoConnectionService {
               this.initialized = true;
             }
             
+            // Reset connection attempts on success
+            this.connectionAttempts = 0;
             resolve(this.db);
           } catch (error) {
             console.error("Error connecting to MongoDB:", error);
             this.isConnecting = false;
             this.connectionPromise = null;
+            
+            if (this.client) {
+              try {
+                await this.client.close();
+                this.client = null;
+                this.db = null;
+              } catch (closeError) {
+                console.error("Error closing MongoDB client:", closeError);
+              }
+            }
+            
             reject(error);
           }
         });
@@ -88,13 +113,13 @@ class MongoConnectionService {
     }
   }
   
-  // Initialize data in the correct order
+  // New method to initialize data
   private async initializeData(): Promise<void> {
     try {
       console.log("Initializing MongoDB with seed data...");
       
       // First seed machines (as they're referenced by users and bookings)
-      await mongoSeedService.seedMachines();
+      await mongoMachineService.seedDefaultMachines();
       
       // Then seed users and bookings
       await mongoSeedService.seedUsers();
@@ -112,6 +137,8 @@ class MongoConnectionService {
       try {
         await this.client.close();
         console.log("Disconnected from MongoDB");
+        this.client = null;
+        this.db = null;
       } catch (error) {
         console.error("Error closing MongoDB connection:", error);
       }
@@ -144,6 +171,23 @@ class MongoConnectionService {
       console.error("MongoDB connection check failed:", error);
       return false;
     }
+  }
+  
+  // Reset connection state (useful for retrying)
+  async resetConnection(): Promise<void> {
+    if (this.client) {
+      try {
+        await this.client.close();
+      } catch (error) {
+        console.error("Error closing MongoDB connection during reset:", error);
+      }
+    }
+    
+    this.client = null;
+    this.db = null;
+    this.isConnecting = false;
+    this.connectionPromise = null;
+    this.connectionAttempts = 0;
   }
 }
 

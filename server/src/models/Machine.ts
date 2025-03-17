@@ -1,7 +1,7 @@
-
 import mongoose from 'mongoose';
 
 export interface IMachine extends mongoose.Document {
+  _id: string;
   name: string;
   type: string;
   description: string;
@@ -18,6 +18,7 @@ export interface IMachine extends mongoose.Document {
   certificationInstructions?: string;
   linkedCourseId?: string;
   linkedQuizId?: string;
+  note?: string;
   
   // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -26,6 +27,10 @@ export interface IMachine extends mongoose.Document {
 
 const machineSchema = new mongoose.Schema<IMachine>(
   {
+    _id: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,

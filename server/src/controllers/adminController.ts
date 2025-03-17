@@ -1,9 +1,46 @@
 
 import { Request, Response } from 'express';
-import { User } from '../models/User';
+import User from '../models/User';
 import { Booking } from '../models/Booking';
 import { Machine } from '../models/Machine';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+
+dotenv.config();
+
+// function to create the admin user
+export const createAdminUser = async () => {
+  try {
+    // Check if any users exist
+    const userCount = await User.countDocuments();
+
+    if (userCount > 0) {
+      console.log('Seed already completed. Admin user already exists.');
+      return;
+    }
+
+    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+    if (!adminPassword) {
+      throw new Error('ADMIN_PASSWORD is not defined in environment variables');
+    }
+
+    // Create admin user from .env credentials
+    const adminUser = new User({
+      _id: '1',
+      name: 'Admin',
+      email: process.env.ADMIN_EMAIL,
+      password: adminPassword,
+      isAdmin: true,
+      certifications: [],
+    });
+
+    await adminUser.save();
+    console.log('Admin user created successfully:', adminUser.email);
+  } catch (error) {
+    console.error('Error in createAdminUser:', error);
+    throw error; // Re-throw the error for handling elsewhere
+  }
+};
 
 // @desc    Get dashboard overview data
 // @route   GET /api/admin/dashboard
@@ -111,13 +148,20 @@ export const seedAdminUser = async (req: Request, res: Response) => {
         message: 'Seed already completed. Admin user already exists.' 
       });
     }
+
+    if (!process.env.ADMIN_PASSWORD) {
+      throw new Error('ADMIN_PASSWORD is not defined in environment variables');
+    }
+    const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
     
     // Create admin user from .env credentials
     const adminUser = new User({
+      _id: '1',
       name: 'Admin',
-      email: process.env.ADMIN_EMAIL || 'admin@learnit.com',
-      password: process.env.ADMIN_PASSWORD || 'admin123',
-      isAdmin: true
+      email: process.env.ADMIN_EMAIL,
+      password: adminPassword,
+      isAdmin: true,
+      certifications: []
     });
     
     await adminUser.save();

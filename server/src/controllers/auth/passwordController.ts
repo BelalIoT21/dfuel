@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import { User } from '../../models/User';
+import User from '../../models/User';
 
 // @desc    Request password reset
 // @route   POST /api/auth/forgot-password
@@ -64,7 +64,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 
     // Check if code matches and is not expired
-    if (user.resetCode.code !== resetCode || new Date() > user.resetCode.expiry) {
+    if (!user.resetCode?.code || !user.resetCode?.expiry || user.resetCode.code !== resetCode || new Date() > user.resetCode.expiry) {
       return res.status(400).json({ message: 'Invalid or expired reset code' });
     }
 

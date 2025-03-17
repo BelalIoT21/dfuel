@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import { User } from '../models/User';
+import User from '../models/User';
 import { Machine } from '../models/Machine';
 
 // @desc    Add certification to user
