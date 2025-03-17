@@ -26,11 +26,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
-  // Check server connection status once on mount
+  // Check server connection status and load machine statuses on mount
   useEffect(() => {
-    const checkServerStatus = async () => {
+    const loadInitialData = async () => {
       try {
+        // First check server connection
         console.log("Checking server connection status...");
         const response = await fetch('http://localhost:4000/api/health');
         
@@ -38,22 +40,24 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           console.log("Server connected successfully!");
           setIsServerConnected(true);
           
-          // If server is connected, immediately fetch fresh machine statuses
-          fetchMachineStatuses();
+          // Server is connected, fetch fresh machine statuses
+          await fetchMachineStatuses();
         } else {
           console.log("Server responded with error:", response.status);
           setIsServerConnected(false);
         }
       } catch (error) {
-        console.error("Error checking server connection:", error);
+        console.error("Error during initial data load:", error);
         setIsServerConnected(false);
+      } finally {
+        setInitialLoadDone(true);
       }
     };
     
-    checkServerStatus();
+    loadInitialData();
   }, []);
 
-  // Fetch machine statuses function that can be called immediately and on refresh
+  // Fetch machine statuses function that can be called on load and refresh
   const fetchMachineStatuses = async () => {
     console.log("Fetching fresh machine statuses...");
     
@@ -61,51 +65,72 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       // Only load status for machines 1 to 4
       const machineIds = ["1", "2", "3", "4"];
       
-      // Create a map to track which machines have been updated
-      const updatedMachineMap = {};
+      // Track updated machines
+      const updatedMachines = [];
       
       // Get fresh status for each machine directly from the API
-      await Promise.all(
-        machineIds.map(async (machineId) => {
-          try {
-            // Use direct fetch to ensure we get latest status
-            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
+      for (const machineId of machineIds) {
+        try {
+          // Use direct fetch to ensure we get latest status
+          const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
+          
+          if (response.ok) {
+            const machineData = await response.json();
+            console.log(`Machine ${machineId} status:`, machineData.status);
             
-            if (response.ok) {
-              const machineData = await response.json();
-              console.log(`Machine ${machineId} status:`, machineData.status);
-              
-              // Store machine data with properly formatted status
-              updatedMachineMap[machineId] = {
-                id: machineId,
-                status: machineData.status?.toLowerCase() || 'available',
-                maintenanceNote: machineData.maintenanceNote || ''
+            // Store machine data with properly formatted status
+            updatedMachines.push({
+              id: machineId,
+              _id: machineId, // Include both forms of ID for compatibility
+              name: machineData.name,
+              type: machineData.type || "Machine",
+              status: machineData.status?.toLowerCase() || 'available',
+              maintenanceNote: machineData.maintenanceNote || ''
+            });
+          } else {
+            console.error(`Error fetching machine ${machineId}:`, response.statusText);
+          }
+        } catch (error) {
+          console.error(`Error fetching machine ${machineId}:`, error);
+        }
+      }
+      
+      if (updatedMachines.length > 0) {
+        // Update machine data with the new status information
+        setMachineData(prevData => {
+          // Create a map of existing machines for efficient lookup
+          const existingMachines = {};
+          prevData.forEach(machine => {
+            const id = machine.id || machine._id;
+            existingMachines[id] = machine;
+          });
+          
+          // Update existing machines with new data
+          const result = [...prevData];
+          updatedMachines.forEach(updatedMachine => {
+            const machineId = updatedMachine.id || updatedMachine._id;
+            const index = result.findIndex(m => 
+              (m.id === machineId || m._id === machineId)
+            );
+            
+            if (index !== -1) {
+              // Update existing machine
+              result[index] = {
+                ...result[index],
+                status: updatedMachine.status,
+                maintenanceNote: updatedMachine.maintenanceNote
               };
-            } else {
-              console.error(`Error fetching machine ${machineId}:`, response.statusText);
             }
-          } catch (error) {
-            console.error(`Error fetching machine ${machineId}:`, error);
-          }
-        })
-      );
-      
-      // Update machine data with the new status information
-      setMachineData(prevData => {
-        return prevData.map(machine => {
-          const machineId = machine.id || machine._id;
-          if (updatedMachineMap[machineId]) {
-            return {
-              ...machine,
-              status: updatedMachineMap[machineId].status,
-              maintenanceNote: updatedMachineMap[machineId].maintenanceNote
-            };
-          }
-          return machine;
+          });
+          
+          console.log("Updated machine data:", result);
+          return result;
         });
-      });
-      
-      console.log("Machine statuses updated successfully");
+        
+        console.log("Machine statuses updated successfully");
+      } else {
+        console.warn("No machine data was retrieved from the server");
+      }
     } catch (error) {
       console.error("Error fetching machine statuses:", error);
       toast({
@@ -143,11 +168,17 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       // Fetch fresh machine statuses
       await fetchMachineStatuses();
+      
+      toast({
+        title: "Refreshed",
+        description: "Machine statuses have been refreshed"
+      });
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
       toast({
         title: "Error",
-        description: "Failed to refresh machine statuses"
+        description: "Failed to refresh machine statuses",
+        variant: "destructive"
       });
     } finally {
       setIsRefreshing(false);
@@ -239,6 +270,38 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     return machine.type || "Machine";
   };
 
+  // Function to correctly display machine status
+  const getStatusDisplay = (machine: any) => {
+    // Special case for equipment
+    const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
+    if (isEquipment) {
+      return {
+        text: 'Available',
+        className: 'bg-green-100 text-green-800'
+      };
+    }
+    
+    // Regular machine status display
+    const status = machine.status?.toLowerCase() || 'available';
+    
+    if (status === 'available') {
+      return {
+        text: 'Available',
+        className: 'bg-green-100 text-green-800'
+      };
+    } else if (status === 'maintenance') {
+      return {
+        text: 'Maintenance',
+        className: 'bg-red-100 text-red-800'
+      };
+    } else {
+      return {
+        text: 'In Use',
+        className: 'bg-yellow-100 text-yellow-800'
+      };
+    }
+  };
+
   return (
     <>
       <Card className="border-purple-100">
@@ -278,6 +341,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               sortedMachineData.map((machine) => {
                 const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
                 const machineType = getMachineType(machine);
+                const statusDisplay = getStatusDisplay(machine);
                 
                 return (
                   <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
@@ -291,20 +355,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                       </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        machine.status === 'available' || isEquipment
-                          ? 'bg-green-100 text-green-800' 
-                          : machine.status === 'maintenance'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {isEquipment 
-                          ? 'Available' 
-                          : machine.status === 'available' 
-                            ? 'Available' 
-                            : machine.status === 'maintenance'
-                              ? 'Maintenance'
-                              : 'In Use'}
+                      <span className={`text-xs px-2 py-1 rounded ${statusDisplay.className}`}>
+                        {statusDisplay.text}
                       </span>
                       {!isEquipment && (
                         <Button 
