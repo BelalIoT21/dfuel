@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,20 +28,27 @@ const PersonalInfoCard = () => {
   // Enhanced date formatting with better fallback handling
   const formatDate = (dateStr: string | Date | undefined) => {
     if (!dateStr) {
+      // Use updated fallback mechanism
       return user.createdAt 
-        ? `Unknown (Joined: ${new Date(user.createdAt).toLocaleDateString()})` 
-        : 'Not available';
+        ? `Account created: ${new Date(user.createdAt).toLocaleDateString()}`
+        : 'Recently joined';
     }
     
-    const date = new Date(dateStr);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      // Create a default date using now to display something
-      return new Date().toLocaleString();
+    try {
+      const date = new Date(dateStr);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return user.createdAt 
+          ? `Account created: ${new Date(user.createdAt).toLocaleDateString()}`
+          : 'Recently joined';
+      }
+      
+      return date.toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Recently joined';
     }
-    
-    return date.toLocaleString();
   };
 
   const handleSaveProfile = () => {

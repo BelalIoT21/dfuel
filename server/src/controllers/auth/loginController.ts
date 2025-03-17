@@ -15,6 +15,8 @@ interface UserResponse {
   name: string;
   email: string;
   isAdmin: boolean;
+  lastLogin: Date; // Added lastLogin to the interface
+  createdAt: Date; // Added createdAt
 }
 
 interface LoginResponse {
@@ -55,6 +57,8 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
           name: user.name,
           email: user.email,
           isAdmin: user.isAdmin,
+          lastLogin: user.lastLogin,
+          createdAt: user.createdAt
         },
         token,
       },
