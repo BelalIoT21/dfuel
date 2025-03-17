@@ -39,6 +39,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
   useEffect(() => {
     const fetchMachines = async () => {
       try {
+        console.log('UsersTable: Fetching machines for certification mapping');
         const fetchedMachines = await machineService.getMachines();
         console.log('Fetched machines for UsersTable:', fetchedMachines.length);
         
@@ -53,7 +54,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         setAllMachines(uniqueMachines);
         
         // Create a map of machine IDs to names for quick lookup
-        const namesMap = {};
+        const namesMap: {[key: string]: string} = {};
         
         // Add special cases with consistent naming
         namesMap["6"] = "Machine Safety Course";
@@ -63,7 +64,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         uniqueMachines.forEach(machine => {
           const id = machine._id || machine.id;
           if (id) {
-            namesMap[id] = machine.name;
+            namesMap[id.toString()] = machine.name;
           }
         });
         
@@ -86,7 +87,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         setAllMachines(filteredMachines);
         
         // Create a map of local machine IDs to names for quick lookup
-        const namesMap = {};
+        const namesMap: {[key: string]: string} = {};
         filteredMachines.forEach(machine => {
           namesMap[machine.id] = machine.name;
         });
@@ -101,11 +102,24 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     fetchMachines();
   }, []);
 
-  const filteredUsers = users.filter(
+  // Ensure users is always an array and normalize data
+  const normalizedUsers = Array.isArray(users) ? users.map(user => ({
+    id: user._id?.toString() || user.id?.toString() || '',
+    name: user.name || '',
+    email: user.email || '',
+    isAdmin: !!user.isAdmin,
+    certifications: user.certifications || [],
+    bookings: user.bookings || [],
+    lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+  })) : [];
+
+  const filteredUsers = normalizedUsers.filter(
     (user) =>
       user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  console.log('UsersTable: Filtered users:', filteredUsers.length);
 
   const getMachineName = (certId: string) => {
     // Consistent handling of special machines
@@ -124,6 +138,19 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
     const machineSafety = certifications.includes("6");
     
     return { regular, safety, machineSafety };
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      if (!dateString) return 'Never';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      return date.toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -202,9 +229,10 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => {
               const { regular, safety, machineSafety } = groupCertifications(user.certifications);
+              const userId = user.id || user._id?.toString();
               
               return (
-                <TableRow key={user.id || user._id}>
+                <TableRow key={userId}>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
@@ -214,7 +242,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                       {user.isAdmin ? 'Admin' : 'User'}
                     </span>
                   </TableCell>
-                  <TableCell>{new Date(user.lastLogin).toLocaleString()}</TableCell>
+                  <TableCell>{formatDate(user.lastLogin)}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {regular.length > 0 ? (
@@ -276,10 +304,10 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
-                                onClick={() => handleDeleteUser(user.id || user._id)}
+                                onClick={() => handleDeleteUser(userId)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
-                                {deletingUserId === (user.id || user._id) ? (
+                                {deletingUserId === userId ? (
                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 ) : (
                                   <Trash2 className="h-4 w-4 mr-2" />

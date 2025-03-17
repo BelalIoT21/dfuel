@@ -3,13 +3,36 @@ import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoSeedService from './mongodb/seedService';
 import { isWeb } from '../utils/platform';
+import { apiService } from './apiService';
 
 class MongoDbService {
   async getAllUsers() {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        // Try to get users from API
+        const response = await apiService.getAllUsers();
+        
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          console.log(`API returned ${response.data.length} users`);
+          
+          // Convert API response format to client format
+          return response.data.map(user => ({
+            id: user._id?.toString() || user.id?.toString() || '',
+            name: user.name || '',
+            email: user.email || '',
+            isAdmin: user.isAdmin || false,
+            certifications: user.certifications || [],
+            bookings: user.bookings || [],
+            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+          }));
+        }
+      } catch (error) {
+        console.error("Error getting users from API:", error);
+      }
       return [];
     }
+    
     try {
       const users = await mongoUserService.getUsers();
       console.log(`MongoDB returned ${users?.length || 0} users`);
@@ -23,8 +46,26 @@ class MongoDbService {
   async getUserById(userId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.getUserById(userId);
+        if (response.data) {
+          const user = response.data;
+          return {
+            id: user._id?.toString() || user.id?.toString() || '',
+            name: user.name || '',
+            email: user.email || '',
+            isAdmin: user.isAdmin || false,
+            certifications: user.certifications || [],
+            bookings: user.bookings || [],
+            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+          };
+        }
+      } catch (error) {
+        console.error(`Error getting user ${userId} from API:`, error);
+      }
       return null;
     }
+    
     try {
       if (!userId) {
         console.error("Invalid userId passed to getUserById");
@@ -42,8 +83,26 @@ class MongoDbService {
   async getUserByEmail(email: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.getUserByEmail(email);
+        if (response.data) {
+          const user = response.data;
+          return {
+            id: user._id?.toString() || user.id?.toString() || '',
+            name: user.name || '',
+            email: user.email || '',
+            isAdmin: user.isAdmin || false,
+            certifications: user.certifications || [],
+            bookings: user.bookings || [],
+            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+          };
+        }
+      } catch (error) {
+        console.error(`Error getting user with email ${email} from API:`, error);
+      }
       return null;
     }
+    
     try {
       if (!email) {
         console.error("Invalid email passed to getUserByEmail");
@@ -61,8 +120,18 @@ class MongoDbService {
   async updateUserCertifications(userId: string, certificationId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.addCertification(userId, certificationId);
+        if (response.data && response.data.success) {
+          console.log(`API addCertification result: success`);
+          return true;
+        }
+      } catch (error) {
+        console.error(`Error adding certification via API:`, error);
+      }
       return false;
     }
+    
     try {
       if (!userId || !certificationId) {
         console.error("Invalid userId or certificationId passed to updateUserCertifications");
@@ -81,6 +150,15 @@ class MongoDbService {
   async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.removeCertification(userId, certificationId);
+        if (response.data && response.data.success) {
+          console.log(`API removeCertification result: success`);
+          return true;
+        }
+      } catch (error) {
+        console.error(`Error removing certification via API:`, error);
+      }
       return false;
     }
     
@@ -102,8 +180,18 @@ class MongoDbService {
   async clearUserCertifications(userId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.clearCertifications(userId);
+        if (response.data && response.data.success) {
+          console.log(`API clearCertifications result: success`);
+          return true;
+        }
+      } catch (error) {
+        console.error(`Error clearing certifications via API:`, error);
+      }
       return false;
     }
+    
     try {
       if (!userId) {
         console.error("Invalid userId passed to clearUserCertifications");
@@ -122,8 +210,18 @@ class MongoDbService {
   async getMachines() {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const response = await apiService.getAllMachines();
+        if (response.data && Array.isArray(response.data)) {
+          console.log(`API returned ${response.data.length} machines`);
+          return response.data;
+        }
+      } catch (error) {
+        console.error("Error getting machines from API:", error);
+      }
       return [];
     }
+    
     try {
       const machines = await mongoMachineService.getMachines();
       console.log(`MongoDB returned ${machines?.length || 0} machines`);

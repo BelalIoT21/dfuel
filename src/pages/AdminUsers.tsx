@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { apiService } from '@/services/apiService';
 
 const AdminUsers = () => {
   const { toast } = useToast();
@@ -27,8 +28,31 @@ const AdminUsers = () => {
     setRefreshing(true);
     try {
       console.log("Fetching all users for admin dashboard");
+      
+      // Try API first
+      const response = await apiService.getAllUsers();
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log(`API returned ${response.data.length} users`);
+        
+        // Convert API response to client format
+        const formattedUsers = response.data.map(user => ({
+          id: user._id?.toString() || user.id?.toString() || '',
+          name: user.name || '',
+          email: user.email || '',
+          isAdmin: user.isAdmin || false,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+        }));
+        
+        setUsers(formattedUsers);
+        console.log(`Processed ${formattedUsers.length} users from API`);
+        return;
+      }
+      
+      // If API fails, try userDatabase
       const allUsers = await userDatabase.getAllUsers();
-      console.log(`Fetched ${allUsers.length} users`);
+      console.log(`Fetched ${allUsers.length} users from userDatabase`);
       setUsers(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);

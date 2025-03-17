@@ -2,18 +2,56 @@
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
+import { UserWithoutSensitiveInfo } from '../types/database';
+import { apiService } from './apiService';
 
 class UserDatabase {
   async getAllUsers() {
     try {
       console.log("UserDatabase: Getting all users from MongoDB");
-      // Use MongoDB for consistency
+      
+      // Try API first
+      const response = await apiService.getAllUsers();
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log(`Retrieved ${response.data.length} users from API`);
+        
+        // Convert MongoDB/API format (_id) to client format (id)
+        const formattedUsers = response.data.map(user => ({
+          id: user._id?.toString() || user.id?.toString() || '',
+          name: user.name || '',
+          email: user.email || '',
+          isAdmin: user.isAdmin || false,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+        }));
+        
+        return formattedUsers;
+      }
+      
+      // Fall back to MongoDB if API fails
       const mongoUsers = await mongoDbService.getAllUsers();
-      console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
-      return mongoUsers;
+      if (mongoUsers && mongoUsers.length > 0) {
+        console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
+        return mongoUsers;
+      }
+      
+      // Last resort: try userService (localStorage)
+      const localUsers = await userService.getAllUsers();
+      console.log(`Retrieved ${localUsers.length} users from localStorage`);
+      return localUsers;
     } catch (error) {
       console.error('Error in getAllUsers:', error);
-      return [];
+      
+      // Last resort fallback to userService (localStorage)
+      try {
+        const localUsers = await userService.getAllUsers();
+        console.log(`Fallback: Retrieved ${localUsers.length} users from localStorage`);
+        return localUsers;
+      } catch (e) {
+        console.error('Even localStorage fallback failed:', e);
+        return [];
+      }
     }
   }
 
@@ -25,15 +63,33 @@ class UserDatabase {
         return null;
       }
       
-      // Attempt to find user in MongoDB
+      // Try API first
+      const response = await apiService.getUserByEmail(email);
+      if (response.data) {
+        console.log(`Found user ${email} in API`);
+        
+        // Convert MongoDB format to client format
+        const user = response.data;
+        return {
+          id: user._id?.toString() || user.id?.toString() || '',
+          name: user.name || '',
+          email: user.email || '',
+          isAdmin: user.isAdmin || false,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+        };
+      }
+      
+      // Try MongoDB next
       const mongoUser = await mongoDbService.getUserByEmail(email);
       if (mongoUser) {
         console.log(`Found user ${email} in MongoDB`);
         return mongoUser;
       }
       
-      // Only if MongoDB specifically doesn't have this user, try userService
-      console.log(`User ${email} not found in MongoDB, trying userService`);
+      // Last resort: try userService
+      console.log(`User ${email} not found in API or MongoDB, trying userService`);
       return await userService.findUserByEmail(email);
     } catch (error) {
       console.error('Error in findUserByEmail:', error);
@@ -49,11 +105,24 @@ class UserDatabase {
         return false;
       }
       
-      const success = await certificationService.addCertification(userId, certificationId);
-      if (!success) {
-        console.error(`Failed to add certification ${certificationId} for user ${userId}`);
+      // Try API first
+      const response = await apiService.addCertification(userId, certificationId);
+      if (response.data && response.data.success) {
+        console.log(`Successfully added certification ${certificationId} for user ${userId} via API`);
+        return true;
       }
-      return success;
+      
+      // Fall back to MongoDB
+      const success = await mongoDbService.updateUserCertifications(userId, certificationId);
+      if (success) {
+        console.log(`Successfully added certification ${certificationId} for user ${userId} via MongoDB`);
+        return true;
+      }
+      
+      // Last resort: try certificationService
+      const fallbackSuccess = await certificationService.addCertification(userId, certificationId);
+      console.log(`certificationService add result: ${fallbackSuccess}`);
+      return fallbackSuccess;
     } catch (error) {
       console.error('Error in addCertification:', error);
       return false;
@@ -68,11 +137,24 @@ class UserDatabase {
         return false;
       }
       
-      const success = await certificationService.removeCertification(userId, certificationId);
-      if (!success) {
-        console.error(`Failed to remove certification ${certificationId} for user ${userId}`);
+      // Try API first
+      const response = await apiService.removeCertification(userId, certificationId);
+      if (response.data && response.data.success) {
+        console.log(`Successfully removed certification ${certificationId} for user ${userId} via API`);
+        return true;
       }
-      return success;
+      
+      // Fall back to MongoDB
+      const success = await mongoDbService.removeUserCertification(userId, certificationId);
+      if (success) {
+        console.log(`Successfully removed certification ${certificationId} for user ${userId} via MongoDB`);
+        return true;
+      }
+      
+      // Last resort: try certificationService
+      const fallbackSuccess = await certificationService.removeCertification(userId, certificationId);
+      console.log(`certificationService remove result: ${fallbackSuccess}`);
+      return fallbackSuccess;
     } catch (error) {
       console.error('Error in removeCertification:', error);
       return false;

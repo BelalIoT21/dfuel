@@ -7,33 +7,78 @@ import { Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
+import { machineService } from '@/services/machineService';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [machines, setMachines] = useState([]);
-
-  // Get user certifications as strings to ensure proper comparison
-  const userCerts = (user?.certifications || []).map(cert => cert.toString());
+  const [machines, setMachines] = useState<any[]>([]);
 
   useEffect(() => {
-    if (user) {
-      console.log("User certifications in CertificationsCard:", userCerts);
-      const allMachines = certificationService.getAllCertifications();
+    const fetchMachinesAndCertifications = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       
-      // Only use the first 4 machines as requested
-      const firstFourMachines = allMachines.slice(0, 4).map(machine => ({
-        ...machine,
-        certified: userCerts.includes(machine.id),
-        date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy'),
-        bookable: true
-      }));
-      
-      setMachines(firstFourMachines);
-      setLoading(false);
-    }
-  }, [user, userCerts]);
+      try {
+        console.log("Fetching machines for CertificationsCard");
+        
+        // Get user certifications as strings to ensure proper comparison
+        const userCerts = (user?.certifications || []).map(cert => 
+          typeof cert === 'string' ? cert : cert.toString()
+        );
+        
+        console.log("User certifications in CertificationsCard:", userCerts);
+        
+        // Fetch machines from the API
+        const fetchedMachines = await machineService.getMachines();
+        console.log(`Fetched ${fetchedMachines.length} machines from machineService`);
+        
+        // If no machines from API, use the certification service's built-in list
+        let allMachines = fetchedMachines.length > 0 
+          ? fetchedMachines 
+          : certificationService.getAllCertifications();
+          
+        console.log(`Total machines available: ${allMachines.length}`);
+        
+        // Only use the first 4 machines as requested
+        const firstFourMachines = allMachines.slice(0, 4).map(machine => {
+          const machineId = machine._id?.toString() || machine.id?.toString();
+          return {
+            id: machineId,
+            name: machine.name,
+            certified: userCerts.includes(machineId),
+            date: user?.certificationDates?.[machineId] || format(new Date(), 'dd/MM/yyyy'),
+            bookable: true
+          };
+        });
+        
+        console.log(`Displaying first 4 machines: ${firstFourMachines.map(m => m.name).join(', ')}`);
+        setMachines(firstFourMachines);
+      } catch (error) {
+        console.error("Error fetching machines:", error);
+        
+        // Fallback to certification service list
+        const allMachines = certificationService.getAllCertifications();
+        
+        // Only use the first 4 machines
+        const firstFourMachines = allMachines.slice(0, 4).map(machine => ({
+          ...machine,
+          certified: userCerts.includes(machine.id),
+          date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy'),
+          bookable: true
+        }));
+        
+        setMachines(firstFourMachines);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMachinesAndCertifications();
+  }, [user]);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
