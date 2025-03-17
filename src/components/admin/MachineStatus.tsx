@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { machineService } from '../../services/machineService';
 import { useToast } from "@/components/ui/use-toast";
-import { RefreshCw, WifiOff, Check, AlertTriangle } from "lucide-react";
+import { RefreshCw, WifiOff, Check, AlertTriangle, Clock } from "lucide-react";
 import { apiService } from '../../services/apiService';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface MachineStatusProps {
   machineData: any[];
@@ -27,7 +28,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
-
+  const [rateLimitRemaining, setRateLimitRemaining] = useState<number | null>(null);
+  
   // Check server connection status and load machine statuses on mount
   useEffect(() => {
     const loadInitialData = async () => {
@@ -56,6 +58,23 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     
     loadInitialData();
   }, []);
+
+  // Countdown timer effect for rate limiting
+  useEffect(() => {
+    if (rateLimitRemaining === null || rateLimitRemaining <= 0) return;
+    
+    const timer = setInterval(() => {
+      setRateLimitRemaining(prev => {
+        if (prev === null || prev <= 0) {
+          clearInterval(timer);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, [rateLimitRemaining]);
 
   // Fetch machine statuses function that can be called on load and refresh
   const fetchMachineStatuses = async () => {
@@ -190,6 +209,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     
     setIsLoading(true);
     setUpdateError(null);
+    setRateLimitRemaining(null);
     
     try {
       console.log(`Updating machine ${selectedMachine.id || selectedMachine._id} status to ${selectedStatus}`);
@@ -244,10 +264,31 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       } else {
         const statusCode = response.status;
         let errorMessage = `Request failed with status: ${statusCode}`;
+        let retryAfter = null;
         
         // For rate limit errors, show a specific message
         if (statusCode === 429) {
-          errorMessage = "Rate limit exceeded. Please wait before trying again.";
+          // Try to parse error message from JSON response with retry info
+          try {
+            const responseText = await response.text();
+            if (responseText) {
+              try {
+                const errorData = JSON.parse(responseText);
+                errorMessage = errorData.message || "Rate limit exceeded. Please wait before trying again.";
+                // Check if we have retry information
+                if (errorData.retryAfter) {
+                  retryAfter = parseInt(errorData.retryAfter);
+                  setRateLimitRemaining(retryAfter);
+                }
+              } catch (parseError) {
+                // If it's not JSON, use the text directly
+                errorMessage = responseText;
+              }
+            }
+          } catch (e) {
+            console.error("Error reading response:", e);
+            errorMessage = "Rate limit exceeded. Please wait before trying again.";
+          }
         } else {
           // Try to parse error message from JSON response, but handle non-JSON responses
           try {
@@ -333,6 +374,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     }
   };
 
+  const getRateLimitMessage = () => {
+    if (rateLimitRemaining === null) return null;
+    
+    const minutes = rateLimitRemaining === 1 ? 'minute' : 'minutes';
+    return `Rate limit exceeded. Please wait ${rateLimitRemaining} ${minutes} before trying again.`;
+  };
+
   return (
     <>
       <Card className="border-purple-100">
@@ -395,6 +443,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                           size="sm" 
                           className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
                           onClick={() => handleUpdateMachineStatus(machine)}
+                          disabled={rateLimitRemaining !== null}
                         >
                           Update
                         </Button>
@@ -409,6 +458,18 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               </div>
             )}
           </div>
+          
+          {rateLimitRemaining !== null && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle className="flex items-center gap-2">
+                Rate Limit Exceeded <Clock className="h-4 w-4" />
+              </AlertTitle>
+              <AlertDescription>
+                Please wait {rateLimitRemaining} {rateLimitRemaining === 1 ? 'minute' : 'minutes'} before making more updates.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -468,6 +529,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 <span className="text-sm">{updateError}</span>
               </div>
             )}
+            
+            {getRateLimitMessage() && (
+              <Alert variant="destructive">
+                <Clock className="h-4 w-4" />
+                <AlertDescription>{getRateLimitMessage()}</AlertDescription>
+              </Alert>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsMachineStatusDialogOpen(false)} className="border-purple-200 bg-purple-50 hover:bg-purple-100">
@@ -476,7 +544,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             <Button 
               onClick={saveMachineStatus} 
               className="bg-purple-600 hover:bg-purple-700"
-              disabled={isLoading}
+              disabled={isLoading || rateLimitRemaining !== null}
             >
               {isLoading ? 'Saving...' : 'Save Changes'}
             </Button>

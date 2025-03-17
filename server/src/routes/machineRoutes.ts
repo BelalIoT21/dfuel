@@ -17,7 +17,11 @@ const router = express.Router();
 const updateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 requests per windowMs
-  message: { message: 'Too many requests, please try again later' },
+  message: { 
+    message: 'Too many machine status updates. Please wait 15 minutes before trying again.',
+    error: 'RATE_LIMIT_EXCEEDED',
+    retryAfter: 15 // minutes
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
