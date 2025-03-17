@@ -665,7 +665,7 @@ export const quizzes: Record<string, Quiz> = {
           'Hide under a table',
           'Try to save expensive equipment first',
           'Follow the evacuation plan and alert others',
-          'Finish what you're working on, then leave'
+          'Finish what you\'re working on, then leave'
         ],
         correctAnswer: 2,
       },
