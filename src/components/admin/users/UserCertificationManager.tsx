@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -27,10 +26,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
+  // Get the userId in a consistent format
+  const getUserId = () => {
+    // Use _id if available (MongoDB format), otherwise use id (client format)
+    return user._id?.toString() || user.id?.toString();
+  };
+
   // Handle adding a certification
   const handleAddCertification = async (certificationId: string) => {
-    // Ensure we always use the id field
-    const userId = user.id || user._id;
+    const userId = getUserId();
     
     if (!userId) {
       toast({
@@ -45,7 +49,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationService.addCertification(userId.toString(), certificationId);
+      const success = await certificationService.addCertification(userId, certificationId);
       
       if (success) {
         toast({
@@ -74,8 +78,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   // Handle removing a certification
   const handleRemoveCertification = async (certificationId: string) => {
-    // Ensure we always use the id field
-    const userId = user.id || user._id;
+    const userId = getUserId();
     
     if (!userId) {
       toast({
@@ -90,7 +93,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationService.removeCertification(userId.toString(), certificationId);
+      const success = await certificationService.removeCertification(userId, certificationId);
       
       if (success) {
         toast({
@@ -119,8 +122,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   // Handle clearing all certifications
   const handleClearAllCertifications = async () => {
-    // Ensure we always use the id field
-    const userId = user.id || user._id;
+    const userId = getUserId();
     
     if (!userId) {
       toast({
@@ -135,7 +137,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to clear all certifications for user ${userId}`);
       
-      const success = await certificationService.clearAllCertifications(userId.toString());
+      const success = await certificationService.clearAllCertifications(userId);
       
       if (success) {
         toast({

@@ -9,13 +9,9 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        // Try to get users from API
         const response = await apiService.getAllUsers();
-        
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
           console.log(`API returned ${response.data.length} users`);
-          
-          // Convert API response format to client format
           return response.data.map(user => ({
             id: user._id?.toString() || user.id?.toString() || '',
             name: user.name || '',
@@ -220,7 +216,6 @@ class MongoDbService {
     }
   }
 
-  // Machine methods
   async getMachines() {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
@@ -304,7 +299,6 @@ class MongoDbService {
     }
   }
 
-  // User deletion
   async deleteUser(userId: string) {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
