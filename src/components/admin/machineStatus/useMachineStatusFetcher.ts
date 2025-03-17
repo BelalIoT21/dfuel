@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import mongoDbService from '../../../services/mongoDbService';
 import { apiService } from '../../../services/apiService';
 
 export const useMachineStatusFetcher = (machineData: any[], setMachineData: React.Dispatch<React.SetStateAction<any[]>>) => {
@@ -46,16 +45,32 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
         return;
       }
       
-      // Get all machine statuses using the API service
+      // Try to get all machines directly first
+      try {
+        const response = await apiService.get('machines');
+        
+        if (response.data && Array.isArray(response.data)) {
+          console.log("Received all machines:", response.data);
+          setMachineData(response.data.map((machine: any) => ({
+            ...machine,
+            status: machine.status?.toLowerCase() || 'available'
+          })));
+          setIsRefreshing(false);
+          return;
+        }
+      } catch (error) {
+        console.log("Could not fetch all machines at once, trying individual fetches");
+      }
+      
+      // If that fails, fall back to fetching individual machine statuses
       if (machineData && machineData.length > 0) {
-        console.log("Fetching statuses for all machines...");
+        console.log("Fetching statuses for individual machines...");
         
         const updatedMachineData = await Promise.all(
           machineData.map(async (machine) => {
             try {
               const machineId = machine.id || machine._id;
               
-              // Use apiService for better error handling and CORS management
               const statusResponse = await apiService.get(`machines/${machineId}`);
               
               if (statusResponse.data) {

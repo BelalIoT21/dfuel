@@ -1,10 +1,9 @@
-import mongoDbService from './mongoDbService';
+
 import { machines } from '../utils/data';
-import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
 
 export class MachineService {
-  // Update machine status - prioritize MongoDB
+  // Update machine status
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
       console.log(`Updating machine status: ID=${machineId}, status=${status}`);
@@ -76,36 +75,6 @@ export class MachineService {
     } catch (error) {
       console.error("Error getting machine status:", error);
       return 'available'; // Default status if error
-    }
-  }
-  
-  // Get machine maintenance note
-  async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
-    try {
-      if (!machineId) {
-        console.error("Invalid machineId passed to getMachineMaintenanceNote");
-        return undefined;
-      }
-      
-      // Check if it's a safety cabinet - no maintenance notes
-      if (machineId === "5") {
-        return undefined;
-      }
-
-      // Use API to get machine maintenance note
-      try {
-        const response = await apiService.get(`machines/${machineId}`);
-        if (response.data) {
-          return response.data.maintenanceNote;
-        }
-      } catch (error) {
-        console.error("API error getting machine maintenance note:", error);
-      }
-      
-      return undefined;
-    } catch (error) {
-      console.error("Error getting machine maintenance note:", error);
-      return undefined;
     }
   }
   

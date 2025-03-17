@@ -26,14 +26,25 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
   // Log the error for debugging
   console.error(`Error: ${err.message}`);
   if (process.env.NODE_ENV !== 'production') {
-    console.error(err.stack);
+    console.error(err);
   }
   
-  res.status(statusCode);
-  res.json({
+  // If the error has additional properties (like a MongoDB validation error), include them
+  const errorResponse: any = {
     message: err.message,
     stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
     path: req.originalUrl,
     method: req.method
-  });
+  };
+  
+  // Add any additional error details if they exist
+  if ((err as any).errors) {
+    errorResponse.errors = (err as any).errors;
+  }
+  
+  if ((err as any).error) {
+    errorResponse.error = (err as any).error;
+  }
+
+  res.status(statusCode).json(errorResponse);
 };
