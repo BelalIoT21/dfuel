@@ -7,6 +7,20 @@ interface PlatformOverviewProps {
 }
 
 export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
+  // Helper function to format dates safely
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Not available';
+    
+    const date = new Date(dateStr);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Not available';
+    }
+    
+    return date.toLocaleString();
+  };
+
   return (
     <Card className="lg:col-span-2 border-purple-100">
       <CardHeader className="p-4 md:p-6">
@@ -26,11 +40,11 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
                   <div key={user.id} className="flex justify-between border-b pb-2 last:border-0">
                     <div>
                       <span className="font-medium text-sm">{user.name}</span>
-                      <div className="text-xs text-gray-500">Last login: {new Date(user.lastLogin).toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">Last login: {formatDate(user.lastLogin)}</div>
                     </div>
                     <div className="text-xs">
                       <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                        {user.certifications.length} certifications
+                        {Array.isArray(user.certifications) ? user.certifications.length : 0} certifications
                       </span>
                     </div>
                   </div>

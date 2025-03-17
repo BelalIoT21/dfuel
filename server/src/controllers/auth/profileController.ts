@@ -20,7 +20,8 @@ export const getUserProfile = async (req: Request, res: Response) => {
     }
 
     // Format the lastLogin date as ISO string if it exists
-    const lastLogin = user.lastLogin 
+    // Default to current time if no lastLogin is available
+    const lastLogin = user.lastLogin && !isNaN(new Date(user.lastLogin).getTime()) 
       ? new Date(user.lastLogin).toISOString() 
       : new Date().toISOString();
 

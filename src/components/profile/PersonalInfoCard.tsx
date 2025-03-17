@@ -26,6 +26,20 @@ const PersonalInfoCard = () => {
 
   if (!user) return null;
 
+  // Format date safely
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Not available';
+    
+    const date = new Date(dateStr);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Not available';
+    }
+    
+    return date.toLocaleString();
+  };
+
   const handleSaveProfile = () => {
     updateProfile({ name, email });
     setIsEditing(false);
@@ -117,7 +131,7 @@ const PersonalInfoCard = () => {
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-500 text-sm">Last Login</Label>
-                <p className="font-medium">{new Date(user.lastLogin).toLocaleString()}</p>
+                <p className="font-medium">{formatDate(user.lastLogin)}</p>
               </div>
             </div>
             
