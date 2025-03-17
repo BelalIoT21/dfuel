@@ -1,9 +1,10 @@
-
+import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
+import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
 
 export class MachineService {
-  // Update machine status
+  // Update machine status - prioritize MongoDB
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
       console.log(`Updating machine status: ID=${machineId}, status=${status}`);
@@ -13,9 +14,10 @@ export class MachineService {
         return false;
       }
       
-      // Check if machine ID is outside the range we want to fetch (5 or 6)
-      if (machineId === "5" || machineId === "6") {
-        console.log(`Skipping update for machine ${machineId} as it's not in the target range (1-4)`);
+      // Check if it's a safety cabinet - always available, no status updates needed
+      const isSafetyCabinet = machineId === "5";
+      if (isSafetyCabinet) {
+        console.log("Safety Cabinet is always available, not updating status");
         return true;
       }
       
@@ -51,9 +53,9 @@ export class MachineService {
         return 'available';
       }
       
-      // Skip machines 5 and 6
-      if (machineId === "5" || machineId === "6") {
-        console.log(`Skipping status fetch for machine ${machineId} as it's not in the target range (1-4)`);
+      // Check if it's a safety cabinet - always available
+      if (machineId === "5") {
+        console.log("Safety Cabinet is always available");
         return 'available';
       }
 
@@ -77,6 +79,36 @@ export class MachineService {
     }
   }
   
+  // Get machine maintenance note
+  async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
+    try {
+      if (!machineId) {
+        console.error("Invalid machineId passed to getMachineMaintenanceNote");
+        return undefined;
+      }
+      
+      // Check if it's a safety cabinet - no maintenance notes
+      if (machineId === "5") {
+        return undefined;
+      }
+
+      // Use API to get machine maintenance note
+      try {
+        const response = await apiService.get(`machines/${machineId}`);
+        if (response.data) {
+          return response.data.maintenanceNote;
+        }
+      } catch (error) {
+        console.error("API error getting machine maintenance note:", error);
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error("Error getting machine maintenance note:", error);
+      return undefined;
+    }
+  }
+  
   // Get machine by ID
   async getMachineById(machineId: string): Promise<any | null> {
     try {
@@ -84,12 +116,6 @@ export class MachineService {
       
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineById");
-        return null;
-      }
-      
-      // Skip machines 5 and 6
-      if (machineId === "5" || machineId === "6") {
-        console.log(`Skipping machine fetch for machine ${machineId} as it's not in the target range (1-4)`);
         return null;
       }
       
@@ -133,39 +159,27 @@ export class MachineService {
       try {
         const response = await apiService.get('machines');
         if (response.data && Array.isArray(response.data)) {
-          // Filter to only include machines with IDs 1-4
-          return response.data
-            .filter(machine => {
-              const machineId = machine.id || machine._id;
-              const includeThisMachine = machineId === "1" || machineId === "2" || 
-                                        machineId === "3" || machineId === "4";
-              return includeThisMachine;
-            })
-            .map(machine => ({
-              ...machine,
-              type: machine.type || "Machine",
-              status: machine.status?.toLowerCase() || 'available'
-            }));
+          return response.data.map(machine => ({
+            ...machine,
+            type: machine.type || "Machine",
+            status: machine.status?.toLowerCase() || 'available'
+          }));
         }
       } catch (error) {
         console.error("API error getting machines:", error);
       }
       
-      // Fallback to static machines data, filtered to only include machines 1-4
-      return machines
-        .filter(machine => ["1", "2", "3", "4"].includes(machine.id))
-        .map(machine => ({
-          ...machine,
-          type: machine.type || "Machine" 
-        }));
+      // Fallback to static machines data
+      return machines.map(machine => ({
+        ...machine,
+        type: machine.type || "Machine" 
+      }));
     } catch (error) {
       console.error("Error getting machines data:", error);
-      return machines
-        .filter(machine => ["1", "2", "3", "4"].includes(machine.id))
-        .map(machine => ({
-          ...machine,
-          type: machine.type || "Machine"
-        }));
+      return machines.map(machine => ({
+        ...machine,
+        type: machine.type || "Machine"
+      }));
     }
   }
 }
