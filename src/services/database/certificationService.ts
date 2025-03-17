@@ -92,6 +92,16 @@ export class CertificationDatabaseService extends BaseService {
     }
   }
 
+  async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
+    try {
+      // Use the removeCertification method directly
+      return await this.removeCertification(userId, certificationId);
+    } catch (error) {
+      console.error("Error in removeUserCertification:", error);
+      return false;
+    }
+  }
+
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     try {
       console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);

@@ -52,7 +52,18 @@ class MongoSeedService {
           email: 'admin@learnit.com',
           password: adminPassword,
           isAdmin: true,
-          certifications: ['1', '2', '3', '4', '5', '6'], // All machines
+          certifications: ['1', '2', '3', '4', '5', '6'], // Admin has all certifications
+          bookings: [],
+          lastLogin: new Date().toISOString()
+        },
+        // Additional sample users can be added here with empty certifications
+        {
+          id: '2',
+          name: 'Regular User',
+          email: 'user@learnit.com',
+          password: await bcrypt.hash('password123', salt),
+          isAdmin: false,
+          certifications: [], // Regular users start with empty certifications
           bookings: [],
           lastLogin: new Date().toISOString()
         }
