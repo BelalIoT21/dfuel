@@ -90,8 +90,8 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
-    // Map status values to proper format for MongoDB
-    let normalizedStatus: string;
+    // Map status values to the exact string literals as defined in the Machine model
+    let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
     switch(status.toLowerCase()) {
       case 'available':
         normalizedStatus = 'Available';
@@ -101,7 +101,8 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
         break;
       case 'in-use':
       case 'in use':
-        normalizedStatus = 'In Use';
+      case 'out of order':
+        normalizedStatus = 'Out of Order';
         break;
       default:
         normalizedStatus = 'Available';
