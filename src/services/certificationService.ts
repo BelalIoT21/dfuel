@@ -23,7 +23,12 @@ export class CertificationService {
 
       // Try API first with correct endpoint format
       try {
-        const response = await apiService.addCertification(userId, certificationId);
+        // Use POST with body instead of params for add operation
+        const response = await apiService.post('/api/certifications', {
+          userId,
+          machineId: certificationId
+        });
+        
         console.log("API certification response:", response);
         if (response.data && response.data.success) {
           console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
@@ -33,7 +38,7 @@ export class CertificationService {
         console.error("API certification error:", error);
       }
 
-      // Use MongoDB as source of truth
+      // Use MongoDB as fallback
       const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
       console.log(`MongoDB addCertification result: ${mongoSuccess}`);
       
@@ -53,9 +58,11 @@ export class CertificationService {
         return false;
       }
 
-      // Try direct API call first with the updated endpoint format
+      // Try direct API call first
       try {
-        const response = await apiService.removeCertification(userId, certificationId);
+        // Use the correct endpoint format with userId and machineId as path parameters
+        const response = await apiService.delete(`/api/certifications/${userId}/${certificationId}`);
+        
         console.log("API remove certification response:", response);
         if (response.data && response.data.success) {
           console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
@@ -65,7 +72,7 @@ export class CertificationService {
         console.error("API certification removal error:", error);
       }
 
-      // Use MongoDB as source of truth
+      // Use MongoDB as fallback
       const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
       console.log(`MongoDB removeCertification result: ${mongoSuccess}`);
       
@@ -85,9 +92,10 @@ export class CertificationService {
         return false;
       }
 
-      // Try API first with the updated endpoint format
+      // Try API first
       try {
-        const response = await apiService.clearCertifications(userId);
+        const response = await apiService.delete(`/api/certifications/clear/${userId}`);
+        
         console.log("API clear certifications response:", response);
         if (response.data && response.data.success) {
           console.log(`API clear certifications succeeded for user ${userId}`);
@@ -97,6 +105,7 @@ export class CertificationService {
         console.error("API clear certifications error:", error);
       }
 
+      // Use MongoDB as fallback
       const success = await mongoDbService.clearUserCertifications(userId);
       console.log(`MongoDB clearAllCertifications result: ${success}`);
       
@@ -104,6 +113,40 @@ export class CertificationService {
     } catch (error) {
       console.error('Error clearing certifications:', error);
       return false;
+    }
+  }
+  
+  async getUserCertifications(userId: string): Promise<string[]> {
+    try {
+      console.log(`CertificationService: Getting certifications for user ${userId}`);
+      
+      if (!userId) {
+        console.error('Invalid userId');
+        return [];
+      }
+      
+      // Try API first
+      try {
+        const response = await apiService.get(`/api/certifications/user/${userId}`);
+        console.log("API get certifications response:", response);
+        if (response.data && Array.isArray(response.data)) {
+          return response.data;
+        }
+      } catch (error) {
+        console.error("API get certifications error:", error);
+      }
+      
+      // Use MongoDB as fallback
+      try {
+        const user = await mongoDbService.getUserById(userId);
+        return user?.certifications || [];
+      } catch (error) {
+        console.error("MongoDB get user certifications error:", error);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error getting certifications:', error);
+      return [];
     }
   }
   

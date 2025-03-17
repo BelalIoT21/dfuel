@@ -34,11 +34,20 @@ const MachineActions = ({
   // Determine if user can get certified (must have Machine Safety Course)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
-  // Special handling for special users
-  const isSpecialUser = userId && (userId === "user-1741957466063" || (userId && userId.includes("b.l.mishmish")));
+  // Special handling for special users (disabled for admins for testing)
+  const isSpecialUser = false;
   
   // Is this the Machine Safety Course itself?
   const isSafetyCourse = machineType === 'Safety Course';
+
+  console.log('MachineActions props:', {
+    isCertified,
+    machineStatus,
+    machineType,
+    isBookable,
+    canGetCertified,
+    isAdmin
+  });
 
   return (
     <View style={styles.actionContainer}>

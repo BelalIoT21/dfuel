@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Loader2, Trash } from 'lucide-react';
 import { certificationService } from '@/services/certificationService';
 
@@ -22,16 +22,26 @@ const CERTIFICATIONS = [
 ];
 
 export const UserCertificationManager = ({ user, onCertificationAdded }: UserCertificationManagerProps) => {
-  const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [userCertifications, setUserCertifications] = useState<string[]>([]);
 
   // Get the userId in a consistent format
   const getUserId = () => {
-    // Use _id if available (MongoDB format), otherwise use id (client format)
     return user._id?.toString() || user.id?.toString();
   };
+
+  // Load user certifications on component mount
+  useEffect(() => {
+    if (user) {
+      // Convert certifications to strings for reliable comparison
+      const certifications = user.certifications 
+        ? user.certifications.map((cert: any) => cert.toString())
+        : [];
+      setUserCertifications(certifications);
+    }
+  }, [user]);
 
   // Handle adding a certification
   const handleAddCertification = async (certificationId: string) => {
@@ -53,9 +63,12 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationService.addCertification(userId, certificationId);
       
       if (success) {
+        // Update local state
+        setUserCertifications(prev => [...prev, certificationId]);
+        
         toast({
           title: "Certification Added",
-          description: `User certification for ${CERTIFICATIONS.find(c => c.id === certificationId)?.name} has been updated.`
+          description: `User certification for ${CERTIFICATIONS.find(c => c.id === certificationId)?.name} has been added.`
         });
         onCertificationAdded();
       } else {
@@ -97,6 +110,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationService.removeCertification(userId, certificationId);
       
       if (success) {
+        // Update local state
+        setUserCertifications(prev => prev.filter(id => id !== certificationId));
+        
         toast({
           title: "Certification Removed",
           description: `User certification for ${CERTIFICATIONS.find(c => c.id === certificationId)?.name} has been removed.`
@@ -141,6 +157,9 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationService.clearAllCertifications(userId);
       
       if (success) {
+        // Update local state
+        setUserCertifications([]);
+        
         toast({
           title: "Certifications Cleared",
           description: "All certifications have been removed from this user."
@@ -167,9 +186,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   // Helper function to determine if user has a certification
   const hasCertification = (certificationId: string) => {
-    if (!user || !user.certifications) return false;
-    const certStrings = user.certifications.map(cert => cert.toString());
-    return certStrings.includes(certificationId);
+    return userCertifications.includes(certificationId);
   };
 
   return (
@@ -221,7 +238,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             })}
           </div>
 
-          {user.certifications?.length > 0 && (
+          {userCertifications.length > 0 && (
             <div className="mt-4 border-t pt-4">
               <Button 
                 variant="outline"

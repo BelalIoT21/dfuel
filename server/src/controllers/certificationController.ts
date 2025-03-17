@@ -7,6 +7,8 @@ export const addCertification = async (req: Request, res: Response) => {
   try {
     const { userId, machineId } = req.body;
 
+    console.log(`API server: Adding certification ${machineId} for user ${userId}`);
+
     if (!userId || !machineId) {
       return res.status(400).json({ message: 'User ID and Machine ID are required' });
     }
@@ -30,6 +32,8 @@ export const addCertification = async (req: Request, res: Response) => {
     user.certifications.push(machineId);
     await user.save();
 
+    console.log(`API server: Successfully added certification ${machineId} for user ${userId}`);
+
     res.status(200).json({ 
       success: true, 
       message: 'Certification added successfully' 
@@ -49,7 +53,7 @@ export const removeCertification = async (req: Request, res: Response) => {
     // Get params from URL
     const { userId, machineId } = req.params;
 
-    console.log(`Removing certification for user ${userId}, machine ${machineId}`);
+    console.log(`API server: Removing certification for user ${userId}, machine ${machineId}`);
 
     if (!userId || !machineId) {
       return res.status(400).json({ message: 'User ID and Machine ID are required' });
@@ -75,6 +79,8 @@ export const removeCertification = async (req: Request, res: Response) => {
     user.certifications.splice(index, 1);
     await user.save();
 
+    console.log(`API server: Successfully removed certification ${machineId} for user ${userId}`);
+
     res.status(200).json({ 
       success: true, 
       message: 'Certification removed successfully' 
@@ -93,6 +99,8 @@ export const getUserCertifications = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
+    console.log(`API server: Getting certifications for user ${userId}`);
+
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
     }
@@ -103,6 +111,8 @@ export const getUserCertifications = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    console.log(`API server: Found certifications for user ${userId}:`, user.certifications);
 
     res.status(200).json(user.certifications);
   } catch (error) {
@@ -148,6 +158,8 @@ export const clearUserCertifications = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
+    console.log(`API server: Clearing all certifications for user ${userId}`);
+
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
     }
@@ -162,6 +174,8 @@ export const clearUserCertifications = async (req: Request, res: Response) => {
     // Clear certifications
     user.certifications = [];
     await user.save();
+
+    console.log(`API server: Successfully cleared certifications for user ${userId}`);
 
     res.status(200).json({ 
       success: true, 
