@@ -29,10 +29,11 @@ export const ensureAdminUser = async () => {
       console.log('Admin certifications:', newAdmin.certifications);
     } else {
       // If admin exists but doesn't have all certifications, update them
-      if (!existingAdmin.certifications.includes('5') || !existingAdmin.certifications.includes('6')) {
+      if (!existingAdmin.certifications || existingAdmin.certifications.length < 6) {
         existingAdmin.certifications = ['1', '2', '3', '4', '5', '6'];
         await existingAdmin.save();
         console.log('Updated existing admin with all certifications');
+        console.log('Admin certifications after update:', existingAdmin.certifications);
       }
     }
   } catch (error) {

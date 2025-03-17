@@ -39,6 +39,10 @@ export const DashboardContent = () => {
               status: machine.status?.toLowerCase() || 'available'
             }));
             
+            console.log("Number of processed machines:", processedMachines.length);
+            // Log IDs to debug
+            console.log("Machine IDs:", processedMachines.map(m => m.id || m._id));
+            
             setMachineData(processedMachines);
           } else {
             console.error("Invalid machine data format:", machinesResponse.data);

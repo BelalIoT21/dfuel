@@ -88,16 +88,20 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Ensure consistent machine count by using a standardized filtering approach
+  // Get machine count - exclude only machines 5 and 6
   const getMachineCount = () => {
-    // Start with the machines array from props
-    const normalizedMachines = Array.isArray(machines) ? machines : [];
-    console.log("Total machines before filtering:", normalizedMachines.length);
+    if (!Array.isArray(machines)) {
+      console.log("Machines is not an array:", machines);
+      return 0;
+    }
     
-    // Only filter out machines with IDs 5 and 6 (safety cabinet and safety course)
-    const filteredMachines = normalizedMachines.filter(machine => {
+    console.log("Total machines before filtering:", machines.length);
+    
+    // Filter out ONLY machines with IDs 5 and 6 (safety cabinet and safety course)
+    const filteredMachines = machines.filter(machine => {
       const id = machine.id || machine._id;
-      return id !== '5' && id !== '6' && id !== 5 && id !== 6;
+      const stringId = String(id); // Convert to string to ensure consistent comparison
+      return stringId !== '5' && stringId !== '6';
     });
     
     console.log("Filtered machines count:", filteredMachines.length);
