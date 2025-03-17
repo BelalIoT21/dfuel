@@ -21,7 +21,8 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
   }
   
   try {
-    const user = await User.findById(userId);
+    // Try finding user with numeric ID first
+    let user = await User.findById(userId);
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
@@ -31,6 +32,13 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
       });
       return;
     }
+    
+    // Ensure certifications array exists
+    if (!user.certifications) {
+      user.certifications = [];
+    }
+    
+    console.log("User's existing certifications:", user.certifications);
     
     // Check if user already has this certification
     if (user.certifications.includes(machineId)) {
@@ -45,12 +53,15 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     // Add the certification and store the current date
     user.certifications.push(machineId);
     
-    // Record certification date
+    // Ensure certificationDates exists
     if (!user.certificationDates) {
       user.certificationDates = {};
     }
+    
+    // Record certification date
     user.certificationDates[machineId] = new Date();
     
+    console.log(`Saving user with updated certifications: ${user.certifications}`);
     await user.save();
     console.log(`Added certification ${machineId} to user ${userId}`);
     
@@ -86,7 +97,8 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
   }
   
   try {
-    const user = await User.findById(userId);
+    // Try finding user with numeric ID first
+    let user = await User.findById(userId);
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
@@ -96,6 +108,13 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
       });
       return;
     }
+    
+    // Ensure certifications array exists
+    if (!user.certifications) {
+      user.certifications = [];
+    }
+    
+    console.log("User's existing certifications:", user.certifications);
     
     // Check if user has this certification
     const certIndex = user.certifications.indexOf(machineId);
@@ -116,6 +135,7 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
       delete user.certificationDates[machineId];
     }
     
+    console.log(`Saving user with updated certifications: ${user.certifications}`);
     await user.save();
     console.log(`Removed certification ${machineId} from user ${userId}`);
     
@@ -151,7 +171,8 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
   }
   
   try {
-    const user = await User.findById(userId);
+    // Try finding user with numeric ID first
+    let user = await User.findById(userId);
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
@@ -161,6 +182,8 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
       });
       return;
     }
+    
+    console.log(`Clearing certifications for user ${userId}`);
     
     // Clear all certifications
     user.certifications = [];
@@ -194,7 +217,8 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
   console.log(`Request to get certifications for user: ${userId}`);
   
   try {
-    const user = await User.findById(userId).select('certifications');
+    // Try finding user with numeric ID first
+    let user = await User.findById(userId).select('certifications');
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
@@ -203,6 +227,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
         message: 'User not found' 
       });
       return;
+    }
+    
+    // Ensure certifications array exists
+    if (!user.certifications) {
+      user.certifications = [];
     }
     
     // Return the certifications
@@ -227,7 +256,8 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
   console.log(`Request to check certification: userId=${userId}, machineId=${machineId}`);
   
   try {
-    const user = await User.findById(userId).select('certifications');
+    // Try finding user with numeric ID first
+    let user = await User.findById(userId).select('certifications');
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
@@ -236,6 +266,11 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
         message: 'User not found' 
       });
       return;
+    }
+    
+    // Ensure certifications array exists
+    if (!user.certifications) {
+      user.certifications = [];
     }
     
     const hasCertification = user.certifications.includes(machineId);

@@ -14,10 +14,14 @@ export class CertificationDatabaseService extends BaseService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
+      console.log(`Calling API to add certification: userId=${stringUserId}, machineId=${stringMachineId}`);
+      
       const response = await apiService.post('certifications', { 
         userId: stringUserId, 
         machineId: stringMachineId 
       });
+      
+      console.log("Add certification response:", response);
       
       // Both newly added and already had it are considered success
       if (response.data?.success) {
@@ -36,10 +40,10 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      console.error("API error adding certification:", response.error);
+      console.error("API error adding certification:", response.error || response.data?.message || "Unknown error");
       toast({
         title: "Error",
-        description: response.error || "Failed to add certification",
+        description: response.error || response.data?.message || "Failed to add certification",
         variant: "destructive"
       });
       
@@ -62,7 +66,11 @@ export class CertificationDatabaseService extends BaseService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
+      console.log(`Calling API to remove certification: userId=${stringUserId}, machineId=${stringMachineId}`);
+      
       const response = await apiService.delete(`certifications/${stringUserId}/${stringMachineId}`);
+      
+      console.log("Remove certification response:", response);
       
       // Both removed and didn't have it are considered success
       if (response.data?.success) {
@@ -81,10 +89,10 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      console.error("API error removing certification:", response.error);
+      console.error("API error removing certification:", response.error || response.data?.message || "Unknown error");
       toast({
         title: "Error",
-        description: response.error || "Failed to remove certification",
+        description: response.error || response.data?.message || "Failed to remove certification",
         variant: "destructive"
       });
       
@@ -105,10 +113,22 @@ export class CertificationDatabaseService extends BaseService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
+      console.log(`Calling API to get certifications for user ${stringUserId}`);
+      
       const response = await apiService.get(`certifications/user/${stringUserId}`);
+      console.log("Get user certifications raw response:", response);
+      
       if (response.data && Array.isArray(response.data)) {
-        // Ensure all certification IDs are strings
-        return response.data.map(cert => cert.toString ? cert.toString() : String(cert));
+        // Ensure all certification IDs are strings and handle [object Object] cases
+        const certifications = response.data.map(cert => {
+          if (typeof cert === 'object' && cert !== null) {
+            // If it's an object, extract the ID or convert to string
+            return cert.toString ? cert.toString() : String(cert);
+          }
+          return cert.toString ? cert.toString() : String(cert);
+        });
+        console.log("Processed user certifications:", certifications);
+        return certifications;
       }
       
       if (response.error) {
@@ -124,7 +144,14 @@ export class CertificationDatabaseService extends BaseService {
   
   async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      const response = await apiService.get(`certifications/check/${userId}/${machineId}`);
+      const stringUserId = userId.toString();
+      const stringMachineId = machineId.toString();
+      
+      console.log(`Checking certification for user ${stringUserId}, machine ${stringMachineId}`);
+      
+      const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
+      console.log("Check certification response:", response);
+      
       return !!response.data;
     } catch (error) {
       console.error("Error checking certification:", error);
@@ -134,7 +161,13 @@ export class CertificationDatabaseService extends BaseService {
   
   async clearUserCertifications(userId: string): Promise<boolean> {
     try {
-      const response = await apiService.delete(`certifications/clear/${userId}`);
+      const stringUserId = userId.toString();
+      
+      console.log(`Clearing all certifications for user ${stringUserId}`);
+      
+      const response = await apiService.delete(`certifications/clear/${stringUserId}`);
+      console.log("Clear certifications response:", response);
+      
       if (response.data?.success) {
         toast({
           title: "Success",
@@ -145,7 +178,7 @@ export class CertificationDatabaseService extends BaseService {
       
       toast({
         title: "Error",
-        description: response.error || "Failed to clear certifications",
+        description: response.error || response.data?.message || "Failed to clear certifications",
         variant: "destructive"
       });
       

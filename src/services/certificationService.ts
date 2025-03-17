@@ -1,6 +1,7 @@
 
 import { apiService } from './apiService';
 
+// Define constant certifications for reference
 const CERTIFICATIONS = {
   LASER_CUTTER: { id: "1", name: "Laser Cutter" },
   ULTIMAKER: { id: "2", name: "Ultimaker" },
@@ -23,6 +24,8 @@ export class CertificationService {
       // Ensure IDs are strings
       const stringUserId = userId.toString();
       const stringCertId = certificationId.toString();
+      
+      console.log(`Making API call to add certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
       // Make the API call
       const response = await apiService.post('certifications', {
@@ -59,8 +62,10 @@ export class CertificationService {
       // Ensure IDs are strings
       const stringUserId = userId.toString();
       const stringCertId = certificationId.toString();
+      
+      console.log(`Making API call to remove certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
-      // Make the API call
+      // Make the API call with correct URL format
       const response = await apiService.delete(`certifications/${stringUserId}/${stringCertId}`);
       
       console.log("API remove certification response:", response);
@@ -91,6 +96,8 @@ export class CertificationService {
 
       // Ensure ID is string
       const stringUserId = userId.toString();
+      
+      console.log(`Making API call to clear certifications for userId=${stringUserId}`);
 
       // Make the API call
       const response = await apiService.delete(`certifications/clear/${stringUserId}`);
@@ -122,14 +129,22 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
+      console.log(`Making API call to get certifications for userId=${stringUserId}`);
+      
       // Make the API call
       const response = await apiService.get(`certifications/user/${stringUserId}`);
-      console.log("API get certifications response:", response);
+      console.log("API get certifications raw response:", response);
       
       if (response.data && Array.isArray(response.data)) {
         // Make sure all certification IDs are strings
-        const certifications = response.data.map(cert => cert.toString ? cert.toString() : String(cert));
-        console.log("Received certifications from service:", certifications);
+        const certifications = response.data.map(cert => {
+          if (typeof cert === 'object' && cert !== null) {
+            // If it's an object (like [object Object]), extract the ID or convert to string
+            return cert.toString ? cert.toString() : String(cert);
+          }
+          return cert.toString ? cert.toString() : String(cert);
+        });
+        console.log("Processed certifications:", certifications);
         return certifications;
       }
       
@@ -154,6 +169,8 @@ export class CertificationService {
       // Ensure IDs are strings
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
+      
+      console.log(`Making API call to check certification for userId=${stringUserId}, machineId=${stringMachineId}`);
       
       // Make the API call
       const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);

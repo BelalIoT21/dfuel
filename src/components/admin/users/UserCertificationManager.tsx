@@ -85,6 +85,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         // Refresh certifications instead of manually updating state
         await refreshCertifications();
         onCertificationAdded();
+        
+        toast({
+          title: "Success",
+          description: `Certification added successfully.`
+        });
       }
     } catch (error) {
       console.error("Error adding certification:", error);
@@ -119,6 +124,11 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         // Refresh certifications instead of manually updating state
         await refreshCertifications();
         onCertificationAdded();
+        
+        toast({
+          title: "Success",
+          description: `Certification removed successfully.`
+        });
       }
     } catch (error) {
       console.error("Error removing certification:", error);
@@ -151,8 +161,13 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       if (success) {
         // Refresh certifications instead of manually updating state
-        await refreshCertifications();
+        setUserCertifications([]);
         onCertificationAdded();
+        
+        toast({
+          title: "Success",
+          description: "All certifications cleared successfully."
+        });
       }
     } catch (error) {
       console.error("Error clearing certifications:", error);
