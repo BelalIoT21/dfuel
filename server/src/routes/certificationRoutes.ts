@@ -14,11 +14,11 @@ const router = express.Router();
 // Add certification
 router.post('/', protect, addCertification);
 
-// Remove certification (DELETE with params in URL)
+// Remove certification
 router.delete('/:userId/:machineId', protect, removeCertification);
 
 // Clear all certifications for a user
-router.delete('/clear/:userId', protect, clearUserCertifications);
+router.delete('/clear/:userId', protect, admin, clearUserCertifications);
 
 // Get user certifications
 router.get('/user/:userId', protect, getUserCertifications);

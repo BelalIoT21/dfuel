@@ -1,6 +1,5 @@
 
 import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 import { BaseService } from './baseService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -13,34 +12,30 @@ export class CertificationDatabaseService extends BaseService {
     try {
       const response = await apiService.post('certifications', { userId, machineId });
       if (response.data?.success) {
+        toast({
+          title: "Success",
+          description: "Certification added successfully",
+        });
         return true;
       }
       
-      throw new Error(response.error || 'Unknown error occurred while adding certification');
-    } catch (error) {
-      console.error("API error, falling back to localStorage certification:", error);
-      
-      // Fallback to localStorage
-      try {
-        const user = localStorageService.findUserById(userId);
-        if (!user) return false;
-        
-        if (!user.certifications.includes(machineId)) {
-          user.certifications.push(machineId);
-          console.log(`Adding certification ${machineId} to user ${userId}`);
-          return localStorageService.updateUser(userId, { certifications: user.certifications });
-        }
-        
-        return true; // Already certified
-      } catch (storageError) {
-        console.error("LocalStorage error:", storageError);
+      if (response.error) {
         toast({
           title: "Error",
-          description: "Failed to add certification",
+          description: response.error || "Failed to add certification",
           variant: "destructive"
         });
-        return false;
       }
+      
+      return false;
+    } catch (error) {
+      console.error("API error adding certification:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add certification",
+        variant: "destructive"
+      });
+      return false;
     }
   }
   
@@ -49,51 +44,58 @@ export class CertificationDatabaseService extends BaseService {
     try {
       const response = await apiService.delete(`certifications/${userId}/${machineId}`);
       if (response.data?.success) {
+        toast({
+          title: "Success",
+          description: "Certification removed successfully",
+        });
         return true;
       }
       
-      throw new Error(response.error || 'Unknown error occurred while removing certification');
-    } catch (error) {
-      console.error("API error, falling back to localStorage:", error);
-      
-      // Fallback to localStorage
-      try {
-        const user = localStorageService.findUserById(userId);
-        if (!user) return false;
-        
-        if (user.certifications.includes(machineId)) {
-          user.certifications = user.certifications.filter(id => id !== machineId);
-          console.log(`Removing certification ${machineId} from user ${userId}`);
-          return localStorageService.updateUser(userId, { certifications: user.certifications });
-        }
-        
-        return true; // Already not certified
-      } catch (storageError) {
-        console.error("LocalStorage error:", storageError);
+      if (response.error) {
         toast({
           title: "Error",
-          description: "Failed to remove certification",
+          description: response.error || "Failed to remove certification",
           variant: "destructive"
         });
-        return false;
       }
+      
+      return false;
+    } catch (error) {
+      console.error("API error removing certification:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove certification",
+        variant: "destructive"
+      });
+      return false;
     }
   }
   
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
       const response = await apiService.get(`certifications/user/${userId}`);
-      if (response.data) {
+      if (response.data && Array.isArray(response.data)) {
         return response.data;
       }
       
-      throw new Error(response.error || 'Unknown error occurred while getting user certifications');
-    } catch (error) {
-      console.error("API error, falling back to localStorage:", error);
+      if (response.error) {
+        console.error("Error getting user certifications:", response.error);
+      }
       
-      // Fallback to localStorage
-      const user = localStorageService.findUserById(userId);
-      return user ? user.certifications : [];
+      return [];
+    } catch (error) {
+      console.error("API error getting certifications:", error);
+      return [];
+    }
+  }
+  
+  async checkCertification(userId: string, machineId: string): Promise<boolean> {
+    try {
+      const response = await apiService.get(`certifications/check/${userId}/${machineId}`);
+      return !!response.data;
+    } catch (error) {
+      console.error("API error checking certification:", error);
+      return false;
     }
   }
   

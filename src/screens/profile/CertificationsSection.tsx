@@ -5,6 +5,7 @@ import { List, ActivityIndicator } from 'react-native-paper';
 import { User } from '@/types/database';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
+import { toast } from '@/components/ui/use-toast';
 
 interface CertificationsSectionProps {
   user: User;
@@ -27,6 +28,28 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
   
+  const fetchCertifications = async () => {
+    try {
+      if (user?.id) {
+        console.log(`Fetching certifications for user ${user.id}`);
+        const certifications = await certificationService.getUserCertifications(user.id);
+        console.log(`Received ${certifications.length} certifications from API`);
+        setUserCertifications(certifications);
+        return certifications;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching certifications:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch certifications",
+        variant: "destructive"
+      });
+      // Fallback to user object if API fails
+      return user.certifications || [];
+    }
+  };
+  
   const fetchMachineNames = async () => {
     setIsLoading(true);
     const names: Record<string, string> = {};
@@ -39,28 +62,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         types[id] = machine.type;
       });
       
-      // Get the latest certifications directly from the service
-      try {
-        if (user?.id) {
-          const fetchedCertifications = await certificationService.getUserCertifications(user.id);
-          if (Array.isArray(fetchedCertifications) && fetchedCertifications.length > 0) {
-            setUserCertifications(fetchedCertifications);
-            console.log("Fetched user certifications:", fetchedCertifications);
-          } else {
-            // Fall back to user object
-            setUserCertifications(user.certifications || []);
-          }
-        } else {
-          setUserCertifications(user.certifications || []);
-        }
-      } catch (error) {
-        console.error("Error fetching certifications:", error);
-        setUserCertifications(user.certifications || []);
-      }
+      // Get the latest certifications
+      const certifications = await fetchCertifications();
       
-      if (userCertifications && userCertifications.length > 0) {
+      if (certifications && certifications.length > 0) {
         // Only fetch unknown machines
-        const unknownCertIds = userCertifications.filter(
+        const unknownCertIds = certifications.filter(
           certId => !KNOWN_MACHINES[certId]
         );
         

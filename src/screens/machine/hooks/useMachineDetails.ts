@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
+import { certificationService } from '../../../services/certificationService';
 import mongoDbService from '../../../services/mongoDbService';
 
 export const useMachineDetails = (machineId, user, navigation) => {
@@ -58,26 +59,37 @@ export const useMachineDetails = (machineId, user, navigation) => {
         setMachineStatus(status);
         setMachine(machineData);
         
-        console.log("User certifications:", user.certifications);
-        console.log("Checking certification for machineId:", machineId);
+        console.log("User ID for certification check:", user.id);
         
-        // Check if user is certified for this machine
-        if (user.certifications && user.certifications.includes(machineId)) {
-          console.log("User is certified for this machine");
-          setIsCertified(true);
-        } else {
-          console.log("User is NOT certified for this machine");
-          setIsCertified(false);
+        // Check if user is certified for this machine using API
+        try {
+          const isUserCertified = await certificationService.checkCertification(user.id, machineId);
+          console.log("User certification check result:", isUserCertified);
+          setIsCertified(isUserCertified);
+        } catch (certError) {
+          console.error("Error checking certification:", certError);
+          // Fallback to user object if API fails
+          if (user.certifications && user.certifications.includes(machineId)) {
+            setIsCertified(true);
+          } else {
+            setIsCertified(false);
+          }
         }
         
         // Check if user has completed Machine Safety Course
         const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
-        if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
-          console.log("User has safety certification");
-          setHasMachineSafetyCert(true);
-        } else {
-          console.log("User does NOT have safety certification");
-          setHasMachineSafetyCert(false);
+        try {
+          const hasSafetyCert = await certificationService.checkCertification(user.id, MACHINE_SAFETY_ID);
+          console.log("User safety certification check result:", hasSafetyCert);
+          setHasMachineSafetyCert(hasSafetyCert);
+        } catch (safetyCertError) {
+          console.error("Error checking safety certification:", safetyCertError);
+          // Fallback to user object if API fails
+          if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
+            setHasMachineSafetyCert(true);
+          } else {
+            setHasMachineSafetyCert(false);
+          }
         }
       } catch (error) {
         console.error('Error loading machine details:', error);
