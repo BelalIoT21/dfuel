@@ -8,6 +8,7 @@ export const useMachineData = (user, navigation) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
 
   // Check server connection status
   const checkServerConnection = useCallback(async () => {
@@ -26,8 +27,16 @@ export const useMachineData = (user, navigation) => {
     }
   }, []);
 
-  const loadMachineData = useCallback(async () => {
-    console.log("Loading machine data");
+  const loadMachineData = useCallback(async (force = false) => {
+    console.log("Loading machine data, force =", force);
+    
+    // Don't refresh if we just did so recently (within 1 second), unless forced
+    const now = new Date();
+    const timeSinceLastRefresh = now.getTime() - lastRefreshTime.getTime();
+    if (!force && timeSinceLastRefresh < 1000) {
+      console.log("Skipping refresh, too soon since last refresh");
+      return;
+    }
     
     try {
       setLoading(true);
@@ -38,19 +47,46 @@ export const useMachineData = (user, navigation) => {
         console.log("Server not connected, using cached data if available");
       }
       
-      // Get machines directly using the machine service
-      console.log("Fetching machines from machine service");
-      const machines = await machineService.getMachines();
+      // Bypass cache by adding timestamp to request
+      const timestamp = new Date().getTime();
+      const machines = await machineService.getMachines(timestamp);
       
       if (!machines || machines.length === 0) {
-        console.error("No machines data available");
+        console.error("No machines data available from MongoDB");
         setLoading(false);
         setRefreshing(false);
         return;
       }
       
       console.log("Fetched machines data:", machines.length, "items");
-      setMachineData(machines);
+      
+      // Load status for each machine from MongoDB, also bypassing cache
+      const extendedMachines = await Promise.all(machines.map(async (machine) => {
+        try {
+          console.log("Loading status for machine:", machine.id);
+          // Try to get status directly from MongoDB or API with cache bypass
+          const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
+          
+          // Get status, default to 'available' if not found
+          let status = statusData ? statusData.status : 'available';
+          
+          console.log("Status for machine", machine.id, ":", status);
+          return {
+            ...machine,
+            status: status || 'available'
+          };
+        } catch (error) {
+          console.error(`Error loading status for machine ${machine.id}:`, error);
+          return {
+            ...machine,
+            status: 'available'
+          };
+        }
+      }));
+      
+      console.log("Extended machines data:", extendedMachines.length, "items");
+      setMachineData(extendedMachines);
+      setLastRefreshTime(now);
     } catch (error) {
       console.error("Error loading machine data:", error);
     } finally {
@@ -58,7 +94,7 @@ export const useMachineData = (user, navigation) => {
       setRefreshing(false);
       console.log("Machine data loading complete");
     }
-  }, [checkServerConnection]);
+  }, [checkServerConnection, lastRefreshTime]);
 
   useEffect(() => {
     console.log("useMachineData hook effect running");
@@ -72,7 +108,20 @@ export const useMachineData = (user, navigation) => {
     
     if (user) {
       console.log("User is authenticated, loading machine data");
-      loadMachineData();
+      // Force load on initial render and login
+      loadMachineData(true);
+      
+      // Set up auto-refresh interval (every 10 seconds)
+      const refreshInterval = setInterval(() => {
+        console.log("Auto-refreshing machine data...");
+        loadMachineData(true);
+      }, 10000);
+      
+      // Clean up interval on unmount
+      return () => {
+        console.log("Cleaning up refresh interval");
+        clearInterval(refreshInterval);
+      };
     } else {
       console.log("No user found, skipping data load");
       setLoading(false);
@@ -82,7 +131,7 @@ export const useMachineData = (user, navigation) => {
   const onRefresh = useCallback(() => {
     console.log("Manual refresh triggered");
     setRefreshing(true);
-    loadMachineData();
+    loadMachineData(true); // Force refresh
   }, [loadMachineData]);
 
   return {
