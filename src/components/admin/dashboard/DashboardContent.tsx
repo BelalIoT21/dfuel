@@ -33,7 +33,7 @@ export const DashboardContent = () => {
             console.log("Fetched machines:", machinesResponse.data.length);
             
             // Process machine data, ensuring each machine has a status field
-            // Filter out special machines (5 and 6) which are not real machines
+            // Filter out special machines (5 and 6) which are special machines used for certifications
             const processedMachines = machinesResponse.data
               .map(machine => ({
                 ...machine,
@@ -63,9 +63,9 @@ export const DashboardContent = () => {
   }, []);
 
   // Create a filtered list of machines for the stats overview
-  // that excludes machines 5 and 6 only for the stats count
+  // that excludes machines 5 and 6 which are special machines (Safety Cabinet and Safety Course)
   const filteredMachines = machineData.filter(machine => {
-    const machineId = machine._id || machine.id;
+    const machineId = String(machine._id || machine.id);
     return machineId !== '5' && machineId !== '6';
   });
 

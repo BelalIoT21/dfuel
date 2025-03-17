@@ -19,7 +19,10 @@ const MachineDetail = () => {
   const [machine, setMachine] = useState<any>(null);
   const [machineStatus, setMachineStatus] = useState('available');
   const [isCertified, setIsCertified] = useState(false);
-  const [hasMachineSafetyCert, setHasMachineSafetyCert] = useState(false);
+  const [hasSafetyCourse, setHasSafetyCourse] = useState(false);
+
+  // Safety course has ID 6
+  const SAFETY_COURSE_ID = '6';
 
   useEffect(() => {
     if (!user) {
@@ -84,16 +87,16 @@ const MachineDetail = () => {
             }
           }
           
-          // Check if user has machine safety certification (Machine 1)
+          // Check if user has safety course certification (ID 6)
           try {
-            const hasSafetyCert = await certificationService.checkCertification(user.id, '1');
-            setHasMachineSafetyCert(hasSafetyCert);
+            const hasSafety = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+            setHasSafetyCourse(hasSafety);
           } catch (safetyCertError) {
             console.error('Error checking safety certification:', safetyCertError);
             
             // Fallback to user object
-            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes('1')) {
-              setHasMachineSafetyCert(true);
+            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(SAFETY_COURSE_ID)) {
+              setHasSafetyCourse(true);
             }
           }
         }
@@ -187,6 +190,13 @@ const MachineDetail = () => {
 
   const isMaintenance = machineStatus === 'maintenance';
   const isBookable = !isMaintenance && isCertified && machine.id !== '5' && machine.id !== '6';
+  
+  // Check if the current machine is the safety course itself
+  const isSafetyCourse = id === SAFETY_COURSE_ID;
+  
+  // Determine if the machine requires safety course
+  // The safety course itself doesn't require the safety course (would be circular)
+  const requiresSafetyCourse = !isSafetyCourse && id !== '5';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
@@ -253,16 +263,16 @@ const MachineDetail = () => {
               <Button 
                 onClick={handleTakeCourse} 
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
               >
                 <Book className="mr-2 h-4 w-4" />
                 Take Course
               </Button>
               
-              {machine.id !== '1' && !hasMachineSafetyCert && (
+              {requiresSafetyCourse && !hasSafetyCourse && (
                 <div className="mt-4 text-amber-600 text-sm flex items-center">
                   <Lock className="h-4 w-4 mr-1" />
-                  Complete Machine Safety Course first
+                  Complete Safety Course first
                 </div>
               )}
             </CardContent>
@@ -280,16 +290,16 @@ const MachineDetail = () => {
               <Button 
                 onClick={handleTakeQuiz} 
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Take Quiz
               </Button>
               
-              {machine.id !== '1' && !hasMachineSafetyCert && (
+              {requiresSafetyCourse && !hasSafetyCourse && (
                 <div className="mt-4 text-amber-600 text-sm flex items-center">
                   <Lock className="h-4 w-4 mr-1" />
-                  Complete Machine Safety Course first
+                  Complete Safety Course first
                 </div>
               )}
             </CardContent>
@@ -307,22 +317,22 @@ const MachineDetail = () => {
             <CardContent>
               <p className="mb-6">
                 Become certified to use this machine by completing the training course and safety quiz.
-                {machine.id !== '1' && !hasMachineSafetyCert && 
-                  " You must complete the Machine Safety Course certification first."}
+                {requiresSafetyCourse && !hasSafetyCourse && 
+                  " You must complete the Safety Course certification first."}
               </p>
               <Button 
                 onClick={handleGetCertified} 
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
               >
                 <Award className="mr-2 h-4 w-4" />
                 Get Certified Now
               </Button>
               
-              {machine.id !== '1' && !hasMachineSafetyCert && (
+              {requiresSafetyCourse && !hasSafetyCourse && (
                 <div className="mt-4 text-amber-600 text-sm flex items-center">
                   <Lock className="h-4 w-4 mr-1" />
-                  Complete Machine Safety Course first
+                  Complete Safety Course first
                 </div>
               )}
             </CardContent>

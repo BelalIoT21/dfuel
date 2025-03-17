@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,15 +7,78 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, BookOpen, CheckCircle } from 'lucide-react';
 import { courses, machines } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
+import { apiService } from '../services/apiService';
 
 const Course = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [machine, setMachine] = useState<any>(null);
+  const [course, setCourse] = useState<any>(null);
   
-  const machine = machines.find(m => m.id === id);
-  const course = courses[id as keyof typeof courses];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get machine from API first
+        let machineData;
+        try {
+          const response = await apiService.getMachineById(id || '');
+          if (response.data) {
+            machineData = response.data;
+          }
+        } catch (apiError) {
+          console.error('Error fetching machine from API:', apiError);
+        }
+
+        // If API fails, fall back to static data
+        if (!machineData) {
+          machineData = machines.find(m => m.id === id);
+        }
+        
+        if (!machineData) {
+          toast({
+            title: 'Error',
+            description: 'Machine not found',
+            variant: 'destructive',
+          });
+          navigate('/home');
+          return;
+        }
+        
+        setMachine(machineData);
+        
+        // Get course content
+        const courseData = courses[id as keyof typeof courses] || courses['default'];
+        setCourse(courseData);
+      } catch (error) {
+        console.error('Error loading course data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load course data',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [id, navigate, toast]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
+          <p className="text-purple-700">Loading course content...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!machine || !course) {
     return (

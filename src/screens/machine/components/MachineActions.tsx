@@ -36,13 +36,13 @@ const MachineActions = ({
   // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
   const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
   
-  // Determine if user can get certified (must have Machine Safety Course)
+  // Determine if user can get certified (must have Safety Course certification - ID 6)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
   // Special handling for special users (disabled for admins for testing)
   const isSpecialUser = false;
   
-  // Is this the Machine Safety Course itself?
+  // Is this the Safety Course itself? (ID 6)
   const isSafetyCourse = machineType === 'Safety Course';
 
   useEffect(() => {

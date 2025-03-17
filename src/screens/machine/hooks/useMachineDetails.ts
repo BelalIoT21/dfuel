@@ -12,6 +12,9 @@ export const useMachineDetails = (machineId, user, navigation) => {
   const [isCertified, setIsCertified] = useState(false);
   const [hasMachineSafetyCert, setHasMachineSafetyCert] = useState(false);
 
+  // Safety course has ID 6
+  const SAFETY_COURSE_ID = "6";
+
   useEffect(() => {
     if (!user) {
       navigation.replace('Login');
@@ -66,16 +69,15 @@ export const useMachineDetails = (machineId, user, navigation) => {
           }
         }
         
-        // Check if user has completed Machine Safety Course
-        const MACHINE_SAFETY_ID = "1"; // Machine Safety Course is now Machine 1
+        // Check if user has completed Safety Course (ID 6)
         try {
-          const hasSafetyCert = await certificationService.checkCertification(user.id, MACHINE_SAFETY_ID);
+          const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
           console.log("User safety certification check result:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
           console.error("Error checking safety certification:", safetyCertError);
           // Fallback to user object if API fails
-          if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
+          if (user.certifications && user.certifications.includes(SAFETY_COURSE_ID)) {
             setHasMachineSafetyCert(true);
           } else {
             setHasMachineSafetyCert(false);

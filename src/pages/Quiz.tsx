@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { Check, X } from 'lucide-react';
 import { machines, quizzes, defaultQuiz } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/apiService';
 
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,15 +23,77 @@ const Quiz = () => {
   const [showResults, setShowResults] = useState(false);
   const [attempts, setAttempts] = useState(1);
   const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [machine, setMachine] = useState<any>(null);
+  const [quiz, setQuiz] = useState<any[]>([]);
   
-  const machine = machines.find(m => m.id === id);
-  const quiz = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get machine from API first
+        let machineData;
+        try {
+          const response = await apiService.getMachineById(id || '');
+          if (response.data) {
+            machineData = response.data;
+          }
+        } catch (apiError) {
+          console.error('Error fetching machine from API:', apiError);
+        }
+
+        // If API fails, fall back to static data
+        if (!machineData) {
+          machineData = machines.find(m => m.id === id);
+        }
+        
+        if (!machineData) {
+          toast({
+            title: 'Error',
+            description: 'Machine not found',
+            variant: 'destructive',
+          });
+          navigate('/home');
+          return;
+        }
+        
+        setMachine(machineData);
+        
+        // Get quiz content
+        const quizData = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
+        setQuiz(quizData);
+      } catch (error) {
+        console.error('Error loading quiz data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load quiz data',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [id, navigate, toast]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
+          <p className="text-purple-700">Loading quiz content...</p>
+        </div>
+      </div>
+    );
+  }
   
-  if (!machine) {
+  if (!machine || !quiz || quiz.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
+          <h1 className="text-2xl font-bold mb-4">Quiz not found</h1>
           <Link to="/home">
             <Button>Return to Home</Button>
           </Link>
