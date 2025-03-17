@@ -73,10 +73,10 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Filter out machines 5 and 6, and only count real machines
+  // Filter out machines 5 and 6, and only count real machines (not Equipment)
   const realMachines = machines.filter(machine => {
     const id = machine.id || machine._id;
-    return machine.type !== 'Equipment' && id !== '5' && id !== '6';
+    return id !== '5' && id !== '6' && machine.type !== 'Equipment';
   });
   
   // Basic statistics for the admin dashboard
