@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { apiService } from './apiService';
 
@@ -13,9 +14,13 @@ const CERTIFICATIONS = {
 export class CertificationService {
   async addCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
-      const success = await mongoDbService.updateUserCertifications(userId, certificationId);
-      if (success) return true;
+      console.log(`Adding certification ${certificationId} for user ${userId}`);
+      
+      // Try MongoDB first
+      const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
+      if (mongoSuccess) return true;
 
+      // Fallback to API
       const apiResponse = await apiService.addCertification(userId, certificationId);
       return apiResponse?.data?.success || false;
     } catch (error) {
@@ -29,9 +34,13 @@ export class CertificationService {
     try {
       // Try MongoDB first
       const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
-      if (mongoSuccess) return true;
+      if (mongoSuccess) {
+        console.log(`Successfully removed certification ${certificationId} from MongoDB`);
+        return true;
+      }
 
       // Fallback to API
+      console.log(`MongoDB removal failed, trying API for certification ${certificationId}`);
       const apiResponse = await apiService.removeCertification(userId, certificationId);
       return apiResponse?.data?.success || false;
     } catch (error) {

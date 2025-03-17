@@ -1,3 +1,4 @@
+
 import { userService } from './userService';
 import databaseService from './databaseService';
 import mongoDbService from './mongoDbService';
@@ -6,6 +7,15 @@ import { certificationService } from './certificationService';
 class UserDatabase {
   async getAllUsers() {
     try {
+      // First try MongoDB
+      const mongoUsers = await mongoDbService.getAllUsers();
+      if (mongoUsers && mongoUsers.length > 0) {
+        console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
+        return mongoUsers;
+      }
+      
+      // Fall back to userService
+      console.log("Falling back to userService for getAllUsers");
       return await userService.getAllUsers();
     } catch (error) {
       console.error('Error in getAllUsers:', error);
@@ -24,7 +34,9 @@ class UserDatabase {
 
   async addCertification(userId: string, certificationId: string) {
     try {
-      return await certificationService.addCertification(userId, certificationId);
+      console.log(`UserDatabase: Adding certification ${certificationId} for user ${userId}`);
+      const success = await certificationService.addCertification(userId, certificationId);
+      return success;
     } catch (error) {
       console.error('Error in addCertification:', error);
       return false;
@@ -34,7 +46,8 @@ class UserDatabase {
   async removeCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
       console.log(`UserDatabase: Removing certification ${certificationId} for ${userId}`);
-      return await certificationService.removeCertification(userId, certificationId);
+      const success = await certificationService.removeCertification(userId, certificationId);
+      return success;
     } catch (error) {
       console.error('Error in removeCertification:', error);
       return false;

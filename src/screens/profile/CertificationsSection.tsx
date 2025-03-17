@@ -9,6 +9,16 @@ interface CertificationsSectionProps {
   user: User;
 }
 
+// Define known machines to avoid excessive API calls
+const KNOWN_MACHINES = {
+  "1": { name: "Laser Cutter", type: "Laser Cutter" },
+  "2": { name: "Ultimaker", type: "3D Printer" },
+  "3": { name: "X1 E Carbon 3D Printer", type: "3D Printer" },
+  "4": { name: "Bambu Lab X1 E", type: "3D Printer" },
+  "5": { name: "Safety Cabinet", type: "Safety Cabinet" },
+  "6": { name: "Safety Course", type: "Safety Course" },
+};
+
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
@@ -20,92 +30,62 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const names: Record<string, string> = {};
       const types: Record<string, string> = {};
       
-      // Set consistent naming for special cases
-      names["6"] = "Machine Safety Course";
-      types["6"] = "Safety Course";
-      names["3"] = "Safety Cabinet";
-      types["3"] = "Safety Cabinet";
-      names["1"] = "Laser Cutter";
-      types["1"] = "Laser Cutter";
-      names["2"] = "Ultimaker";
-      types["2"] = "3D Printer";
-      names["5"] = "Bambu Lab X1 E";
-      types["5"] = "3D Printer";
+      // First populate with known machines
+      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
+        names[id] = machine.name;
+        types[id] = machine.type;
+      });
       
       if (user.certifications && user.certifications.length > 0) {
-        // First try to get all machines at once to avoid multiple API calls
-        try {
-          const allMachines = await machineService.getMachines();
-          console.log(`Got ${allMachines.length} machines to map certifications`);
-          
-          // Filter out duplicate machines and CNC Mill
-          const uniqueMachines = Array.from(
-            new Map(allMachines.map(m => [m._id || m.id, m])).values()
-          ).filter(machine => machine.name.toLowerCase() !== "cnc mill");
-          
-          // Create a map for quick lookup
-          const machineMap = {};
-          uniqueMachines.forEach(machine => {
-            if (machine.id) {
-              machineMap[machine.id] = machine;
-            }
-          });
-          
-          // Process certifications
-          for (const certId of user.certifications) {
-            // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "6"].includes(certId)) continue;
+        // Only fetch unknown machines
+        const unknownCertIds = user.certifications.filter(
+          certId => !KNOWN_MACHINES[certId]
+        );
+        
+        if (unknownCertIds.length > 0) {
+          try {
+            const allMachines = await machineService.getMachines();
+            console.log(`Got ${allMachines.length} machines to map unknown certifications`);
             
-            // First check our map
-            if (machineMap[certId]) {
-              names[certId] = machineMap[certId].name;
-              types[certId] = machineMap[certId].type || 'Machine';
-              continue;
-            }
-            
-            // If not in the map, try individual fetch
-            try {
-              const machine = await machineService.getMachineById(certId);
-              if (machine && machine.name.toLowerCase() !== "cnc mill") {
-                names[certId] = machine.name;
-                types[certId] = machine.type || 'Machine';
-              } else if (machine) {
-                // Skip CNC Mill
-                continue;
-              } else {
-                names[certId] = `Machine ${certId}`;
-                types[certId] = 'Machine';
+            // Create a map for quick lookup
+            const machineMap = {};
+            allMachines.forEach(machine => {
+              if (machine.id) {
+                machineMap[machine.id] = machine;
               }
-            } catch (error) {
-              console.error(`Error fetching machine ${certId}:`, error);
+            });
+            
+            // Process unknown certifications
+            for (const certId of unknownCertIds) {
+              // Check our map
+              if (machineMap[certId]) {
+                names[certId] = machineMap[certId].name;
+                types[certId] = machineMap[certId].type || 'Machine';
+              } else {
+                // If not in the map, try individual fetch
+                try {
+                  const machine = await machineService.getMachineById(certId);
+                  if (machine) {
+                    names[certId] = machine.name;
+                    types[certId] = machine.type || 'Machine';
+                  } else {
+                    names[certId] = `Machine ${certId}`;
+                    types[certId] = 'Machine';
+                  }
+                } catch (error) {
+                  console.error(`Error fetching machine ${certId}:`, error);
+                  names[certId] = `Machine ${certId}`;
+                  types[certId] = 'Machine';
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch machines:", error);
+            // Fall back to simple names for unknowns
+            unknownCertIds.forEach(certId => {
               names[certId] = `Machine ${certId}`;
               types[certId] = 'Machine';
-            }
-          }
-        } catch (error) {
-          console.error("Failed to fetch machines:", error);
-          // Fall back to individual fetches
-          for (const certId of user.certifications) {
-            // Skip special cases we've already handled
-            if (["1", "2", "3", "5", "6"].includes(certId)) continue;
-            
-            try {
-              const machine = await machineService.getMachineById(certId);
-              if (machine && machine.name.toLowerCase() !== "cnc mill") {
-                names[certId] = machine.name;
-                types[certId] = machine.type || 'Machine';
-              } else if (machine) {
-                // Skip CNC Mill
-                continue;
-              } else {
-                names[certId] = `Machine ${certId}`;
-                types[certId] = 'Machine';
-              }
-            } catch (error) {
-              console.error(`Error fetching machine ${certId}:`, error);
-              names[certId] = `Machine ${certId}`;
-              types[certId] = 'Machine';
-            }
+            });
           }
         }
       }
@@ -126,6 +106,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       return machineName && machineName !== "cnc mill";
     });
   };
+
+  console.log("User certifications in CertificationsSection:", user.certifications);
 
   return (
     <View style={styles.section}>

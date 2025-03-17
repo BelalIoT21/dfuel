@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Trash } from 'lucide-react';
-import mongoDbService from '@/services/mongoDbService';
+import { certificationService } from '@/services/certificationService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -39,8 +40,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
     setLoading(certificationId);
     try {
-      // Update MongoDB directly
-      const success = await mongoDbService.updateUserCertifications(userId, certificationId);
+      // Use certificationService which will try both MongoDB and API
+      const success = await certificationService.addCertification(userId, certificationId);
       if (success) {
         toast({
           title: "Certification Added",
@@ -70,8 +71,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleRemoveCertification = async (userId: string, certificationId: string) => {
     setLoading(certificationId);
     try {
-      // Update MongoDB directly
-      const success = await mongoDbService.removeUserCertification(userId, certificationId);
+      // Use certificationService which will try both MongoDB and API
+      const success = await certificationService.removeCertification(userId, certificationId);
       if (success) {
         toast({
           title: "Certification Removed",
@@ -103,8 +104,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
     setIsClearing(true);
     try {
-      // Clear all certifications in MongoDB
-      const success = await mongoDbService.clearUserCertifications(user.id);
+      // Use certificationService which will try both MongoDB and API
+      const success = await certificationService.clearAllCertifications(user.id);
       if (success) {
         toast({
           title: "Certifications Cleared",

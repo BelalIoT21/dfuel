@@ -30,14 +30,19 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Special handling for Safety Cabinet (ID: 3)
-        if (machineId === "3") {
+        // Special handling for Safety Cabinet (ID: 5)
+        if (machineId === "5") {
           machineData.type = "Safety Cabinet";
         }
         
-        // Special handling for Machine Safety Course (ID: 6)
+        // Special handling for Safety Course (ID: 6)
         if (machineId === "6") {
           machineData.type = "Safety Course";
+        }
+        
+        // Special handling for X1 E Carbon 3D Printer (ID: 3)
+        if (machineId === "3") {
+          machineData.type = "3D Printer";
         }
         
         // Get machine status from MongoDB
@@ -53,15 +58,26 @@ export const useMachineDetails = (machineId, user, navigation) => {
         setMachineStatus(status);
         setMachine(machineData);
         
+        console.log("User certifications:", user.certifications);
+        console.log("Checking certification for machineId:", machineId);
+        
         // Check if user is certified for this machine
         if (user.certifications && user.certifications.includes(machineId)) {
+          console.log("User is certified for this machine");
           setIsCertified(true);
+        } else {
+          console.log("User is NOT certified for this machine");
+          setIsCertified(false);
         }
         
         // Check if user has completed Machine Safety Course
         const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
         if (user.certifications && user.certifications.includes(MACHINE_SAFETY_ID)) {
+          console.log("User has safety certification");
           setHasMachineSafetyCert(true);
+        } else {
+          console.log("User does NOT have safety certification");
+          setHasMachineSafetyCert(false);
         }
       } catch (error) {
         console.error('Error loading machine details:', error);

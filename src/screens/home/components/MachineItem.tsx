@@ -32,17 +32,25 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
 
   // Handle special machine types
   let machineType = machine.type;
-  if (machine.id === "3") {
+  if (machine.id === "5") {
     machineType = "Safety Cabinet";
   } else if (machine.id === "6") {
     machineType = "Safety Course";
+  } else if (machine.id === "3") {
+    machineType = "X1 E Carbon 3D Printer";
   } else if (!machineType || machineType.trim() === '') {
     machineType = "Machine";
   }
   
   // Only display machineType chip if there's an actual value
   const showMachineType = machineType && machineType.trim() !== '';
-  const isCertified = userCertifications.includes(machine.id);
+  
+  // Convert userCertifications to strings for comparison
+  const userCertsAsString = userCertifications.map(cert => cert.toString());
+  const isCertified = userCertsAsString.includes(machine.id.toString());
+
+  console.log(`Machine ${machine.id} (${machine.name}) certification status:`, isCertified);
+  console.log(`User certifications:`, userCertsAsString);
 
   return (
     <TouchableOpacity
