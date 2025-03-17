@@ -49,11 +49,21 @@ export const getDashboardData = async (req: Request, res: Response) => {
   try {
     // Get count of users, machines, and bookings
     const usersCount = await User.countDocuments();
-    const machinesCount = await Machine.countDocuments();
+    
+    // Filter out special machines (5 and 6) for consistent count
+    const machinesCount = await Machine.countDocuments({
+      _id: { $nin: ['5', '6'] }
+    });
+    
     const bookingsCount = await Booking.countDocuments();
     
     // Get count of each machine status
     const machineStatuses = await Machine.aggregate([
+      {
+        $match: { 
+          _id: { $nin: ['5', '6'] } 
+        }
+      },
       {
         $group: {
           _id: '$status',

@@ -73,13 +73,16 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Only filter out machines 5 and 6, but not by type
-  const realMachines = machines.filter(machine => {
+  // Create a normalized list of machines for consistent counting
+  const normalizedMachines = Array.isArray(machines) ? machines : [];
+  
+  // Filter out only machines with IDs 5 and 6 (safety cabinet and any other special equipment)
+  const filteredMachines = normalizedMachines.filter(machine => {
     const id = machine.id || machine._id;
     return id !== '5' && id !== '6';
   });
   
-  console.log("Filtered machines:", realMachines.length, "from total:", machines.length);
+  console.log("Filtered machines:", filteredMachines.length, "from total:", normalizedMachines.length);
   
   // Basic statistics for the admin dashboard
   const stats = [
@@ -92,7 +95,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     },
     { 
       title: 'Total Machines', 
-      value: realMachines.length, 
+      value: filteredMachines.length, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '',
       link: '/admin/machines'
