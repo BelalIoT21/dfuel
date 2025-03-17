@@ -94,7 +94,7 @@ export class CertificationDatabaseService extends BaseService {
 
   async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
-      // Use the removeCertification method directly
+      // Use the removeCertification method directly with correct parameter order
       return await this.removeCertification(userId, certificationId);
     } catch (error) {
       console.error("Error in removeUserCertification:", error);

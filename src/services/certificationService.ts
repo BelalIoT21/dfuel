@@ -61,7 +61,7 @@ export class CertificationService {
       
       console.log(`Making API call to remove certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
-      // Use the removeCertification method from apiService
+      // Use the removeCertification method from apiService with the correct parameter order
       const response = await apiService.removeCertification(stringUserId, stringCertId);
       
       console.log("API remove certification response:", response);

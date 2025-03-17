@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
