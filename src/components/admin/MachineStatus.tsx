@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,9 +107,18 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             if (response.ok) {
               const machineData = await response.json();
               console.log(`Received data for machine ${machineId}:`, machineData);
+              
+              // Make sure we're correctly interpreting the API response
+              let normalizedStatus = 'available';
+              if (machineData.status) {
+                normalizedStatus = machineData.status.toLowerCase();
+              }
+              
+              console.log(`Normalized status for machine ${machineId}: ${normalizedStatus}`);
+              
               return {
                 ...machine,
-                status: machineData.status?.toLowerCase() || 'available',
+                status: normalizedStatus,
                 maintenanceNote: machineData.maintenanceNote || ''
               };
             }
@@ -230,6 +240,37 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     
     return machine.type || "Machine";
   };
+  
+  // Helper function to get the correct status display
+  const getStatusDisplay = (machine: any): { text: string, className: string } => {
+    const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
+    
+    if (isEquipment) {
+      return { 
+        text: 'Available', 
+        className: 'bg-green-100 text-green-800' 
+      };
+    }
+    
+    const status = (machine.status || 'available').toLowerCase();
+    
+    if (status === 'available') {
+      return { 
+        text: 'Available', 
+        className: 'bg-green-100 text-green-800' 
+      };
+    } else if (status === 'maintenance') {
+      return { 
+        text: 'Maintenance', 
+        className: 'bg-red-100 text-red-800' 
+      };
+    } else {
+      return { 
+        text: 'In Use', 
+        className: 'bg-yellow-100 text-yellow-800' 
+      };
+    }
+  };
 
   return (
     <>
@@ -270,6 +311,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               sortedMachineData.map((machine) => {
                 const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
                 const machineType = getMachineType(machine);
+                const status = getStatusDisplay(machine);
                 
                 return (
                   <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
@@ -283,20 +325,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                       </div>
                     </div>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        machine.status === 'available' || isEquipment
-                          ? 'bg-green-100 text-green-800' 
-                          : machine.status === 'maintenance'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {isEquipment 
-                          ? 'Available' 
-                          : machine.status === 'available' 
-                            ? 'Available' 
-                            : machine.status === 'maintenance'
-                              ? 'Maintenance'
-                              : 'In Use'}
+                      <span className={`text-xs px-2 py-1 rounded ${status.className}`}>
+                        {status.text}
                       </span>
                       {!isEquipment && (
                         <Button 

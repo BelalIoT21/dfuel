@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiService } from '../../../services/apiService';
@@ -46,9 +47,16 @@ export const DashboardContent = () => {
               if (response.ok) {
                 const machineData = await response.json();
                 console.log(`Received initial status for machine ${machineId}:`, machineData.status);
+                
+                // Ensure we get the correct normalized status
+                let status = 'available';
+                if (machineData.status) {
+                  status = machineData.status.toLowerCase();
+                }
+                
                 return {
                   ...machine,
-                  status: machineData.status?.toLowerCase() || 'available',
+                  status: status,
                   maintenanceNote: machineData.maintenanceNote || ''
                 };
               }
