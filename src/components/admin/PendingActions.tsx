@@ -22,13 +22,8 @@ export const PendingActions = () => {
       let allBookings = [];
       try {
         console.log("Fetching bookings directly from MongoDB");
-        // Check if mongoDbService has the getAllBookings method
-        if (typeof mongoDbService.getAllBookings === 'function') {
-          allBookings = await mongoDbService.getAllBookings();
-          console.log(`Found ${allBookings.length} bookings in MongoDB`);
-        } else {
-          console.log("mongoDbService.getAllBookings is not available, skipping MongoDB fetch");
-        }
+        allBookings = await mongoDbService.getAllBookings();
+        console.log(`Found ${allBookings.length} bookings in MongoDB`);
       } catch (mongoError) {
         console.error("MongoDB booking fetch error:", mongoError);
       }

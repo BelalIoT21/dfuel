@@ -1,198 +1,280 @@
-
-import mongoDbService from './mongoDbService';
-import { localStorageService } from './localStorageService';
-import { Booking } from '../types/database';
-import { bookingDatabaseService } from './database/bookingService';
-import { isWeb } from '../utils/platform';
-import { toast } from '../components/ui/use-toast';
 import { apiService } from './apiService';
+import { localStorageService } from './localStorageService';
+import mongoDbService from './mongoDbService';
+import { machineService } from './machineService';
+import { isWeb } from '../utils/platform';
 import userDatabase from './userDatabase';
 
 export class BookingService {
-  // Create a booking
-  async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
-    console.log(`BookingService.createBooking: userId=${userId}, machineId=${machineId}, date=${date}, time=${time}`);
-    
+  // Get all bookings (admin only)
+  async getAllBookings() {
     try {
-      // Check if this time slot is already booked
-      const allBookings = await this.getAllBookings();
-      const hasConflict = allBookings.some(booking => 
-        booking.machineId === machineId && 
-        booking.date === date && 
-        booking.time === time &&
-        (booking.status === 'Approved' || booking.status === 'Pending')
-      );
+      console.log("BookingService.getAllBookings: Fetching all bookings");
       
-      if (hasConflict) {
-        toast({
-          title: "Time Slot Unavailable",
-          description: "This time slot has already been booked. Please select another time.",
-          variant: "destructive"
-        });
-        return false;
+      // Try to get from MongoDB first (if available)
+      try {
+        const mongoBookings = await mongoDbService.getAllBookings();
+        if (mongoBookings && mongoBookings.length > 0) {
+          console.log(`Found ${mongoBookings.length} bookings in MongoDB`);
+          return mongoBookings;
+        }
+      } catch (mongoError) {
+        console.error("Error fetching bookings from MongoDB:", mongoError);
       }
       
-      // Try MongoDB first
+      // Try to get from API
+      try {
+        const token = localStorageService.getItem('token');
+        apiService.setToken(token);
+        const response = await apiService.get('bookings/all');
+        if (response.data) {
+          console.log(`Found ${response.data.length} bookings via API`);
+          return response.data;
+        }
+      } catch (apiError) {
+        console.error("API error fetching all bookings:", apiError);
+      }
+      
+      // Fallback to localStorage
+      const bookings = localStorageService.getItem('bookings') || [];
+      console.log(`Found ${bookings.length} bookings in localStorage`);
+      return bookings;
+    } catch (error) {
+      console.error("Error in getAllBookings:", error);
+      return [];
+    }
+  }
+
+  // Get user bookings
+  async getUserBookings(userId) {
+    try {
+      console.log(`BookingService.getUserBookings: Fetching bookings for user ${userId}`);
+      
+      let bookings = [];
+      
+      // Try to get from MongoDB first (if available)
       if (!isWeb) {
         try {
-          // For MongoDB, we need to create a booking record and then add it to the user's bookings
-          const booking = {
-            machineId,
-            date,
-            time,
-            status: 'Pending',
-            createdAt: new Date().toISOString()
-          };
-          
-          const success = await mongoDbService.addUserBooking(userId, booking);
-          if (success) {
-            toast({
-              title: "Booking Submitted",
-              description: "Your booking request has been submitted and is waiting for approval.",
-            });
+          const mongoBookings = await mongoDbService.getUserBookings(userId);
+          if (mongoBookings && mongoBookings.length > 0) {
+            console.log(`Found ${mongoBookings.length} bookings for user ${userId} in MongoDB`);
+            return mongoBookings;
+          }
+        } catch (mongoError) {
+          console.error("Error fetching user bookings from MongoDB:", mongoError);
+        }
+      }
+      
+      // Try to get from API
+      try {
+        const token = localStorageService.getItem('token');
+        apiService.setToken(token);
+        const response = await apiService.get('bookings');
+        if (response.data) {
+          console.log(`Found ${response.data.length} bookings for user via API`);
+          bookings = response.data;
+        }
+      } catch (apiError) {
+        console.error("API error fetching user bookings:", apiError);
+        // If API fails, try localStorage
+        const allBookings = localStorageService.getItem('bookings') || [];
+        bookings = allBookings.filter(booking => booking.userId === userId);
+        console.log(`Retrieved bookings from localStorage bookings collection:`, bookings);
+      }
+      
+      console.log(`Refreshed bookings from service:`, bookings);
+      
+      // Enrich bookings with machine names if they're missing
+      const enrichedBookings = await this.enrichBookingsWithMachineNames(bookings);
+      
+      return enrichedBookings;
+    } catch (error) {
+      console.error("Error in getUserBookings:", error);
+      return [];
+    }
+  }
+
+  // Helper to add machine names to bookings
+  async enrichBookingsWithMachineNames(bookings) {
+    try {
+      const enrichedBookings = [...bookings];
+      
+      for (let i = 0; i < enrichedBookings.length; i++) {
+        const booking = enrichedBookings[i];
+        
+        // Skip if we already have a machine name
+        if (booking.machineName) {
+          continue;
+        }
+        
+        // Get the machine ID from the booking
+        const machineId = booking.machineId || booking.machine;
+        
+        if (machineId) {
+          try {
+            // Get machine details
+            const machine = await machineService.getMachineById(machineId);
+            if (machine && machine.name) {
+              enrichedBookings[i] = {
+                ...booking,
+                machineName: machine.name
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching machine ${machineId} details:`, error);
+          }
+        }
+      }
+      
+      return enrichedBookings;
+    } catch (error) {
+      console.error("Error enriching bookings with machine names:", error);
+      return bookings;
+    }
+  }
+
+  // Create booking
+  async createBooking(userId, machineId, date, time) {
+    try {
+      console.log(`BookingService.createBooking: Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
+      
+      // Create client-side ID for easier reference
+      const clientId = `booking-${Date.now()}`;
+      
+      // Try to create in MongoDB first (if available)
+      if (!isWeb) {
+        try {
+          const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
+          if (mongoSuccess) {
+            console.log("Successfully created booking in MongoDB");
             return true;
           }
-        } catch (mongoErr) {
-          console.error("MongoDB error creating booking:", mongoErr);
+        } catch (mongoError) {
+          console.error("Error creating booking in MongoDB:", mongoError);
         }
       }
       
-      // Try API next
+      // Try to create via API
       try {
-        const response = await apiService.addBooking(userId, machineId, date, time);
-        if (response && response.data?.success) {
-          toast({
-            title: "Booking Submitted",
-            description: "Your booking request has been submitted and is waiting for approval.",
-          });
+        const token = localStorageService.getItem('token');
+        apiService.setToken(token);
+        
+        // Try to get machine details for the booking
+        let machineName = "Unknown Machine";
+        try {
+          const machine = await machineService.getMachineById(machineId);
+          if (machine && machine.name) {
+            machineName = machine.name;
+          }
+        } catch (machineError) {
+          console.error(`Error fetching machine ${machineId} details:`, machineError);
+        }
+        
+        // Create booking via API
+        const response = await apiService.post('bookings', {
+          machineId,
+          date,
+          time,
+          clientId,
+          machineName
+        });
+        
+        if (response.data && response.data.success) {
+          console.log("Successfully created booking via API");
           return true;
         }
-      } catch (apiErr) {
-        console.error("API error creating booking:", apiErr);
-      }
-      
-      // Fall back to localStorage
-      try {
-        const bookings = localStorageService.getBookings();
+      } catch (apiError) {
+        console.error("API error creating booking:", apiError);
+        
+        // If API fails, create in localStorage
+        const existingBookings = localStorageService.getItem('bookings') || [];
+        
+        // Try to get machine details for the booking
+        let machineName = "Unknown Machine";
+        try {
+          const machine = await machineService.getMachineById(machineId);
+          if (machine && machine.name) {
+            machineName = machine.name;
+          }
+        } catch (machineError) {
+          console.error(`Error fetching machine ${machineId} details:`, machineError);
+        }
+        
+        // Create new booking
         const newBooking = {
-          id: `booking-${Date.now()}`,
+          id: clientId,
           userId,
           machineId,
           date,
           time,
           status: 'Pending',
           createdAt: new Date().toISOString(),
-          machineName: this.getMachineName(machineId) // Add machine name for display convenience
+          machineName
         };
         
-        bookings.push(newBooking);
-        
-        // Update the bookings
-        const success = localStorageService.saveBookings(bookings);
-        
-        // Update the user
-        const user = localStorageService.findUserById(userId);
-        if (user && success) {
-          if (!user.bookings) {
-            user.bookings = [];
-          }
-          user.bookings.push(newBooking);
-          localStorageService.updateUser(userId, { bookings: user.bookings });
-          
-          toast({
-            title: "Booking Submitted",
-            description: "Your booking request has been submitted and is waiting for approval.",
-          });
-        }
-        
-        return success;
-      } catch (error) {
-        console.error("Error in BookingService.createBooking local storage fallback:", error);
-        toast({
-          title: "Booking Failed",
-          description: "There was an error processing your booking. Please try again.",
-          variant: "destructive"
-        });
-        return false;
+        existingBookings.push(newBooking);
+        localStorageService.setItem('bookings', existingBookings);
+        console.log("Created booking in localStorage:", newBooking);
+        return true;
       }
+      
+      console.error("All booking creation methods failed");
+      return false;
     } catch (error) {
-      console.error("Error in BookingService.createBooking:", error);
-      toast({
-        title: "Booking Failed",
-        description: "There was an error processing your booking. Please try again.",
-        variant: "destructive"
-      });
+      console.error("Error in createBooking:", error);
       return false;
     }
   }
-  
-  // Get user bookings
-  async getUserBookings(userId: string): Promise<Booking[]> {
-    console.log(`BookingService.getUserBookings: userId=${userId}`);
-    
+
+  // Delete booking
+  async deleteBooking(bookingId) {
     try {
-      // Try MongoDB first if not in web environment
-      if (!isWeb) {
-        try {
-          const mongoUser = await mongoDbService.getUserById(userId);
-          if (mongoUser && mongoUser.bookings && mongoUser.bookings.length > 0) {
-            console.log("Retrieved bookings from MongoDB:", mongoUser.bookings);
-            return mongoUser.bookings;
-          }
-        } catch (mongoError) {
-          console.error("MongoDB error when getting bookings:", mongoError);
+      console.log(`BookingService.deleteBooking: bookingId=${bookingId}`);
+      
+      // Try to delete from MongoDB first
+      try {
+        const mongoSuccess = await mongoDbService.deleteBooking(bookingId);
+        if (mongoSuccess) {
+          console.log(`Successfully deleted booking ${bookingId} from MongoDB`);
+          return true;
         }
+      } catch (mongoError) {
+        console.error("MongoDB delete booking error:", mongoError);
       }
       
-      // Try getting from global bookings collection via API or localStorage
+      // Try to delete via API
       try {
-        const allBookings = await this.getAllBookings();
-        console.log("Retrieved all bookings:", allBookings);
+        const token = localStorageService.getItem('token');
+        apiService.setToken(token);
+        const response = await apiService.delete(`bookings/${bookingId}`);
         
-        const userBookings = allBookings.filter(booking => 
-          booking.userId === userId || 
-          booking.user === userId
-        );
-        
-        console.log("Filtered user bookings:", userBookings);
-        if (userBookings.length > 0) {
-          return userBookings;
-        }
-      } catch (error) {
-        console.error("Error filtering user bookings from all bookings:", error);
-      }
-      
-      // Try API next
-      try {
-        const response = await apiService.getUserBookings(userId);
-        if (response && response.data) {
-          console.log("Retrieved bookings from API:", response.data);
-          return response.data;
+        if (response.status === 200) {
+          console.log(`Successfully deleted booking ${bookingId} via API`);
+          return true;
         }
       } catch (apiError) {
-        console.error("API error when getting bookings:", apiError);
+        console.error(`API error deleting booking ${bookingId}:`, apiError);
       }
       
-      // Fall back to localStorage - checking user object directly
-      const user = localStorageService.findUserById(userId);
-      if (user && user.bookings && user.bookings.length > 0) {
-        console.log("Retrieved bookings from user in localStorage:", user.bookings);
-        return user.bookings;
+      // If API and MongoDB fails, delete from localStorage
+      const existingBookings = localStorageService.getItem('bookings') || [];
+      const updatedBookings = existingBookings.filter(booking => booking.id !== bookingId);
+      
+      if (updatedBookings.length < existingBookings.length) {
+        localStorageService.setItem('bookings', updatedBookings);
+        console.log(`Removed booking ${bookingId} from global bookings list`);
+        return true;
       }
       
-      // Final attempt - check bookings collection and filter by userId
-      const bookings = localStorageService.getBookings();
-      const userBookings = bookings.filter(booking => booking.userId === userId);
-      console.log("Retrieved bookings from localStorage bookings collection:", userBookings);
-      return userBookings;
+      return false;
     } catch (error) {
-      console.error("Error in BookingService.getUserBookings:", error);
-      return [];
+      console.error(`Error in deleteBooking for ${bookingId}:`, error);
+      return false;
     }
   }
-  
+
   // Update booking status
-  async updateBookingStatus(bookingId: string, status: 'Approved' | 'Rejected' | 'Completed' | 'Canceled'): Promise<boolean> {
+  async updateBookingStatus(bookingId, status) {
     console.log(`BookingService.updateBookingStatus: bookingId=${bookingId}, status=${status}`);
     
     try {
@@ -319,120 +401,9 @@ export class BookingService {
       return false;
     }
   }
-  
-  // Get all bookings (admin only)
-  async getAllBookings(): Promise<any[]> {
-    try {
-      console.log("BookingService.getAllBookings: Fetching all bookings");
-      
-      // Try MongoDB first if not in web environment
-      if (!isWeb) {
-        try {
-          const bookings = await mongoDbService.getAllBookings();
-          if (bookings && bookings.length > 0) {
-            console.log("Retrieved all bookings from MongoDB:", bookings.length);
-            // Add machine names if missing
-            const bookingsWithNames = bookings.map(booking => {
-              if (!booking.machineName) {
-                booking.machineName = this.getMachineName(booking.machineId);
-              }
-              return booking;
-            });
-            return bookingsWithNames;
-          }
-        } catch (mongoError) {
-          console.error("MongoDB error when fetching bookings:", mongoError);
-        }
-      }
-      
-      // Try API next
-      try {
-        const response = await apiService.getAllBookings();
-        if (response && response.data) {
-          console.log("Retrieved all bookings from API:", response.data.length);
-          // Add machine names if missing
-          const bookingsWithNames = response.data.map(booking => {
-            if (!booking.machineName) {
-              booking.machineName = this.getMachineName(booking.machineId);
-            }
-            return booking;
-          });
-          return bookingsWithNames;
-        }
-      } catch (apiError) {
-        console.error("API error when fetching bookings:", apiError);
-      }
-      
-      // As a last resort, use localStorage
-      const bookings = localStorageService.getBookings();
-      
-      // Get all user bookings from all users
-      const allUsers = localStorageService.getAllUsers();
-      let userBookings = [];
-      
-      for (const user of allUsers) {
-        if (user.bookings && Array.isArray(user.bookings) && user.bookings.length > 0) {
-          // Add user data to each booking
-          const bookingsWithUserInfo = user.bookings.map(booking => ({
-            ...booking,
-            userId: user.id,
-            userName: user.name,
-            userEmail: user.email,
-            machineName: booking.machineName || this.getMachineName(booking.machineId || booking.machine)
-          }));
-          
-          userBookings = [...userBookings, ...bookingsWithUserInfo];
-        }
-      }
-      
-      // Merge with global bookings and deduplicate
-      const allBookings = [...bookings];
-      
-      for (const userBooking of userBookings) {
-        // Only add if not already in the array
-        const exists = allBookings.some(b => 
-          (b.id && b.id === userBooking.id) || 
-          (b._id && b._id === userBooking._id)
-        );
-        
-        if (!exists) {
-          allBookings.push(userBooking);
-        }
-      }
-      
-      console.log("Retrieved all bookings merged from localStorage:", allBookings.length);
-      
-      // Make sure machine names are set correctly
-      const bookingsWithNames = allBookings.map(booking => {
-        if (!booking.machineName) {
-          booking.machineName = this.getMachineName(booking.machineId || booking.machine);
-        }
-        return booking;
-      });
-      
-      return bookingsWithNames;
-    } catch (error) {
-      console.error("Error in BookingService.getAllBookings:", error);
-      return [];
-    }
-  }
-  
-  // Helper method to get machine name from ID
-  private getMachineName(machineId: string): string {
-    const machineMap = {
-      '1': 'Laser Cutter',
-      '2': 'Ultimaker',
-      '3': 'X1 E Carbon 3D Printer',
-      '4': 'Bambu Lab X1 E',
-      '5': 'Soldering Station',
-      '6': 'Machine Safety Course'
-    };
-    
-    return machineMap[machineId] || `Machine ${machineId}`;
-  }
-  
+
   // Clear all bookings for a specific user (for resetting)
-  async clearUserBookings(userId: string): Promise<boolean> {
+  async clearUserBookings(userId) {
     console.log(`BookingService.clearUserBookings: userId=${userId}`);
     try {
       // Try clearing from local storage first
@@ -456,9 +427,9 @@ export class BookingService {
       return false;
     }
   }
-  
+
   // Clear all bookings in the system (admin only)
-  async clearAllBookings(): Promise<boolean> {
+  async clearAllBookings() {
     console.log(`BookingService.clearAllBookings: Attempting to clear all bookings`);
     try {
       // Try MongoDB first
@@ -517,122 +488,6 @@ export class BookingService {
       return false;
     }
   }
-  
-  // Delete a booking
-  async deleteBooking(bookingId: string): Promise<boolean> {
-    console.log(`BookingService.deleteBooking: bookingId=${bookingId}`);
-    
-    try {
-      // Try using the userDatabase facade first (which tries MongoDB then localStorage)
-      try {
-        const success = await userDatabase.deleteBooking(bookingId);
-        if (success) {
-          console.log("Successfully deleted booking via userDatabase");
-          toast({
-            title: "Booking Deleted",
-            description: "The booking has been successfully deleted."
-          });
-          return true;
-        }
-      } catch (dbError) {
-        console.error("userDatabase error deleting booking:", dbError);
-      }
-      
-      // If that fails, try MongoDB directly
-      if (!isWeb) {
-        try {
-          const success = await mongoDbService.deleteBooking(bookingId);
-          if (success) {
-            console.log("Successfully deleted booking via MongoDB");
-            toast({
-              title: "Booking Deleted",
-              description: "The booking has been successfully deleted."
-            });
-            return true;
-          }
-        } catch (mongoError) {
-          console.error("MongoDB error deleting booking:", mongoError);
-        }
-      }
-      
-      // Try API next
-      try {
-        const response = await apiService.request(`bookings/${bookingId}`, 'DELETE');
-        if (response && !response.error) {
-          console.log("Successfully deleted booking via API");
-          toast({
-            title: "Booking Deleted",
-            description: "The booking has been successfully deleted."
-          });
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error deleting booking:", apiError);
-      }
-      
-      // Finally try localStorage directly - FORCED DELETION APPROACH
-      try {
-        // Force delete from bookings collection
-        const allBookings = localStorageService.getBookings();
-        const updatedBookings = allBookings.filter(b => 
-          b.id !== bookingId && b._id !== bookingId
-        );
-        
-        if (updatedBookings.length < allBookings.length) {
-          localStorageService.saveBookings(updatedBookings);
-          console.log(`Removed booking ${bookingId} from global bookings list`);
-        }
-        
-        // Force delete from all users' bookings arrays
-        const allUsers = localStorageService.getAllUsers();
-        let foundInUser = false;
-        
-        for (const user of allUsers) {
-          if (user.bookings && Array.isArray(user.bookings)) {
-            const originalLength = user.bookings.length;
-            const updatedUserBookings = user.bookings.filter(b => 
-              b.id !== bookingId && b._id !== bookingId
-            );
-            
-            if (updatedUserBookings.length < originalLength) {
-              localStorageService.updateUser(user.id, { bookings: updatedUserBookings });
-              console.log(`Removed booking ${bookingId} from user ${user.id}'s bookings`);
-              foundInUser = true;
-            }
-          }
-        }
-        
-        // If we made any changes, consider it a success
-        if (updatedBookings.length < allBookings.length || foundInUser) {
-          toast({
-            title: "Booking Deleted",
-            description: "The booking has been successfully deleted."
-          });
-          return true;
-        }
-      } catch (storageError) {
-        console.error("LocalStorage error deleting booking:", storageError);
-      }
-      
-      // If we get here, all methods failed
-      console.error(`Failed to delete booking ${bookingId} after trying all methods`);
-      toast({
-        title: "Error",
-        description: "Failed to delete the booking. Please refresh and try again.",
-        variant: "destructive"
-      });
-      return false;
-    } catch (error) {
-      console.error("Error in BookingService.deleteBooking:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem deleting the booking.",
-        variant: "destructive"
-      });
-      return false;
-    }
-  }
 }
 
-// Create a singleton instance
 export const bookingService = new BookingService();

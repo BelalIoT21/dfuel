@@ -35,7 +35,7 @@ router.get('/all', protect, admin, getAllBookings);
 // Get booking by ID
 router.get('/:id', protect, getBookingById);
 
-// Update booking status (admin only) - original endpoint
+// Update booking status (admin only)
 router.put(
   '/:id/status',
   protect,
@@ -47,22 +47,10 @@ router.put(
   updateBookingStatus
 );
 
-// Alternative update booking status endpoint for client-generated IDs
-router.put(
-  '/update-status',
-  protect,
-  admin,
-  [
-    body('bookingId').notEmpty().withMessage('Booking ID is required'),
-    body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected']).withMessage('Valid status is required')
-  ],
-  updateBookingStatus
-);
-
 // Cancel booking
 router.put('/:id/cancel', protect, cancelBooking);
 
 // Delete booking (admin only)
-router.delete('/:id', protect, admin, deleteBooking);
+router.delete('/:id', protect, deleteBooking);
 
 export default router;

@@ -44,7 +44,7 @@ const BookingPage = () => {
           // Fetch existing bookings to determine availability
           const allBookings = await bookingService.getAllBookings();
           const machineBookings = allBookings.filter(
-            booking => booking.machineId === id && 
+            booking => booking.machineId === id || booking.machine === id && 
             (booking.status === 'Approved' || booking.status === 'Pending')
           );
           
@@ -71,7 +71,6 @@ const BookingPage = () => {
     loadMachine();
   }, [id]);
 
-  // Update available time slots when date changes
   useEffect(() => {
     updateAvailableTimeSlots(selectedDate);
   }, [selectedDate, bookedSlots]);
@@ -123,9 +122,11 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       console.log('Submitting booking...');
+      console.log(`Machine ID: ${machine.id || machine._id}, Machine Name: ${machine.name}`);
+      
       const success = await bookingService.createBooking(
         user.id,
-        machine.id,
+        machine.id || machine._id,
         formattedDate,
         selectedTime
       );

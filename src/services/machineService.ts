@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
@@ -123,6 +124,12 @@ export class MachineService {
       try {
         const response = await apiService.get(`machines/${machineId}`);
         if (response.data) {
+          // Filter out machines 5 and 6
+          if (machineId === "5" || machineId === "6") {
+            console.log(`Machine ${machineId} is filtered out`);
+            return null;
+          }
+          
           return {
             ...response.data,
             status: response.data.status?.toLowerCase() || 'available',
@@ -137,6 +144,12 @@ export class MachineService {
       const machine = machines.find(m => m.id === machineId);
       
       if (machine) {
+        // Filter out machines 5 and 6
+        if (machineId === "5" || machineId === "6") {
+          console.log(`Machine ${machineId} is filtered out`);
+          return null;
+        }
+        
         return {
           ...machine,
           status: 'available',
@@ -159,7 +172,13 @@ export class MachineService {
       try {
         const response = await apiService.get('machines');
         if (response.data && Array.isArray(response.data)) {
-          return response.data.map(machine => ({
+          // Filter out machines 5 and 6
+          const filteredMachines = response.data.filter(machine => {
+            const id = machine.id || machine._id;
+            return id !== '5' && id !== '6';
+          });
+          
+          return filteredMachines.map(machine => ({
             ...machine,
             type: machine.type || "Machine",
             status: machine.status?.toLowerCase() || 'available'
@@ -170,13 +189,21 @@ export class MachineService {
       }
       
       // Fallback to static machines data
-      return machines.map(machine => ({
+      const filteredMachines = machines.filter(machine => 
+        machine.id !== '5' && machine.id !== '6'
+      );
+      
+      return filteredMachines.map(machine => ({
         ...machine,
         type: machine.type || "Machine" 
       }));
     } catch (error) {
       console.error("Error getting machines data:", error);
-      return machines.map(machine => ({
+      const filteredMachines = machines.filter(machine => 
+        machine.id !== '5' && machine.id !== '6'
+      );
+      
+      return filteredMachines.map(machine => ({
         ...machine,
         type: machine.type || "Machine"
       }));
