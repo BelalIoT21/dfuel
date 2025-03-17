@@ -28,7 +28,7 @@ export const useMachineData = (user, navigation) => {
   }, []);
 
   const loadMachineData = useCallback(async (force = false) => {
-    console.log("Loading machine data...");
+    console.log("Loading machine data, force =", force);
     
     // Don't refresh if we just did so recently (within 1 second), unless forced
     const now = new Date();
@@ -66,10 +66,12 @@ export const useMachineData = (user, navigation) => {
           console.log("Loading status for machine:", machine.id);
           // Try to get status directly from MongoDB or API with cache bypass
           const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
+          
+          // Get status, default to 'available' if not found
           let status = statusData ? statusData.status : 'available';
           
           // Make sure "out of order" is converted to "in-use" for client display
-          if (status && status.toLowerCase() === 'out of order') {
+          if (status && (status.toLowerCase() === 'out of order' || status.toLowerCase() === 'maintenance')) {
             status = 'in-use';
           }
           
@@ -111,7 +113,7 @@ export const useMachineData = (user, navigation) => {
     
     if (user) {
       console.log("User is authenticated, loading machine data");
-      // Force load on initial render
+      // Force load on initial render and login
       loadMachineData(true);
       
       // Set up auto-refresh interval (every 10 seconds)
