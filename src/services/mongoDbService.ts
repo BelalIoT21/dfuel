@@ -162,10 +162,6 @@ class MongoDbService {
       try {
         const response = await apiService.get(`machines/${machineId}/status?t=${timestamp}`);
         if (response.data) {
-          // Convert "Out of Order" to "in-use" for client display
-          if (response.data.status && response.data.status.toLowerCase() === 'out of order') {
-            response.data.status = 'in-use';
-          }
           return response.data;
         }
       } catch (error) {
@@ -180,12 +176,6 @@ class MongoDbService {
       }
       const status = await mongoMachineService.getMachineStatus(machineId);
       console.log(`MongoDB returned status for machine ${machineId}: ${status ? status.status : 'no status'}`);
-      
-      // Convert "Out of Order" to "in-use" for client display
-      if (status && status.status && status.status.toLowerCase() === 'out of order') {
-        status.status = 'in-use';
-      }
-      
       return status;
     } catch (error) {
       console.error(`Error getting status for machine ${machineId}:`, error);

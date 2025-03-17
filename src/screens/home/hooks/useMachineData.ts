@@ -70,11 +70,6 @@ export const useMachineData = (user, navigation) => {
           // Get status, default to 'available' if not found
           let status = statusData ? statusData.status : 'available';
           
-          // Make sure "out of order" is converted to "in-use" for client display
-          if (status && (status.toLowerCase() === 'out of order' || status.toLowerCase() === 'maintenance')) {
-            status = 'in-use';
-          }
-          
           console.log("Status for machine", machine.id, ":", status);
           return {
             ...machine,

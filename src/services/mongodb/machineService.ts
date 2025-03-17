@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -60,12 +59,6 @@ class MongoMachineService {
     
     try {
       const status = await this.machineStatusesCollection.findOne({ machineId });
-      
-      // Convert "Out of Order" to "in-use" for client display
-      if (status && status.status && status.status.toLowerCase() === 'out of order') {
-        status.status = 'in-use';
-      }
-      
       console.log(`Machine status for ${machineId}: ${status ? status.status : 'not found'}`);
       return status;
     } catch (error) {
@@ -107,7 +100,9 @@ class MongoMachineService {
         let dbStatus = 'Available';
         if (normalizedStatus.toLowerCase() === 'maintenance') {
           dbStatus = 'Maintenance';
-        } else if (normalizedStatus.toLowerCase() === 'in-use' || normalizedStatus.toLowerCase() === 'in use') {
+        } else if (normalizedStatus.toLowerCase() === 'in-use' || 
+                   normalizedStatus.toLowerCase() === 'in use' || 
+                   normalizedStatus.toLowerCase() === 'out of order') {
           dbStatus = 'In Use';
         }
         

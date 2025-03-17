@@ -16,8 +16,8 @@ export const getMachines = async (req: Request, res: Response) => {
       // Create a normalized status field for client-side use only
       // This doesn't modify the database schema field
       const clientStatus = (() => {
-        if (machineObj.status === 'In Use' || machineObj.status === 'Out of Order') {
-          return 'in-use'; // Map both "In Use" and "Out of Order" to "in-use" for frontend compatibility
+        if (machineObj.status === 'In Use') {
+          return 'in-use'; // Map "In Use" to "in-use" for frontend compatibility
         } else if (machineObj.status) {
           return machineObj.status.toLowerCase(); // Lowercase other statuses
         }
@@ -61,8 +61,8 @@ export const getMachineById = async (req: Request, res: Response) => {
     // Create a normalized status for client-side only
     let clientStatus = 'available'; // Default
     if (machineObj.status) {
-      if (machineObj.status === 'In Use' || machineObj.status === 'Out of Order') {
-        clientStatus = 'in-use'; // Map both "In Use" and "Out of Order" to "in-use" for frontend
+      if (machineObj.status === 'In Use') {
+        clientStatus = 'in-use'; // Map "In Use" to "in-use" for frontend
       } else {
         clientStatus = machineObj.status.toLowerCase();
       }
@@ -102,7 +102,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     // Convert status to proper format (first letter capitalized)
     if (status) {
       // Ensure we're using a valid status from the Machine model
-      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use' | 'Out of Order';
+      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
       switch(status.toLowerCase()) {
         case 'available':
           normalizedStatus = 'Available';
@@ -112,10 +112,8 @@ export const updateMachine = async (req: Request, res: Response) => {
           break;
         case 'in-use':
         case 'in use':
+        case 'out of order': // Map "out of order" to "In Use"
           normalizedStatus = 'In Use';
-          break;
-        case 'out of order':
-          normalizedStatus = 'Out of Order';
           break;
         default:
           normalizedStatus = 'Available';
@@ -154,7 +152,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
 
     // Map status values to the exact string literals as defined in the Machine model
-    let normalizedStatus: 'Available' | 'Maintenance' | 'In Use' | 'Out of Order';
+    let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
     switch(status.toLowerCase()) {
       case 'available':
         normalizedStatus = 'Available';
@@ -164,10 +162,8 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
         break;
       case 'in-use':
       case 'in use':
+      case 'out of order': // Map "out of order" to "In Use"
         normalizedStatus = 'In Use';
-        break;
-      case 'out of order':
-        normalizedStatus = 'Out of Order';
         break;
       default:
         normalizedStatus = 'Available';
@@ -181,9 +177,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     await machine.save();
 
     // Return normalized status for client
-    let clientStatus = normalizedStatus === 'Out of Order' || normalizedStatus === 'In Use' 
-      ? 'in-use' 
-      : normalizedStatus.toLowerCase();
+    let clientStatus = normalizedStatus === 'In Use' ? 'in-use' : normalizedStatus.toLowerCase();
 
     console.log(`Machine ${id} status updated successfully to: ${normalizedStatus}, client will see: ${clientStatus}`);
     res.status(200).json({ 
