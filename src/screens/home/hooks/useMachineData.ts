@@ -7,11 +7,34 @@ export const useMachineData = (user, navigation) => {
   const [machineData, setMachineData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isServerConnected, setIsServerConnected] = useState(false);
 
-  const loadMachineData = async () => {
+  // Check server connection status
+  const checkServerConnection = useCallback(async () => {
+    try {
+      console.log("Checking server connection status for machine data...");
+      const response = await fetch('http://localhost:4000/api/health');
+      const isConnected = response.ok;
+      setIsServerConnected(isConnected);
+      console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
+      return isConnected;
+    } catch (error) {
+      console.error("Error checking server connection:", error);
+      setIsServerConnected(false);
+      return false;
+    }
+  }, []);
+
+  const loadMachineData = useCallback(async () => {
     console.log("Loading machine data...");
     try {
       setLoading(true);
+      
+      // Check server connection first
+      const isConnected = await checkServerConnection();
+      if (!isConnected) {
+        console.log("Server not connected, using cached data if available");
+      }
       
       // Use machineService to get machines from MongoDB
       const machines = await machineService.getMachines();
@@ -29,7 +52,7 @@ export const useMachineData = (user, navigation) => {
       const extendedMachines = await Promise.all(machines.map(async (machine) => {
         try {
           console.log("Loading status for machine:", machine.id);
-          // Try to get status directly from MongoDB
+          // Try to get status directly from MongoDB or API
           const statusData = await mongoDbService.getMachineStatus(machine.id);
           const status = statusData ? statusData.status : 'available';
           console.log("Status for machine", machine.id, ":", status);
@@ -50,14 +73,12 @@ export const useMachineData = (user, navigation) => {
       setMachineData(extendedMachines);
     } catch (error) {
       console.error("Error loading machine data:", error);
-      setLoading(false);
-      setRefreshing(false);
     } finally {
       setLoading(false);
       setRefreshing(false);
       console.log("Machine data loading complete");
     }
-  };
+  }, [checkServerConnection]);
 
   useEffect(() => {
     console.log("useMachineData hook effect running");
@@ -72,23 +93,36 @@ export const useMachineData = (user, navigation) => {
     if (user) {
       console.log("User is authenticated, loading machine data");
       loadMachineData();
+      
+      // Set up auto-refresh interval (every 15 seconds)
+      const refreshInterval = setInterval(() => {
+        console.log("Auto-refreshing machine data...");
+        loadMachineData();
+      }, 15000);
+      
+      // Clean up interval on unmount
+      return () => {
+        console.log("Cleaning up refresh interval");
+        clearInterval(refreshInterval);
+      };
     } else {
       console.log("No user found, skipping data load");
       setLoading(false);
     }
-  }, [user, navigation]);
+  }, [user, navigation, loadMachineData]);
 
   const onRefresh = useCallback(() => {
-    console.log("Refresh triggered");
+    console.log("Manual refresh triggered");
     setRefreshing(true);
     loadMachineData();
-  }, []);
+  }, [loadMachineData]);
 
   return {
     machineData,
     loading,
     refreshing,
     onRefresh,
-    loadMachineData
+    loadMachineData,
+    isServerConnected
   };
 };

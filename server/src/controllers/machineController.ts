@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -7,7 +6,28 @@ import mongoose from 'mongoose';
 export const getMachines = async (req: Request, res: Response) => {
   try {
     const machines = await Machine.find({});
-    res.status(200).json(machines);
+    
+    // Normalize status field for all machines before sending response
+    const normalizedMachines = machines.map(machine => {
+      // Clone the document to avoid modifying the original
+      const machineObj = machine.toObject();
+      
+      // Ensure status is in the expected format for the client
+      if (machineObj.status) {
+        // Keep the original status in DB but convert for client
+        if (machineObj.status === 'Out of Order') {
+          machineObj.status = 'in-use'; // For frontend compatibility
+        } else {
+          machineObj.status = machineObj.status.toLowerCase(); // Lowercase other statuses
+        }
+      } else {
+        machineObj.status = 'available'; // Default status
+      }
+      
+      return machineObj;
+    });
+    
+    res.status(200).json(normalizedMachines);
   } catch (error) {
     console.error('Error in getMachines:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
@@ -30,8 +50,22 @@ export const getMachineById = async (req: Request, res: Response) => {
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
     }
+    
+    // Convert machine to plain object and normalize the status
+    const machineObj = machine.toObject();
+    
+    // Normalize status field for consistent client-side handling
+    if (machineObj.status) {
+      if (machineObj.status === 'Out of Order') {
+        machineObj.status = 'in-use'; // For frontend compatibility
+      } else {
+        machineObj.status = machineObj.status.toLowerCase(); // Lowercase other statuses
+      }
+    } else {
+      machineObj.status = 'available'; // Default status
+    }
 
-    res.status(200).json(machine);
+    res.status(200).json(machineObj);
   } catch (error) {
     console.error('Error in getMachineById:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
@@ -59,7 +93,27 @@ export const updateMachine = async (req: Request, res: Response) => {
     // Update the machine
     machine.name = name;
     // Convert status to proper format (first letter capitalized)
-    machine.status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    if (status) {
+      // Ensure we're using a valid status from the Machine model
+      let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
+      switch(status.toLowerCase()) {
+        case 'available':
+          normalizedStatus = 'Available';
+          break;
+        case 'maintenance':
+          normalizedStatus = 'Maintenance';
+          break;
+        case 'in-use':
+        case 'in use':
+        case 'out of order':
+          normalizedStatus = 'Out of Order';
+          break;
+        default:
+          normalizedStatus = 'Available';
+      }
+      machine.status = normalizedStatus;
+    }
+    
     await machine.save();
 
     res.status(200).json({ message: 'Machine updated successfully', machine });
