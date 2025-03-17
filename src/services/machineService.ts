@@ -13,10 +13,9 @@ export class MachineService {
         return false;
       }
       
-      // Check if it's a safety cabinet - always available, no status updates needed
-      const isSafetyCabinet = machineId === "5";
-      if (isSafetyCabinet) {
-        console.log("Safety Cabinet is always available, not updating status");
+      // Check if machine ID is outside the range we want to fetch (5 or 6)
+      if (machineId === "5" || machineId === "6") {
+        console.log(`Skipping update for machine ${machineId} as it's not in the target range (1-4)`);
         return true;
       }
       
@@ -52,9 +51,9 @@ export class MachineService {
         return 'available';
       }
       
-      // Check if it's a safety cabinet - always available
-      if (machineId === "5") {
-        console.log("Safety Cabinet is always available");
+      // Skip machines 5 and 6
+      if (machineId === "5" || machineId === "6") {
+        console.log(`Skipping status fetch for machine ${machineId} as it's not in the target range (1-4)`);
         return 'available';
       }
 
@@ -85,6 +84,12 @@ export class MachineService {
       
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineById");
+        return null;
+      }
+      
+      // Skip machines 5 and 6
+      if (machineId === "5" || machineId === "6") {
+        console.log(`Skipping machine fetch for machine ${machineId} as it's not in the target range (1-4)`);
         return null;
       }
       
@@ -128,27 +133,39 @@ export class MachineService {
       try {
         const response = await apiService.get('machines');
         if (response.data && Array.isArray(response.data)) {
-          return response.data.map(machine => ({
-            ...machine,
-            type: machine.type || "Machine",
-            status: machine.status?.toLowerCase() || 'available'
-          }));
+          // Filter to only include machines with IDs 1-4
+          return response.data
+            .filter(machine => {
+              const machineId = machine.id || machine._id;
+              const includeThisMachine = machineId === "1" || machineId === "2" || 
+                                        machineId === "3" || machineId === "4";
+              return includeThisMachine;
+            })
+            .map(machine => ({
+              ...machine,
+              type: machine.type || "Machine",
+              status: machine.status?.toLowerCase() || 'available'
+            }));
         }
       } catch (error) {
         console.error("API error getting machines:", error);
       }
       
-      // Fallback to static machines data
-      return machines.map(machine => ({
-        ...machine,
-        type: machine.type || "Machine" 
-      }));
+      // Fallback to static machines data, filtered to only include machines 1-4
+      return machines
+        .filter(machine => ["1", "2", "3", "4"].includes(machine.id))
+        .map(machine => ({
+          ...machine,
+          type: machine.type || "Machine" 
+        }));
     } catch (error) {
       console.error("Error getting machines data:", error);
-      return machines.map(machine => ({
-        ...machine,
-        type: machine.type || "Machine"
-      }));
+      return machines
+        .filter(machine => ["1", "2", "3", "4"].includes(machine.id))
+        .map(machine => ({
+          ...machine,
+          type: machine.type || "Machine"
+        }));
     }
   }
 }
