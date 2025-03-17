@@ -21,7 +21,7 @@ export const ensureAdminUser = async () => {
         email: adminEmail,
         password: adminPassword, // This will be hashed by the pre-save hook
         isAdmin: true,
-        certifications: [],
+        certifications: ['1', '2', '3', '4', '5', '6'],
       });
       
       await newAdmin.save();
