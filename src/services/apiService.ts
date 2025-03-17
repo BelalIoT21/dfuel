@@ -217,7 +217,7 @@ class ApiService {
 
   async clearCertifications(userId: string) {
     console.log(`Clearing all certifications for user ${userId}`);
-    return this.delete<{ success: boolean }>(`certifications/clear/${userId}`);
+    return this.delete<{ success: boolean }>(`certifications/user/${userId}/clear`);
   }
   
   async getUserCertifications(userId: string) {

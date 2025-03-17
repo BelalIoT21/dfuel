@@ -35,8 +35,8 @@ export class CertificationService {
       
       console.log("API certification response:", response);
       
-      // Check for success response
-      if (response.data?.success) {
+      // Handle both formats of success response
+      if (response.data?.success || response.status === 200 || response.status === 201) {
         console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
       }
@@ -70,8 +70,8 @@ export class CertificationService {
       
       console.log("API remove certification response:", response);
       
-      // Check for success response
-      if (response.data?.success) {
+      // Handle both formats of success response
+      if (response.data?.success || response.status === 200) {
         console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
       }
@@ -99,11 +99,13 @@ export class CertificationService {
       
       console.log(`Making API call to clear certifications for userId=${stringUserId}`);
 
-      // Make the API call
-      const response = await apiService.delete(`certifications/clear/${stringUserId}`);
+      // Use the updated route format
+      const response = await apiService.delete(`certifications/user/${stringUserId}/clear`);
       
       console.log("API clear certifications response:", response);
-      if (response.data?.success) {
+      
+      // Handle both formats of success response
+      if (response.data?.success || response.status === 200) {
         console.log(`API clear certifications succeeded for user ${userId}`);
         return true;
       }

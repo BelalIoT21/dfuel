@@ -18,7 +18,7 @@ router.post('/', protect, addCertification);
 router.delete('/:userId/:machineId', protect, removeCertification);
 
 // Clear all certifications for a user
-router.delete('/clear/:userId', protect, clearUserCertifications);
+router.delete('/user/:userId/clear', protect, clearUserCertifications);
 
 // Get user certifications
 router.get('/user/:userId', protect, getUserCertifications);
