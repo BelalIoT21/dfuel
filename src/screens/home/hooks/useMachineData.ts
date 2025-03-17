@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
@@ -46,9 +47,10 @@ export const useMachineData = (user, navigation) => {
         console.log("Server not connected, using cached data if available");
       }
       
-      // Bypass cache by adding timestamp to request
+      // Get machines from MongoDB service directly
+      console.log("Fetching machines directly from MongoDB or API");
       const timestamp = new Date().getTime();
-      const machines = await machineService.getMachines(timestamp);
+      const machines = await mongoDbService.getMachines();
       
       if (!machines || machines.length === 0) {
         console.error("No machines data available from MongoDB");
@@ -58,33 +60,7 @@ export const useMachineData = (user, navigation) => {
       }
       
       console.log("Fetched machines data:", machines.length, "items");
-      
-      // Load status for each machine from MongoDB, also bypassing cache
-      const extendedMachines = await Promise.all(machines.map(async (machine) => {
-        try {
-          console.log("Loading status for machine:", machine.id);
-          // Try to get status directly from MongoDB or API with cache bypass
-          const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
-          
-          // Get status, default to 'available' if not found
-          let status = statusData ? statusData.status : 'available';
-          
-          console.log("Status for machine", machine.id, ":", status);
-          return {
-            ...machine,
-            status: status || 'available'
-          };
-        } catch (error) {
-          console.error(`Error loading status for machine ${machine.id}:`, error);
-          return {
-            ...machine,
-            status: 'available'
-          };
-        }
-      }));
-      
-      console.log("Extended machines data:", extendedMachines.length, "items");
-      setMachineData(extendedMachines);
+      setMachineData(machines);
       setLastRefreshTime(now);
     } catch (error) {
       console.error("Error loading machine data:", error);
