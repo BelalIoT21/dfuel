@@ -99,7 +99,7 @@ export class CertificationDatabaseService extends BaseService {
       
       // Try API first
       console.log(`Calling API to remove certification: userId=${userId}, machineId=${machineId}`);
-      const response = await apiService.removeCertification(userId, machineId);
+      const response = await apiService.delete(`certifications/${userId}/${machineId}`);
       
       console.log("Remove certification response:", response);
       
