@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -12,16 +13,18 @@ export const getMachines = async (req: Request, res: Response) => {
       // Clone the document to avoid modifying the original
       const machineObj = machine.toObject();
       
-      // Ensure status is in the expected format for the client
+      // Create a separate status field for client-side display
       if (machineObj.status) {
-        // Keep the original status in DB but convert for client
+        // Map database status to client status
         if (machineObj.status === 'Out of Order') {
-          machineObj.status = 'in-use'; // For frontend compatibility
+          machineObj.clientStatus = 'in-use';
+        } else if (machineObj.status === 'In Use') {
+          machineObj.clientStatus = 'in-use';
         } else {
-          machineObj.status = machineObj.status.toLowerCase(); // Lowercase other statuses
+          machineObj.clientStatus = machineObj.status.toLowerCase();
         }
       } else {
-        machineObj.status = 'available'; // Default status
+        machineObj.clientStatus = 'available';
       }
       
       return machineObj;
@@ -54,15 +57,17 @@ export const getMachineById = async (req: Request, res: Response) => {
     // Convert machine to plain object and normalize the status
     const machineObj = machine.toObject();
     
-    // Normalize status field for consistent client-side handling
+    // Create a separate status field for client-side display
     if (machineObj.status) {
       if (machineObj.status === 'Out of Order') {
-        machineObj.status = 'in-use'; // For frontend compatibility
+        machineObj.clientStatus = 'in-use';
+      } else if (machineObj.status === 'In Use') {
+        machineObj.clientStatus = 'in-use';
       } else {
-        machineObj.status = machineObj.status.toLowerCase(); // Lowercase other statuses
+        machineObj.clientStatus = machineObj.status.toLowerCase();
       }
     } else {
-      machineObj.status = 'available'; // Default status
+      machineObj.clientStatus = 'available';
     }
 
     res.status(200).json(machineObj);
@@ -95,7 +100,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     // Convert status to proper format (first letter capitalized)
     if (status) {
       // Ensure we're using a valid status from the Machine model
-      let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
+      let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order' | 'In Use';
       switch(status.toLowerCase()) {
         case 'available':
           normalizedStatus = 'Available';
@@ -105,6 +110,8 @@ export const updateMachine = async (req: Request, res: Response) => {
           break;
         case 'in-use':
         case 'in use':
+          normalizedStatus = 'In Use';
+          break;
         case 'out of order':
           normalizedStatus = 'Out of Order';
           break;
@@ -145,7 +152,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     }
 
     // Map status values to the exact string literals as defined in the Machine model
-    let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
+    let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order' | 'In Use';
     switch(status.toLowerCase()) {
       case 'available':
         normalizedStatus = 'Available';
@@ -155,6 +162,8 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
         break;
       case 'in-use':
       case 'in use':
+        normalizedStatus = 'In Use';  // Changed from 'Out of Order' to 'In Use'
+        break;
       case 'out of order':
         normalizedStatus = 'Out of Order';
         break;

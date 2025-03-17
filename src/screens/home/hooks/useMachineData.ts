@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
@@ -48,29 +47,26 @@ export const useMachineData = (user, navigation) => {
       
       console.log("Fetched machines data:", machines.length, "items");
       
-      // Load status for each machine from MongoDB
-      const extendedMachines = await Promise.all(machines.map(async (machine) => {
-        try {
-          console.log("Loading status for machine:", machine.id);
-          // Try to get status directly from MongoDB or API
-          const statusData = await mongoDbService.getMachineStatus(machine.id);
-          const status = statusData ? statusData.status : 'available';
-          console.log("Status for machine", machine.id, ":", status);
+      // Process machine data - Use clientStatus if available
+      const processedMachines = machines.map(machine => {
+        // Use clientStatus if available from the API response
+        if (machine.clientStatus) {
           return {
             ...machine,
-            status: status || 'available'
-          };
-        } catch (error) {
-          console.error(`Error loading status for machine ${machine.id}:`, error);
-          return {
-            ...machine,
-            status: 'available'
+            status: machine.clientStatus
           };
         }
-      }));
+        
+        // Otherwise, convert status manually
+        const status = machine.status?.toLowerCase() || 'available';
+        return {
+          ...machine,
+          status: status === 'out of order' || status === 'in use' ? 'in-use' : status
+        };
+      });
       
-      console.log("Extended machines data:", extendedMachines.length, "items");
-      setMachineData(extendedMachines);
+      console.log("Processed machines data:", processedMachines.length, "items");
+      setMachineData(processedMachines);
     } catch (error) {
       console.error("Error loading machine data:", error);
     } finally {
