@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -40,9 +39,14 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const loadCertifications = async () => {
         const userId = getUserId();
         try {
+          console.log("Loading certifications for user ID:", userId);
+          
           // Get fresh certifications from MongoDB
           const certs = await certificationService.getUserCertifications(userId);
+          console.log("Received certifications from service:", certs);
+          
           if (certs && certs.length > 0) {
+            // Make sure all certifications are converted to strings
             setUserCertifications(certs.map(c => c.toString()));
           } else {
             // Fall back to user object
@@ -223,7 +227,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           <h4 className="text-sm font-medium mb-2">Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
             {CERTIFICATIONS.map(certification => {
-              const isCertified = hasCertification(certification.id);
+              const isCertified = userCertifications.includes(certification.id);
               return (
                 <div key={certification.id} className="flex justify-between items-center border p-2 rounded">
                   <span>{certification.name}</span>
@@ -262,7 +266,34 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                 variant="outline"
                 size="sm"
                 className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                onClick={handleClearAllCertifications}
+                onClick={() => {
+                  setIsClearing(true);
+                  certificationDatabaseService.clearUserCertifications(getUserId())
+                    .then(success => {
+                      if (success) {
+                        setUserCertifications([]);
+                        toast({
+                          title: "Certifications Cleared",
+                          description: "All certifications have been removed from this user."
+                        });
+                        onCertificationAdded();
+                      } else {
+                        toast({
+                          title: "Error",
+                          description: "Failed to clear certifications."
+                        });
+                      }
+                      setIsClearing(false);
+                    })
+                    .catch(error => {
+                      console.error("Error clearing certifications:", error);
+                      toast({
+                        title: "Error",
+                        description: "An unexpected error occurred while clearing certifications."
+                      });
+                      setIsClearing(false);
+                    });
+                }}
                 disabled={isClearing}
               >
                 {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

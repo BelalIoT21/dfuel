@@ -10,7 +10,14 @@ export class CertificationDatabaseService extends BaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationDatabaseService.addCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      const response = await apiService.post('certifications', { userId, machineId });
+      // Ensure IDs are strings
+      const stringUserId = userId.toString();
+      const stringMachineId = machineId.toString();
+      
+      const response = await apiService.post('certifications', { 
+        userId: stringUserId, 
+        machineId: stringMachineId 
+      });
       
       // Both newly added and already had it are considered success
       if (response.data?.success) {
@@ -46,7 +53,11 @@ export class CertificationDatabaseService extends BaseService {
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);
     try {
-      const response = await apiService.delete(`certifications/${userId}/${machineId}`);
+      // Ensure IDs are strings
+      const stringUserId = userId.toString();
+      const stringMachineId = machineId.toString();
+      
+      const response = await apiService.delete(`certifications/${stringUserId}/${stringMachineId}`);
       
       // Both removed and didn't have it are considered success
       if (response.data?.success) {
@@ -81,9 +92,13 @@ export class CertificationDatabaseService extends BaseService {
   
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      const response = await apiService.get(`certifications/user/${userId}`);
+      // Ensure ID is string
+      const stringUserId = userId.toString();
+      
+      const response = await apiService.get(`certifications/user/${stringUserId}`);
       if (response.data && Array.isArray(response.data)) {
-        return response.data;
+        // Ensure all certification IDs are strings
+        return response.data.map(cert => cert.toString());
       }
       
       if (response.error) {

@@ -17,7 +17,7 @@ interface IUser extends mongoose.Document {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
-  certificationDates?: {
+  certificationDates: {
     [machineId: string]: Date;
   };
 }

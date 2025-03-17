@@ -37,8 +37,15 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
       return;
     }
     
-    // Add the certification
+    // Add the certification and store the current date
     user.certifications.push(machineId);
+    
+    // Record certification date if certificationDates exists
+    if (!user.certificationDates) {
+      user.certificationDates = {};
+    }
+    user.certificationDates[machineId] = new Date();
+    
     await user.save();
     
     res.status(200).json({ 
@@ -80,8 +87,9 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
       return;
     }
     
-    // If user doesn't have this certification, return success
-    if (!user.certifications.includes(machineId)) {
+    // Check if user has this certification
+    const certIndex = user.certifications.indexOf(machineId);
+    if (certIndex === -1) {
       res.status(200).json({ 
         success: true, 
         message: 'User does not have this certification' 
@@ -89,8 +97,14 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
       return;
     }
     
-    // Filter out the certification
-    user.certifications = user.certifications.filter(id => id !== machineId);
+    // Remove the certification
+    user.certifications.splice(certIndex, 1);
+    
+    // Remove certification date if exists
+    if (user.certificationDates && user.certificationDates[machineId]) {
+      delete user.certificationDates[machineId];
+    }
+    
     await user.save();
     
     res.status(200).json({ 

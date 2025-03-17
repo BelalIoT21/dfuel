@@ -20,9 +20,13 @@ export class CertificationService {
         return false;
       }
 
+      // Ensure IDs are strings
+      const stringUserId = userId.toString();
+      const stringCertId = certificationId.toString();
+
       const response = await apiService.post('certifications', {
-        userId,
-        machineId: certificationId
+        userId: stringUserId,
+        machineId: stringCertId
       });
       
       console.log("API certification response:", response);
@@ -50,7 +54,11 @@ export class CertificationService {
         return false;
       }
 
-      const response = await apiService.delete(`certifications/${userId}/${certificationId}`);
+      // Ensure IDs are strings
+      const stringUserId = userId.toString();
+      const stringCertId = certificationId.toString();
+
+      const response = await apiService.delete(`certifications/${stringUserId}/${stringCertId}`);
       
       console.log("API remove certification response:", response);
       
