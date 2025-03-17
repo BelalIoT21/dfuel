@@ -31,16 +31,6 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Special handling for Safety Cabinet (ID: 5)
-        if (machineId === "5") {
-          machineData.type = "Safety Cabinet";
-        }
-        
-        // Special handling for Safety Course (ID: 6)
-        if (machineId === "6") {
-          machineData.type = "Safety Course";
-        }
-        
         // Special handling for X1 E Carbon 3D Printer (ID: 3)
         if (machineId === "3") {
           machineData.type = "3D Printer";
@@ -77,7 +67,7 @@ export const useMachineDetails = (machineId, user, navigation) => {
         }
         
         // Check if user has completed Machine Safety Course
-        const MACHINE_SAFETY_ID = "6"; // Machine Safety Course ID
+        const MACHINE_SAFETY_ID = "1"; // Machine Safety Course is now Machine 1
         try {
           const hasSafetyCert = await certificationService.checkCertification(user.id, MACHINE_SAFETY_ID);
           console.log("User safety certification check result:", hasSafetyCert);

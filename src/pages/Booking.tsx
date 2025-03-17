@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,11 +30,6 @@ const BookingPage = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
 
   useEffect(() => {
-    // Ensure machines are in MongoDB (for server versions)
-    machineService.ensureMachinesInMongoDB().catch(err => {
-      console.error("Error ensuring machines in MongoDB:", err);
-    });
-
     async function loadMachine() {
       try {
         if (!id) return;
@@ -245,9 +239,9 @@ const BookingPage = () => {
       
       <Card className="shadow-lg border-purple-100">
         <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
-          <CardTitle className="text-2xl text-purple-800">{machine.name} Booking</CardTitle>
+          <CardTitle className="text-2xl text-purple-800">{machine?.name} Booking</CardTitle>
           <CardDescription>
-            Select a date and time to book {machine.name}
+            Select a date and time to book {machine?.name}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">

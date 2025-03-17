@@ -12,7 +12,7 @@ const MachineDescription = ({ description }: MachineDescriptionProps) => {
     <Card style={styles.card}>
       <Card.Content>
         <Title>Description</Title>
-        <Paragraph>{description}</Paragraph>
+        <Paragraph>{description || 'No description available for this machine.'}</Paragraph>
       </Card.Content>
     </Card>
   );

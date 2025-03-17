@@ -32,11 +32,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
 
   // Handle special machine types
   let machineType = machine.type;
-  if (machine.id === "5") {
-    machineType = "Safety Cabinet";
-  } else if (machine.id === "6") {
-    machineType = "Safety Course";
-  } else if (machine.id === "3") {
+  if (machine.id === "3") {
     machineType = "X1 E Carbon 3D Printer";
   } else if (!machineType || machineType.trim() === '') {
     machineType = "Machine";
