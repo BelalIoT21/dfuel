@@ -30,4 +30,12 @@ export interface MachineStatus {
   note?: string;
 }
 
+export interface MongoUser {
+  id: string;
+  name: string;
+  email: string;
+  certifications: string[];
+  bookings?: any[];
+}
+
 export type UserWithoutSensitiveInfo = Omit<User, 'password' | 'resetCode'>;

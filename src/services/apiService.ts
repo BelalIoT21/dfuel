@@ -207,11 +207,20 @@ class ApiService {
     );
   }
   
-  async removeCertification(userId: string, machineId: string) {
-    console.log(`Removing certification for user ${userId}, machine ${machineId}`);
-    // Use query parameters instead of a body for DELETE requests
+  // Updated removeCertification with proper endpoint
+  async removeCertification(userId: string, certificationId: string) {
+    console.log(`API: Removing certification ${certificationId} for user ${userId}`);
     return this.request<{ success: boolean }>(
-      `certifications?userId=${userId}&machineId=${machineId}`, 
+      `certifications/${userId}/${certificationId}`, 
+      'DELETE'
+    );
+  }
+
+  // Add clearCertifications method
+  async clearCertifications(userId: string) {
+    console.log(`Clearing all certifications for user ${userId}`);
+    return this.request<{ success: boolean }>(
+      `certifications/clear/${userId}`,
       'DELETE'
     );
   }

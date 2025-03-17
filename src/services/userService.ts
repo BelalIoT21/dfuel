@@ -60,6 +60,7 @@ export class UserService {
     
     return success;
   }
+
   
   // Request password reset
   async requestPasswordReset(email: string): Promise<boolean> {
