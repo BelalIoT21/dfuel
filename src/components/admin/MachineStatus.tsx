@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -25,8 +25,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const refreshButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Check server connection status once on mount
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -43,6 +43,11 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       } catch (error) {
         console.error("Error checking server connection:", error);
         setIsServerConnected(false);
+      }
+      
+      if (refreshButtonRef.current) {
+        console.log("Auto-clicking refresh button on login");
+        refreshButtonRef.current.click();
       }
     };
     
@@ -66,7 +71,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const refreshMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      // Check server connection
       try {
         const response = await fetch('http://localhost:4000/api/health');
         setIsServerConnected(response.ok);
@@ -75,11 +79,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         setIsServerConnected(false);
       }
       
-      // Get fresh data for each machine directly from the API
       const updatedMachineData = await Promise.all(
         machineData.map(async (machine) => {
           try {
-            // Use direct fetch instead of service to bypass any caching
             const machineId = machine.id || machine._id;
             const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
             
@@ -122,15 +124,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       const machineId = selectedMachine.id || selectedMachine._id;
       
-      // Get auth token from localStorage
       const token = localStorage.getItem('token');
       
-      // Use direct fetch to update machine status
       const response = await fetch(`http://localhost:4000/api/machines/${machineId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Include the auth token
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           status: selectedStatus,
@@ -142,7 +142,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         const result = await response.json();
         console.log('Update result:', result);
         
-        // Update the machine data in state
         setMachineData(machineData.map(machine => 
           (machine.id === machineId || machine._id === machineId)
             ? { 
@@ -221,6 +220,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 size="sm" 
                 onClick={refreshMachineStatuses}
                 disabled={isRefreshing}
+                ref={refreshButtonRef}
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
                 Refresh
