@@ -31,19 +31,14 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     const checkServerStatus = async () => {
       try {
         console.log("Checking server connection status...");
-        const response = await apiService.checkHealth();
+        const response = await fetch('http://localhost:4000/api/health');
         
-        // Check both response.data and status to determine if connected
-        const isConnected = response.data && response.status === 200;
-        console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
-        
-        setIsServerConnected(isConnected);
-        
-        if (isConnected) {
-          toast({
-            title: "Server Connected",
-            description: "Successfully connected to the backend server"
-          });
+        if (response.ok) {
+          console.log("Server connected successfully!");
+          setIsServerConnected(true);
+        } else {
+          console.log("Server responded with error:", response.status);
+          setIsServerConnected(false);
         }
       } catch (error) {
         console.error("Error checking server connection:", error);
@@ -52,7 +47,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-    const intervalId = setInterval(checkServerStatus, 10000); // Check more frequently (10 seconds)
+    const intervalId = setInterval(checkServerStatus, 5000); // Check every 5 seconds
     
     return () => clearInterval(intervalId);
   }, [toast]);
@@ -74,24 +69,34 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const refreshMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      const response = await apiService.checkHealth();
-      // Check both response.data and status for connection
-      const isConnected = response.data && response.status === 200;
-      setIsServerConnected(isConnected);
+      // Check server connection
+      try {
+        const response = await fetch('http://localhost:4000/api/health');
+        setIsServerConnected(response.ok);
+      } catch (error) {
+        console.error("Error checking server connection:", error);
+        setIsServerConnected(false);
+      }
       
-      // Get fresh data for each machine
+      // Get fresh data for each machine directly from the API
       const updatedMachineData = await Promise.all(
         machineData.map(async (machine) => {
           try {
-            const status = await machineService.getMachineStatus(machine.id || machine._id);
-            const maintenanceNote = await machineService.getMachineMaintenanceNote(machine.id || machine._id);
-            return {
-              ...machine,
-              status: status || machine.status || 'available',
-              maintenanceNote: maintenanceNote || machine.maintenanceNote
-            };
+            // Use direct fetch instead of service to bypass any caching
+            const machineId = machine.id || machine._id;
+            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
+            
+            if (response.ok) {
+              const machineData = await response.json();
+              return {
+                ...machine,
+                status: machineData.status?.toLowerCase() || 'available',
+                maintenanceNote: machineData.maintenanceNote || ''
+              };
+            }
+            return machine;
           } catch (error) {
-            console.error(`Error refreshing status for machine ${machine.id || machine._id}:`, error);
+            console.error(`Error refreshing machine ${machine.id || machine._id}:`, error);
             return machine;
           }
         })
@@ -124,19 +129,31 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       console.log(`Updating machine ${selectedMachine.id || selectedMachine._id} status to ${selectedStatus}`);
       
       const machineId = selectedMachine.id || selectedMachine._id;
-      const success = await machineService.updateMachineStatus(
-        machineId, 
-        selectedStatus,
-        maintenanceNote
-      );
       
-      if (success) {
-        console.log(`Successfully updated machine ${machineId} status`);
+      // Use direct fetch to update machine status
+      const response = await fetch(`http://localhost:4000/api/machines/${machineId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: selectedStatus,
+          maintenanceNote: maintenanceNote
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Update result:', result);
         
         // Update the machine data in state
         setMachineData(machineData.map(machine => 
           (machine.id === machineId || machine._id === machineId)
-            ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
+            ? { 
+                ...machine, 
+                status: selectedStatus, 
+                maintenanceNote: maintenanceNote 
+              } 
             : machine
         ));
         
@@ -147,20 +164,23 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         
         setIsMachineStatusDialogOpen(false);
       } else {
-        console.error(`Failed to update machine ${machineId} status`);
-        setUpdateError("Failed to update machine status. Please try again.");
+        const errorData = await response.json();
+        console.error('Update failed:', errorData);
+        setUpdateError(`Failed to update machine status: ${errorData.message || 'Unknown error'}`);
+        
         toast({
           title: "Update Failed",
-          description: "Failed to update machine status. Please try again.",
+          description: "Server reported an error while updating machine status",
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Error updating machine status:", error);
-      setUpdateError("An error occurred while updating the machine status");
+      setUpdateError("Connection error while updating the machine status");
+      
       toast({
         title: "Error",
-        description: "An error occurred while updating the machine status",
+        description: "Connection error occurred while updating machine status",
         variant: "destructive"
       });
     } finally {

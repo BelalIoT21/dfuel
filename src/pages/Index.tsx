@@ -12,7 +12,6 @@ import { Check, WifiOff } from 'lucide-react';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [dbUserCount, setDbUserCount] = useState<number | null>(null);
   const { user, login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -24,14 +23,8 @@ const Index = () => {
         const response = await fetch('http://localhost:4000/api/health');
         
         if (response.ok) {
-          const data = await response.json();
-          console.log("Server health check:", data);
+          console.log("Server health check successful");
           setServerStatus('connected');
-          
-          // Set MongoDB user count if available
-          if (data.mongodb && typeof data.mongodb.userCount === 'number') {
-            setDbUserCount(data.mongodb.userCount);
-          }
           
           toast({
             title: 'Server Connected',
@@ -124,11 +117,6 @@ const Index = () => {
                   Server: Disconnected
                 </>
               )}
-            </div>
-          )}
-          {dbUserCount !== null && (
-            <div className="mt-1 text-sm text-blue-600">
-              MongoDB users: {dbUserCount}
             </div>
           )}
         </div>

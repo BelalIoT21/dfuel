@@ -1,22 +1,11 @@
 
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import User from '../models/User';
 
 // Health check controller
 export const healthCheck = async (req: Request, res: Response) => {
   try {
     const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    
-    // Get user count if connected to MongoDB
-    let userCount = null;
-    if (mongoStatus === 'connected') {
-      try {
-        userCount = await User.countDocuments({});
-      } catch (err) {
-        console.error('Error counting users:', err);
-      }
-    }
     
     // Add CORS headers explicitly for health check
     res.header('Access-Control-Allow-Origin', '*');
@@ -31,8 +20,7 @@ export const healthCheck = async (req: Request, res: Response) => {
         status: mongoStatus,
         host: mongoose.connection.host || 'not connected',
         database: mongoose.connection.name || 'not connected',
-        readyState: mongoose.connection.readyState,
-        userCount: userCount
+        readyState: mongoose.connection.readyState
       },
       server: {
         port: process.env.PORT || 4000,

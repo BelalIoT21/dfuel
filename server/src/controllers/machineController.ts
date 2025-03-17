@@ -21,12 +21,9 @@ export const getMachineById = async (req: Request, res: Response) => {
 
     // Handle string IDs properly
     let machine;
-    try {
-      // Try to convert to ObjectId first
-      const objectId = new mongoose.Types.ObjectId(id);
-      machine = await Machine.findById(objectId);
-    } catch (error) {
-      // If that fails, try string ID lookup
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
       machine = await Machine.findOne({ _id: id });
     }
 
@@ -49,12 +46,9 @@ export const updateMachine = async (req: Request, res: Response) => {
 
     // Handle string IDs properly
     let machine;
-    try {
-      // Try to convert to ObjectId first
-      const objectId = new mongoose.Types.ObjectId(id);
-      machine = await Machine.findById(objectId);
-    } catch (error) {
-      // If that fails, try string ID lookup
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
       machine = await Machine.findOne({ _id: id });
     }
 
@@ -83,28 +77,21 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
 
     console.log(`Updating machine ${id} status to: ${status}, note: ${maintenanceNote}`);
 
-    // Handle string IDs properly
+    // Find machine with proper ID handling
     let machine;
-    try {
-      // Try to convert to ObjectId first if it's a valid format
-      if (mongoose.Types.ObjectId.isValid(id)) {
-        const objectId = new mongoose.Types.ObjectId(id);
-        machine = await Machine.findById(objectId);
-      } else {
-        // If not a valid ObjectId format, try string ID lookup
-        machine = await Machine.findOne({ _id: id });
-      }
-    } catch (error) {
-      console.error('Error finding machine:', error);
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
       machine = await Machine.findOne({ _id: id });
     }
 
     if (!machine) {
+      console.error(`Machine not found with ID: ${id}`);
       return res.status(404).json({ message: 'Machine not found' });
     }
 
     // Map status values to proper format for MongoDB
-    let normalizedStatus: 'Available' | 'Maintenance' | 'Out of Order';
+    let normalizedStatus: string;
     switch(status.toLowerCase()) {
       case 'available':
         normalizedStatus = 'Available';
@@ -114,7 +101,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
         break;
       case 'in-use':
       case 'in use':
-        normalizedStatus = 'Out of Order'; // Using "Out of Order" for "In Use" as per model
+        normalizedStatus = 'In Use';
         break;
       default:
         normalizedStatus = 'Available';
@@ -122,10 +109,12 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
 
     // Update the machine status
     machine.status = normalizedStatus;
-    machine.maintenanceNote = maintenanceNote;
+    machine.maintenanceNote = maintenanceNote || '';
+    
+    console.log(`Saving machine with status: ${normalizedStatus}`);
     await machine.save();
 
-    console.log(`Machine ${id} status updated to: ${normalizedStatus}`);
+    console.log(`Machine ${id} status updated successfully to: ${normalizedStatus}`);
     res.status(200).json({ 
       message: 'Machine status updated successfully', 
       machine,
@@ -144,12 +133,9 @@ export const deleteMachine = async (req: Request, res: Response) => {
 
     // Handle string IDs properly
     let machine;
-    try {
-      // Try to convert to ObjectId first
-      const objectId = new mongoose.Types.ObjectId(id);
-      machine = await Machine.findById(objectId);
-    } catch (error) {
-      // If that fails, try string ID lookup
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
       machine = await Machine.findOne({ _id: id });
     }
 
