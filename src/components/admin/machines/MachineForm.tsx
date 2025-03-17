@@ -125,7 +125,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 <SelectContent>
                   <SelectItem value="Available">Available</SelectItem>
                   <SelectItem value="Maintenance">Maintenance</SelectItem>
-                  <SelectItem value="Out of Order">Out of Order</SelectItem>
+                  <SelectItem value="In Use">In Use</SelectItem>
                 </SelectContent>
               </Select>
             </div>
