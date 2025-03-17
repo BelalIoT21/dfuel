@@ -123,7 +123,7 @@ export class CertificationDatabaseService extends BaseService {
         const certifications = response.data.map(cert => {
           if (typeof cert === 'object' && cert !== null) {
             // If it's an object, extract the ID or convert to string
-            return cert.toString ? cert.toString() : String(cert);
+            return cert._id ? cert._id.toString() : cert.id ? cert.id.toString() : cert.toString();
           }
           return cert.toString ? cert.toString() : String(cert);
         });
@@ -164,6 +164,7 @@ export class CertificationDatabaseService extends BaseService {
       const stringUserId = userId.toString();
       
       console.log(`Clearing all certifications for user ${stringUserId}`);
+      console.log(`API endpoint: certifications/clear/${stringUserId}`);
       
       const response = await apiService.delete(`certifications/clear/${stringUserId}`);
       console.log("Clear certifications response:", response);

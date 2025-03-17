@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -41,6 +40,9 @@ class ApiService {
       
       if (authRequired && this.token) {
         headers['Authorization'] = `Bearer ${this.token}`;
+      } else if (authRequired && token) {
+        // Fallback to token from localStorage if this.token is not set
+        headers['Authorization'] = `Bearer ${token}`;
       }
       
       const options: RequestInit = {
@@ -49,7 +51,7 @@ class ApiService {
         credentials: 'include',
       };
       
-      if (data && (method === 'POST' || method === 'PUT')) {
+      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
         options.body = JSON.stringify(data);
       }
       
@@ -129,7 +131,6 @@ class ApiService {
     }
   }
   
-  // Implement GET, POST, PUT, DELETE methods for convenience
   async get<T>(endpoint: string, authRequired: boolean = true): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, 'GET', undefined, authRequired);
   }
@@ -143,10 +144,12 @@ class ApiService {
   }
   
   async delete<T>(endpoint: string, data?: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, 'DELETE', data, authRequired);
+    if (data) {
+      return this.request<T>(endpoint, 'DELETE', data, authRequired);
+    }
+    return this.request<T>(endpoint, 'DELETE', undefined, authRequired);
   }
   
-  // Auth endpoints
   async login(email: string, password: string) {
     console.log('Attempting login via API for:', email);
     return this.post<{ token: string, user: any }>(
@@ -165,7 +168,6 @@ class ApiService {
     );
   }
   
-  // Health check endpoint
   async checkHealth() {
     return this.get<{ status: string, message: string }>(
       'health',
@@ -173,7 +175,6 @@ class ApiService {
     );
   }
   
-  // User endpoints
   async getCurrentUser() {
     return this.get<any>('users/me');
   }
@@ -189,7 +190,6 @@ class ApiService {
     );
   }
   
-  // Additional methods to support databaseService
   async getUserByEmail(email: string) {
     return this.get<any>(`users/email/${email}`);
   }
@@ -202,7 +202,6 @@ class ApiService {
     return this.put<{ success: boolean }>(`users/${userId}/profile`, updates);
   }
   
-  // Certification endpoints
   async addCertification(userId: string, certificationId: string) {
     console.log(`Adding certification for user ${userId}, machine ${certificationId}`);
     return this.post<{ success: boolean }>(
@@ -229,7 +228,6 @@ class ApiService {
     return this.get<boolean>(`certifications/check/${userId}/${machineId}`);
   }
   
-  // Booking endpoints
   async getAllBookings() {
     return this.get<any[]>('bookings/all');
   }
@@ -276,7 +274,6 @@ class ApiService {
     return this.put<any>(`bookings/${bookingId}/cancel`);
   }
   
-  // Admin endpoints
   async updateAdminCredentials(email: string, password: string) {
     return this.put<void>(
       'admin/credentials', 
@@ -284,7 +281,6 @@ class ApiService {
     );
   }
   
-  // Dashboard endpoints
   async getAllUsers() {
     return this.get<any[]>('users');
   }
@@ -293,7 +289,6 @@ class ApiService {
     return this.get<{ status: string, note?: string }>(`machines/${machineId}/status`);
   }
   
-  // Safety certification management
   async addSafetyCertification(userId: string) {
     return this.post<{ success: boolean }>(
       'certifications/safety', 
@@ -336,5 +331,4 @@ class ApiService {
   }
 }
 
-// Create and export a singleton instance
 export const apiService = new ApiService();

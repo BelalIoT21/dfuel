@@ -136,11 +136,13 @@ export class CertificationService {
       console.log("API get certifications raw response:", response);
       
       if (response.data && Array.isArray(response.data)) {
-        // Make sure all certification IDs are strings
+        // Make sure all certification IDs are strings and handle objects properly
         const certifications = response.data.map(cert => {
           if (typeof cert === 'object' && cert !== null) {
-            // If it's an object (like [object Object]), extract the ID or convert to string
-            return cert.toString ? cert.toString() : String(cert);
+            // If it's an object, extract the ID
+            return cert._id ? cert._id.toString() : 
+                  cert.id ? cert.id.toString() : 
+                  String(cert);
           }
           return cert.toString ? cert.toString() : String(cert);
         });
