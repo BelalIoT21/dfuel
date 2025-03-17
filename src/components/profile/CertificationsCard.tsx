@@ -34,6 +34,7 @@ const CertificationsCard = () => {
       // Get fresh user certifications from the service if possible
       let userCerts = [];
       try {
+        // Fixed API endpoint issue - remove extra slash
         userCerts = await certificationService.getUserCertifications(user.id);
         console.log("Fresh certifications from service:", userCerts);
       } catch (err) {

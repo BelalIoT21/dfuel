@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { certificationService } from '../../../services/certificationService';
+import { certificationDatabaseService } from '../../../services/database/certificationService';
 
 interface MachineActionsProps {
   isCertified: boolean;
@@ -57,9 +58,10 @@ const MachineActions = ({
       isBookable,
       canGetCertified,
       isAdmin,
-      hasMachineSafetyCert
+      hasMachineSafetyCert,
+      userId
     });
-  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert]);
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId]);
 
   return (
     <View style={styles.actionContainer}>

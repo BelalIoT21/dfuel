@@ -19,15 +19,18 @@ export const getUserProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Format the lastLogin date as ISO string if it exists
+    const lastLogin = user.lastLogin ? user.lastLogin.toISOString() : new Date().toISOString();
+
     // Return the user data in a consistent format
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-      certifications: user.certifications,
+      certifications: user.certifications || [],
       bookings: user.bookings || [],
-      lastLogin: user.lastLogin,
+      lastLogin: lastLogin,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     });

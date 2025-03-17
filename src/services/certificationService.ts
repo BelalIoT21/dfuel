@@ -20,8 +20,8 @@ export class CertificationService {
         return false;
       }
 
-      // Make API call to add certification
-      const response = await apiService.post('/certifications', {
+      // Fix: remove extra slash in API endpoint
+      const response = await apiService.post('certifications', {
         userId,
         machineId: certificationId
       });
@@ -49,8 +49,8 @@ export class CertificationService {
         return false;
       }
 
-      // Make API call to remove certification
-      const response = await apiService.delete(`/certifications/${userId}/${certificationId}`);
+      // Fix: remove extra slash in API endpoint
+      const response = await apiService.delete(`certifications/${userId}/${certificationId}`);
       
       console.log("API remove certification response:", response);
       if (response.data && response.data.success) {
@@ -75,8 +75,8 @@ export class CertificationService {
         return false;
       }
 
-      // Make API call to clear certifications
-      const response = await apiService.delete(`/certifications/clear/${userId}`);
+      // Fix: remove extra slash in API endpoint
+      const response = await apiService.delete(`certifications/clear/${userId}`);
       
       console.log("API clear certifications response:", response);
       if (response.data && response.data.success) {
@@ -101,8 +101,8 @@ export class CertificationService {
         return [];
       }
       
-      // Make API call to get user certifications
-      const response = await apiService.get(`/certifications/user/${userId}`);
+      // Fix: remove extra slash in API endpoint
+      const response = await apiService.get(`certifications/user/${userId}`);
       console.log("API get certifications response:", response);
       
       if (response.data && Array.isArray(response.data)) {
@@ -114,6 +114,26 @@ export class CertificationService {
     } catch (error) {
       console.error('Error getting certifications:', error);
       return [];
+    }
+  }
+
+  async checkCertification(userId: string, machineId: string): Promise<boolean> {
+    try {
+      console.log(`CertificationService: Checking certification for user ${userId}, machine ${machineId}`);
+      
+      if (!userId || !machineId) {
+        console.error('Invalid userId or machineId');
+        return false;
+      }
+      
+      // Fix: remove extra slash in API endpoint
+      const response = await apiService.get(`certifications/check/${userId}/${machineId}`);
+      console.log("API check certification response:", response);
+      
+      return !!response.data; // Convert to boolean
+    } catch (error) {
+      console.error('Error checking certification:', error);
+      return false;
     }
   }
   
