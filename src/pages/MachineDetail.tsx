@@ -115,42 +115,6 @@ const MachineDetail = () => {
     loadMachineDetails();
   }, [id, user, navigate, toast]);
 
-  const handleGetCertified = async () => {
-    try {
-      if (!user) {
-        toast({
-          title: 'Error',
-          description: 'You must be logged in to get certified',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      const response = await apiService.addCertification(user.id, id || '');
-      
-      if (response.data && response.data.success) {
-        setIsCertified(true);
-        toast({
-          title: 'Success',
-          description: 'You are now certified for this machine!',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to get certified. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error getting certified:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to get certified. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleTakeCourse = () => {
     navigate(`/course/${id}`);
   };
@@ -306,38 +270,7 @@ const MachineDetail = () => {
           </Card>
         </div>
 
-        {!isCertified ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-purple-600" />
-                Get Certified
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-6">
-                Become certified to use this machine by completing the training course and safety quiz.
-                {requiresSafetyCourse && !hasSafetyCourse && 
-                  " You must complete the Safety Course certification first."}
-              </p>
-              <Button 
-                onClick={handleGetCertified} 
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
-              >
-                <Award className="mr-2 h-4 w-4" />
-                Get Certified Now
-              </Button>
-              
-              {requiresSafetyCourse && !hasSafetyCourse && (
-                <div className="mt-4 text-amber-600 text-sm flex items-center">
-                  <Lock className="h-4 w-4 mr-1" />
-                  Complete Safety Course first
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : isBookable ? (
+        {isCertified && isBookable && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -351,7 +284,7 @@ const MachineDetail = () => {
               </p>
               <Button 
                 onClick={handleBookMachine} 
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-purple-600 hover:bg-purple-700"
                 disabled={isMaintenance}
               >
                 <Calendar className="mr-2 h-4 w-4" />
@@ -366,7 +299,9 @@ const MachineDetail = () => {
               )}
             </CardContent>
           </Card>
-        ) : (
+        )}
+        
+        {isCertified && !isBookable && machine.id !== '5' && machine.id !== '6' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

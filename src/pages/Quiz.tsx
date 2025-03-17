@@ -238,6 +238,7 @@ const Quiz = () => {
                       <Button 
                         onClick={handleNext}
                         disabled={selectedAnswers[currentQuestion] === undefined}
+                        className="bg-purple-600 hover:bg-purple-700"
                       >
                         Next
                       </Button>
@@ -245,6 +246,7 @@ const Quiz = () => {
                       <Button 
                         onClick={handleSubmit}
                         disabled={selectedAnswers.some(answer => answer === undefined)}
+                        className="bg-purple-600 hover:bg-purple-700"
                       >
                         Submit Quiz
                       </Button>
@@ -330,7 +332,7 @@ const Quiz = () => {
                       <Button variant="outline" onClick={handleReturnToCourse}>
                         Review Course
                       </Button>
-                      <Button onClick={handleRetry}>
+                      <Button onClick={handleRetry} className="bg-purple-600 hover:bg-purple-700">
                         Retry Quiz
                       </Button>
                     </>
