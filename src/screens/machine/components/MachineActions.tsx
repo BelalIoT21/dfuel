@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Button } from 'react-native-paper';
+import { certificationService } from '../../../services/certificationService';
 
 interface MachineActionsProps {
   isCertified: boolean;
@@ -28,6 +29,9 @@ const MachineActions = ({
   hasMachineSafetyCert = false,
   userId
 }: MachineActionsProps) => {
+  const [certificationsChecked, setCertificationsChecked] = useState(false);
+  const [certifiedState, setCertifiedState] = useState(isCertified);
+  
   // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
   const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
   
@@ -40,8 +44,12 @@ const MachineActions = ({
   // Is this the Machine Safety Course itself?
   const isSafetyCourse = machineType === 'Safety Course';
 
+  useEffect(() => {
+    setCertifiedState(isCertified);
+  }, [isCertified]);
+
   console.log('MachineActions props:', {
-    isCertified,
+    isCertified: certifiedState,
     machineStatus,
     machineType,
     isBookable,
@@ -69,7 +77,7 @@ const MachineActions = ({
         Take Quiz
       </Button>
       
-      {(!isCertified && (canGetCertified || isSafetyCourse)) && (
+      {(!certifiedState && (canGetCertified || isSafetyCourse)) && (
         <Button 
           mode="contained" 
           icon="certificate" 
@@ -94,7 +102,7 @@ const MachineActions = ({
             >
               Book Machine (Admin)
             </Button>
-          ) : (machineStatus === 'available' && isCertified) ? (
+          ) : (machineStatus === 'available' && certifiedState) ? (
             <Button 
               mode="contained" 
               icon="calendar-plus" 

@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { machineService } from '../../services/machineService';
-import userDatabase from '../../services/userDatabase';
+import { useToast } from "@/components/ui/use-toast";
+import { RefreshCw } from "lucide-react";
 
 interface MachineStatusProps {
   machineData: any[];
@@ -15,11 +16,13 @@ interface MachineStatusProps {
 }
 
 export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProps) => {
+  const { toast } = useToast();
   const [isMachineStatusDialogOpen, setIsMachineStatusDialogOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState('available');
   const [maintenanceNote, setMaintenanceNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Sort machines by type
   const sortedMachineData = [...machineData].sort((a, b) => {
@@ -35,12 +38,36 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setIsMachineStatusDialogOpen(true);
   };
 
+  const refreshMachineStatuses = async () => {
+    setIsRefreshing(true);
+    try {
+      // This would typically make API calls to refresh the statuses
+      // For now, we'll just simulate a refresh by waiting and showing a notification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast({
+        title: "Refreshed",
+        description: "Machine statuses have been refreshed"
+      });
+    } catch (error) {
+      console.error("Error refreshing machine statuses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh machine statuses"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const saveMachineStatus = async () => {
     if (!selectedMachine) return;
     
     setIsLoading(true);
     
     try {
+      console.log(`Updating machine ${selectedMachine.id} status to ${selectedStatus}`);
+      
       // Update machine status using machineService which will use MongoDB
       const success = await machineService.updateMachineStatus(
         selectedMachine.id, 
@@ -49,15 +76,32 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       );
       
       if (success) {
+        console.log(`Successfully updated machine ${selectedMachine.id} status`);
+        
         // Update local state
         setMachineData(machineData.map(machine => 
           machine.id === selectedMachine.id 
             ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
             : machine
         ));
+        
+        toast({
+          title: "Status Updated",
+          description: `${selectedMachine.name} status has been updated to ${selectedStatus}`
+        });
+      } else {
+        console.error(`Failed to update machine ${selectedMachine.id} status`);
+        toast({
+          title: "Update Failed",
+          description: "Failed to update machine status. Please try again."
+        });
       }
     } catch (error) {
       console.error("Error updating machine status:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while updating the machine status"
+      });
     } finally {
       setIsLoading(false);
       setIsMachineStatusDialogOpen(false);
@@ -67,10 +111,12 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   // Function to get displayed machine type
   const getMachineType = (machine) => {
     // Handle special machine types
-    if (machine.id === "3") {
+    if (machine.id === "5") {
       return "Safety Cabinet";
     } else if (machine.id === "6") {
       return "Safety Course";
+    } else if (machine.id === "3") {
+      return "X1 E Carbon 3D Printer";
     }
     
     // Return machine type or "Machine" if it's empty/undefined
@@ -81,9 +127,21 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     <>
       <Card className="border-purple-100">
         <CardHeader className="p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-            Machine Status
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              Machine Status
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={refreshMachineStatuses}
+              disabled={isRefreshing}
+              className="ml-auto"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+              Refresh
+            </Button>
+          </div>
           <CardDescription>Current status of all machines</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">

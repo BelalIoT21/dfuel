@@ -25,6 +25,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [userCertifications, setUserCertifications] = useState<string[]>([]);
   
   const fetchMachineNames = async () => {
     setIsLoading(true);
@@ -39,15 +40,22 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       });
       
       // Get the latest certifications directly from the service
-      let userCertifications = user.certifications;
       try {
-        const fetchedCertifications = await certificationService.getUserCertifications(user.id);
-        if (Array.isArray(fetchedCertifications) && fetchedCertifications.length > 0) {
-          userCertifications = fetchedCertifications;
-          console.log("Fetched user certifications:", fetchedCertifications);
+        if (user?.id) {
+          const fetchedCertifications = await certificationService.getUserCertifications(user.id);
+          if (Array.isArray(fetchedCertifications) && fetchedCertifications.length > 0) {
+            setUserCertifications(fetchedCertifications);
+            console.log("Fetched user certifications:", fetchedCertifications);
+          } else {
+            // Fall back to user object
+            setUserCertifications(user.certifications || []);
+          }
+        } else {
+          setUserCertifications(user.certifications || []);
         }
       } catch (error) {
         console.error("Error fetching certifications:", error);
+        setUserCertifications(user.certifications || []);
       }
       
       if (userCertifications && userCertifications.length > 0) {
@@ -115,7 +123,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   
   useEffect(() => {
     fetchMachineNames();
-  }, [user.certifications]);
+  }, [user]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -131,7 +139,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     });
   };
 
-  console.log("User certifications in CertificationsSection:", user.certifications);
+  console.log("User certifications in CertificationsSection:", userCertifications);
 
   return (
     <View style={styles.section}>
@@ -151,14 +159,14 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           <ActivityIndicator color="#7c3aed" size="small" />
           <Text style={styles.loadingText}>Loading certifications...</Text>
         </View>
-      ) : user.certifications && user.certifications.length > 0 ? (
+      ) : userCertifications && userCertifications.length > 0 ? (
         <ScrollView 
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
           <List.Section>
-            {filterCertifications(user.certifications).map((certId) => (
+            {filterCertifications(userCertifications).map((certId) => (
               <List.Item
                 key={certId}
                 title={machineNames[certId] || `Machine ${certId}`}

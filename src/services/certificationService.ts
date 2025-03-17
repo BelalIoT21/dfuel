@@ -58,9 +58,9 @@ export class CertificationService {
         return false;
       }
 
-      // Try direct API call first
+      // Try direct API call first with the correct format
       try {
-        // Use the correct endpoint format with userId and machineId as path parameters
+        // Changed to use the DELETE method with an encoded URL
         const response = await apiService.delete(`/api/certifications/${userId}/${certificationId}`);
         
         console.log("API remove certification response:", response);

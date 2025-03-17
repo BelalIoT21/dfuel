@@ -3,12 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key } from 'lucide-react';
+import { Key, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
@@ -16,6 +16,7 @@ const CertificationsCard = () => {
   const [loading, setLoading] = useState(true);
   const [machines, setMachines] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -30,10 +31,18 @@ const CertificationsCard = () => {
       // Get the certification list from our service
       const allCertifications = certificationService.getAllCertifications();
       
-      // Get all user certifications and ensure they're strings for comparison
-      const userCerts = (user?.certifications || []).map(cert => 
-        typeof cert === 'string' ? cert : cert.toString()
-      );
+      // Get fresh user certifications from the service if possible
+      let userCerts = [];
+      try {
+        userCerts = await certificationService.getUserCertifications(user.id);
+        console.log("Fresh certifications from service:", userCerts);
+      } catch (err) {
+        console.error("Error fetching fresh certifications:", err);
+        // Fallback to user object
+        userCerts = (user?.certifications || []).map(cert => 
+          typeof cert === 'string' ? cert : cert.toString()
+        );
+      }
       
       console.log("User certifications in CertificationsCard:", userCerts);
       
@@ -55,8 +64,7 @@ const CertificationsCard = () => {
       console.error("Error fetching machines:", error);
       toast({
         title: "Error",
-        description: "Failed to load machine data",
-        variant: "destructive"
+        description: "Failed to load machine data"
       });
     } finally {
       setLoading(false);
@@ -99,7 +107,7 @@ const CertificationsCard = () => {
           disabled={refreshing}
           className="ml-auto"
         >
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
         </Button>
       </CardHeader>
       <CardContent className="overflow-x-auto">

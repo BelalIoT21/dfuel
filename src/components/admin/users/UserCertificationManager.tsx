@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
 import { certificationService } from '@/services/certificationService';
 
@@ -26,22 +26,43 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
+  const { toast } = useToast();
 
   // Get the userId in a consistent format
   const getUserId = () => {
     return user._id?.toString() || user.id?.toString();
   };
 
-  // Load user certifications on component mount
+  // Load user certifications on dialog open
   useEffect(() => {
-    if (user) {
-      // Convert certifications to strings for reliable comparison
-      const certifications = user.certifications 
-        ? user.certifications.map((cert: any) => cert.toString())
-        : [];
-      setUserCertifications(certifications);
+    if (open && user) {
+      const loadCertifications = async () => {
+        const userId = getUserId();
+        try {
+          // Try to get fresh certifications
+          const certs = await certificationService.getUserCertifications(userId);
+          if (certs && certs.length > 0) {
+            setUserCertifications(certs.map(c => c.toString()));
+          } else {
+            // Fall back to user object
+            const certifications = user.certifications 
+              ? user.certifications.map((cert: any) => cert.toString())
+              : [];
+            setUserCertifications(certifications);
+          }
+        } catch (error) {
+          console.error("Error loading certifications:", error);
+          // Fall back to user object
+          const certifications = user.certifications 
+            ? user.certifications.map((cert: any) => cert.toString())
+            : [];
+          setUserCertifications(certifications);
+        }
+      };
+      
+      loadCertifications();
     }
-  }, [user]);
+  }, [open, user]);
 
   // Handle adding a certification
   const handleAddCertification = async (certificationId: string) => {
@@ -50,8 +71,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     if (!userId) {
       toast({
         title: "Error",
-        description: "User ID is missing. Cannot add certification.",
-        variant: "destructive"
+        description: "User ID is missing. Cannot add certification."
       });
       return;
     }
@@ -64,7 +84,12 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       
       if (success) {
         // Update local state
-        setUserCertifications(prev => [...prev, certificationId]);
+        setUserCertifications(prev => {
+          if (!prev.includes(certificationId)) {
+            return [...prev, certificationId];
+          }
+          return prev;
+        });
         
         toast({
           title: "Certification Added",
@@ -74,16 +99,14 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to add certification.",
-          variant: "destructive"
+          description: "Failed to add certification."
         });
       }
     } catch (error) {
       console.error("Error adding certification:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while adding certification.",
-        variant: "destructive"
+        description: "An unexpected error occurred while adding certification."
       });
     } finally {
       setLoading(null);
@@ -97,8 +120,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     if (!userId) {
       toast({
         title: "Error",
-        description: "User ID is missing. Cannot remove certification.",
-        variant: "destructive"
+        description: "User ID is missing. Cannot remove certification."
       });
       return;
     }
@@ -121,16 +143,14 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to remove certification.",
-          variant: "destructive"
+          description: "Failed to remove certification."
         });
       }
     } catch (error) {
       console.error("Error removing certification:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while removing certification.",
-        variant: "destructive"
+        description: "An unexpected error occurred while removing certification."
       });
     } finally {
       setLoading(null);
@@ -144,8 +164,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     if (!userId) {
       toast({
         title: "Error",
-        description: "User ID is missing. Cannot clear certifications.",
-        variant: "destructive"
+        description: "User ID is missing. Cannot clear certifications."
       });
       return;
     }
@@ -168,16 +187,14 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to clear certifications.",
-          variant: "destructive"
+          description: "Failed to clear certifications."
         });
       }
     } catch (error) {
       console.error("Error clearing certifications:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while clearing certifications.",
-        variant: "destructive"
+        description: "An unexpected error occurred while clearing certifications."
       });
     } finally {
       setIsClearing(false);
@@ -218,7 +235,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                         disabled={loading === certification.id}
                         className="bg-red-50 hover:bg-red-100 border-red-200"
                       >
-                        {loading === certification.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Remove
                       </Button>
                     ) : (
@@ -228,7 +245,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                         onClick={() => handleAddCertification(certification.id)}
                         disabled={loading === certification.id}
                       >
-                        {loading === certification.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         Add
                       </Button>
                     )}
