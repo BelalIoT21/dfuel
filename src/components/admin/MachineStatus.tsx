@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,22 +47,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-  }, []);
-
-  // Auto-refresh machine statuses on component mount and after 10 seconds
-  useEffect(() => {
-    // Immediately refresh on mount
-    console.log("Initial machine status refresh on component mount");
-    refreshMachineStatuses();
-    
-    // Set a timer for another refresh after 10 seconds
-    const timer = setTimeout(() => {
-      console.log("Performing second machine status refresh after delay");
-      refreshMachineStatuses();
-    }, 10000);
-    
-    // Clean up the timer when component unmounts
-    return () => clearTimeout(timer);
   }, []);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
