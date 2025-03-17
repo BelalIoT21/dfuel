@@ -30,6 +30,12 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [machineStatuses, setMachineStatuses] = useState<Record<string, string>>({});
   const [machineNotes, setMachineNotes] = useState<Record<string, string>>({});
   
+  // Filter machine data to only include machines 1-4
+  const filteredMachineData = machineData.filter(machine => {
+    const machineId = machine.id || machine._id;
+    return ["1", "2", "3", "4"].includes(machineId);
+  });
+  
   // Check server connection and load machine statuses on mount
   useEffect(() => {
     const checkServerAndLoadData = async () => {
@@ -103,7 +109,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setIsLoading(true);
     
     try {
-      // Focus on machines 1-4 which are actual machines (not safety cabinet/course)
+      // Focus on machines 1-4 which are actual machines
       const machineIds = ["1", "2", "3", "4"];
       const newStatuses: Record<string, string> = {};
       const newNotes: Record<string, string> = {};
@@ -154,12 +160,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       setIsRefreshing(false);
     }
   };
-
-  const sortedMachineData = [...machineData].sort((a, b) => {
-    if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
-    if (b.type === 'Equipment' || b.type === 'Safety Cabinet') return -1;
-    return 0;
-  });
 
   const handleUpdateMachineStatus = (machine: any) => {
     setSelectedMachine(machine);
@@ -337,29 +337,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     }
   };
 
-  const getMachineType = (machine: any) => {
-    if (machine.id === "5" || machine._id === "5") {
-      return "Safety Cabinet";
-    } else if (machine.id === "6" || machine._id === "6") {
-      return "Safety Course";
-    } else if (machine.id === "3" || machine._id === "3") {
-      return "X1 E Carbon 3D Printer";
-    }
-    
-    return machine.type || "Machine";
-  };
-
   // Function to correctly display machine status
   const getStatusDisplay = (machine: any) => {
-    // Special case for equipment
-    const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
-    if (isEquipment) {
-      return {
-        text: 'Available',
-        className: 'bg-green-100 text-green-800'
-      };
-    }
-    
     // Regular machine status display
     const status = machine.status?.toLowerCase() || 'available';
     
@@ -429,10 +408,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             </div>
           ) : (
             <div className="space-y-3">
-              {sortedMachineData.length > 0 ? (
-                sortedMachineData.map((machine) => {
-                  const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
-                  const machineType = getMachineType(machine);
+              {filteredMachineData.length > 0 ? (
+                filteredMachineData.map((machine) => {
                   const statusDisplay = getStatusDisplay(machine);
                   
                   return (
@@ -442,25 +419,23 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                           {machine.name}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Type: {machineType}
-                          {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
+                          Type: {machine.type || "Machine"}
+                          {machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
                         </div>
                       </div>
                       <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                         <span className={`text-xs px-2 py-1 rounded ${statusDisplay.className}`}>
                           {statusDisplay.text}
                         </span>
-                        {!isEquipment && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
-                            onClick={() => handleUpdateMachineStatus(machine)}
-                            disabled={rateLimitRemaining !== null}
-                          >
-                            Update
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
+                          onClick={() => handleUpdateMachineStatus(machine)}
+                          disabled={rateLimitRemaining !== null}
+                        >
+                          Update
+                        </Button>
                       </div>
                     </div>
                   );
