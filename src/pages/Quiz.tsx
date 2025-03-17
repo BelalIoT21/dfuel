@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,6 @@ const Quiz = () => {
       try {
         setLoading(true);
         
-        // Try to get machine from API first
         let machineData;
         try {
           const response = await apiService.getMachineById(id || '');
@@ -43,7 +41,6 @@ const Quiz = () => {
           console.error('Error fetching machine from API:', apiError);
         }
 
-        // If API fails, fall back to static data
         if (!machineData) {
           machineData = machines.find(m => m.id === id);
         }
@@ -60,7 +57,6 @@ const Quiz = () => {
         
         setMachine(machineData);
         
-        // Get quiz content
         const quizData = id && quizzes[id] ? quizzes[id].questions : defaultQuiz;
         setQuiz(quizData);
       } catch (error) {
@@ -192,19 +188,19 @@ const Quiz = () => {
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
           <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to {machine.name}
+            &larr; Back to {machine?.name}
           </Link>
           <div className="text-sm text-gray-500">Attempt {attempts} of 2</div>
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">{machine.name} Safety Quiz</h1>
+        <h1 className="text-3xl font-bold mb-6">{machine?.name} Safety Quiz</h1>
         
         {!showResults ? (
           <Card>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center mb-2">
                 <CardTitle>Question {currentQuestion + 1} of {quiz.length}</CardTitle>
-                <CardDescription>{machine.name} Safety Certification</CardDescription>
+                <CardDescription>{machine?.name} Safety Certification</CardDescription>
               </div>
               <Progress value={progress} className="h-2" />
             </CardHeader>
@@ -212,7 +208,7 @@ const Quiz = () => {
               {!quizSubmitted ? (
                 <div className="space-y-6">
                   <div className="text-xl font-semibold mb-4">
-                    {quiz[currentQuestion].question}
+                    {quiz[currentQuestion]?.question}
                   </div>
                   
                   <RadioGroup
@@ -220,7 +216,7 @@ const Quiz = () => {
                     onValueChange={(value) => handleAnswer(parseInt(value))}
                     className="space-y-3"
                   >
-                    {quiz[currentQuestion].options.map((option, index) => (
+                    {quiz[currentQuestion]?.options.map((option, index) => (
                       <div key={index} className="flex items-center space-x-2 border p-3 rounded-md hover:bg-gray-50">
                         <RadioGroupItem value={index.toString()} id={`option-${index}`} />
                         <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">{option}</Label>
@@ -281,7 +277,7 @@ const Quiz = () => {
                       </div>
                       <h3 className="text-2xl font-bold text-green-600">Congratulations!</h3>
                       <p className="text-gray-600">
-                        You have passed the quiz and are now certified to use the {machine.name}.
+                        You have passed the quiz and are now certified to use the {machine?.name}.
                       </p>
                     </div>
                   ) : (
