@@ -1,4 +1,3 @@
-
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
@@ -105,24 +104,10 @@ class UserDatabase {
         return false;
       }
       
-      // Try API first
-      const response = await apiService.addCertification(userId, certificationId);
-      if (response.data && response.data.success) {
-        console.log(`Successfully added certification ${certificationId} for user ${userId} via API`);
-        return true;
-      }
-      
-      // Fall back to MongoDB
-      const success = await mongoDbService.updateUserCertifications(userId, certificationId);
-      if (success) {
-        console.log(`Successfully added certification ${certificationId} for user ${userId} via MongoDB`);
-        return true;
-      }
-      
-      // Last resort: try certificationService
-      const fallbackSuccess = await certificationService.addCertification(userId, certificationId);
-      console.log(`certificationService add result: ${fallbackSuccess}`);
-      return fallbackSuccess;
+      console.log(`UserDatabase: Using certificationService to add certification ${certificationId} for user ${userId}`);
+      const success = await certificationService.addCertification(userId, certificationId);
+      console.log(`certificationService add result: ${success}`);
+      return success;
     } catch (error) {
       console.error('Error in addCertification:', error);
       return false;
@@ -137,24 +122,10 @@ class UserDatabase {
         return false;
       }
       
-      // Try API first
-      const response = await apiService.removeCertification(userId, certificationId);
-      if (response.data && response.data.success) {
-        console.log(`Successfully removed certification ${certificationId} for user ${userId} via API`);
-        return true;
-      }
-      
-      // Fall back to MongoDB
-      const success = await mongoDbService.removeUserCertification(userId, certificationId);
-      if (success) {
-        console.log(`Successfully removed certification ${certificationId} for user ${userId} via MongoDB`);
-        return true;
-      }
-      
-      // Last resort: try certificationService
-      const fallbackSuccess = await certificationService.removeCertification(userId, certificationId);
-      console.log(`certificationService remove result: ${fallbackSuccess}`);
-      return fallbackSuccess;
+      console.log(`UserDatabase: Using certificationService to remove certification ${certificationId} for user ${userId}`);
+      const success = await certificationService.removeCertification(userId, certificationId);
+      console.log(`certificationService remove result: ${success}`);
+      return success;
     } catch (error) {
       console.error('Error in removeCertification:', error);
       return false;

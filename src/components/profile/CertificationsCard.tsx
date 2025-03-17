@@ -32,17 +32,16 @@ const CertificationsCard = () => {
         
         console.log("User certifications in CertificationsCard:", userCerts);
         
-        // Fetch machines from the API
-        const fetchedMachines = await machineService.getMachines();
-        console.log(`Fetched ${fetchedMachines.length} machines from machineService`);
+        // Fetch all available machines
+        let allMachines = await machineService.getMachines();
+        console.log(`Fetched ${allMachines.length} machines from machineService`);
         
         // If no machines from API, use the certification service's built-in list
-        let allMachines = fetchedMachines.length > 0 
-          ? fetchedMachines 
-          : certificationService.getAllCertifications();
+        if (!allMachines || allMachines.length === 0) {
+          allMachines = certificationService.getAllCertifications();
+          console.log(`Using certification service's built-in list: ${allMachines.length} machines`);
+        }
           
-        console.log(`Total machines available: ${allMachines.length}`);
-        
         // Only use the first 4 machines as requested
         const firstFourMachines = allMachines.slice(0, 4).map(machine => {
           const machineId = machine._id?.toString() || machine.id?.toString();
@@ -64,13 +63,20 @@ const CertificationsCard = () => {
         const allMachines = certificationService.getAllCertifications();
         
         // Only use the first 4 machines
-        const firstFourMachines = allMachines.slice(0, 4).map(machine => ({
-          ...machine,
-          certified: userCerts.includes(machine.id),
-          date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy'),
-          bookable: true
-        }));
+        const firstFourMachines = allMachines.slice(0, 4).map(machine => {
+          const userCerts = (user?.certifications || []).map(cert => 
+            typeof cert === 'string' ? cert : cert.toString()
+          );
+          
+          return {
+            ...machine,
+            certified: userCerts.includes(machine.id),
+            date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy'),
+            bookable: true
+          };
+        });
         
+        console.log(`Fallback to certification service list: ${firstFourMachines.length} machines`);
         setMachines(firstFourMachines);
       } finally {
         setLoading(false);

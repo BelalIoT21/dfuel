@@ -28,7 +28,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [isClearing, setIsClearing] = useState(false);
 
   // Handle adding a certification
-  const handleAddCertification = async (userId: string, certificationId: string) => {
+  const handleAddCertification = async (certificationId: string) => {
+    // Ensure we always use the id field
+    const userId = user.id || user._id;
+    
     if (!userId) {
       toast({
         title: "Error",
@@ -42,14 +45,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
       
-      // Ensure we always use the id field
-      const actualUserId = userId || user._id;
-      
-      if (!actualUserId) {
-        throw new Error("Cannot determine user ID");
-      }
-      
-      const success = await certificationService.addCertification(actualUserId, certificationId);
+      const success = await certificationService.addCertification(userId.toString(), certificationId);
       
       if (success) {
         toast({
@@ -77,19 +73,24 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   };
 
   // Handle removing a certification
-  const handleRemoveCertification = async (userId: string, certificationId: string) => {
+  const handleRemoveCertification = async (certificationId: string) => {
+    // Ensure we always use the id field
+    const userId = user.id || user._id;
+    
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing. Cannot remove certification.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(certificationId);
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
       
-      // Ensure we always use the id field
-      const actualUserId = userId || user._id;
-      
-      if (!actualUserId) {
-        throw new Error("Cannot determine user ID");
-      }
-      
-      const success = await certificationService.removeCertification(actualUserId, certificationId);
+      const success = await certificationService.removeCertification(userId.toString(), certificationId);
       
       if (success) {
         toast({
@@ -118,20 +119,23 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   // Handle clearing all certifications
   const handleClearAllCertifications = async () => {
-    if (!user) return;
+    // Ensure we always use the id field
+    const userId = user.id || user._id;
+    
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID is missing. Cannot clear certifications.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsClearing(true);
     try {
-      console.log(`Attempting to clear all certifications for user ${user.id || user._id}`);
+      console.log(`Attempting to clear all certifications for user ${userId}`);
       
-      // Ensure we always use the id field
-      const actualUserId = user.id || user._id;
-      
-      if (!actualUserId) {
-        throw new Error("Cannot determine user ID");
-      }
-      
-      const success = await certificationService.clearAllCertifications(actualUserId);
+      const success = await certificationService.clearAllCertifications(userId.toString());
       
       if (success) {
         toast({
@@ -190,7 +194,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveCertification(user.id || user._id, certification.id)}
+                        onClick={() => handleRemoveCertification(certification.id)}
                         disabled={loading === certification.id}
                         className="bg-red-50 hover:bg-red-100 border-red-200"
                       >
@@ -201,7 +205,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAddCertification(user.id || user._id, certification.id)}
+                        onClick={() => handleAddCertification(certification.id)}
                         disabled={loading === certification.id}
                       >
                         {loading === certification.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

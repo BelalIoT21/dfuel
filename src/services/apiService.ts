@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 import { useToast } from '../hooks/use-toast';
 
@@ -199,7 +198,6 @@ class ApiService {
   // Certification endpoints
   async addCertification(userId: string, machineId: string) {
     console.log(`Adding certification for user ${userId}, machine ${machineId}`);
-    // Use the correct endpoint format based on the server routes
     return this.request<{ success: boolean }>(
       'certifications', 
       'POST', 
@@ -207,12 +205,13 @@ class ApiService {
     );
   }
   
-  // Updated removeCertification with proper endpoint
-  async removeCertification(userId: string, certificationId: string) {
-    console.log(`API: Removing certification ${certificationId} for user ${userId}`);
+  // Fixed removeCertification with proper endpoint and method
+  async removeCertification(userId: string, machineId: string) {
+    console.log(`API: Removing certification for user ${userId}, machine ${machineId}`);
     return this.request<{ success: boolean }>(
-      `certifications/${userId}/${certificationId}`, 
-      'DELETE'
+      'certifications', 
+      'DELETE', 
+      { userId, machineId }
     );
   }
 
@@ -220,8 +219,9 @@ class ApiService {
   async clearCertifications(userId: string) {
     console.log(`Clearing all certifications for user ${userId}`);
     return this.request<{ success: boolean }>(
-      `certifications/clear/${userId}`,
-      'DELETE'
+      `certifications/clear`,
+      'DELETE',
+      { userId }
     );
   }
   

@@ -1,4 +1,3 @@
-
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoSeedService from './mongodb/seedService';
@@ -121,10 +120,15 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
+        console.log(`MongoDbService: Adding certification ${certificationId} to user ${userId}`);
         const response = await apiService.addCertification(userId, certificationId);
         if (response.data && response.data.success) {
           console.log(`API addCertification result: success`);
           return true;
+        }
+        
+        if (response.error && response.status === 404) {
+          console.error(`API endpoint not found, certification may not be addable: ${response.error}`);
         }
       } catch (error) {
         console.error(`Error adding certification via API:`, error);
@@ -151,10 +155,15 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
+        console.log(`MongoDbService: Removing certification ${certificationId} from user ${userId}`);
         const response = await apiService.removeCertification(userId, certificationId);
         if (response.data && response.data.success) {
           console.log(`API removeCertification result: success`);
           return true;
+        }
+        
+        if (response.error && response.status === 404) {
+          console.error(`API endpoint not found, certification may not be removable: ${response.error}`);
         }
       } catch (error) {
         console.error(`Error removing certification via API:`, error);
@@ -181,10 +190,15 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
+        console.log(`MongoDbService: Clearing all certifications for user ${userId}`);
         const response = await apiService.clearCertifications(userId);
         if (response.data && response.data.success) {
           console.log(`API clearCertifications result: success`);
           return true;
+        }
+        
+        if (response.error && response.status === 404) {
+          console.error(`API endpoint not found, certifications may not be clearable: ${response.error}`);
         }
       } catch (error) {
         console.error(`Error clearing certifications via API:`, error);

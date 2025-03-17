@@ -21,7 +21,7 @@ export class CertificationService {
         return false;
       }
 
-      // Try API first
+      // Try API first with correct endpoint format
       try {
         const response = await apiService.addCertification(userId, certificationId);
         if (response.data && response.data.success) {
@@ -29,10 +29,10 @@ export class CertificationService {
           return true;
         }
       } catch (error) {
-        console.error("API certification error, falling back to MongoDB:", error);
+        console.error("API certification error:", error);
       }
 
-      // Use MongoDB as fallback
+      // Use MongoDB as source of truth
       const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
       console.log(`MongoDB addCertification result: ${mongoSuccess}`);
       
@@ -52,18 +52,19 @@ export class CertificationService {
         return false;
       }
 
-      // Try API first
+      // Try direct API call first
       try {
+        // Using the correct endpoint format
         const response = await apiService.removeCertification(userId, certificationId);
         if (response.data && response.data.success) {
           console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
           return true;
         }
       } catch (error) {
-        console.error("API certification removal error, falling back to MongoDB:", error);
+        console.error("API certification removal error:", error);
       }
 
-      // Use MongoDB for consistency
+      // Use MongoDB as source of truth
       const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
       console.log(`MongoDB removeCertification result: ${mongoSuccess}`);
       
@@ -91,7 +92,7 @@ export class CertificationService {
           return true;
         }
       } catch (error) {
-        console.error("API clear certifications error, falling back to MongoDB:", error);
+        console.error("API clear certifications error:", error);
       }
 
       const success = await mongoDbService.clearUserCertifications(userId);
