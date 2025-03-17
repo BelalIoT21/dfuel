@@ -67,6 +67,10 @@ const Index = () => {
     };
     
     checkServer();
+    // Set up an interval to periodically check server status
+    const intervalId = setInterval(checkServer, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   // Redirect if user is already logged in

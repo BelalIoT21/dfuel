@@ -52,7 +52,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-    const intervalId = setInterval(checkServerStatus, 30000);
+    const intervalId = setInterval(checkServerStatus, 10000); // Check more frequently (10 seconds)
     
     return () => clearInterval(intervalId);
   }, [toast]);
@@ -74,12 +74,30 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const refreshMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const response = await apiService.checkHealth();
       // Check both response.data and status for connection
       const isConnected = response.data && response.status === 200;
       setIsServerConnected(isConnected);
+      
+      // Get fresh data for each machine
+      const updatedMachineData = await Promise.all(
+        machineData.map(async (machine) => {
+          try {
+            const status = await machineService.getMachineStatus(machine.id || machine._id);
+            const maintenanceNote = await machineService.getMachineMaintenanceNote(machine.id || machine._id);
+            return {
+              ...machine,
+              status: status || machine.status || 'available',
+              maintenanceNote: maintenanceNote || machine.maintenanceNote
+            };
+          } catch (error) {
+            console.error(`Error refreshing status for machine ${machine.id || machine._id}:`, error);
+            return machine;
+          }
+        })
+      );
+      
+      setMachineData(updatedMachineData);
       
       toast({
         title: "Refreshed",
@@ -87,7 +105,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       });
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
-      setIsServerConnected(false);
       toast({
         title: "Error",
         description: "Failed to refresh machine statuses"
@@ -104,20 +121,21 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setUpdateError(null);
     
     try {
-      console.log(`Updating machine ${selectedMachine.id} status to ${selectedStatus}`);
+      console.log(`Updating machine ${selectedMachine.id || selectedMachine._id} status to ${selectedStatus}`);
       
+      const machineId = selectedMachine.id || selectedMachine._id;
       const success = await machineService.updateMachineStatus(
-        selectedMachine.id, 
+        machineId, 
         selectedStatus,
         maintenanceNote
       );
       
       if (success) {
-        console.log(`Successfully updated machine ${selectedMachine.id} status`);
+        console.log(`Successfully updated machine ${machineId} status`);
         
         // Update the machine data in state
         setMachineData(machineData.map(machine => 
-          machine.id === selectedMachine.id 
+          (machine.id === machineId || machine._id === machineId)
             ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
             : machine
         ));
@@ -129,7 +147,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         
         setIsMachineStatusDialogOpen(false);
       } else {
-        console.error(`Failed to update machine ${selectedMachine.id} status`);
+        console.error(`Failed to update machine ${machineId} status`);
         setUpdateError("Failed to update machine status. Please try again.");
         toast({
           title: "Update Failed",
@@ -151,11 +169,11 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   };
 
   const getMachineType = (machine: any) => {
-    if (machine.id === "5") {
+    if (machine.id === "5" || machine._id === "5") {
       return "Safety Cabinet";
-    } else if (machine.id === "6") {
+    } else if (machine.id === "6" || machine._id === "6") {
       return "Safety Course";
-    } else if (machine.id === "3") {
+    } else if (machine.id === "3" || machine._id === "3") {
       return "X1 E Carbon 3D Printer";
     }
     
@@ -203,7 +221,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 const machineType = getMachineType(machine);
                 
                 return (
-                  <div key={machine.id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
+                  <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
                     <div>
                       <div className="font-medium text-sm">
                         {machine.name}

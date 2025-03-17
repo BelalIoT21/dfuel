@@ -19,10 +19,16 @@ export const getMachineById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Convert the ID to an ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
-
-    const machine = await Machine.findById(objectId);
+    // Handle string IDs properly
+    let machine;
+    try {
+      // Try to convert to ObjectId first
+      const objectId = new mongoose.Types.ObjectId(id);
+      machine = await Machine.findById(objectId);
+    } catch (error) {
+      // If that fails, try string ID lookup
+      machine = await Machine.findOne({ _id: id });
+    }
 
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
@@ -41,10 +47,16 @@ export const updateMachine = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name, status } = req.body;
 
-    // Convert the ID to an ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
-
-    const machine = await Machine.findById(objectId);
+    // Handle string IDs properly
+    let machine;
+    try {
+      // Try to convert to ObjectId first
+      const objectId = new mongoose.Types.ObjectId(id);
+      machine = await Machine.findById(objectId);
+    } catch (error) {
+      // If that fails, try string ID lookup
+      machine = await Machine.findOne({ _id: id });
+    }
 
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
@@ -67,14 +79,25 @@ export const updateMachine = async (req: Request, res: Response) => {
 export const updateMachineStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, note } = req.body;
+    const { status, maintenanceNote } = req.body;
 
-    console.log(`Updating machine ${id} status to: ${status}, note: ${note}`);
+    console.log(`Updating machine ${id} status to: ${status}, note: ${maintenanceNote}`);
 
-    // Convert the ID to an ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
-
-    const machine = await Machine.findById(objectId);
+    // Handle string IDs properly
+    let machine;
+    try {
+      // Try to convert to ObjectId first if it's a valid format
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        const objectId = new mongoose.Types.ObjectId(id);
+        machine = await Machine.findById(objectId);
+      } else {
+        // If not a valid ObjectId format, try string ID lookup
+        machine = await Machine.findOne({ _id: id });
+      }
+    } catch (error) {
+      console.error('Error finding machine:', error);
+      machine = await Machine.findOne({ _id: id });
+    }
 
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
@@ -99,7 +122,7 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
 
     // Update the machine status
     machine.status = normalizedStatus;
-    machine.maintenanceNote = note;
+    machine.maintenanceNote = maintenanceNote;
     await machine.save();
 
     console.log(`Machine ${id} status updated to: ${normalizedStatus}`);
@@ -119,10 +142,16 @@ export const deleteMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Convert the ID to an ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
-
-    const machine = await Machine.findById(objectId);
+    // Handle string IDs properly
+    let machine;
+    try {
+      // Try to convert to ObjectId first
+      const objectId = new mongoose.Types.ObjectId(id);
+      machine = await Machine.findById(objectId);
+    } catch (error) {
+      // If that fails, try string ID lookup
+      machine = await Machine.findOne({ _id: id });
+    }
 
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
