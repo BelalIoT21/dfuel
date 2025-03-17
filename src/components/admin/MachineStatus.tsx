@@ -26,7 +26,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  // Check server connection and set up auto-refresh
+  // Check server connection status once on mount
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -47,26 +47,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-    const serverCheckInterval = setInterval(checkServerStatus, 5000); // Check every 5 seconds
-    
-    return () => clearInterval(serverCheckInterval);
   }, []);
-
-  // Set up auto-refresh for machine statuses - always enabled
-  useEffect(() => {
-    // Only auto-refresh if server is connected
-    if (!isServerConnected) return;
-    
-    console.log("Setting up auto-refresh for machine statuses");
-    const refreshInterval = setInterval(() => {
-      if (!isRefreshing) {
-        console.log("Auto-refreshing machine statuses...");
-        refreshMachineStatuses();
-      }
-    }, 15000); // Auto-refresh every 15 seconds
-    
-    return () => clearInterval(refreshInterval);
-  }, [isServerConnected, isRefreshing]);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
