@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
@@ -9,7 +8,6 @@ export const useMachineData = (user, navigation) => {
   const [refreshing, setRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
-  const [userChanged, setUserChanged] = useState(false);
 
   // Check server connection status
   const checkServerConnection = useCallback(async () => {
@@ -97,14 +95,6 @@ export const useMachineData = (user, navigation) => {
     }
   }, [checkServerConnection, lastRefreshTime]);
 
-  // Track when user changes to force a refresh
-  useEffect(() => {
-    if (user) {
-      console.log("User changed or logged in, setting userChanged flag");
-      setUserChanged(true);
-    }
-  }, [user?.id]); // Only depend on user ID to detect changes
-
   useEffect(() => {
     console.log("useMachineData hook effect running");
     console.log("User in hook:", user);
@@ -117,13 +107,10 @@ export const useMachineData = (user, navigation) => {
     
     if (user) {
       console.log("User is authenticated, loading machine data");
-      // Force load on initial render, login, or user change
-      const shouldForceRefresh = userChanged;
-      if (shouldForceRefresh) {
-        console.log("User logged in or changed, forcing refresh");
-        setUserChanged(false); // Reset the flag
-      }
-      loadMachineData(shouldForceRefresh);
+      
+      // Immediately trigger a forced refresh when user logs in
+      console.log("User logged in, forcing immediate refresh");
+      onRefresh(); // This will call loadMachineData with force=true
       
       // Set up auto-refresh interval (every 10 seconds)
       const refreshInterval = setInterval(() => {
@@ -140,7 +127,7 @@ export const useMachineData = (user, navigation) => {
       console.log("No user found, skipping data load");
       setLoading(false);
     }
-  }, [user, navigation, loadMachineData, userChanged]);
+  }, [user, navigation, loadMachineData]);
 
   const onRefresh = useCallback(() => {
     console.log("Manual refresh triggered");
