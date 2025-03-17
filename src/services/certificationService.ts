@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -28,10 +27,7 @@ export class CertificationService {
       console.log(`Making API call to add certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
       // Make the API call
-      const response = await apiService.post('certifications', {
-        userId: stringUserId,
-        machineId: stringCertId
-      });
+      const response = await apiService.addCertification(stringUserId, stringCertId);
       
       console.log("API certification response:", response);
       
@@ -65,8 +61,8 @@ export class CertificationService {
       
       console.log(`Making API call to remove certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
-      // Make the API call with correct URL format
-      const response = await apiService.delete(`certifications/${stringUserId}/${stringCertId}`);
+      // Use the removeCertification method from apiService
+      const response = await apiService.removeCertification(stringUserId, stringCertId);
       
       console.log("API remove certification response:", response);
       

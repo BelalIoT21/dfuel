@@ -1,4 +1,3 @@
-
 import { BaseService } from './baseService';
 import { apiService } from '../apiService';
 import { localStorageService } from '../localStorageService';
@@ -97,9 +96,9 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);
       
-      // Try API first
+      // Try API first - using the removeCertification method from apiService
       console.log(`Calling API to remove certification: userId=${userId}, machineId=${machineId}`);
-      const response = await apiService.delete(`certifications/${userId}/${machineId}`);
+      const response = await apiService.removeCertification(userId, machineId);
       
       console.log("Remove certification response:", response);
       
@@ -132,7 +131,7 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.clearUserCertifications: userId=${userId}`);
       
-      // Try API first with the updated route format
+      // Try API first with the correct route
       console.log(`Calling API to clear certifications: userId=${userId}`);
       const response = await apiService.clearCertifications(userId);
       

@@ -212,12 +212,7 @@ class ApiService {
   
   async removeCertification(userId: string, machineId: string) {
     console.log(`API: Removing certification for user ${userId}, machine ${machineId}`);
-    try {
-      return this.delete<{ success: boolean }>(`certifications/${userId}/${machineId}`);
-    } catch (error) {
-      console.error("Error in API removeCertification:", error);
-      throw error;
-    }
+    return this.delete<{ success: boolean }>(`certifications/${userId}/${machineId}`);
   }
 
   async clearCertifications(userId: string) {
