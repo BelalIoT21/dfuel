@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { machineService } from '../../services/machineService';
-import { useToast } from "@/components/ui/use-toast";
-import { RefreshCw, WifiOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { RefreshCw, WifiOff, Check, AlertTriangle } from "lucide-react";
 import { apiService } from '../../services/apiService';
 
 interface MachineStatusProps {
@@ -25,6 +25,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkServerStatus = async () => {
@@ -52,6 +53,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setSelectedMachine(machine);
     setSelectedStatus(machine.status || 'available');
     setMaintenanceNote(machine.maintenanceNote || '');
+    setUpdateError(null);
     setIsMachineStatusDialogOpen(true);
   };
 
@@ -83,6 +85,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     if (!selectedMachine) return;
     
     setIsLoading(true);
+    setUpdateError(null);
     
     try {
       console.log(`Updating machine ${selectedMachine.id} status to ${selectedStatus}`);
@@ -106,22 +109,27 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           title: "Status Updated",
           description: `${selectedMachine.name} status has been updated to ${selectedStatus}`
         });
+        
+        setIsMachineStatusDialogOpen(false);
       } else {
         console.error(`Failed to update machine ${selectedMachine.id} status`);
+        setUpdateError("Failed to update machine status. Please try again.");
         toast({
           title: "Update Failed",
-          description: "Failed to update machine status. Please try again."
+          description: "Failed to update machine status. Please try again.",
+          variant: "destructive"
         });
       }
     } catch (error) {
       console.error("Error updating machine status:", error);
+      setUpdateError("An error occurred while updating the machine status");
       toast({
         title: "Error",
-        description: "An error occurred while updating the machine status"
+        description: "An error occurred while updating the machine status",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
-      setIsMachineStatusDialogOpen(false);
     }
   };
 
@@ -146,11 +154,17 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               Machine Status
             </CardTitle>
             <div className="flex items-center gap-2">
-              {/* Fixed server status indicator styling */}
-              <span className={isServerConnected ? 'bg-green-100 text-green-800 text-xs px-2 py-1 rounded' : 'bg-red-100 text-red-800 text-xs px-2 py-1 rounded'}>
-                Server status: {isServerConnected ? 'Connected' : 'Disconnected'}
-                {!isServerConnected && <WifiOff className="h-3 w-3 ml-1 inline" />}
-              </span>
+              {isServerConnected ? (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded flex items-center">
+                  <Check className="h-3 w-3 mr-1" />
+                  Server: Connected
+                </span>
+              ) : (
+                <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded flex items-center">
+                  <WifiOff className="h-3 w-3 mr-1" />
+                  Server: Disconnected
+                </span>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -237,9 +251,24 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="in-use">In Use</SelectItem>
+                  <SelectItem value="available" className="flex items-center">
+                    <span className="flex items-center">
+                      <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                      Available
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="maintenance" className="flex items-center">
+                    <span className="flex items-center">
+                      <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
+                      Maintenance
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="in-use" className="flex items-center">
+                    <span className="flex items-center">
+                      <span className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></span>
+                      In Use
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -253,6 +282,13 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   onChange={(e) => setMaintenanceNote(e.target.value)}
                   placeholder="Optional: Describe the maintenance issue"
                 />
+              </div>
+            )}
+            
+            {updateError && (
+              <div className="bg-red-50 text-red-800 p-3 rounded-md flex items-start">
+                <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <span className="text-sm">{updateError}</span>
               </div>
             )}
           </div>

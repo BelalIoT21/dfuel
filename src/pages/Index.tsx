@@ -7,6 +7,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
+import { Check, WifiOff } from 'lucide-react';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -99,9 +100,19 @@ const Index = () => {
           </p>
           {serverStatus && (
             <div className={serverStatus === 'connected' || serverStatus === 'connected via API' 
-              ? 'mt-2 text-sm text-green-600' 
-              : 'mt-2 text-sm text-red-600'}>
-              Server status: {serverStatus}
+              ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
+              : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
+              {serverStatus === 'connected' || serverStatus === 'connected via API' ? (
+                <>
+                  <Check className="h-4 w-4 mr-1" />
+                  Server: Connected
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-4 w-4 mr-1" />
+                  Server: Disconnected
+                </>
+              )}
             </div>
           )}
           {dbUserCount !== null && (
