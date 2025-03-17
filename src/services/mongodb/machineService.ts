@@ -119,7 +119,6 @@ class MongoMachineService {
     }
   }
   
-  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) {
@@ -130,7 +129,13 @@ class MongoMachineService {
     try {
       const machines = await this.machinesCollection.find().toArray();
       console.log(`Retrieved ${machines.length} machines from MongoDB`);
-      return machines;
+      
+      // Filter out machines 5 and 6
+      const filteredMachines = machines.filter(machine => 
+        machine._id !== '5' && machine._id !== '6'
+      );
+      
+      return filteredMachines;
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
       return [];
@@ -229,7 +234,6 @@ class MongoMachineService {
     }
   }
   
-  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) {
@@ -282,30 +286,10 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Intermediate',
             imageUrl: '/machines/bambu-lab.jpg'
-          },
-          { 
-            _id: '5', 
-            name: 'Safety Cabinet', 
-            type: 'Safety Cabinet', 
-            status: 'Available', 
-            description: 'Storage for safety equipment and materials.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-cabinet.jpg'
-          },
-          { 
-            _id: '6', 
-            name: 'Safety Course', 
-            type: 'Safety Course', 
-            status: 'Available', 
-            description: 'Basic safety training required for machine access.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-course.jpg'
           }
         ];
         
-        // Also create machine statuses
+        // Create machine entries
         for (const machine of defaultMachines) {
           await this.addMachine(machine);
         }
@@ -313,6 +297,10 @@ class MongoMachineService {
         console.log("Successfully seeded default machines to MongoDB");
       } else {
         console.log(`Found ${count} existing machines in MongoDB, skipping seed`);
+        
+        // Remove machines 5 and 6 if they exist
+        await this.machinesCollection.deleteMany({ _id: { $in: ['5', '6'] } });
+        console.log("Removed machines 5 and 6 if they existed");
       }
     } catch (error) {
       console.error("Error seeding default machines to MongoDB:", error);

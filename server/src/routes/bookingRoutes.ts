@@ -20,7 +20,7 @@ router.post(
   protect,
   [
     body('machineId').notEmpty().withMessage('Machine ID is required'),
-    body('date').isISO8601().toDate().withMessage('Valid date is required'),
+    body('date').isISO8601().withMessage('Valid date is required'),
     body('time').notEmpty().withMessage('Time is required')
   ],
   createBooking

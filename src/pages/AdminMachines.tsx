@@ -40,14 +40,24 @@ const AdminMachines = () => {
       try {
         const fetchedMachines = await machineDatabaseService.getAllMachines();
         if (fetchedMachines && fetchedMachines.length > 0) {
-          setMachinesList(fetchedMachines);
+          const filteredMachines = fetchedMachines.filter(machine => {
+            const id = machine.id || machine._id;
+            return id !== '5' && id !== '6';
+          });
+          setMachinesList(filteredMachines);
         } else {
-          setMachinesList(machines);
+          const filteredDefaultMachines = machines.filter(machine => 
+            machine.id !== '5' && machine.id !== '6'
+          );
+          setMachinesList(filteredDefaultMachines);
         }
         setInitialLoadComplete(true);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        setMachinesList(machines);
+        const filteredDefaultMachines = machines.filter(machine => 
+          machine.id !== '5' && machine.id !== '6'
+        );
+        setMachinesList(filteredDefaultMachines);
         setInitialLoadComplete(true);
       }
     };

@@ -16,6 +16,7 @@ export const PendingActions = () => {
   const fetchPendingBookings = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log("Fetching pending bookings...");
       
       // Try MongoDB first for direct database access
       let allBookings = [];
@@ -39,8 +40,13 @@ export const PendingActions = () => {
         console.log(`Found ${allBookings.length} total bookings via bookingService`);
       }
       
-      const pendingOnly = allBookings.filter(booking => booking.status === 'Pending');
-      console.log(`Found ${pendingOnly.length} pending bookings`);
+      console.log("All bookings before filtering:", JSON.stringify(allBookings));
+      
+      // Filter to only show pending bookings
+      const pendingOnly = allBookings.filter(booking => 
+        booking.status === 'Pending' || booking.status === 'pending'
+      );
+      console.log(`Found ${pendingOnly.length} pending bookings:`, JSON.stringify(pendingOnly));
       
       setPendingBookings(pendingOnly);
     } catch (error) {
@@ -55,11 +61,11 @@ export const PendingActions = () => {
   useEffect(() => {
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 10 seconds
+    // Set up polling to refresh pending bookings every 5 seconds
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 10000);
+    }, 5000);
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
