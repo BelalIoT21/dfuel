@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -25,7 +25,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isServerConnected, setIsServerConnected] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
-  const refreshButtonRef = useRef<HTMLButtonElement>(null);
 
   // Check server connection status once on mount
   useEffect(() => {
@@ -48,27 +47,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     };
     
     checkServerStatus();
-  }, []);
-
-  // Auto-refresh machine statuses on mount and after 10 seconds
-  useEffect(() => {
-    console.log("Setting up initial refresh sequence");
-    
-    // Perform initial refresh on mount
-    const initialRefreshTimeout = setTimeout(() => {
-      console.log("Executing initial refresh on mount");
-      refreshMachineStatuses();
-      
-      // Set up a second refresh after 10 seconds
-      const secondRefreshTimeout = setTimeout(() => {
-        console.log("Executing second refresh (10 seconds after mount)");
-        refreshMachineStatuses();
-      }, 10000);
-      
-      return () => clearTimeout(secondRefreshTimeout);
-    }, 100); // Small delay to ensure component is fully mounted
-    
-    return () => clearTimeout(initialRefreshTimeout);
   }, []);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
@@ -239,7 +217,6 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 </span>
               )}
               <Button 
-                ref={refreshButtonRef}
                 variant="outline" 
                 size="sm" 
                 onClick={refreshMachineStatuses}
