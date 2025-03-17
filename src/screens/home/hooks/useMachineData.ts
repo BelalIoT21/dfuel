@@ -51,32 +51,59 @@ export const useMachineData = (user, navigation) => {
       
       console.log("Fetched machines data:", machines.length, "items");
       
-      // Load status for each machine from MongoDB, also bypassing cache
-      const extendedMachines = await Promise.all(machines.map(async (machine) => {
+      // Create an array to hold machines with their statuses
+      const machinesWithStatus = [];
+      
+      // Load status for each machine individually to ensure fresh data
+      for (const machine of machines) {
         try {
           console.log("Loading status for machine:", machine.id);
-          // Try to get status directly from MongoDB or API with cache bypass
-          const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
           
-          // Get status, default to 'available' if not found
-          let status = statusData ? statusData.status : 'available';
+          // Direct API fetch for each machine to get fresh status
+          let status = 'available'; // Default status
+          let maintenanceNote = '';
           
-          console.log("Status for machine", machine.id, ":", status);
-          return {
+          try {
+            // Fetch directly from API with cache-busting
+            const response = await fetch(`http://localhost:4000/api/machines/${machine.id}?t=${Date.now()}`);
+            if (response.ok) {
+              const data = await response.json();
+              status = data.status || 'available';
+              maintenanceNote = data.maintenanceNote || '';
+              console.log(`Fetched status for machine ${machine.id}:`, status);
+            }
+          } catch (apiError) {
+            console.error(`API error for machine ${machine.id}:`, apiError);
+            
+            // Fallback to mongoDbService if API fails
+            try {
+              const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
+              status = statusData ? statusData.status : 'available';
+              console.log(`Fallback status for machine ${machine.id}:`, status);
+            } catch (fallbackError) {
+              console.error(`Fallback error for machine ${machine.id}:`, fallbackError);
+            }
+          }
+          
+          // Add machine with its status to the array
+          machinesWithStatus.push({
             ...machine,
-            status: status || 'available'
-          };
+            status: status || 'available',
+            maintenanceNote
+          });
+          
         } catch (error) {
           console.error(`Error loading status for machine ${machine.id}:`, error);
-          return {
+          // Add machine with default status if there was an error
+          machinesWithStatus.push({
             ...machine,
             status: 'available'
-          };
+          });
         }
-      }));
+      }
       
-      console.log("Extended machines data:", extendedMachines.length, "items");
-      setMachineData(extendedMachines);
+      console.log("Machines with status:", machinesWithStatus.length, "items");
+      setMachineData(machinesWithStatus);
     } catch (error) {
       console.error("Error loading machine data:", error);
     } finally {
@@ -98,7 +125,7 @@ export const useMachineData = (user, navigation) => {
     
     if (user) {
       console.log("User is authenticated, loading machine data");
-      // Load machine data on initial render
+      // Load machine data on initial render with force=true to ensure fresh data
       loadMachineData(true);
     } else {
       console.log("No user found, skipping data load");

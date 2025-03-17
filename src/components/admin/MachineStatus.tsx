@@ -6,10 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { machineService } from '../../services/machineService';
 import { useToast } from "@/components/ui/use-toast";
 import { RefreshCw, WifiOff, Check, AlertTriangle, Clock } from "lucide-react";
-import { apiService } from '../../services/apiService';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface MachineStatusProps {
@@ -29,10 +27,12 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [rateLimitRemaining, setRateLimitRemaining] = useState<number | null>(null);
+  const [machineStatuses, setMachineStatuses] = useState<Record<string, string>>({});
+  const [machineNotes, setMachineNotes] = useState<Record<string, string>>({});
   
-  // Check server connection status and load machine statuses on mount
+  // Check server connection and load machine statuses on mount
   useEffect(() => {
-    const loadInitialData = async () => {
+    const checkServerAndLoadData = async () => {
       try {
         // First check server connection
         console.log("Checking server connection status...");
@@ -56,8 +56,29 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       }
     };
     
-    loadInitialData();
+    checkServerAndLoadData();
   }, []);
+
+  // Effect to apply machine statuses to machine data
+  useEffect(() => {
+    if (Object.keys(machineStatuses).length > 0 && machineData.length > 0) {
+      console.log("Applying machine statuses to machine data:", machineStatuses);
+      
+      setMachineData(prevData => {
+        return prevData.map(machine => {
+          const machineId = machine.id || machine._id;
+          if (machineStatuses[machineId]) {
+            return {
+              ...machine,
+              status: machineStatuses[machineId],
+              maintenanceNote: machineNotes[machineId] || machine.maintenanceNote || ''
+            };
+          }
+          return machine;
+        });
+      });
+    }
+  }, [machineStatuses, machineNotes, machineData.length]);
 
   // Countdown timer effect for rate limiting
   useEffect(() => {
@@ -79,76 +100,48 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   // Fetch machine statuses function that can be called on load and refresh
   const fetchMachineStatuses = async () => {
     console.log("Fetching fresh machine statuses...");
+    setIsLoading(true);
     
     try {
-      // Only load status for machines 1 to 4
+      // Focus on machines 1-4 which are actual machines (not safety cabinet/course)
       const machineIds = ["1", "2", "3", "4"];
+      const newStatuses: Record<string, string> = {};
+      const newNotes: Record<string, string> = {};
       
-      // Track updated machines
-      const updatedMachines = [];
-      
-      // Get fresh status for each machine directly from the API
+      // Fetch each machine directly with its own request to ensure fresh data
       for (const machineId of machineIds) {
         try {
-          // Use direct fetch to ensure we get latest status
+          console.log(`Fetching data for machine ${machineId}...`);
           const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
           
           if (response.ok) {
             const machineData = await response.json();
-            console.log(`Machine ${machineId} status:`, machineData.status);
+            console.log(`Machine ${machineId} data:`, machineData);
             
-            // Store machine data with properly formatted status
-            updatedMachines.push({
-              id: machineId,
-              _id: machineId, // Include both forms of ID for compatibility
-              name: machineData.name,
-              type: machineData.type || "Machine",
-              status: machineData.status?.toLowerCase() || 'available',
-              maintenanceNote: machineData.maintenanceNote || ''
-            });
+            // Store the status in our status map
+            if (machineData.status) {
+              newStatuses[machineId] = machineData.status.toLowerCase();
+              console.log(`Stored status for machine ${machineId}: ${newStatuses[machineId]}`);
+            }
+            
+            // Store maintenance note if present
+            if (machineData.maintenanceNote) {
+              newNotes[machineId] = machineData.maintenanceNote;
+            }
           } else {
             console.error(`Error fetching machine ${machineId}:`, response.statusText);
           }
         } catch (error) {
-          console.error(`Error fetching machine ${machineId}:`, error);
+          console.error(`Network error fetching machine ${machineId}:`, error);
         }
       }
       
-      if (updatedMachines.length > 0) {
-        // Update machine data with the new status information
-        setMachineData(prevData => {
-          // Create a map of existing machines for efficient lookup
-          const existingMachines = {};
-          prevData.forEach(machine => {
-            const id = machine.id || machine._id;
-            existingMachines[id] = machine;
-          });
-          
-          // Update existing machines with new data
-          const result = [...prevData];
-          updatedMachines.forEach(updatedMachine => {
-            const machineId = updatedMachine.id || updatedMachine._id;
-            const index = result.findIndex(m => 
-              (m.id === machineId || m._id === machineId)
-            );
-            
-            if (index !== -1) {
-              // Update existing machine
-              result[index] = {
-                ...result[index],
-                status: updatedMachine.status,
-                maintenanceNote: updatedMachine.maintenanceNote
-              };
-            }
-          });
-          
-          console.log("Updated machine data:", result);
-          return result;
-        });
-        
-        console.log("Machine statuses updated successfully");
+      if (Object.keys(newStatuses).length > 0) {
+        console.log("Setting new machine statuses:", newStatuses);
+        setMachineStatuses(newStatuses);
+        setMachineNotes(newNotes);
       } else {
-        console.warn("No machine data was retrieved from the server");
+        console.warn("No machine statuses were retrieved from the server");
       }
     } catch (error) {
       console.error("Error fetching machine statuses:", error);
@@ -156,6 +149,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         title: "Error",
         description: "Failed to fetch machine statuses"
       });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -216,8 +212,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       const machineId = selectedMachine.id || selectedMachine._id;
       
-      // Get auth token from localStorage
-      const token = localStorage.getItem('token');
+      // Get auth token from sessionStorage instead of localStorage
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
       // Use direct fetch to update machine status
       const response = await fetch(`http://localhost:4000/api/machines/${machineId}/status`, {
@@ -243,6 +239,17 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           responseData = { message: responseText };
         }
         console.log('Update result:', responseData);
+        
+        // Update the machine statuses and notes
+        setMachineStatuses(prev => ({
+          ...prev,
+          [machineId]: selectedStatus
+        }));
+        
+        setMachineNotes(prev => ({
+          ...prev,
+          [machineId]: maintenanceNote
+        }));
         
         // Update the machine data in state
         setMachineData(machineData.map(machine => 
@@ -415,49 +422,56 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           <CardDescription>Current status of all machines</CardDescription>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
-          <div className="space-y-3">
-            {sortedMachineData.length > 0 ? (
-              sortedMachineData.map((machine) => {
-                const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
-                const machineType = getMachineType(machine);
-                const statusDisplay = getStatusDisplay(machine);
-                
-                return (
-                  <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
-                    <div>
-                      <div className="font-medium text-sm">
-                        {machine.name}
+          {isLoading && !initialLoadDone ? (
+            <div className="flex justify-center items-center py-4">
+              <RefreshCw className="h-6 w-6 animate-spin text-purple-600 mr-2" />
+              <span>Loading machine statuses...</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sortedMachineData.length > 0 ? (
+                sortedMachineData.map((machine) => {
+                  const isEquipment = machine.type === 'Equipment' || machine.type === 'Safety Cabinet';
+                  const machineType = getMachineType(machine);
+                  const statusDisplay = getStatusDisplay(machine);
+                  
+                  return (
+                    <div key={machine.id || machine._id} className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 last:border-0 gap-2">
+                      <div>
+                        <div className="font-medium text-sm">
+                          {machine.name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Type: {machineType}
+                          {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Type: {machineType}
-                        {!isEquipment && machine.maintenanceNote ? ` - Note: ${machine.maintenanceNote}` : ''}
+                      <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded ${statusDisplay.className}`}>
+                          {statusDisplay.text}
+                        </span>
+                        {!isEquipment && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
+                            onClick={() => handleUpdateMachineStatus(machine)}
+                            disabled={rateLimitRemaining !== null}
+                          >
+                            Update
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${statusDisplay.className}`}>
-                        {statusDisplay.text}
-                      </span>
-                      {!isEquipment && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs w-full md:w-auto"
-                          onClick={() => handleUpdateMachineStatus(machine)}
-                          disabled={rateLimitRemaining !== null}
-                        >
-                          Update
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-4 text-gray-500">
-                <p className="text-sm">No machines available yet.</p>
-              </div>
-            )}
-          </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="text-sm">No machines available yet.</p>
+                </div>
+              )}
+            </div>
+          )}
           
           {rateLimitRemaining !== null && (
             <Alert variant="destructive" className="mt-4">
