@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -156,7 +157,7 @@ class ApiService {
   
   async login(email: string, password: string) {
     console.log('Attempting login via API for:', email);
-    return this.post(
+    return this.post<{ token: string, user: any }>(
       'auth/login', 
       { email, password },
       false

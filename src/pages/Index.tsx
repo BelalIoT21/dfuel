@@ -61,7 +61,7 @@ const Index = () => {
     
     checkServer();
     // Set up an interval to periodically check server status
-    const intervalId = setInterval(checkServer, 30000); // Check every 30 seconds
+    const intervalId = setInterval(checkServer, 10000); // Check every 10 seconds
     
     return () => clearInterval(intervalId);
   }, []);
@@ -76,31 +76,13 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    try {
-      const success = await login(email, password);
-      console.log("Login success:", success);
-    } catch (error) {
-      console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: "Could not log in with those credentials",
-        variant: "destructive"
-      });
-    }
+    const success = await login(email, password);
+    console.log("Login success:", success);
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    try {
-      await register(email, password, name);
-    } catch (error) {
-      console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: "Could not create account",
-        variant: "destructive"
-      });
-    }
+    await register(email, password, name);
   };
 
   const toggleMode = () => {

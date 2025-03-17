@@ -3,7 +3,6 @@ import { Collection } from 'mongodb';
 import { MongoBooking } from './types';
 import mongoConnectionService from './connectionService';
 import { machineService } from '../machineService';
-import userDatabase from '../userDatabase';
 
 class MongoBookingService {
   private bookingsCollection: Collection<MongoBooking> | null = null;
@@ -68,20 +67,7 @@ class MongoBookingService {
     try {
       console.log(`Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
       
-      // Get userName if not provided
-      if (!userName) {
-        try {
-          const user = await userDatabase.getUserById(userId);
-          if (user) {
-            userName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
-            console.log(`Found user name: ${userName}`);
-          }
-        } catch (userError) {
-          console.error("Error getting user name for booking:", userError);
-        }
-      }
-      
-      // Get machineName if not provided
+      // If machineName wasn't provided, try to get it
       if (!machineName) {
         try {
           const machine = await machineService.getMachineById(machineId);
@@ -96,9 +82,9 @@ class MongoBookingService {
       
       const booking: MongoBooking = {
         userId,
-        userName: userName || 'Unknown User',
+        userName, // Include user name
         machineId,
-        machineName: machineName || `Machine ${machineId}`,
+        machineName, // Include machine name
         date,
         time,
         status: 'Pending',

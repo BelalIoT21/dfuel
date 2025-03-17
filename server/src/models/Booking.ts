@@ -4,8 +4,6 @@ import mongoose from 'mongoose';
 export interface IBooking extends mongoose.Document {
   user: mongoose.Types.ObjectId;
   machine: mongoose.Types.ObjectId;
-  userName: string;
-  machineName: string;
   date: Date;
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
@@ -25,14 +23,6 @@ const bookingSchema = new mongoose.Schema<IBooking>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Machine',
       required: true,
-    },
-    userName: {
-      type: String,
-      default: 'Unknown User',
-    },
-    machineName: {
-      type: String,
-      default: 'Unknown Machine',
     },
     date: {
       type: Date,
