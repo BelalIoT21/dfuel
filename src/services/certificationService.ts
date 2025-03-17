@@ -24,6 +24,7 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringCertId = certificationId.toString();
 
+      // Make the API call
       const response = await apiService.post('certifications', {
         userId: stringUserId,
         machineId: stringCertId
@@ -31,12 +32,13 @@ export class CertificationService {
       
       console.log("API certification response:", response);
       
-      // Both newly added and already had it are considered success
+      // Check for success response
       if (response.data?.success) {
         console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
       }
       
+      // Log error if unsuccessful
       console.error("API certification error:", response.error || "Unknown error");
       return false;
     } catch (error) {
@@ -58,16 +60,18 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringCertId = certificationId.toString();
 
+      // Make the API call
       const response = await apiService.delete(`certifications/${stringUserId}/${stringCertId}`);
       
       console.log("API remove certification response:", response);
       
-      // Both removed and didn't have it are considered success
+      // Check for success response
       if (response.data?.success) {
         console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
       }
       
+      // Log error if unsuccessful
       console.error("API certification removal error:", response.error || "Unknown error");
       return false;
     } catch (error) {
@@ -88,6 +92,7 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
 
+      // Make the API call
       const response = await apiService.delete(`certifications/clear/${stringUserId}`);
       
       console.log("API clear certifications response:", response);
@@ -96,6 +101,7 @@ export class CertificationService {
         return true;
       }
       
+      // Log error if unsuccessful
       console.error("API clear certifications error:", response.error || "Unknown error");
       return false;
     } catch (error) {
@@ -116,14 +122,18 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
+      // Make the API call
       const response = await apiService.get(`certifications/user/${stringUserId}`);
       console.log("API get certifications response:", response);
       
       if (response.data && Array.isArray(response.data)) {
         // Make sure all certification IDs are strings
-        return response.data.map(cert => cert.toString ? cert.toString() : String(cert));
+        const certifications = response.data.map(cert => cert.toString ? cert.toString() : String(cert));
+        console.log("Received certifications from service:", certifications);
+        return certifications;
       }
       
+      // Log error if unsuccessful
       console.error("API get certifications error:", response.error || "Unknown error");
       return [];
     } catch (error) {
@@ -145,6 +155,7 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
+      // Make the API call
       const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
       console.log("API check certification response:", response);
       

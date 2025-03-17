@@ -9,7 +9,10 @@ import asyncHandler from 'express-async-handler';
 export const addCertification = asyncHandler(async (req: Request, res: Response) => {
   const { userId, machineId } = req.body;
   
+  console.log(`Request to add certification: userId=${userId}, machineId=${machineId}`);
+  
   if (!userId || !machineId) {
+    console.log('Missing required fields:', { userId, machineId });
     res.status(400).json({ 
       success: false, 
       message: 'User ID and machine ID are required' 
@@ -21,6 +24,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     const user = await User.findById(userId);
     
     if (!user) {
+      console.log(`User not found with ID: ${userId}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -30,6 +34,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     
     // Check if user already has this certification
     if (user.certifications.includes(machineId)) {
+      console.log(`User ${userId} already has certification ${machineId}`);
       res.status(200).json({ 
         success: true, 
         message: 'User already has this certification' 
@@ -47,6 +52,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     user.certificationDates[machineId] = new Date();
     
     await user.save();
+    console.log(`Added certification ${machineId} to user ${userId}`);
     
     res.status(200).json({ 
       success: true, 
@@ -68,7 +74,10 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
 export const removeCertification = asyncHandler(async (req: Request, res: Response) => {
   const { userId, machineId } = req.params;
   
+  console.log(`Request to remove certification: userId=${userId}, machineId=${machineId}`);
+  
   if (!userId || !machineId) {
+    console.log('Missing required fields:', { userId, machineId });
     res.status(400).json({ 
       success: false, 
       message: 'User ID and machine ID are required' 
@@ -80,6 +89,7 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
     const user = await User.findById(userId);
     
     if (!user) {
+      console.log(`User not found with ID: ${userId}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -90,6 +100,7 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
     // Check if user has this certification
     const certIndex = user.certifications.indexOf(machineId);
     if (certIndex === -1) {
+      console.log(`User ${userId} does not have certification ${machineId}`);
       res.status(200).json({ 
         success: true, 
         message: 'User does not have this certification' 
@@ -106,6 +117,7 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
     }
     
     await user.save();
+    console.log(`Removed certification ${machineId} from user ${userId}`);
     
     res.status(200).json({ 
       success: true, 
@@ -127,7 +139,10 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
 export const clearUserCertifications = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   
+  console.log(`Request to clear all certifications for user: ${userId}`);
+  
   if (!userId) {
+    console.log('Missing required userId');
     res.status(400).json({ 
       success: false, 
       message: 'User ID is required' 
@@ -139,6 +154,7 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
     const user = await User.findById(userId);
     
     if (!user) {
+      console.log(`User not found with ID: ${userId}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -153,6 +169,7 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
     user.certificationDates = {};
     
     await user.save();
+    console.log(`Cleared all certifications for user ${userId}`);
     
     res.status(200).json({ 
       success: true, 
@@ -174,10 +191,13 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
 export const getUserCertifications = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   
+  console.log(`Request to get certifications for user: ${userId}`);
+  
   try {
     const user = await User.findById(userId).select('certifications');
     
     if (!user) {
+      console.log(`User not found with ID: ${userId}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -186,6 +206,7 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     }
     
     // Return the certifications
+    console.log(`Retrieved certifications for user ${userId}:`, user.certifications);
     res.status(200).json(user.certifications);
   } catch (error) {
     console.error('Error getting user certifications:', error);
@@ -203,10 +224,13 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
 export const checkCertification = asyncHandler(async (req: Request, res: Response) => {
   const { userId, machineId } = req.params;
   
+  console.log(`Request to check certification: userId=${userId}, machineId=${machineId}`);
+  
   try {
     const user = await User.findById(userId).select('certifications');
     
     if (!user) {
+      console.log(`User not found with ID: ${userId}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -215,6 +239,7 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
     }
     
     const hasCertification = user.certifications.includes(machineId);
+    console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
     res.status(200).json(hasCertification);
   } catch (error) {
     console.error('Error checking certification:', error);
