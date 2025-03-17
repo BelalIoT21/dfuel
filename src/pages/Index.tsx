@@ -98,7 +98,7 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={`mt-2 text-sm ${serverStatus.includes('connected') ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={serverStatus.includes('connected') ? 'mt-2 text-sm text-green-600' : 'mt-2 text-sm text-red-600'}>
               Server status: {serverStatus}
             </div>
           )}
