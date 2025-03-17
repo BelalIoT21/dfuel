@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 // @access  Private
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { machineId, date, time } = req.body;
+    const { machineId, date, time, userName, machineName } = req.body;
     
     // Validate input
     if (!machineId || !date || !time) {
@@ -54,7 +54,7 @@ export const createBooking = async (req: Request, res: Response) => {
     // For admin users, bypass booking slot check
     if (!req.user.isAdmin) {
       // Check if the time slot is already booked
-      if (machine.bookedTimeSlots.includes(timeSlot)) {
+      if (machine.bookedTimeSlots && machine.bookedTimeSlots.includes(timeSlot)) {
         return res.status(400).json({ message: 'This time slot is already booked' });
       }
       
@@ -75,14 +75,25 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
+    // Get user information if not provided
+    const userObj = await User.findById(req.user._id);
+    const finalUserName = userName || (userObj ? userObj.name : 'Unknown User');
+    
+    // Get machine information if not provided
+    const finalMachineName = machineName || machine.name || `Machine ${machineId}`;
+    
     // Create booking
     const booking = new Booking({
       user: req.user._id,
       machine: machineId,
       date,
       time,
+      // Include the userName and machineName
+      userName: finalUserName,
+      machineName: finalMachineName,
       // Auto-approve bookings made by admins
-      status: req.user.isAdmin ? 'Approved' : 'Pending'
+      status: req.user.isAdmin ? 'Approved' : 'Pending',
+      clientId: `client-${Date.now()}` // Generate a client ID for reference
     });
     
     const createdBooking = await booking.save();
@@ -323,10 +334,10 @@ export const getAllBookings = async (req: Request, res: Response) => {
       return {
         _id: booking._id,
         machineId: booking.machine,
-        machineName: machineDoc?.name || `Unknown Machine (${booking.machine})`,
+        machineName: booking.machineName || machineDoc?.name || `Unknown Machine (${booking.machine})`,
         machineType: machineDoc?.type || 'Unknown Type',
         userId: booking.user,
-        userName: userDoc?.name || 'Unknown User',
+        userName: booking.userName || userDoc?.name || 'Unknown User',
         userEmail: userDoc?.email || 'Unknown Email',
         date: booking.date,
         time: booking.time,

@@ -3,18 +3,19 @@ import { apiService } from './apiService';
 import mongoDbService from './mongoDbService';
 import { toast } from '@/components/ui/use-toast';
 import { isWeb } from '@/utils/platform';
+import { machineService } from './machineService';
+import userDatabase from './userDatabase';
 
 class BookingService {
   async getAllBookings() {
     try {
       console.log("BookingService.getAllBookings: Fetching all bookings");
       
-      // Get token directly from localStorage to avoid dependency issues
-      const token = isWeb() ? localStorage.getItem('token') : null;
-      apiService.setToken(token);
-      
       // Try API first
       try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         const response = await apiService.getAllBookings();
         if (response.data) {
           console.log(`Found ${response.data.length} bookings via API`);
@@ -43,12 +44,11 @@ class BookingService {
     try {
       console.log(`BookingService.getUserBookings: Fetching bookings for user ${userId}`);
       
-      // Get token directly from localStorage to avoid dependency issues
-      const token = isWeb() ? localStorage.getItem('token') : null;
-      apiService.setToken(token);
-      
       // Try API first
       try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         const response = await apiService.getUserBookings(userId);
         if (response.data) {
           console.log(`Found ${response.data.length} user bookings via API`);
@@ -77,36 +77,35 @@ class BookingService {
     try {
       console.log(`BookingService.createBooking: Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
       
-      // Get machine name from machine service
-      let machineName = '';
-      try {
-        const machineData = await apiService.getMachineById(machineId);
-        if (machineData.data) {
-          machineName = machineData.data.name;
-          console.log(`Found machine name: ${machineName}`);
-        }
-      } catch (error) {
-        console.error("Error getting machine name:", error);
-      }
-      
       // Get user's name
       let userName = '';
       try {
-        const userData = await apiService.getUserById(userId);
-        if (userData.data) {
-          userName = userData.data.name || `${userData.data.firstName} ${userData.data.lastName}`.trim();
+        const user = await userDatabase.getUserById(userId);
+        if (user) {
+          userName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
           console.log(`Found user name: ${userName}`);
         }
       } catch (error) {
         console.error("Error getting user name:", error);
       }
       
-      // Get token directly from localStorage to avoid dependency issues
-      const token = isWeb() ? localStorage.getItem('token') : null;
-      apiService.setToken(token);
+      // Get machine name
+      let machineName = '';
+      try {
+        const machine = await machineService.getMachineById(machineId);
+        if (machine) {
+          machineName = machine.name || '';
+          console.log(`Found machine name: ${machineName}`);
+        }
+      } catch (error) {
+        console.error("Error getting machine name:", error);
+      }
       
       // Try API first
       try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         const response = await apiService.post(
           'bookings', 
           { 
@@ -145,12 +144,11 @@ class BookingService {
     try {
       console.log(`BookingService.updateBookingStatus: Updating booking ${bookingId} to ${status}`);
       
-      // Get token directly from localStorage to avoid dependency issues
-      const token = isWeb() ? localStorage.getItem('token') : null;
-      apiService.setToken(token);
-      
       // Try API first
       try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         const response = await apiService.updateBookingStatus(bookingId, status);
         if (response.data) {
           console.log("Successfully updated booking status via API");
@@ -179,12 +177,11 @@ class BookingService {
     try {
       console.log(`BookingService.cancelBooking: Canceling booking ${bookingId}`);
       
-      // Get token directly from localStorage to avoid dependency issues
-      const token = isWeb() ? localStorage.getItem('token') : null;
-      apiService.setToken(token);
-      
       // Try API first
       try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         const response = await apiService.cancelBooking(bookingId);
         if (response.data) {
           console.log("Successfully canceled booking via API");

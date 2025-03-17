@@ -51,9 +51,9 @@ export interface MongoCertification {
 export interface MongoBooking {
   _id?: string;
   userId: string;
-  userName?: string;  // Added userName field
+  userName: string;  // Required field now
   machineId: string;
-  machineName?: string;  // Added machineName field
+  machineName: string;  // Required field now
   date: string;
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';

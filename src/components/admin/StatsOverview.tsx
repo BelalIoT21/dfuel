@@ -76,7 +76,8 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   // Filter out machines 5 and 6
   const filteredMachines = machines.filter(machine => {
     const machineId = machine.id || machine._id;
-    return machineId !== '5' && machineId !== '6';
+    return machineId !== '5' && machineId !== '6' && 
+           machineId !== 5 && machineId !== 6; // Handle both string and number IDs
   });
   
   // Basic statistics for the admin dashboard
