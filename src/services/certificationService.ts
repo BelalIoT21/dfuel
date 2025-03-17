@@ -16,13 +16,15 @@ export class CertificationService {
     try {
       console.log(`Adding certification ${certificationId} for user ${userId}`);
       
-      // Try MongoDB first
+      // Try MongoDB without fallback to ensure consistency
       const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
-      if (mongoSuccess) return true;
-
-      // Fallback to API
-      const apiResponse = await apiService.addCertification(userId, certificationId);
-      return apiResponse?.data?.success || false;
+      console.log(`MongoDB addCertification result: ${mongoSuccess}`);
+      
+      if (!mongoSuccess) {
+        console.error(`Failed to add certification ${certificationId} to user ${userId} in MongoDB`);
+      }
+      
+      return mongoSuccess;
     } catch (error) {
       console.error('Error adding certification:', error);
       throw error;
@@ -32,17 +34,15 @@ export class CertificationService {
   async removeCertification(userId: string, certificationId: string): Promise<boolean> {
     console.log(`Removing certification ${certificationId} for user ${userId}`);
     try {
-      // Try MongoDB first
+      // Use MongoDB without fallback for consistency
       const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
-      if (mongoSuccess) {
-        console.log(`Successfully removed certification ${certificationId} from MongoDB`);
-        return true;
+      console.log(`MongoDB removeCertification result: ${mongoSuccess}`);
+      
+      if (!mongoSuccess) {
+        console.error(`Failed to remove certification ${certificationId} from user ${userId} in MongoDB`);
       }
-
-      // Fallback to API
-      console.log(`MongoDB removal failed, trying API for certification ${certificationId}`);
-      const apiResponse = await apiService.removeCertification(userId, certificationId);
-      return apiResponse?.data?.success || false;
+      
+      return mongoSuccess;
     } catch (error) {
       console.error('Certification removal failed:', error);
       throw error;
@@ -52,10 +52,13 @@ export class CertificationService {
   async clearAllCertifications(userId: string): Promise<boolean> {
     try {
       const success = await mongoDbService.clearUserCertifications(userId);
-      if (success) return true;
-
-      const apiResponse = await apiService.clearCertifications(userId);
-      return apiResponse?.data?.success || false;
+      console.log(`MongoDB clearAllCertifications result: ${success}`);
+      
+      if (!success) {
+        console.error(`Failed to clear certifications for user ${userId} in MongoDB`);
+      }
+      
+      return success;
     } catch (error) {
       console.error('Error clearing certifications:', error);
       throw error;

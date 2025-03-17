@@ -40,8 +40,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
     setLoading(certificationId);
     try {
-      // Use certificationService which will try both MongoDB and API
+      console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
+      // Use certificationService which will use MongoDB
       const success = await certificationService.addCertification(userId, certificationId);
+      
       if (success) {
         toast({
           title: "Certification Added",
@@ -51,7 +53,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to add certification.",
+          description: "Failed to add certification to MongoDB.",
           variant: "destructive"
         });
       }
@@ -71,8 +73,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const handleRemoveCertification = async (userId: string, certificationId: string) => {
     setLoading(certificationId);
     try {
-      // Use certificationService which will try both MongoDB and API
+      console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
+      // Use certificationService which will use MongoDB
       const success = await certificationService.removeCertification(userId, certificationId);
+      
       if (success) {
         toast({
           title: "Certification Removed",
@@ -82,7 +86,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to remove certification.",
+          description: "Failed to remove certification from MongoDB.",
           variant: "destructive"
         });
       }
@@ -104,8 +108,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
     setIsClearing(true);
     try {
-      // Use certificationService which will try both MongoDB and API
+      console.log(`Attempting to clear all certifications for user ${user.id}`);
+      // Use certificationService which will use MongoDB
       const success = await certificationService.clearAllCertifications(user.id);
+      
       if (success) {
         toast({
           title: "Certifications Cleared",
@@ -115,7 +121,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to clear certifications.",
+          description: "Failed to clear certifications from MongoDB.",
           variant: "destructive"
         });
       }
@@ -129,6 +135,12 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     } finally {
       setIsClearing(false);
     }
+  };
+
+  // Helper function to determine if user has a certification
+  const hasCertification = (certificationId: string) => {
+    if (!user || !user.certifications) return false;
+    return user.certifications.includes(certificationId);
   };
 
   return (
@@ -147,7 +159,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           <h4 className="text-sm font-medium mb-2">Certifications</h4>
           <div className="grid grid-cols-1 gap-2">
             {CERTIFICATIONS.map(certification => {
-              const isCertified = user.certifications?.includes(certification.id);
+              const isCertified = hasCertification(certification.id);
               return (
                 <div key={certification.id} className="flex justify-between items-center border p-2 rounded">
                   <span>{certification.name}</span>
