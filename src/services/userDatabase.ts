@@ -1,21 +1,16 @@
 
 import { userService } from './userService';
-import databaseService from './databaseService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
 
 class UserDatabase {
   async getAllUsers() {
     try {
-      // Only use MongoDB for consistency
+      console.log("UserDatabase: Getting all users from MongoDB");
+      // Use MongoDB for consistency
       const mongoUsers = await mongoDbService.getAllUsers();
-      if (mongoUsers && mongoUsers.length > 0) {
-        console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
-        return mongoUsers;
-      }
-      
-      console.error("MongoDB returned no users, this should not happen");
-      return [];
+      console.log(`Retrieved ${mongoUsers.length} users from MongoDB`);
+      return mongoUsers;
     } catch (error) {
       console.error('Error in getAllUsers:', error);
       return [];
@@ -24,6 +19,12 @@ class UserDatabase {
 
   async findUserByEmail(email: string) {
     try {
+      console.log(`UserDatabase: Finding user by email: ${email}`);
+      if (!email) {
+        console.error("Invalid email passed to findUserByEmail");
+        return null;
+      }
+      
       // Attempt to find user in MongoDB
       const mongoUser = await mongoDbService.getUserByEmail(email);
       if (mongoUser) {
@@ -43,6 +44,11 @@ class UserDatabase {
   async addCertification(userId: string, certificationId: string) {
     try {
       console.log(`UserDatabase: Adding certification ${certificationId} for user ${userId}`);
+      if (!userId || !certificationId) {
+        console.error("Invalid userId or certificationId passed to addCertification");
+        return false;
+      }
+      
       const success = await certificationService.addCertification(userId, certificationId);
       if (!success) {
         console.error(`Failed to add certification ${certificationId} for user ${userId}`);
@@ -57,6 +63,11 @@ class UserDatabase {
   async removeCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
       console.log(`UserDatabase: Removing certification ${certificationId} for ${userId}`);
+      if (!userId || !certificationId) {
+        console.error("Invalid userId or certificationId passed to removeCertification");
+        return false;
+      }
+      
       const success = await certificationService.removeCertification(userId, certificationId);
       if (!success) {
         console.error(`Failed to remove certification ${certificationId} for user ${userId}`);

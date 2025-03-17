@@ -1,6 +1,5 @@
 
 import mongoDbService from './mongoDbService';
-import { apiService } from './apiService';
 
 const CERTIFICATIONS = {
   LASER_CUTTER: { id: "1", name: "Laser Cutter" },
@@ -14,55 +13,65 @@ const CERTIFICATIONS = {
 export class CertificationService {
   async addCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
-      console.log(`Adding certification ${certificationId} for user ${userId}`);
+      console.log(`CertificationService: Adding certification ${certificationId} for user ${userId}`);
       
-      // Try MongoDB without fallback to ensure consistency
+      if (!userId || !certificationId) {
+        console.error('Invalid userId or certificationId');
+        return false;
+      }
+
+      // Use MongoDB for consistency
       const mongoSuccess = await mongoDbService.updateUserCertifications(userId, certificationId);
       console.log(`MongoDB addCertification result: ${mongoSuccess}`);
-      
-      if (!mongoSuccess) {
-        console.error(`Failed to add certification ${certificationId} to user ${userId} in MongoDB`);
-      }
       
       return mongoSuccess;
     } catch (error) {
       console.error('Error adding certification:', error);
-      throw error;
+      return false;
     }
   }
 
   async removeCertification(userId: string, certificationId: string): Promise<boolean> {
-    console.log(`Removing certification ${certificationId} for user ${userId}`);
     try {
-      // Use MongoDB without fallback for consistency
+      console.log(`CertificationService: Removing certification ${certificationId} for user ${userId}`);
+      
+      if (!userId || !certificationId) {
+        console.error('Invalid userId or certificationId');
+        return false;
+      }
+
+      // Use MongoDB for consistency
       const mongoSuccess = await mongoDbService.removeUserCertification(userId, certificationId);
       console.log(`MongoDB removeCertification result: ${mongoSuccess}`);
-      
-      if (!mongoSuccess) {
-        console.error(`Failed to remove certification ${certificationId} from user ${userId} in MongoDB`);
-      }
       
       return mongoSuccess;
     } catch (error) {
       console.error('Certification removal failed:', error);
-      throw error;
+      return false;
     }
   }
 
   async clearAllCertifications(userId: string): Promise<boolean> {
     try {
+      console.log(`CertificationService: Clearing all certifications for user ${userId}`);
+      
+      if (!userId) {
+        console.error('Invalid userId');
+        return false;
+      }
+
       const success = await mongoDbService.clearUserCertifications(userId);
       console.log(`MongoDB clearAllCertifications result: ${success}`);
-      
-      if (!success) {
-        console.error(`Failed to clear certifications for user ${userId} in MongoDB`);
-      }
       
       return success;
     } catch (error) {
       console.error('Error clearing certifications:', error);
-      throw error;
+      return false;
     }
+  }
+  
+  getAllCertifications() {
+    return Object.values(CERTIFICATIONS);
   }
 }
 

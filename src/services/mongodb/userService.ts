@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -32,6 +33,7 @@ class MongoUserService {
   async getUserByEmail(email: string): Promise<MongoUser | null> {
     await this.initCollection();
     if (!this.usersCollection) return null;
+    if (!email) return null;
 
     try {
       return await this.usersCollection.findOne({ email: email.toLowerCase() });
@@ -44,6 +46,7 @@ class MongoUserService {
   async getUserById(id: string): Promise<MongoUser | null> {
     await this.initCollection();
     if (!this.usersCollection) return null;
+    if (!id) return null;
 
     try {
       return await this.usersCollection.findOne({ id });
@@ -58,8 +61,25 @@ class MongoUserService {
     if (!this.usersCollection) return null;
 
     try {
+      if (!user || !user.email) {
+        console.error("Invalid user data for createUser");
+        return null;
+      }
+      
       const existingUser = await this.getUserByEmail(user.email);
       if (existingUser) return null;
+
+      // Ensure lastLogin is a valid date
+      if (user.lastLogin) {
+        try {
+          user.lastLogin = new Date(user.lastLogin).toISOString();
+        } catch (e) {
+          console.error("Invalid date format for lastLogin, using current date");
+          user.lastLogin = new Date().toISOString();
+        }
+      } else {
+        user.lastLogin = new Date().toISOString();
+      }
 
       await this.usersCollection.insertOne(user);
       return user;
@@ -72,8 +92,19 @@ class MongoUserService {
   async updateUser(id: string, updates: Partial<MongoUser>): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
+    if (!id) return false;
 
     try {
+      // Ensure lastLogin is a valid date if provided
+      if (updates.lastLogin) {
+        try {
+          updates.lastLogin = new Date(updates.lastLogin).toISOString();
+        } catch (e) {
+          console.error("Invalid date format for lastLogin in updates, using current date");
+          updates.lastLogin = new Date().toISOString();
+        }
+      }
+
       const result = await this.usersCollection.updateOne(
         { id },
         { $set: updates }
@@ -88,6 +119,7 @@ class MongoUserService {
   async deleteUser(id: string): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
+    if (!id) return false;
 
     try {
       const user = await this.getUserById(id);
@@ -108,6 +140,7 @@ class MongoUserService {
   async updateUserCertifications(userId: string, certificationId: string): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
+    if (!userId || !certificationId) return false;
 
     try {
       const user = await this.getUserById(userId);
@@ -120,7 +153,9 @@ class MongoUserService {
         { id: userId },
         { $addToSet: { certifications: certificationId } }
       );
-      return result.modifiedCount > 0;
+      
+      console.log(`updateUserCertifications result: ${result.modifiedCount > 0 ? 'success' : 'no change needed'}`);
+      return true; // Return true even if certification already exists
     } catch (error) {
       console.error("Error updating user certifications:", error);
       return false;
@@ -130,13 +165,16 @@ class MongoUserService {
   async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
+    if (!userId || !certificationId) return false;
 
     try {
       const result = await this.usersCollection.updateOne(
         { id: userId },
         { $pull: { certifications: certificationId } }
       );
-      return result.modifiedCount > 0;
+      
+      console.log(`removeUserCertification result: ${result.modifiedCount > 0 ? 'success' : 'no change needed'}`);
+      return true; // Return true even if certification wasn't there
     } catch (error) {
       console.error("Error removing user certification:", error);
       return false;
@@ -146,6 +184,7 @@ class MongoUserService {
   async clearUserCertifications(userId: string): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
+    if (!userId) return false;
 
     try {
       const result = await this.usersCollection.updateOne(

@@ -6,33 +6,31 @@ import { useAuth } from '@/context/AuthContext';
 import { Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-
-const MACHINES = [
-  { id: "1", name: "Laser Cutter", bookable: true },
-  { id: "2", name: "Ultimaker", bookable: true },
-  { id: "3", name: "X1 E Carbon 3D Printer", bookable: true },
-  { id: "4", name: "Bambu Lab X1 E", bookable: true },
-  { id: "5", name: "Safety Cabinet", bookable: false },
-  { id: "6", name: "Safety Course", bookable: false }
-];
+import { certificationService } from '@/services/certificationService';
 
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [machines, setMachines] = useState([]);
 
   // Get user certifications as strings to ensure proper comparison
   const userCerts = (user?.certifications || []).map(cert => cert.toString());
 
-  const machines = MACHINES.map(machine => ({
-    ...machine,
-    certified: userCerts.includes(machine.id),
-    date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy')
-  }));
-
   useEffect(() => {
     if (user) {
       console.log("User certifications in CertificationsCard:", userCerts);
+      const allMachines = certificationService.getAllCertifications();
+      
+      // Only use the first 4 machines as requested
+      const firstFourMachines = allMachines.slice(0, 4).map(machine => ({
+        ...machine,
+        certified: userCerts.includes(machine.id),
+        date: user?.certificationDates?.[machine.id] || format(new Date(), 'dd/MM/yyyy'),
+        bookable: true
+      }));
+      
+      setMachines(firstFourMachines);
       setLoading(false);
     }
   }, [user, userCerts]);

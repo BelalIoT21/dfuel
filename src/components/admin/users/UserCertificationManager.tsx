@@ -41,8 +41,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading(certificationId);
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
-      // Use certificationService which will use MongoDB
-      const success = await certificationService.addCertification(userId, certificationId);
+      
+      // Ensure we always use the id field
+      const actualUserId = userId || user._id;
+      
+      if (!actualUserId) {
+        throw new Error("Cannot determine user ID");
+      }
+      
+      const success = await certificationService.addCertification(actualUserId, certificationId);
       
       if (success) {
         toast({
@@ -53,7 +60,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to add certification to MongoDB.",
+          description: "Failed to add certification.",
           variant: "destructive"
         });
       }
@@ -74,8 +81,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     setLoading(certificationId);
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
-      // Use certificationService which will use MongoDB
-      const success = await certificationService.removeCertification(userId, certificationId);
+      
+      // Ensure we always use the id field
+      const actualUserId = userId || user._id;
+      
+      if (!actualUserId) {
+        throw new Error("Cannot determine user ID");
+      }
+      
+      const success = await certificationService.removeCertification(actualUserId, certificationId);
       
       if (success) {
         toast({
@@ -86,7 +100,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to remove certification from MongoDB.",
+          description: "Failed to remove certification.",
           variant: "destructive"
         });
       }
@@ -104,13 +118,20 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
   // Handle clearing all certifications
   const handleClearAllCertifications = async () => {
-    if (!user || !user.id) return;
+    if (!user) return;
 
     setIsClearing(true);
     try {
-      console.log(`Attempting to clear all certifications for user ${user.id}`);
-      // Use certificationService which will use MongoDB
-      const success = await certificationService.clearAllCertifications(user.id);
+      console.log(`Attempting to clear all certifications for user ${user.id || user._id}`);
+      
+      // Ensure we always use the id field
+      const actualUserId = user.id || user._id;
+      
+      if (!actualUserId) {
+        throw new Error("Cannot determine user ID");
+      }
+      
+      const success = await certificationService.clearAllCertifications(actualUserId);
       
       if (success) {
         toast({
@@ -121,7 +142,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       } else {
         toast({
           title: "Error",
-          description: "Failed to clear certifications from MongoDB.",
+          description: "Failed to clear certifications.",
           variant: "destructive"
         });
       }
@@ -140,7 +161,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   // Helper function to determine if user has a certification
   const hasCertification = (certificationId: string) => {
     if (!user || !user.certifications) return false;
-    return user.certifications.includes(certificationId);
+    const certStrings = user.certifications.map(cert => cert.toString());
+    return certStrings.includes(certificationId);
   };
 
   return (
@@ -168,7 +190,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveCertification(user.id, certification.id)}
+                        onClick={() => handleRemoveCertification(user.id || user._id, certification.id)}
                         disabled={loading === certification.id}
                         className="bg-red-50 hover:bg-red-100 border-red-200"
                       >
@@ -179,7 +201,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAddCertification(user.id, certification.id)}
+                        onClick={() => handleAddCertification(user.id || user._id, certification.id)}
                         disabled={loading === certification.id}
                       >
                         {loading === certification.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
