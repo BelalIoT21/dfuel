@@ -30,9 +30,23 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
+        console.log("Checking server connection status...");
         const response = await apiService.checkHealth();
-        setIsServerConnected(!!response.data);
+        
+        // Check both response.data and status to determine if connected
+        const isConnected = response.data && response.status === 200;
+        console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
+        
+        setIsServerConnected(isConnected);
+        
+        if (isConnected) {
+          toast({
+            title: "Server Connected",
+            description: "Successfully connected to the backend server"
+          });
+        }
       } catch (error) {
+        console.error("Error checking server connection:", error);
         setIsServerConnected(false);
       }
     };
@@ -41,7 +55,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     const intervalId = setInterval(checkServerStatus, 30000);
     
     return () => clearInterval(intervalId);
-  }, []);
+  }, [toast]);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
@@ -63,7 +77,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const response = await apiService.checkHealth();
-      setIsServerConnected(!!response.data);
+      // Check both response.data and status for connection
+      const isConnected = response.data && response.status === 200;
+      setIsServerConnected(isConnected);
       
       toast({
         title: "Refreshed",
@@ -99,6 +115,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       if (success) {
         console.log(`Successfully updated machine ${selectedMachine.id} status`);
         
+        // Update the machine data in state
         setMachineData(machineData.map(machine => 
           machine.id === selectedMachine.id 
             ? { ...machine, status: selectedStatus, maintenanceNote: maintenanceNote } 
@@ -133,7 +150,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     }
   };
 
-  const getMachineType = (machine) => {
+  const getMachineType = (machine: any) => {
     if (machine.id === "5") {
       return "Safety Cabinet";
     } else if (machine.id === "6") {
@@ -251,19 +268,19 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="available" className="flex items-center">
+                  <SelectItem value="available">
                     <span className="flex items-center">
                       <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
                       Available
                     </span>
                   </SelectItem>
-                  <SelectItem value="maintenance" className="flex items-center">
+                  <SelectItem value="maintenance">
                     <span className="flex items-center">
                       <span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>
                       Maintenance
                     </span>
                   </SelectItem>
-                  <SelectItem value="in-use" className="flex items-center">
+                  <SelectItem value="in-use">
                     <span className="flex items-center">
                       <span className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></span>
                       In Use

@@ -52,8 +52,13 @@ const Index = () => {
         // Try API service as fallback
         try {
           const apiResponse = await apiService.checkHealth();
-          if (apiResponse.data) {
+          if (apiResponse.data && apiResponse.status === 200) {
             setServerStatus('connected via API');
+            
+            toast({
+              title: 'API Server Connected',
+              description: 'Connected via alternative API endpoint',
+            });
           }
         } catch (apiError) {
           console.error("API service connection also failed:", apiError);
@@ -90,6 +95,8 @@ const Index = () => {
   // Debug rendering
   console.log("Rendering Index component");
 
+  const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
       <div className="w-full max-w-md space-y-6 animate-fade-up">
@@ -99,10 +106,10 @@ const Index = () => {
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && (
-            <div className={serverStatus === 'connected' || serverStatus === 'connected via API' 
+            <div className={isConnected
               ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
               : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
-              {serverStatus === 'connected' || serverStatus === 'connected via API' ? (
+              {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
                   Server: Connected
