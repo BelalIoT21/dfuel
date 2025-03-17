@@ -1,87 +1,182 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { BookOpen, ClipboardList, Certificate, Calendar } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
-import { machines, courses, quizzes } from '../utils/data';
+import { useToast } from '../hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, Award, Book, Calendar, CheckCircle, ChevronLeft, ClipboardCheck, HelpCircle, Lock } from 'lucide-react';
+import { machines } from '../utils/data';
+import { apiService } from '../services/apiService';
+import { certificationService } from '../services/certificationService';
 
 const MachineDetail = () => {
-  const { id } = useParams();
-  const { user, addCertification } = useAuth();
-  const { toast } = useToast();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [progress, setProgress] = useState(0);
-  const [courseCompleted, setCourseCompleted] = useState(false);
-  const [quizPassed, setQuizPassed] = useState(false);
-  
-  const machine = machines.find(m => m.id === id);
-  const course = courses[id || ''];
-  
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [machine, setMachine] = useState<any>(null);
+  const [machineStatus, setMachineStatus] = useState('available');
+  const [isCertified, setIsCertified] = useState(false);
+  const [hasMachineSafetyCert, setHasMachineSafetyCert] = useState(false);
+
   useEffect(() => {
-    if (user && user.certifications.includes(id || '')) {
-      setCourseCompleted(true);
-      setQuizPassed(true);
-      setProgress(100);
-    }
-  }, [user, id]);
-  
-  const handleStartCourse = () => {
-    navigate(`/course/${id}`);
-  };
-  
-  const handleStartQuiz = () => {
-    navigate(`/quiz/${id}`);
-  };
-  
-  const handleBookMachine = () => {
-    // Make sure it's a bookable machine type
-    if (machine && machine.type === 'Safety Cabinet') {
-      toast({
-        title: "Not Bookable",
-        description: "Safety Cabinet is not a bookable resource.",
-        variant: "destructive"
-      });
+    if (!user) {
+      navigate('/');
       return;
     }
-    
-    navigate(`/booking/${id}`);
-  };
-  
-  const handleCompleteCourse = () => {
-    setCourseCompleted(true);
-    setProgress(progress => Math.min(progress + 50, 100));
-    
-    toast({
-      title: "Course Completed!",
-      description: "You can now take the quiz to get certified.",
-    });
-  };
-  
-  const handlePassQuiz = () => {
-    setQuizPassed(true);
-    setProgress(100);
-    
-    if (user && id) {
-      addCertification(id);
+
+    const loadMachineDetails = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get machine from API first
+        let machineData;
+        try {
+          const response = await apiService.getMachineById(id || '');
+          if (response.data) {
+            machineData = response.data;
+          }
+        } catch (apiError) {
+          console.error('Error fetching machine from API:', apiError);
+        }
+
+        // If API fails, fall back to static data
+        if (!machineData) {
+          machineData = machines.find(m => m.id === id);
+        }
+        
+        if (!machineData) {
+          toast({
+            title: 'Error',
+            description: 'Machine not found',
+            variant: 'destructive',
+          });
+          navigate('/home');
+          return;
+        }
+        
+        // Get machine status
+        try {
+          const statusResponse = await apiService.getMachineStatus(id || '');
+          if (statusResponse.data) {
+            setMachineStatus(statusResponse.data.status);
+          }
+        } catch (statusError) {
+          console.error('Error fetching machine status:', statusError);
+          setMachineStatus('available');
+        }
+        
+        setMachine(machineData);
+        
+        // Check if user is certified for this machine
+        if (user) {
+          try {
+            const isUserCertified = await certificationService.checkCertification(user.id, id || '');
+            setIsCertified(isUserCertified);
+          } catch (certError) {
+            console.error('Error checking certification:', certError);
+            
+            // Fallback to user object if API fails
+            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(id)) {
+              setIsCertified(true);
+            }
+          }
+          
+          // Check if user has machine safety certification (Machine 1)
+          try {
+            const hasSafetyCert = await certificationService.checkCertification(user.id, '1');
+            setHasMachineSafetyCert(hasSafetyCert);
+          } catch (safetyCertError) {
+            console.error('Error checking safety certification:', safetyCertError);
+            
+            // Fallback to user object
+            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes('1')) {
+              setHasMachineSafetyCert(true);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading machine details:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load machine details',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMachineDetails();
+  }, [id, user, navigate, toast]);
+
+  const handleGetCertified = async () => {
+    try {
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in to get certified',
+          variant: 'destructive',
+        });
+        return;
+      }
       
+      const response = await apiService.addCertification(user.id, id || '');
+      
+      if (response.data && response.data.success) {
+        setIsCertified(true);
+        toast({
+          title: 'Success',
+          description: 'You are now certified for this machine!',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to get certified. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error getting certified:', error);
       toast({
-        title: "Certification Earned!",
-        description: `You are now certified to use the ${machine?.name}.`,
+        title: 'Error',
+        description: 'Failed to get certified. Please try again.',
+        variant: 'destructive',
       });
     }
   };
-  
+
+  const handleTakeCourse = () => {
+    navigate(`/course/${id}`);
+  };
+
+  const handleTakeQuiz = () => {
+    navigate(`/quiz/${id}`);
+  };
+
+  const handleBookMachine = () => {
+    navigate(`/booking/${id}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
+          <p className="text-purple-700">Loading machine details...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!machine) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-purple-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Machine Not Found</h1>
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
           <Link to="/home">
             <Button className="bg-purple-600 hover:bg-purple-700">Return to Home</Button>
           </Link>
@@ -89,208 +184,193 @@ const MachineDetail = () => {
       </div>
     );
   }
-  
-  const isBookable = machine.type !== 'Safety Cabinet';
-  
+
+  const isMaintenance = machineStatus === 'maintenance';
+  const isBookable = !isMaintenance && isCertified && machine.id !== '5' && machine.id !== '6';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto page-transition">
-        <div className="mb-6">
-          <Link to="/home" className="text-purple-600 hover:underline flex items-center gap-1">
-            &larr; Back to Machines
-          </Link>
-        </div>
-        
-        <div className="flex flex-col md:flex-row gap-6 mb-8">
-          <div className="md:w-1/3">
-            <Card className="overflow-hidden h-full">
-              <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                <img 
-                  src={machine.image} 
-                  alt={machine.name} 
-                  className="w-full h-full object-cover"
-                />
+        <Link to="/home" className="inline-flex items-center text-purple-600 hover:text-purple-800 mb-6">
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Machines
+        </Link>
+
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+          <div className="relative">
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-32 md:h-48 flex items-end p-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-white">{machine.name}</h1>
+            </div>
+            
+            {isCertified && (
+              <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Certified
               </div>
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <Badge variant={machine.status === 'available' ? 'default' : 'destructive'} className="bg-purple-600">
-                    {machine.status === 'available' ? 'Available' : 'Maintenance'}
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    Last maintained: {machine.maintenanceDate}
-                  </span>
-                </div>
-                
-                <div className="mt-4">
-                  <div className="text-sm text-gray-500 mb-1">Certification Progress</div>
-                  <Progress value={progress} className="h-2 bg-purple-100" indicatorClassName="bg-purple-600" />
-                  <div className="flex justify-between text-sm mt-1">
-                    <span>0%</span>
-                    <span>100%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            )}
+            
+            {isMaintenance && (
+              <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                Under Maintenance
+              </div>
+            )}
           </div>
           
-          <div className="md:w-2/3">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="text-2xl">{machine.name}</CardTitle>
-                <CardDescription>{machine.description}</CardDescription>
-              </CardHeader>
+          <div className="p-6">
+            <p className="text-gray-700 mb-6">{machine.description}</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 text-purple-800">Machine Type</h3>
+                <p>{machine.type || 'Standard Equipment'}</p>
+              </div>
               
-              <CardContent>
-                <Tabs defaultValue="details">
-                  <TabsList className="mb-4">
-                    <TabsTrigger value="details">Details</TabsTrigger>
-                    <TabsTrigger value="specs">Specifications</TabsTrigger>
-                    <TabsTrigger value="certification">Certification</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="details" className="space-y-4">
-                    <div>
-                      <h3 className="font-medium mb-2">About this Machine</h3>
-                      <p className="text-gray-600">
-                        {machine.description} This specialized equipment requires proper training 
-                        before use to ensure safety and optimal results.
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-medium mb-2">Usage Requirements</h3>
-                      <ul className="list-disc pl-5 text-gray-600 space-y-1">
-                        <li>Complete the safety training course</li>
-                        <li>Pass the certification quiz</li>
-                        {isBookable && <li>Book machine time in advance</li>}
-                        <li>Follow all safety protocols</li>
-                        <li>Report any issues immediately</li>
-                      </ul>
-                    </div>
-                    
-                    {isBookable && (
-                      <Button 
-                        onClick={handleBookMachine} 
-                        disabled={!user?.certifications.includes(machine.id)}
-                        className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
-                      >
-                        {user?.certifications.includes(machine.id) 
-                          ? "Book Machine" 
-                          : "Get Certified to Book"}
-                      </Button>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="specs">
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Technical Specifications</h3>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {Object.entries(machine.specs || {}).map(([key, value]) => (
-                          <div key={key} className="border rounded-lg p-3">
-                            <div className="text-sm text-gray-500 capitalize">{key}</div>
-                            <div className="font-medium">
-                              {Array.isArray(value) 
-                                ? value.join(', ') 
-                                : value.toString()}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="certification" className="space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="font-medium flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-purple-600" />
-                        Safety Course
-                      </h3>
-                      <p className="text-gray-600">
-                        Learn how to safely operate the {machine.name} through our comprehensive course.
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button 
-                          onClick={handleStartCourse}
-                          variant={courseCompleted ? "outline" : "default"}
-                          className={courseCompleted ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
-                        >
-                          {courseCompleted ? "Review Course" : "Start Course"}
-                        </Button>
-                        
-                        {!courseCompleted && (
-                          <Button 
-                            variant="outline"
-                            className="border-purple-200 text-purple-700"
-                            onClick={handleCompleteCourse}
-                          >
-                            (Demo) Mark Course Complete
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h3 className="font-medium flex items-center gap-2">
-                        <ClipboardList className="h-5 w-5 text-purple-600" />
-                        Certification Quiz
-                      </h3>
-                      <p className="text-gray-600">
-                        Demonstrate your knowledge by passing the certification quiz.
-                      </p>
-                      
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button 
-                          onClick={handleStartQuiz}
-                          variant={quizPassed ? "outline" : "default"}
-                          disabled={!courseCompleted}
-                          className={quizPassed ? "border-purple-200 text-purple-700" : "bg-purple-600 hover:bg-purple-700"}
-                        >
-                          {quizPassed ? "Review Quiz" : "Start Quiz"}
-                        </Button>
-                        
-                        {courseCompleted && !quizPassed && (
-                          <Button 
-                            variant="outline"
-                            className="border-purple-200 text-purple-700"
-                            onClick={handlePassQuiz}
-                          >
-                            (Demo) Mark Quiz Passed
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {quizPassed && (
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
-                        <div className="bg-green-500 text-white p-1 rounded-full">
-                          <Certificate className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Certification Complete!</p>
-                          <p className="text-sm text-gray-600">You are now certified to use this machine.</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {isBookable && quizPassed && (
-                      <div className="mt-4">
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                          onClick={handleBookMachine}
-                        >
-                          <Calendar className="h-4 w-4" />
-                          Book Machine Time
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 text-purple-800">Status</h3>
+                <p className={`capitalize ${
+                  machineStatus === 'available' ? 'text-green-600' : 
+                  machineStatus === 'maintenance' ? 'text-yellow-600' : 
+                  machineStatus === 'in-use' ? 'text-blue-600' : 'text-gray-600'
+                }`}>
+                  {machineStatus.replace('-', ' ')}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Book className="h-5 w-5 text-purple-600" />
+                Training Course
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6">Complete the training course to learn how to use this machine safely and effectively.</p>
+              <Button 
+                onClick={handleTakeCourse} 
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+              >
+                <Book className="mr-2 h-4 w-4" />
+                Take Course
+              </Button>
+              
+              {machine.id !== '1' && !hasMachineSafetyCert && (
+                <div className="mt-4 text-amber-600 text-sm flex items-center">
+                  <Lock className="h-4 w-4 mr-1" />
+                  Complete Machine Safety Course first
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-purple-600" />
+                Safety Quiz
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6">Take the safety quiz to demonstrate your knowledge of proper machine operation.</p>
+              <Button 
+                onClick={handleTakeQuiz} 
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Take Quiz
+              </Button>
+              
+              {machine.id !== '1' && !hasMachineSafetyCert && (
+                <div className="mt-4 text-amber-600 text-sm flex items-center">
+                  <Lock className="h-4 w-4 mr-1" />
+                  Complete Machine Safety Course first
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {!isCertified ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-purple-600" />
+                Get Certified
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6">
+                Become certified to use this machine by completing the training course and safety quiz.
+                {machine.id !== '1' && !hasMachineSafetyCert && 
+                  " You must complete the Machine Safety Course certification first."}
+              </p>
+              <Button 
+                onClick={handleGetCertified} 
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={isMaintenance || (machine.id !== '1' && !hasMachineSafetyCert)}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Get Certified Now
+              </Button>
+              
+              {machine.id !== '1' && !hasMachineSafetyCert && (
+                <div className="mt-4 text-amber-600 text-sm flex items-center">
+                  <Lock className="h-4 w-4 mr-1" />
+                  Complete Machine Safety Course first
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : isBookable ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-purple-600" />
+                Book This Machine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-6">
+                You're certified to use this machine! Book a time slot to use it.
+              </p>
+              <Button 
+                onClick={handleBookMachine} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isMaintenance}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Book Now
+              </Button>
+              
+              {isMaintenance && (
+                <div className="mt-4 text-amber-600 text-sm flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Machine is currently under maintenance
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Certification Complete
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>
+                You're certified to use this equipment! This specific machine doesn't require booking.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

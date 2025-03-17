@@ -35,10 +35,6 @@ export const DashboardContent = () => {
             // Process machine data, ensuring each machine has a status field
             // Filter out special machines (5 and 6) which are not real machines
             const processedMachines = machinesResponse.data
-              .filter(machine => {
-                const machineId = machine._id || machine.id;
-                return machineId !== '5' && machineId !== '6';
-              })
               .map(machine => ({
                 ...machine,
                 id: machine._id || machine.id, // Ensure id exists
@@ -66,10 +62,17 @@ export const DashboardContent = () => {
     fetchData();
   }, []);
 
+  // Create a filtered list of machines for the stats overview
+  // that excludes machines 5 and 6 only for the stats count
+  const filteredMachines = machineData.filter(machine => {
+    const machineId = machine._id || machine.id;
+    return machineId !== '5' && machineId !== '6';
+  });
+
   return (
     <div className="max-w-7xl mx-auto page-transition">
       <AdminHeader />
-      <StatsOverview allUsers={allUsers} machines={machineData} />
+      <StatsOverview allUsers={allUsers} machines={filteredMachines} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
         <PlatformOverview allUsers={allUsers} />
