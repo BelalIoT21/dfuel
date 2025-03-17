@@ -1,3 +1,4 @@
+
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
@@ -74,27 +75,7 @@ export class SeedService {
           difficulty: 'Advanced',
           imageUrl: '/machines/cnc-mill.jpg',
           specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics',
-        },
-        {
-          _id: '5', // Provide a unique ID
-          name: 'Safety Cabinet',
-          type: 'Workshop',
-          description: 'Full suite of safety equipment and protective gear.',
-          status: 'Available',
-          requiresCertification: true,
-          difficulty: 'Intermediate',
-          imageUrl: '/machines/woodworking.jpg',
-        },
-        {
-          _id: '6', // Provide a unique ID
-          name: 'Safety Course',
-          type: 'Safety Course',
-          description: 'Required safety training for all makerspace users.',
-          status: 'Available',
-          requiresCertification: false,
-          difficulty: 'Beginner',
-          imageUrl: '/machines/safety.jpg',
-        },
+        }
       ];
 
       const createdMachines = await Machine.insertMany(machines);

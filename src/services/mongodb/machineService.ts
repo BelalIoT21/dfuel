@@ -119,7 +119,6 @@ class MongoMachineService {
     }
   }
   
-  // Enhanced methods for machine document management
   async getMachines(): Promise<MongoMachine[]> {
     await this.initCollections();
     if (!this.machinesCollection) {
@@ -229,7 +228,6 @@ class MongoMachineService {
     }
   }
   
-  // Helper method to seed some default machines if none exist
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) {
@@ -282,26 +280,6 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Intermediate',
             imageUrl: '/machines/bambu-lab.jpg'
-          },
-          { 
-            _id: '5', 
-            name: 'Safety Cabinet', 
-            type: 'Safety Cabinet', 
-            status: 'Available', 
-            description: 'Storage for safety equipment and materials.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-cabinet.jpg'
-          },
-          { 
-            _id: '6', 
-            name: 'Safety Course', 
-            type: 'Safety Course', 
-            status: 'Available', 
-            description: 'Basic safety training required for machine access.', 
-            requiresCertification: false,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-course.jpg'
           }
         ];
         
