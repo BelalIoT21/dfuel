@@ -5,8 +5,8 @@ import { Request, Response, NextFunction } from 'express';
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
   // Add CORS headers for 404 responses
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
@@ -17,8 +17,8 @@ export const notFound = (req: Request, res: Response, next: NextFunction) => {
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   // Add CORS headers for error responses
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
   // Determine status code (default to 500 if not set)
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;

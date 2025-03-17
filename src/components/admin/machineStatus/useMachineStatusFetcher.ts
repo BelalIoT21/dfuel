@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import mongoDbService from '../../../services/mongoDbService';
+import { apiService } from '../../../services/apiService';
 
 export const useMachineStatusFetcher = (machineData: any[], setMachineData: React.Dispatch<React.SetStateAction<any[]>>) => {
   const { toast } = useToast();
@@ -11,7 +12,13 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
   const checkServerConnection = async () => {
     try {
       console.log("Checking server connection status...");
-      const response = await fetch('http://localhost:4000/api/health');
+      const response = await fetch('http://localhost:4000/api/health', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors', // Explicitly set CORS mode
+      });
       
       if (response.ok) {
         console.log("Server connected successfully!");
@@ -32,35 +39,36 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
   const fetchMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      await checkServerConnection();
+      const isConnected = await checkServerConnection();
+      if (!isConnected) {
+        console.log("Server not connected, skipping fetch");
+        setIsRefreshing(false);
+        return;
+      }
       
-      // Get all machine statuses directly from MongoDB
+      // Get all machine statuses using the API service
       if (machineData && machineData.length > 0) {
-        console.log("Fetching statuses for all machines from MongoDB...");
+        console.log("Fetching statuses for all machines...");
         
         const updatedMachineData = await Promise.all(
           machineData.map(async (machine) => {
             try {
               const machineId = machine.id || machine._id;
               
-              // Use mongoDbService to get machine status directly from MongoDB
-              const statusData = await mongoDbService.getMachineStatus(machineId);
-              let status = 'available';
-              let note = '';
+              // Use apiService for better error handling and CORS management
+              const statusResponse = await apiService.get(`machines/${machineId}`);
               
-              if (statusData) {
-                status = statusData.status?.toLowerCase() || 'available';
-                note = statusData.note || '';
-                console.log(`Got status for machine ${machineId}: ${status}`);
+              if (statusResponse.data) {
+                console.log(`Got status for machine ${machineId}:`, statusResponse.data);
+                return {
+                  ...machine,
+                  status: statusResponse.data.status || 'available',
+                  maintenanceNote: statusResponse.data.maintenanceNote || ''
+                };
               } else {
-                console.log(`No MongoDB status for machine ${machineId}, using default`);
+                console.log(`No status found for machine ${machineId}, using default`);
+                return machine;
               }
-              
-              return {
-                ...machine,
-                status: status,
-                maintenanceNote: note
-              };
             } catch (error) {
               console.error(`Error fetching status for machine ${machine.id || machine._id}:`, error);
               return machine;
@@ -68,13 +76,15 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
           })
         );
         
+        console.log("Updated machine data:", updatedMachineData);
         setMachineData(updatedMachineData);
       }
     } catch (error) {
       console.error("Error fetching machine statuses:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch machine statuses"
+        description: "Failed to fetch machine statuses",
+        variant: "destructive"
       });
     } finally {
       setIsRefreshing(false);
@@ -84,36 +94,42 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
   const refreshMachineStatuses = async () => {
     setIsRefreshing(true);
     try {
-      await checkServerConnection();
+      const isConnected = await checkServerConnection();
+      if (!isConnected) {
+        toast({
+          title: "Server Disconnected",
+          description: "Cannot refresh machine statuses while server is disconnected",
+          variant: "destructive"
+        });
+        setIsRefreshing(false);
+        return;
+      }
       
-      const updatedMachineData = await Promise.all(
-        machineData.map(async (machine) => {
-          try {
-            const machineId = machine.id || machine._id;
-            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
-            
-            if (response.ok) {
-              const machineData = await response.json();
-              return {
-                ...machine,
-                status: machineData.status?.toLowerCase() || 'available',
-                maintenanceNote: machineData.maintenanceNote || ''
-              };
-            }
-            return machine;
-          } catch (error) {
-            console.error(`Error refreshing machine ${machine.id || machine._id}:`, error);
-            return machine;
-          }
-        })
-      );
+      // Get all machines from the API
+      const response = await apiService.get('machines');
       
-      setMachineData(updatedMachineData);
+      if (response.data) {
+        console.log("Received machine data from API:", response.data);
+        // Update the machine data with the fresh data from the API
+        setMachineData(response.data.map((machine: any) => ({
+          ...machine,
+          // Ensure status is normalized
+          status: machine.status?.toLowerCase() || 'available'
+        })));
+        
+        toast({
+          title: "Refreshed",
+          description: "Machine statuses updated successfully"
+        });
+      } else {
+        throw new Error("Failed to fetch machines from API");
+      }
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
       toast({
         title: "Error",
-        description: "Failed to refresh machine statuses"
+        description: "Failed to refresh machine statuses",
+        variant: "destructive"
       });
     } finally {
       setIsRefreshing(false);
@@ -124,7 +140,17 @@ export const useMachineStatusFetcher = (machineData: any[], setMachineData: Reac
   useEffect(() => {
     checkServerConnection();
     fetchMachineStatuses();
-  }, []);
+    
+    // Set up periodic refresh every 30 seconds if server is connected
+    const intervalId = setInterval(() => {
+      if (isServerConnected) {
+        console.log("Auto-refreshing machine statuses...");
+        fetchMachineStatuses();
+      }
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [isServerConnected]);
 
   return {
     isRefreshing,
