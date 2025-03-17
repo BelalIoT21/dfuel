@@ -21,9 +21,7 @@ router.post(
   [
     body('machineId').notEmpty().withMessage('Machine ID is required'),
     body('date').isISO8601().withMessage('Valid date is required'),
-    body('time').notEmpty().withMessage('Time is required'),
-    body('userName').optional(),
-    body('machineName').optional()
+    body('time').notEmpty().withMessage('Time is required')
   ],
   createBooking
 );
