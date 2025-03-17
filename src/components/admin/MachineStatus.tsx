@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,7 +146,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
               Machine Status
             </CardTitle>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-1 rounded ${isServerConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              {/* Fixed server status indicator styling */}
+              <span className={isServerConnected ? 'bg-green-100 text-green-800 text-xs px-2 py-1 rounded' : 'bg-red-100 text-red-800 text-xs px-2 py-1 rounded'}>
                 Server status: {isServerConnected ? 'Connected' : 'Disconnected'}
                 {!isServerConnected && <WifiOff className="h-3 w-3 ml-1 inline" />}
               </span>

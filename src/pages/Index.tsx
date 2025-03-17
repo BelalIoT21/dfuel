@@ -50,8 +50,8 @@ const Index = () => {
         
         // Try API service as fallback
         try {
-          const apiResponse = await apiService.ping();
-          if (apiResponse.data && apiResponse.data.pong) {
+          const apiResponse = await apiService.checkHealth();
+          if (apiResponse.data) {
             setServerStatus('connected via API');
           }
         } catch (apiError) {
