@@ -318,6 +318,51 @@ export const courses: Record<string, CourseContent> = {
       }
     ]
   },
+  '6': {
+    id: '6',
+    machineId: '6',
+    title: 'Machine Safety Course',
+    content: `
+      <h1>Welcome to the Machine Safety Course</h1>
+      <p>This course covers essential safety practices for all machines in our makerspace.</p>
+      <h2>Course Outline</h2>
+      <ul>
+        <li>General Safety Principles</li>
+        <li>Emergency Procedures</li>
+        <li>Personal Protective Equipment</li>
+        <li>Hazard Identification</li>
+        <li>Safe Work Practices</li>
+      </ul>
+    `,
+    duration: '60 minutes',
+    slides: [
+      {
+        title: 'General Safety Principles',
+        content: 'Safety is everyone\'s responsibility. Always follow safety protocols, never work when tired or impaired, and be aware of your surroundings at all times.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Emergency Procedures',
+        content: 'Know the location of emergency exits, fire extinguishers, first aid kits, and emergency stop buttons. In case of emergency, follow the evacuation plan and call for help immediately.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Personal Protective Equipment',
+        content: 'Always wear appropriate PPE for the task at hand. This may include safety glasses, gloves, hearing protection, and closed-toe shoes. Never remove or modify safety guards on machines.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Hazard Identification',
+        content: 'Learn to identify common hazards: mechanical (moving parts), electrical, chemical, fire, and ergonomic hazards. Report any unsafe conditions immediately.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safe Work Practices',
+        content: 'Always get proper training before using any equipment. Keep your work area clean and organized. Use tools and equipment only for their intended purpose. Never rush or take shortcuts.',
+        image: '/placeholder.svg'
+      }
+    ]
+  }
 };
 
 export const quizzes: Record<string, Quiz> = {
@@ -562,6 +607,67 @@ export const quizzes: Record<string, Quiz> = {
           'Continue the print',
         ],
         correctAnswer: 1,
+      },
+    ],
+  },
+  '6': {
+    id: '6',
+    machineId: '6',
+    questions: [
+      {
+        id: '6-1',
+        question: 'What is the first thing you should do before operating any machine in the makerspace?',
+        options: [
+          'Check if anyone else wants to use it',
+          'Get proper training and certification',
+          'Clean the machine',
+          'Take a picture of it'
+        ],
+        correctAnswer: 1,
+      },
+      {
+        id: '6-2',
+        question: 'What should you do if you notice a machine is damaged or not working properly?',
+        options: [
+          'Try to fix it yourself',
+          'Use it anyway but be careful',
+          'Report it to staff and tag it as out of order',
+          'Leave it for the next person to deal with'
+        ],
+        correctAnswer: 2,
+      },
+      {
+        id: '6-3',
+        question: 'When should you remove safety guards from machinery?',
+        options: [
+          'When they get in the way of your work',
+          'When you need to clean the machine',
+          'When they slow down production',
+          'Never - they should always remain in place'
+        ],
+        correctAnswer: 3,
+      },
+      {
+        id: '6-4',
+        question: 'What is the most important personal protective equipment (PPE) for most makerspace activities?',
+        options: [
+          'Safety glasses/goggles',
+          'Noise-cancelling headphones',
+          'Steel-toed boots',
+          'Fireproof clothing'
+        ],
+        correctAnswer: 0,
+      },
+      {
+        id: '6-5',
+        question: 'What should you do in case of a fire emergency in the makerspace?',
+        options: [
+          'Hide under a table',
+          'Try to save expensive equipment first',
+          'Follow the evacuation plan and alert others',
+          'Finish what you're working on, then leave'
+        ],
+        correctAnswer: 2,
       },
     ],
   },

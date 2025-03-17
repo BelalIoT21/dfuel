@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -187,7 +188,7 @@ const Quiz = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-3xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
-          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
             &larr; Back to {machine?.name}
           </Link>
           <div className="text-sm text-gray-500">Attempt {attempts} of 2</div>
@@ -243,7 +244,7 @@ const Quiz = () => {
                     ) : (
                       <Button 
                         onClick={handleSubmit}
-                        disabled={selectedAnswers.length !== quiz.length}
+                        disabled={selectedAnswers.some(answer => answer === undefined)}
                       >
                         Submit Quiz
                       </Button>
@@ -321,7 +322,7 @@ const Quiz = () => {
                 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
                   {correctAnswers >= Math.ceil(quiz.length * 0.7) ? (
-                    <Button onClick={handleReturnToMachine}>
+                    <Button onClick={handleReturnToMachine} className="bg-purple-600 text-white hover:bg-purple-700">
                       Return to Machine Page
                     </Button>
                   ) : attempts < 2 ? (
@@ -334,7 +335,7 @@ const Quiz = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={handleReturnToCourse}>
+                    <Button onClick={handleReturnToCourse} className="bg-purple-600 text-white hover:bg-purple-700">
                       Return to Course
                     </Button>
                   )}
