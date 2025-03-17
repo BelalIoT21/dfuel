@@ -47,13 +47,12 @@ export const useMachineData = (user, navigation) => {
         console.log("Server not connected, using cached data if available");
       }
       
-      // Get machines from MongoDB service directly
-      console.log("Fetching machines directly from MongoDB or API");
-      const timestamp = new Date().getTime();
-      const machines = await mongoDbService.getMachines();
+      // Get machines directly using the machine service
+      console.log("Fetching machines from machine service");
+      const machines = await machineService.getMachines();
       
       if (!machines || machines.length === 0) {
-        console.error("No machines data available from MongoDB");
+        console.error("No machines data available");
         setLoading(false);
         setRefreshing(false);
         return;
@@ -84,9 +83,8 @@ export const useMachineData = (user, navigation) => {
     if (user) {
       console.log("User is authenticated, loading machine data");
       
-      // Immediately trigger a forced refresh when user logs in
-      console.log("User logged in, forcing immediate refresh");
-      onRefresh(); // This will call loadMachineData with force=true
+      // Trigger refresh on login
+      onRefresh();
       
       // Set up auto-refresh interval (every 10 seconds)
       const refreshInterval = setInterval(() => {
