@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -51,7 +52,8 @@ export const updateMachine = async (req: Request, res: Response) => {
 
     // Update the machine
     machine.name = name;
-    machine.status = status;
+    // Convert status to proper format (first letter capitalized)
+    machine.status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     await machine.save();
 
     res.status(200).json({ message: 'Machine updated successfully', machine });
@@ -67,6 +69,8 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status, note } = req.body;
 
+    console.log(`Updating machine ${id} status to: ${status}, note: ${note}`);
+
     // Convert the ID to an ObjectId
     const objectId = new mongoose.Types.ObjectId(id);
 
@@ -76,12 +80,34 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
+    // Map status values to proper format for MongoDB
+    let normalizedStatus = 'Available';
+    switch(status.toLowerCase()) {
+      case 'available':
+        normalizedStatus = 'Available';
+        break;
+      case 'maintenance':
+        normalizedStatus = 'Maintenance';
+        break;
+      case 'in-use':
+      case 'in use':
+        normalizedStatus = 'Out of Order'; // Using "Out of Order" for "In Use" as per model
+        break;
+      default:
+        normalizedStatus = 'Available';
+    }
+
     // Update the machine status
-    machine.status = status;
-    machine.note = note;
+    machine.status = normalizedStatus;
+    machine.maintenanceNote = note;
     await machine.save();
 
-    res.status(200).json({ message: 'Machine status updated successfully', machine });
+    console.log(`Machine ${id} status updated to: ${normalizedStatus}`);
+    res.status(200).json({ 
+      message: 'Machine status updated successfully', 
+      machine,
+      success: true 
+    });
   } catch (error) {
     console.error('Error in updateMachineStatus:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });

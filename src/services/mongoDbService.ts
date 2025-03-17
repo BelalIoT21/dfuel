@@ -186,7 +186,13 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const response = await apiService.put(`machines/${machineId}/status`, { status, maintenanceNote: note });
+        // Make sure we're sending the string status in the correct format
+        console.log(`Sending machine status update via API: ${machineId}, status: ${status}`);
+        const response = await apiService.put(`machines/${machineId}/status`, { 
+          status, 
+          maintenanceNote: note 
+        });
+        console.log("API response:", response.data);
         return response.data?.success || false;
       } catch (error) {
         console.error(`Error updating status for machine ${machineId} via API:`, error);
@@ -198,8 +204,13 @@ class MongoDbService {
         console.error("Invalid machineId or status passed to updateMachineStatus");
         return false;
       }
-      console.log(`MongoDbService: Updating status for machine ${machineId} to ${status}`);
-      const success = await mongoMachineService.updateMachineStatus(machineId, status, note);
+      
+      // Format status to match what MongoDB expects
+      // Use lowercase for internal tracking to be consistent
+      const formattedStatus = status.toLowerCase();
+      
+      console.log(`MongoDbService: Updating status for machine ${machineId} to ${formattedStatus}`);
+      const success = await mongoMachineService.updateMachineStatus(machineId, formattedStatus, note);
       console.log(`MongoDB update machine status result: ${success}`);
       return success;
     } catch (error) {

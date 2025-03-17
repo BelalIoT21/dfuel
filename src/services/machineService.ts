@@ -25,7 +25,11 @@ export class MachineService {
       if (isWeb) {
         // Use API for web
         try {
-          const response = await apiService.put(`machines/${machineId}/status`, { status, maintenanceNote: note });
+          console.log("Using API to update machine status:", status);
+          const response = await apiService.put(`machines/${machineId}/status`, { 
+            status, 
+            maintenanceNote: note 
+          });
           return response.data?.success || false;
         } catch (error) {
           console.error("API error updating machine status:", error);

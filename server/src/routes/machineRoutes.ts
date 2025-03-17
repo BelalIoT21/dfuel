@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { body } from 'express-validator';
 import { 
@@ -45,8 +46,8 @@ router.put(
   admin,
   updateLimiter, // Apply rate limiting
   [
-    body('status').isIn(['Available', 'Maintenance', 'Out of Order']).withMessage('Valid status is required'),
-    body('note').optional().isString().withMessage('Note must be a string'),
+    body('status').isString().withMessage('Status must be a string'),
+    body('maintenanceNote').optional().isString().withMessage('Note must be a string'),
   ],
   updateMachineStatus
 );

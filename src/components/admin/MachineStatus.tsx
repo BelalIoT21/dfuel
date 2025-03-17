@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { machineService } from '../../services/machineService';
 import { useToast } from "@/components/ui/use-toast";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, WifiOff } from "lucide-react";
+import { apiService } from '../../services/apiService';
 
 interface MachineStatusProps {
   machineData: any[];
@@ -23,6 +24,24 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [maintenanceNote, setMaintenanceNote] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isServerConnected, setIsServerConnected] = useState(false);
+
+  // Check server connection status
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        const response = await apiService.checkHealth();
+        setIsServerConnected(!!response.data);
+      } catch (error) {
+        setIsServerConnected(false);
+      }
+    };
+    
+    checkServerStatus();
+    const intervalId = setInterval(checkServerStatus, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Sort machines by type
   const sortedMachineData = [...machineData].sort((a, b) => {
@@ -45,12 +64,17 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       // For now, we'll just simulate a refresh by waiting and showing a notification
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Check server connection status
+      const response = await apiService.checkHealth();
+      setIsServerConnected(!!response.data);
+      
       toast({
         title: "Refreshed",
         description: "Machine statuses have been refreshed"
       });
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
+      setIsServerConnected(false);
       toast({
         title: "Error",
         description: "Failed to refresh machine statuses"
@@ -131,16 +155,21 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
               Machine Status
             </CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshMachineStatuses}
-              disabled={isRefreshing}
-              className="ml-auto"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded ${isServerConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                Server status: {isServerConnected ? 'Connected' : 'Disconnected'}
+                {!isServerConnected && <WifiOff className="h-3 w-3 ml-1 inline" />}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshMachineStatuses}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+                Refresh
+              </Button>
+            </div>
           </div>
           <CardDescription>Current status of all machines</CardDescription>
         </CardHeader>
