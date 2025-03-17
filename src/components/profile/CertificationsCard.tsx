@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key, RefreshCw } from 'lucide-react';
+import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
@@ -84,7 +84,7 @@ const CertificationsCard = () => {
     if (isCertified && isBookable) {
       navigate(`/booking/${machineId}`);
     } else {
-      navigate(`/safety-course/${machineId}`);
+      navigate(`/machine/${machineId}`);
     }
   };
 
@@ -127,8 +127,9 @@ const CertificationsCard = () => {
                 <div className="font-medium text-purple-800">{machine.name}</div>
                 {machine.certified ? (
                   <>
-                    <div className="text-sm text-green-600 font-medium mb-1">
-                      ✓ Certified
+                    <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
+                      <Award className="h-3 w-3" />
+                      Certified
                     </div>
                     <div className="text-xs text-gray-500 mb-2">
                       Certified on: {machine.date}
@@ -137,9 +138,10 @@ const CertificationsCard = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="mt-1 border-purple-200 hover:bg-purple-100"
+                        className="mt-1 border-purple-200 hover:bg-purple-100 flex items-center gap-1"
                         onClick={() => handleAction(machine.id, true, machine.bookable)}
                       >
+                        <Calendar className="h-3 w-3" />
                         Book Now
                       </Button>
                     ) : (

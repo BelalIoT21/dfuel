@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { BookOpen, ClipboardList, Certificate, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { machines, courses, quizzes } from '../utils/data';
@@ -201,7 +202,10 @@ const MachineDetail = () => {
                   
                   <TabsContent value="certification" className="space-y-4">
                     <div className="space-y-2">
-                      <h3 className="font-medium">Safety Course</h3>
+                      <h3 className="font-medium flex items-center gap-2">
+                        <BookOpen className="h-5 w-5 text-purple-600" />
+                        Safety Course
+                      </h3>
                       <p className="text-gray-600">
                         Learn how to safely operate the {machine.name} through our comprehensive course.
                       </p>
@@ -228,7 +232,10 @@ const MachineDetail = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <h3 className="font-medium">Certification Quiz</h3>
+                      <h3 className="font-medium flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-purple-600" />
+                        Certification Quiz
+                      </h3>
                       <p className="text-gray-600">
                         Demonstrate your knowledge by passing the certification quiz.
                       </p>
@@ -258,24 +265,24 @@ const MachineDetail = () => {
                     {quizPassed && (
                       <div className="bg-green-50 p-4 rounded-lg border border-green-200 flex items-center gap-3">
                         <div className="bg-green-500 text-white p-1 rounded-full">
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="16" 
-                            height="16" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20 6L9 17l-5-5"></path>
-                          </svg>
+                          <Certificate className="h-4 w-4" />
                         </div>
                         <div>
                           <p className="font-medium">Certification Complete!</p>
                           <p className="text-sm text-gray-600">You are now certified to use this machine.</p>
                         </div>
+                      </div>
+                    )}
+                    
+                    {isBookable && quizPassed && (
+                      <div className="mt-4">
+                        <Button 
+                          className="w-full bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                          onClick={handleBookMachine}
+                        >
+                          <Calendar className="h-4 w-4" />
+                          Book Machine Time
+                        </Button>
                       </div>
                     )}
                   </TabsContent>

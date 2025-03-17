@@ -33,11 +33,17 @@ export const DashboardContent = () => {
             console.log("Fetched machines:", machinesResponse.data.length);
             
             // Process machine data, ensuring each machine has a status field
-            const processedMachines = machinesResponse.data.map(machine => ({
-              ...machine,
-              id: machine._id || machine.id, // Ensure id exists
-              status: machine.status?.toLowerCase() || 'available'
-            }));
+            // Filter out special machines (5 and 6) which are not real machines
+            const processedMachines = machinesResponse.data
+              .filter(machine => {
+                const machineId = machine._id || machine.id;
+                return machineId !== '5' && machineId !== '6';
+              })
+              .map(machine => ({
+                ...machine,
+                id: machine._id || machine.id, // Ensure id exists
+                status: machine.status?.toLowerCase() || 'available'
+              }));
             
             console.log("Number of processed machines:", processedMachines.length);
             // Log IDs to debug

@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen, CheckCircle } from 'lucide-react';
 import { courses, machines } from '../utils/data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,7 +23,7 @@ const Course = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Course not found</h1>
           <Link to="/home">
-            <Button>Return to Home</Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">Return to Home</Button>
           </Link>
         </div>
       </div>
@@ -58,17 +58,21 @@ const Course = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
       <div className="max-w-4xl mx-auto page-transition">
         <div className="mb-6 flex justify-between items-center">
-          <Link to={`/machine/${id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-            &larr; Back to {machine.name}
+          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
+            <ChevronLeft className="h-4 w-4" />
+            Back to {machine.name}
           </Link>
           <div className="text-sm text-gray-500">Slide {currentSlide + 1} of {totalSlides}</div>
         </div>
         
-        <h1 className="text-3xl font-bold mb-4">{course.title}</h1>
+        <div className="flex items-center gap-2 mb-4">
+          <BookOpen className="h-6 w-6 text-purple-600" />
+          <h1 className="text-3xl font-bold">{course.title}</h1>
+        </div>
         <p className="text-gray-600 mb-6">Duration: {course.duration}</p>
-        <Progress value={progress} className="mb-8" />
+        <Progress value={progress} className="mb-8 h-2 bg-purple-100" indicatorClassName="bg-purple-600" />
         
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden shadow-lg border-purple-100">
           <CardContent className="p-0">
             <div className="relative">
               {/* Slide Content */}
@@ -85,7 +89,7 @@ const Course = () => {
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full bg-white shadow-md"
                   onClick={handlePrevious}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -96,7 +100,7 @@ const Course = () => {
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full bg-white shadow-md"
                   onClick={handleNext}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -106,21 +110,35 @@ const Course = () => {
             
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-4">{course.slides[currentSlide].title}</h2>
-              <p className="text-gray-700 mb-8">{course.slides[currentSlide].content}</p>
+              <p className="text-gray-700 mb-8 leading-relaxed">{course.slides[currentSlide].content}</p>
               
               <div className="flex justify-between">
                 <Button 
                   variant="outline" 
                   onClick={handlePrevious}
                   disabled={currentSlide === 0}
+                  className="border-purple-200 text-purple-700"
                 >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
                   Previous
                 </Button>
                 
                 {currentSlide < totalSlides - 1 ? (
-                  <Button onClick={handleNext}>Next</Button>
+                  <Button 
+                    onClick={handleNext}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
                 ) : (
-                  <Button onClick={handleComplete}>Complete Course</Button>
+                  <Button 
+                    onClick={handleComplete}
+                    className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Complete Course
+                  </Button>
                 )}
               </div>
             </div>
