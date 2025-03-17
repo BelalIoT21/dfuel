@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { machineService } from '../../services/machineService';
 import { useToast } from "@/components/ui/use-toast";
 import { RefreshCw, WifiOff, Check, AlertTriangle } from "lucide-react";
 import { apiService } from '../../services/apiService';
+import mongoDbService from '../../services/mongoDbService';
 
 interface MachineStatusProps {
   machineData: any[];
@@ -44,14 +46,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         console.error("Error checking server connection:", error);
         setIsServerConnected(false);
       }
-      
-      if (refreshButtonRef.current) {
-        console.log("Auto-clicking refresh button on login");
-        refreshButtonRef.current.click();
-      }
     };
     
     checkServerStatus();
+    fetchMachineStatuses();
   }, []);
 
   const sortedMachineData = [...machineData].sort((a, b) => {
@@ -66,6 +64,64 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setMaintenanceNote(machine.maintenanceNote || '');
     setUpdateError(null);
     setIsMachineStatusDialogOpen(true);
+  };
+
+  const fetchMachineStatuses = async () => {
+    setIsRefreshing(true);
+    try {
+      try {
+        const response = await fetch('http://localhost:4000/api/health');
+        setIsServerConnected(response.ok);
+      } catch (error) {
+        console.error("Error checking server connection:", error);
+        setIsServerConnected(false);
+      }
+      
+      // Get all machine statuses directly from MongoDB
+      if (machineData && machineData.length > 0) {
+        console.log("Fetching statuses for all machines from MongoDB...");
+        
+        const updatedMachineData = await Promise.all(
+          machineData.map(async (machine) => {
+            try {
+              const machineId = machine.id || machine._id;
+              
+              // Use mongoDbService to get machine status directly from MongoDB
+              const statusData = await mongoDbService.getMachineStatus(machineId);
+              let status = 'available';
+              let note = '';
+              
+              if (statusData) {
+                status = statusData.status?.toLowerCase() || 'available';
+                note = statusData.note || '';
+                console.log(`Got status for machine ${machineId}: ${status}`);
+              } else {
+                console.log(`No MongoDB status for machine ${machineId}, using default`);
+              }
+              
+              return {
+                ...machine,
+                status: status,
+                maintenanceNote: note
+              };
+            } catch (error) {
+              console.error(`Error fetching status for machine ${machine.id || machine._id}:`, error);
+              return machine;
+            }
+          })
+        );
+        
+        setMachineData(updatedMachineData);
+      }
+    } catch (error) {
+      console.error("Error fetching machine statuses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch machine statuses"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const refreshMachineStatuses = async () => {
