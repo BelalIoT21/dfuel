@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
@@ -21,6 +20,10 @@ export class MachineService {
         console.log("Safety Cabinet is always available, not updating status");
         return true;
       }
+      
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+      apiService.setToken(token);
       
       // Use API to update machine status
       try {

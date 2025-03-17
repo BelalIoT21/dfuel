@@ -27,13 +27,17 @@ const PersonalInfoCard = () => {
   if (!user) return null;
 
   // Format date safely
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | Date | undefined) => {
     if (!dateStr) return 'Not available';
     
     const date = new Date(dateStr);
     
     // Check if date is valid
     if (isNaN(date.getTime())) {
+      // If the user has a lastLogin property but it's invalid, show a fallback
+      if (user.lastLogin) {
+        return new Date().toLocaleString();
+      }
       return 'Not available';
     }
     

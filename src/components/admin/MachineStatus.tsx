@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { machineService } from '../../services/machineService';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { RefreshCw, WifiOff, Check, AlertTriangle } from "lucide-react";
 import { apiService } from '../../services/apiService';
 
@@ -130,11 +130,15 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       const machineId = selectedMachine.id || selectedMachine._id;
       
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+      
       // Use direct fetch to update machine status
       const response = await fetch(`http://localhost:4000/api/machines/${machineId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Include the auth token
         },
         body: JSON.stringify({
           status: selectedStatus,

@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -32,17 +33,21 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${BASE_URL}/${endpoint}`;
-      const token = localStorage.getItem('token');
+      
+      // Get token in this specific order of precedence:
+      // 1. Use the token set via setToken
+      // 2. Try to get it from localStorage
+      let authToken = this.token;
+      if (!authToken) {
+        authToken = localStorage.getItem('token');
+      }
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
       };
       
-      if (authRequired && this.token) {
-        headers['Authorization'] = `Bearer ${this.token}`;
-      } else if (authRequired && token) {
-        // Fallback to token from localStorage if this.token is not set
-        headers['Authorization'] = `Bearer ${token}`;
+      if (authRequired && authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
       
       const options: RequestInit = {
@@ -120,7 +125,7 @@ class ApiService {
       
       // Don't show toast for health check failures, they're expected when backend is not running
       if (!endpoint.includes('health')) {
-        console.error("Could not connect to server. Using local storage fallback.");
+        console.error("Could not connect to server.");
       }
       
       return {

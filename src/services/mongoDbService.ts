@@ -1,4 +1,3 @@
-
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import { isWeb } from '../utils/platform';
@@ -186,6 +185,10 @@ class MongoDbService {
     if (isWeb) {
       console.log("MongoDB access attempted from web environment, using API fallback");
       try {
+        // Get auth token from localStorage
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
         // Make sure we're sending the string status in the correct format
         console.log(`Sending machine status update via API: ${machineId}, status: ${status}`);
         const response = await apiService.put(`machines/${machineId}/status`, { 
@@ -199,6 +202,7 @@ class MongoDbService {
         return false;
       }
     }
+    
     try {
       if (!machineId || !status) {
         console.error("Invalid machineId or status passed to updateMachineStatus");
