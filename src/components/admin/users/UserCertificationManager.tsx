@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
 import { certificationService } from '@/services/certificationService';
+import { certificationDatabaseService } from '@/services/database/certificationService';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -39,7 +40,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const loadCertifications = async () => {
         const userId = getUserId();
         try {
-          // Try to get fresh certifications
+          // Get fresh certifications from MongoDB
           const certs = await certificationService.getUserCertifications(userId);
           if (certs && certs.length > 0) {
             setUserCertifications(certs.map(c => c.toString()));
@@ -80,7 +81,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationService.addCertification(userId, certificationId);
+      const success = await certificationDatabaseService.addCertification(userId, certificationId);
       
       if (success) {
         // Update local state
@@ -129,7 +130,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationService.removeCertification(userId, certificationId);
+      const success = await certificationDatabaseService.removeCertification(userId, certificationId);
       
       if (success) {
         // Update local state
@@ -173,7 +174,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to clear all certifications for user ${userId}`);
       
-      const success = await certificationService.clearAllCertifications(userId);
+      const success = await certificationDatabaseService.clearUserCertifications(userId);
       
       if (success) {
         // Update local state

@@ -27,7 +27,7 @@ export class CertificationService {
       
       console.log("API certification response:", response);
       
-      // Consider both success cases: newly added or already had it
+      // Both newly added and already had it are considered success
       if (response.data && response.data.success) {
         console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;
@@ -54,7 +54,7 @@ export class CertificationService {
       
       console.log("API remove certification response:", response);
       
-      // Consider both success cases: removed or didn't have it
+      // Both removed and didn't have it are considered success
       if (response.data && response.data.success) {
         console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
         return true;

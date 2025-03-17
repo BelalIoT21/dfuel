@@ -31,10 +31,9 @@ const CertificationsCard = () => {
       // Get the certification list from our service
       const allCertifications = certificationService.getAllCertifications();
       
-      // Get fresh user certifications from the service if possible
+      // Get fresh user certifications from the service
       let userCerts = [];
       try {
-        // Fixed API endpoint issue - remove extra slash
         userCerts = await certificationService.getUserCertifications(user.id);
         console.log("Fresh certifications from service:", userCerts);
       } catch (err) {
@@ -50,11 +49,15 @@ const CertificationsCard = () => {
       // Format the machines for display
       const formattedMachines = allCertifications.map(machine => {
         const machineId = machine.id.toString();
+        const certDate = user?.certificationDates?.[machineId] 
+          ? new Date(user.certificationDates[machineId])
+          : new Date();
+        
         return {
           id: machineId,
           name: machine.name,
           certified: userCerts.includes(machineId),
-          date: user?.certificationDates?.[machineId] || format(new Date(), 'dd/MM/yyyy'),
+          date: format(certDate, 'dd/MM/yyyy'),
           bookable: machineId !== "5" && machineId !== "6" // Safety Cabinet and Safety Course aren't bookable
         };
       });

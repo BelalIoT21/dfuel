@@ -1,3 +1,4 @@
+
 import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -16,6 +17,9 @@ interface IUser extends mongoose.Document {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  certificationDates?: {
+    [machineId: string]: Date;
+  };
 }
 
 const userSchema = new Schema<IUser>(
@@ -32,6 +36,11 @@ const userSchema = new Schema<IUser>(
     },
     lastLogin: { type: Date },
     bookings: [{ type: Schema.Types.ObjectId, ref: 'Booking' }],
+    certificationDates: {
+      type: Map,
+      of: Date,
+      default: {}
+    }
   },
   { timestamps: true }
 );
