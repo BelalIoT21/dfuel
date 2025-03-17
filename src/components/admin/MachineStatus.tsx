@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,9 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         if (response.ok) {
           console.log("Server connected successfully!");
           setIsServerConnected(true);
+          
+          // If server is connected, immediately fetch fresh machine statuses
+          fetchMachineStatuses();
         } else {
           console.log("Server responded with error:", response.status);
           setIsServerConnected(false);
@@ -48,6 +52,68 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     
     checkServerStatus();
   }, []);
+
+  // Fetch machine statuses function that can be called immediately and on refresh
+  const fetchMachineStatuses = async () => {
+    console.log("Fetching fresh machine statuses...");
+    
+    try {
+      // Only load status for machines 1 to 4
+      const machineIds = ["1", "2", "3", "4"];
+      
+      // Create a map to track which machines have been updated
+      const updatedMachineMap = {};
+      
+      // Get fresh status for each machine directly from the API
+      await Promise.all(
+        machineIds.map(async (machineId) => {
+          try {
+            // Use direct fetch to ensure we get latest status
+            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
+            
+            if (response.ok) {
+              const machineData = await response.json();
+              console.log(`Machine ${machineId} status:`, machineData.status);
+              
+              // Store machine data with properly formatted status
+              updatedMachineMap[machineId] = {
+                id: machineId,
+                status: machineData.status?.toLowerCase() || 'available',
+                maintenanceNote: machineData.maintenanceNote || ''
+              };
+            } else {
+              console.error(`Error fetching machine ${machineId}:`, response.statusText);
+            }
+          } catch (error) {
+            console.error(`Error fetching machine ${machineId}:`, error);
+          }
+        })
+      );
+      
+      // Update machine data with the new status information
+      setMachineData(prevData => {
+        return prevData.map(machine => {
+          const machineId = machine.id || machine._id;
+          if (updatedMachineMap[machineId]) {
+            return {
+              ...machine,
+              status: updatedMachineMap[machineId].status,
+              maintenanceNote: updatedMachineMap[machineId].maintenanceNote
+            };
+          }
+          return machine;
+        });
+      });
+      
+      console.log("Machine statuses updated successfully");
+    } catch (error) {
+      console.error("Error fetching machine statuses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch machine statuses"
+      });
+    }
+  };
 
   const sortedMachineData = [...machineData].sort((a, b) => {
     if (a.type === 'Equipment' || a.type === 'Safety Cabinet') return 1;
@@ -75,31 +141,8 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         setIsServerConnected(false);
       }
       
-      // Get fresh data for each machine directly from the API
-      const updatedMachineData = await Promise.all(
-        machineData.map(async (machine) => {
-          try {
-            // Use direct fetch instead of service to bypass any caching
-            const machineId = machine.id || machine._id;
-            const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
-            
-            if (response.ok) {
-              const machineData = await response.json();
-              return {
-                ...machine,
-                status: machineData.status?.toLowerCase() || 'available',
-                maintenanceNote: machineData.maintenanceNote || ''
-              };
-            }
-            return machine;
-          } catch (error) {
-            console.error(`Error refreshing machine ${machine.id || machine._id}:`, error);
-            return machine;
-          }
-        })
-      );
-      
-      setMachineData(updatedMachineData);
+      // Fetch fresh machine statuses
+      await fetchMachineStatuses();
     } catch (error) {
       console.error("Error refreshing machine statuses:", error);
       toast({
