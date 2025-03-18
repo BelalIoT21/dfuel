@@ -51,38 +51,77 @@ export const PendingBookingsCard = ({
         // Handle approval/rejection
         console.log(`Updating booking status: ID=${bookingId}, new status=${action}`);
         
-        // First try MongoDB directly
-        let success = await mongoDbService.updateBookingStatus(bookingId, action);
-        console.log(`MongoDB updateBookingStatus result: ${success}`);
+        // Try MongoDB directly first
+        let success = false;
         
-        // If MongoDB fails or returns false, try API
+        try {
+          success = await mongoDbService.updateBookingStatus(bookingId, action);
+          console.log(`MongoDB updateBookingStatus result: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB error updating booking status:", mongoError);
+        }
+        
+        // If MongoDB fails, try the booking service
         if (!success) {
           try {
             success = await bookingService.updateBookingStatus(bookingId, action);
-            console.log(`API updateBookingStatus result: ${success}`);
-          } catch (apiError) {
-            console.error("API error updating booking status:", apiError);
-            success = false;
+            console.log(`BookingService updateBookingStatus result: ${success}`);
+          } catch (serviceError) {
+            console.error("BookingService error updating status:", serviceError);
           }
         }
         
-        // Check the final success status - IMPROVED ERROR HANDLING
+        // Force refresh the bookings list regardless of success status
+        // This ensures the UI stays in sync with the database
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
+        }
+        
+        // Check successful MongoDB query or bookingService call
         if (success) {
           toast({
             title: `Booking ${action}`,
             description: `The booking has been ${action.toLowerCase()} successfully.`
           });
-          
-          // After updating, trigger refresh of the bookings list
-          if (onBookingStatusChange) {
-            onBookingStatusChange();
-          }
         } else {
-          toast({
-            title: "Action Failed",
-            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-            variant: "destructive"
-          });
+          // Double-check if the booking might have been approved anyway
+          // by fetching fresh data to confirm the actual status
+          try {
+            // We'll give a short delay to allow database updates to propagate
+            setTimeout(async () => {
+              const allBookings = await mongoDbService.getAllBookings();
+              const updatedBooking = allBookings.find(b => 
+                (b.id === bookingId || b._id === bookingId)
+              );
+              
+              if (updatedBooking && updatedBooking.status === action) {
+                // The booking was actually updated despite the error
+                console.log("Booking was actually updated successfully:", updatedBooking);
+                toast({
+                  title: `Booking ${action}`,
+                  description: `The booking has been ${action.toLowerCase()} successfully.`
+                });
+                
+                // Force refresh again
+                if (onBookingStatusChange) {
+                  onBookingStatusChange();
+                }
+              } else {
+                toast({
+                  title: "Action Failed",
+                  description: `Could not ${action.toLowerCase()} booking. Please try again.`,
+                  variant: "destructive"
+                });
+              }
+            }, 500);
+          } catch (verificationError) {
+            console.error("Error verifying booking status:", verificationError);
+            toast({
+              title: "Action Failed",
+              description: `Could not ${action.toLowerCase()} booking. Please try again.`,
+              variant: "destructive"
+            });
+          }
         }
       }
     } catch (error) {

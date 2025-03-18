@@ -244,25 +244,95 @@ class MongoBookingService {
     }
     
     try {
+      console.log(`MongoDB: Updating booking ${bookingId} status to ${status}`);
       let result;
+      let bookingFound = false;
       
-      // Try updating by MongoDB ID first
+      // First try using MongoDB ObjectId
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
         console.log(`Updating booking with ObjectId: ${bookingId}`);
-        result = await this.bookingsCollection.updateOne(
-          { _id: new mongoose.Types.ObjectId(bookingId) },
-          { $set: { status, updatedAt: new Date() } }
-        );
-      } else {
-        // If not a valid ObjectId, try updating by clientId
-        console.log(`Updating booking with clientId: ${bookingId}`);
-        result = await this.bookingsCollection.updateOne(
-          { clientId: bookingId },
-          { $set: { status, updatedAt: new Date() } }
-        );
+        
+        // First check if the booking exists
+        const booking = await this.bookingsCollection.findOne({ 
+          _id: new mongoose.Types.ObjectId(bookingId) 
+        });
+        
+        if (booking) {
+          bookingFound = true;
+          console.log(`Found booking with ObjectId, current status: ${booking.status}`);
+          
+          // If the booking already has the target status, return success without updating
+          if (booking.status === status) {
+            console.log(`Booking ${bookingId} already has status ${status}`);
+            return true;
+          }
+          
+          result = await this.bookingsCollection.updateOne(
+            { _id: new mongoose.Types.ObjectId(bookingId) },
+            { $set: { status, updatedAt: new Date() } }
+          );
+        }
       }
       
-      console.log(`Booking status update result:`, result);
+      // If not found with ObjectId, try with clientId
+      if (!bookingFound) {
+        console.log(`Booking not found with ObjectId, trying clientId: ${bookingId}`);
+        
+        // Check if the booking exists with clientId
+        const booking = await this.bookingsCollection.findOne({ 
+          clientId: bookingId 
+        });
+        
+        if (booking) {
+          bookingFound = true;
+          console.log(`Found booking with clientId, current status: ${booking.status}`);
+          
+          // If the booking already has the target status, return success without updating
+          if (booking.status === status) {
+            console.log(`Booking ${bookingId} already has status ${status}`);
+            return true;
+          }
+          
+          result = await this.bookingsCollection.updateOne(
+            { clientId: bookingId },
+            { $set: { status, updatedAt: new Date() } }
+          );
+        }
+      }
+      
+      // If still not found, try one more time with string ID
+      if (!bookingFound) {
+        console.log(`Booking not found with ObjectId or clientId, trying string ID: ${bookingId}`);
+        
+        // Check if any booking has an id field matching the bookingId
+        const booking = await this.bookingsCollection.findOne({ 
+          id: bookingId 
+        });
+        
+        if (booking) {
+          bookingFound = true;
+          console.log(`Found booking with id field, current status: ${booking.status}`);
+          
+          // If the booking already has the target status, return success without updating
+          if (booking.status === status) {
+            console.log(`Booking ${bookingId} already has status ${status}`);
+            return true;
+          }
+          
+          result = await this.bookingsCollection.updateOne(
+            { id: bookingId },
+            { $set: { status, updatedAt: new Date() } }
+          );
+        }
+      }
+      
+      // Log detailed results and check success
+      console.log(`MongoDB update result:`, result);
+      
+      if (!bookingFound) {
+        console.log(`❌ No booking found with any ID format: ${bookingId}`);
+        return false;
+      }
       
       // Check if document was actually modified and make sure result exists
       if (result && result.modifiedCount > 0) {
@@ -274,7 +344,17 @@ class MongoBookingService {
         // Still return true since the booking exists with the wanted status
         return true;
       } else {
-        console.log(`❌ No booking found with ID ${bookingId}`);
+        console.log(`❓ Update operation completed but with unexpected result`);
+        // Do one final check to confirm the current status
+        const updatedBooking = bookingFound && mongoose.Types.ObjectId.isValid(bookingId) 
+          ? await this.bookingsCollection.findOne({ _id: new mongoose.Types.ObjectId(bookingId) })
+          : await this.bookingsCollection.findOne({ clientId: bookingId });
+        
+        if (updatedBooking && updatedBooking.status === status) {
+          console.log(`✅ Confirmed booking now has status ${status}`);
+          return true;
+        }
+        
         return false;
       }
     } catch (error) {
