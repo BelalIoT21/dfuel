@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
+import { Key, RefreshCw, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
@@ -37,6 +38,16 @@ const CertificationsCard = () => {
   const [machineStatuses, setMachineStatuses] = useState({});
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [allCertifications, setAllCertifications] = useState<any[]>([]);
+  const [userInitialized, setUserInitialized] = useState(false);
+
+  // This will trigger when the user object changes (like after login)
+  useEffect(() => {
+    if (user && !userInitialized) {
+      console.log("User detected, initializing certifications card data");
+      setUserInitialized(true);
+      fetchMachinesAndCertifications();
+    }
+  }, [user]);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -153,9 +164,12 @@ const CertificationsCard = () => {
     }
   };
 
+  // Initial load
   useEffect(() => {
-    fetchMachinesAndCertifications();
-  }, [user]);
+    if (user) {
+      fetchMachinesAndCertifications();
+    }
+  }, [availableMachineIds]);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
