@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +9,7 @@ import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { Check, WifiOff } from 'lucide-react';
 import { isAndroid, isCapacitor, isIOS } from '@/utils/platform';
-import { getEnv, loadEnv, getApiEndpoints } from '@/utils/env';
+import { getEnv, loadEnv, getApiEndpoints, getLocalServerIP } from '@/utils/env';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
