@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,8 @@ const PersonalInfoCard = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
@@ -229,22 +232,42 @@ const PersonalInfoCard = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="current-password">Current Password</Label>
-                      <Input
-                        id="current-password"
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="current-password"
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="pr-10"
+                        />
+                        <button 
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          type={showNewPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="pr-10"
+                        />
+                        <button 
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
