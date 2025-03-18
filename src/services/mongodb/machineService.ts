@@ -23,6 +23,9 @@ class MongoMachineService {
           if (this.machinesCollection) {
             const count = await this.machinesCollection.countDocuments();
             console.log(`Machines collection has ${count} documents`);
+            
+            // Check if all needed machines exist
+            await this.checkAndReseedMachines();
           }
         } else {
           console.error("Failed to connect to MongoDB database");
@@ -30,6 +33,35 @@ class MongoMachineService {
       }
     } catch (error) {
       console.error("Error initializing MongoDB collections:", error);
+    }
+  }
+  
+  async checkAndReseedMachines(): Promise<void> {
+    try {
+      if (!this.machinesCollection) {
+        console.error("Machines collection not initialized");
+        return;
+      }
+      
+      // Check if all required machines (1-6) exist
+      const requiredIds = ['1', '2', '3', '4', '5', '6'];
+      const missingIds = [];
+      
+      for (const id of requiredIds) {
+        const exists = await this.machineExists(id);
+        if (!exists) {
+          missingIds.push(id);
+        }
+      }
+      
+      if (missingIds.length > 0) {
+        console.log(`Missing machines with IDs: ${missingIds.join(', ')}. Reseeding machines...`);
+        await this.seedDefaultMachines();
+      } else {
+        console.log("All required machines exist in database");
+      }
+    } catch (error) {
+      console.error("Error checking for required machines:", error);
     }
   }
   
@@ -242,82 +274,86 @@ class MongoMachineService {
     }
     
     try {
-      const count = await this.machinesCollection.countDocuments();
-      if (count === 0) {
-        console.log("No machines found in MongoDB, seeding default machines...");
+      console.log("Seeding default machines...");
+      
+      const defaultMachines: MongoMachine[] = [
+        { 
+          _id: '1', 
+          name: 'Laser Cutter', 
+          type: 'Laser Cutter', 
+          status: 'Available', 
+          description: 'Precision laser cutting machine for detailed work on various materials.', 
+          requiresCertification: true,
+          difficulty: 'Advanced',
+          imageUrl: '/machines/laser-cutter.jpg'
+        },
+        { 
+          _id: '2', 
+          name: 'Ultimaker', 
+          type: '3D Printer', 
+          status: 'Available', 
+          description: 'FDM 3D printing for rapid prototyping and model creation.', 
+          requiresCertification: true,
+          difficulty: 'Intermediate',
+          imageUrl: '/machines/3d-printer.jpg'
+        },
+        { 
+          _id: '3', 
+          name: 'X1 E Carbon 3D Printer', 
+          type: '3D Printer', 
+          status: 'Available', 
+          description: 'Carbon fiber 3D printer for high-strength parts.', 
+          requiresCertification: true,
+          difficulty: 'Advanced',
+          imageUrl: '/machines/carbon-3d.jpg'
+        },
+        { 
+          _id: '4', 
+          name: 'Bambu Lab X1 E', 
+          type: '3D Printer', 
+          status: 'Available', 
+          description: 'Fast and accurate multi-material 3D printer.', 
+          requiresCertification: true,
+          difficulty: 'Intermediate',
+          imageUrl: '/machines/bambu-lab.jpg'
+        },
+        {
+          _id: '5',
+          name: 'Safety Cabinet',
+          type: 'Safety Equipment',
+          status: 'Available',
+          description: 'Safety equipment and protective gear storage.',
+          requiresCertification: false,
+          difficulty: 'Beginner',
+          imageUrl: '/machines/safety-cabinet.jpg'
+        },
+        {
+          _id: '6',
+          name: 'Machine Safety Course',
+          type: 'Certification',
+          status: 'Available',
+          description: 'Required safety course for machine certification.',
+          requiresCertification: false,
+          difficulty: 'Beginner',
+          imageUrl: '/machines/safety-course.jpg'
+        }
+      ];
+      
+      // Create machine entries
+      for (const machine of defaultMachines) {
+        // Check if this specific machine exists
+        const exists = await this.machineExists(machine._id);
         
-        const defaultMachines: MongoMachine[] = [
-          { 
-            _id: '1', 
-            name: 'Laser Cutter', 
-            type: 'Laser Cutter', 
-            status: 'Available', // Initialize with Available status instead of maintenance
-            description: 'Precision laser cutting machine for detailed work on various materials.', 
-            requiresCertification: true,
-            difficulty: 'Advanced',
-            imageUrl: '/machines/laser-cutter.jpg'
-          },
-          { 
-            _id: '2', 
-            name: 'Ultimaker', 
-            type: '3D Printer', 
-            status: 'Available', 
-            description: 'FDM 3D printing for rapid prototyping and model creation.', 
-            requiresCertification: true,
-            difficulty: 'Intermediate',
-            imageUrl: '/machines/3d-printer.jpg'
-          },
-          { 
-            _id: '3', 
-            name: 'X1 E Carbon 3D Printer', 
-            type: '3D Printer', 
-            status: 'Available', 
-            description: 'Carbon fiber 3D printer for high-strength parts.', 
-            requiresCertification: true,
-            difficulty: 'Advanced',
-            imageUrl: '/machines/carbon-3d.jpg'
-          },
-          { 
-            _id: '4', 
-            name: 'Bambu Lab X1 E', 
-            type: '3D Printer', 
-            status: 'Available', 
-            description: 'Fast and accurate multi-material 3D printer.', 
-            requiresCertification: true,
-            difficulty: 'Intermediate',
-            imageUrl: '/machines/bambu-lab.jpg'
-          }
-        ];
-        
-        // Create machine entries
-        for (const machine of defaultMachines) {
+        if (!exists) {
+          // Only add the machine if it doesn't exist
+          console.log(`Adding machine: ${machine.name} (ID: ${machine._id})`);
           await this.addMachine(machine);
+        } else {
+          console.log(`Machine ID ${machine._id} already exists, skipping`);
         }
-        
-        console.log("Successfully seeded default machines to MongoDB");
-      } else {
-        console.log(`Found ${count} existing machines in MongoDB, skipping seed`);
-        
-        // Update machine names if needed
-        const updates = [
-          { _id: '1', name: 'Laser Cutter', type: 'Laser Cutter' },
-          { _id: '2', name: 'Ultimaker', type: '3D Printer' },
-          { _id: '3', name: 'X1 E Carbon 3D Printer', type: '3D Printer' },
-          { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' }
-        ];
-        
-        for (const update of updates) {
-          await this.machinesCollection.updateOne(
-            { _id: update._id },
-            { $set: { name: update.name, type: update.type } },
-            { upsert: true }
-          );
-        }
-        
-        // Remove machines 5 and 6 if they exist (they're special machines not stored here)
-        await this.machinesCollection.deleteMany({ _id: { $in: ['5', '6'] } });
-        console.log("Updated machine names if needed");
       }
+      
+      console.log("Successfully seeded default machines to MongoDB");
     } catch (error) {
       console.error("Error seeding default machines to MongoDB:", error);
     }

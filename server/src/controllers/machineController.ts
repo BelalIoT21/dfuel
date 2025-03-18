@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -180,7 +181,13 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
 
     // Update the machine status
     machine.status = normalizedStatus;
-    machine.maintenanceNote = maintenanceNote || '';
+    
+    // Only set maintenance note if provided, otherwise clear it
+    if (maintenanceNote !== undefined) {
+      machine.maintenanceNote = maintenanceNote;
+    } else {
+      machine.maintenanceNote = '';
+    }
     
     console.log(`Saving machine with status: ${machine.status}`);
     await machine.save();

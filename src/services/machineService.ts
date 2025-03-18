@@ -1,3 +1,4 @@
+
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
@@ -7,7 +8,7 @@ export class MachineService {
   // Update machine status - prioritize MongoDB
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      console.log(`Updating machine status: ID=${machineId}, status=${status}`);
+      console.log(`Updating machine status: ID=${machineId}, status=${status}, note=${note || 'none'}`);
       
       if (!machineId || !status) {
         console.error("Invalid machineId or status passed to updateMachineStatus");
