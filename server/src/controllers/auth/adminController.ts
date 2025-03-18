@@ -17,7 +17,7 @@ export const ensureAdminUser = async () => {
       console.log(`Creating default admin user with email: ${adminEmail}`);
       
       // Get the admin password from env
-      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      const adminPassword = process.env.ADMIN_PASSWORD;
       
       if (!adminPassword) {
         throw new Error('ADMIN_PASSWORD is not defined in environment variables');
@@ -44,7 +44,10 @@ export const ensureAdminUser = async () => {
         console.log('Force admin password update is enabled, updating admin password');
         
         // Update the admin password - Fix for TypeScript error by providing a fallback value
-        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (!adminPassword) {
+          throw new Error('ADMIN_PASSWORD is not defined in environment variables');
+        }
         existingAdmin.password = adminPassword;
         await existingAdmin.save();
         console.log('Admin password updated successfully');
