@@ -44,12 +44,28 @@ export const useProfileFunctions = (
     
     try {
       console.log(`useProfileFunctions: Updating profile for user ${user.id}`, details);
-      const success = await userDatabase.updateUserProfile(user.id, details);
+      
+      // Validate input - ensure at least one field is provided
+      if (!details.name && !details.email) {
+        toast({
+          title: "Error",
+          description: "No changes provided for update.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Create updates object with only the fields that are provided
+      const updates: { name?: string; email?: string } = {};
+      if (details.name) updates.name = details.name;
+      if (details.email) updates.email = details.email;
+      
+      const success = await userDatabase.updateUserProfile(user.id, updates);
       
       if (success) {
         console.log("Profile update successful, updating user state in hook");
         // Create a new user object with the updated details
-        const updatedUser = { ...user, ...details };
+        const updatedUser = { ...user, ...updates };
         
         // Update the state and local storage
         setUser(updatedUser);
@@ -64,7 +80,7 @@ export const useProfileFunctions = (
         console.error("Profile update failed in database");
         toast({
           title: "Error",
-          description: "Failed to update profile.",
+          description: "Failed to update profile. Please try again.",
           variant: "destructive"
         });
         return false;
@@ -85,6 +101,25 @@ export const useProfileFunctions = (
     
     try {
       console.log(`useProfileFunctions: Changing password for user ${user.id}`);
+      
+      if (!currentPassword || !newPassword) {
+        toast({
+          title: "Error",
+          description: "Both current and new passwords are required.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (newPassword.length < 6) {
+        toast({
+          title: "Error",
+          description: "New password must be at least 6 characters long.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
       
       if (success) {

@@ -194,6 +194,20 @@ class UserDatabase {
       
       // Use MongoDB directly
       console.log("Using MongoDB directly for profile update...");
+      
+      // Get the user first to verify they exist
+      const user = await mongoDbService.getUserById(userId);
+      if (!user) {
+        console.error(`User ${userId} not found in MongoDB, cannot update profile`);
+        // Try to find in localStorage as a last resort
+        const localUser = await localStorageService.findUserById(userId);
+        if (!localUser) {
+          console.error(`User ${userId} not found in localStorage either`);
+          return false;
+        }
+      }
+      
+      // Update user in MongoDB
       const mongoSuccess = await mongoDbService.updateUser(userId, updates);
       
       if (mongoSuccess) {
@@ -241,7 +255,29 @@ class UserDatabase {
       const user = await mongoDbService.getUserById(userId);
       if (!user) {
         console.error("User not found in MongoDB");
-        throw new Error("User not found");
+        
+        // Try localStorage as last resort
+        const localUser = await localStorageService.findUserById(userId);
+        if (!localUser) {
+          console.error("User not found in localStorage either");
+          throw new Error("User not found");
+        }
+        
+        // Verify password in localStorage
+        if (localUser.password !== currentPassword) {
+          console.error("Current password does not match for localStorage user");
+          throw new Error("Current password is incorrect");
+        }
+        
+        // Update in localStorage
+        const localSuccess = await localStorageService.updateUser(userId, { password: newPassword });
+        return localSuccess;
+      }
+      
+      // Verify the current password matches for MongoDB user
+      if (user.password !== currentPassword) {
+        console.error("Current password does not match");
+        throw new Error("Current password is incorrect");
       }
       
       // Update password directly in MongoDB

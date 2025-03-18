@@ -1,4 +1,3 @@
-
 import { User, UserWithoutSensitiveInfo } from '../types/database';
 import databaseService from './databaseService';
 import { getAdminCredentials, setAdminCredentials } from '../utils/adminCredentials';
@@ -32,9 +31,15 @@ export class UserService {
   // Update user profile
   async updateProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
     try {
-      // Check if user is admin
+      // Check if user exists first
       const user = await databaseService.findUserById(userId);
-      if (user?.isAdmin && updates.email) {
+      if (!user) {
+        console.error(`User ${userId} not found in userService.updateProfile`);
+        return false;
+      }
+      
+      // Check if user is admin
+      if (user.isAdmin && updates.email) {
         const { adminPassword } = getAdminCredentials();
         // Update the admin email in our environment system
         setAdminCredentials(updates.email, adminPassword);
@@ -50,26 +55,42 @@ export class UserService {
 
   // Change user password
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
-    const user = await databaseService.findUserById(userId);
-    if (!user) return false;
-    
-    // Verify current password
-    if (user.password !== currentPassword) return false;
-    
-    // Enforce password requirements
-    if (newPassword.length < 6) return false;
-    
-    // Update password - need to pass it as an object with password property
-    const updates = { password: newPassword };
-    const success = await databaseService.updateUserProfile(userId, updates);
-    
-    // If admin, update admin password in environment system
-    if (success && user.isAdmin) {
-      const { adminEmail } = getAdminCredentials();
-      setAdminCredentials(adminEmail, newPassword);
+    try {
+      // Find the user first
+      const user = await databaseService.findUserById(userId);
+      if (!user) {
+        console.error(`User ${userId} not found in userService.changePassword`);
+        return false;
+      }
+      
+      // Verify current password
+      if (user.password !== currentPassword) {
+        console.error("Current password is incorrect");
+        return false;
+      }
+      
+      // Enforce password requirements
+      if (newPassword.length < 6) {
+        console.error("Password must be at least 6 characters");
+        return false;
+      }
+      
+      // Update password - need to pass it as an object with password property
+      const updates = { password: newPassword };
+      const success = await databaseService.updateUserProfile(userId, updates);
+      
+      // If admin, update admin password in environment system
+      if (success && user.isAdmin) {
+        const { adminEmail } = getAdminCredentials();
+        setAdminCredentials(adminEmail, newPassword);
+        console.log(`Updated admin password for ${adminEmail} in environment system`);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error in userService.changePassword:', error);
+      return false;
     }
-    
-    return success;
   }
 
   // Request password reset
