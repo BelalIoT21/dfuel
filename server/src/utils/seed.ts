@@ -134,9 +134,27 @@ async function seedAllMachines() {
   return createdMachines;
 }
 
+// Define machine template type
+type MachineTemplate = {
+  _id: string;
+  name: string;
+  type: string;
+  description: string;
+  status: string;
+  requiresCertification: boolean;
+  difficulty: string;
+  imageUrl: string;
+  specifications: string;
+};
+
+// Define the machine templates record
+type MachineTemplates = {
+  [key: string]: MachineTemplate;
+};
+
 // Helper function to seed only missing machines
-async function seedMissingMachines(missingIds) {
-  const machineTemplates = {
+async function seedMissingMachines(missingIds: string[]) {
+  const machineTemplates: MachineTemplates = {
     '1': {
       _id: '1',
       name: 'Laser Cutter',
