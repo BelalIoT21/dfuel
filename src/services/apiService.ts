@@ -1,8 +1,12 @@
-
 import { getEnv } from '../utils/env';
+import { isAndroid, isCapacitor } from '../utils/platform';
 
-// Try to connect to local API first, but have a fallback to relative path
-const API_ENDPOINTS = ['http://localhost:4000/api', '/api'];
+// We need to use different API endpoints for Android
+// Android can't access localhost on your development machine
+const API_ENDPOINTS = isAndroid() || isCapacitor() 
+  ? ['http://10.0.2.2:4000/api', 'YOUR_COMPUTER_IP:4000/api', '/api'] 
+  : ['http://localhost:4000/api', '/api'];
+
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 

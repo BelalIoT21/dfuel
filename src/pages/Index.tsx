@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { Check, WifiOff } from 'lucide-react';
+import { isAndroid, isCapacitor } from '@/utils/platform';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,7 +21,13 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        const response = await fetch('http://localhost:4000/api/health');
+        // Use correct URL for Android emulator
+        const serverUrl = isAndroid() || isCapacitor() 
+          ? 'http://10.0.2.2:4000/api/health'  // Special IP for Android emulator
+          : 'http://localhost:4000/api/health';
+        
+        const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+        const response = await fetch(`${serverUrl}?t=${timestamp}`);
         
         if (response.ok) {
           console.log("Server health check successful");
@@ -38,7 +45,9 @@ const Index = () => {
         setServerStatus('disconnected');
         toast({
           title: 'Server Connection Failed',
-          description: 'Could not connect to the backend server at localhost:4000. Please ensure the server is running.',
+          description: isAndroid() || isCapacitor() 
+            ? 'Could not connect to the backend server. Make sure your server is running and accessible via 10.0.2.2 from the emulator.'
+            : 'Could not connect to the backend server at localhost:4000. Please ensure the server is running.',
           variant: 'destructive'
         });
         

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
+import { isAndroid, isCapacitor } from '../../../utils/platform';
 
 export const useMachineData = (user, navigation) => {
   const [machineData, setMachineData] = useState([]);
@@ -14,7 +15,13 @@ export const useMachineData = (user, navigation) => {
     try {
       console.log("Checking server connection status for machine data...");
       const timestamp = new Date().getTime(); // Add timestamp to bypass cache
-      const response = await fetch(`http://localhost:4000/api/health?t=${timestamp}`);
+      
+      // Use correct URL for Android emulator
+      const serverUrl = isAndroid() || isCapacitor() 
+        ? 'http://10.0.2.2:4000/api/health'  // Special IP for Android emulator
+        : 'http://localhost:4000/api/health';
+      
+      const response = await fetch(`${serverUrl}?t=${timestamp}`);
       const isConnected = response.ok;
       setIsServerConnected(isConnected);
       console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
