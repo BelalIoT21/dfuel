@@ -2,9 +2,9 @@
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Booking } from '../models/Booking';
-import { User } from '../models/User';
-import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
+import User from '../models/User';
+import Machine from '../models/Machine';
 
 // Create booking
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
@@ -122,16 +122,19 @@ export const getAllBookings = asyncHandler(async (req: Request, res: Response) =
       .sort({ createdAt: -1 });
     
     const formattedBookings = bookings.map(booking => {
+      const user = booking.user as any;
+      const machine = booking.machine as any;
+      
       // Ensure we have all necessary data
       return {
         _id: booking._id,
         id: booking._id,
         machineId: booking.machine,
-        machineName: booking.machineName || (booking.machine ? booking.machine.name : 'Unknown'),
-        machineType: booking.machineType || (booking.machine ? booking.machine.type : 'Unknown'),
+        machineName: booking.machineName || (machine && machine.name ? machine.name : 'Unknown'),
+        machineType: booking.machineType || (machine && machine.type ? machine.type : 'Unknown'),
         userId: booking.user,
-        userName: booking.userName || (booking.user ? booking.user.name : 'Unknown'),
-        userEmail: booking.userEmail || (booking.user ? booking.user.email : 'Unknown'),
+        userName: booking.userName || (user && user.name ? user.name : 'Unknown'),
+        userEmail: booking.userEmail || (user && user.email ? user.email : 'Unknown'),
         date: booking.date,
         time: booking.time,
         status: booking.status,
@@ -164,7 +167,8 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
     }
     
     // Check if the user is authorized to view this booking
-    const bookingUserId = booking.user._id ? booking.user._id.toString() : booking.user.toString();
+    const user = booking.user as any;
+    const bookingUserId = user && user._id ? user._id.toString() : booking.user.toString();
     
     if (bookingUserId !== userId && !req.user?.isAdmin) {
       res.status(403);
@@ -217,7 +221,8 @@ export const cancelBooking = asyncHandler(async (req: Request, res: Response) =>
     }
     
     // Check if the user is authorized to cancel this booking
-    const bookingUserId = booking.user._id ? booking.user._id.toString() : booking.user.toString();
+    const user = booking.user as any;
+    const bookingUserId = user && user._id ? user._id.toString() : booking.user.toString();
     
     if (bookingUserId !== userId && !req.user?.isAdmin) {
       res.status(403);
@@ -249,7 +254,10 @@ export const deleteBooking = asyncHandler(async (req: Request, res: Response) =>
     
     // Remove this booking from the machine's booked time slots
     if (booking.machine && booking.date && booking.time) {
-      const machineId = booking.machine._id ? booking.machine._id : booking.machine;
+      const machineId = typeof booking.machine === 'object' && booking.machine._id 
+        ? booking.machine._id 
+        : booking.machine;
+      
       const date = new Date(booking.date);
       const dateStr = date.toISOString().substring(0, 10);
       const timeSlotKey = `${dateStr}-${booking.time}`;

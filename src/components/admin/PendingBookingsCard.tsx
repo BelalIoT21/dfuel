@@ -28,16 +28,24 @@ export const PendingBookingsCard = ({
       
       if (action === 'Deleted') {
         // Use MongoDB to delete the booking
-        await mongoDbService.deleteBooking(bookingId);
+        const success = await mongoDbService.deleteBooking(bookingId);
         
-        toast({
-          title: "Booking Removed",
-          description: "The booking has been removed from the system."
-        });
-        
-        // After deleting, trigger refresh of the bookings list
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
+        if (success) {
+          toast({
+            title: "Booking Removed",
+            description: "The booking has been removed from the system."
+          });
+          
+          // After deleting, trigger refresh of the bookings list
+          if (onBookingStatusChange) {
+            onBookingStatusChange();
+          }
+        } else {
+          toast({
+            title: "Delete Failed",
+            description: "Could not remove the booking. Please try again.",
+            variant: "destructive"
+          });
         }
       } else {
         // Handle approval/rejection
