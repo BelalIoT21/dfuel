@@ -15,6 +15,7 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('');
   
   // Set default tab based on URL parameter
   const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
@@ -24,12 +25,14 @@ const Profile = () => {
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
+    setActiveTab(value);
   };
 
   useEffect(() => {
     // Add a small delay to ensure auth state is loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
+      setActiveTab(defaultTab);
     }, 300);
     
     return () => clearTimeout(timer);
@@ -72,7 +75,7 @@ const Profile = () => {
           </TabsContent>
           
           <TabsContent value="certifications">
-            <CertificationsCard />
+            <CertificationsCard activeTab={activeTab} />
           </TabsContent>
           
           <TabsContent value="bookings">
