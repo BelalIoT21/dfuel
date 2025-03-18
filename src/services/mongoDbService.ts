@@ -396,6 +396,48 @@ class MongoDbService {
       return false;
     }
   }
+
+  async updateUser(userId: string, updates: { name?: string, email?: string, password?: string }) {
+    if (isWeb) {
+      console.log("MongoDB access attempted from web environment, using API fallback");
+      try {
+        const token = localStorage.getItem('token');
+        apiService.setToken(token);
+        
+        // Use the put endpoint for user updates
+        let endpoint = 'auth/me';
+        if (updates.password) {
+          endpoint = 'auth/change-password';
+          const response = await apiService.post(endpoint, { 
+            currentPassword: updates.currentPassword || '', 
+            newPassword: updates.password 
+          });
+          return response.data?.success || false;
+        } else {
+          // Regular profile update
+          const response = await apiService.put(endpoint, updates);
+          return response.data?.success || false;
+        }
+      } catch (error) {
+        console.error(`Error updating user ${userId} via API:`, error);
+        return false;
+      }
+    }
+    
+    try {
+      if (!userId) {
+        console.error("Invalid userId passed to updateUser");
+        return false;
+      }
+      console.log(`MongoDbService: Updating user ${userId}`);
+      const success = await mongoUserService.updateUser(userId, updates);
+      console.log(`MongoDB update user result: ${success}`);
+      return success;
+    } catch (error) {
+      console.error(`Error updating user ${userId}:`, error);
+      return false;
+    }
+  }
 }
 
 const mongoDbService = new MongoDbService();

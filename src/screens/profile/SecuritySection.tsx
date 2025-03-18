@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import { TextInput, Button, IconButton } from 'react-native-paper';
 import { Text } from 'react-native';
 import { User } from '@/types/database';
 
@@ -16,6 +16,8 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -57,17 +59,29 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             label="Current Password"
             value={currentPassword}
             onChangeText={setCurrentPassword}
-            secureTextEntry
+            secureTextEntry={!showCurrentPassword}
             mode="outlined"
             style={styles.input}
+            right={currentPassword ? (
+              <TextInput.Icon 
+                icon={showCurrentPassword ? "eye-off" : "eye"} 
+                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+              />
+            ) : null}
           />
           <TextInput
             label="New Password"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry
+            secureTextEntry={!showNewPassword}
             mode="outlined"
             style={styles.input}
+            right={newPassword ? (
+              <TextInput.Icon 
+                icon={showNewPassword ? "eye-off" : "eye"} 
+                onPress={() => setShowNewPassword(!showNewPassword)}
+              />
+            ) : null}
           />
           <TextInput
             label="Confirm New Password"
