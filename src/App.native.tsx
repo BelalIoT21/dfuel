@@ -5,7 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './context/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text, View, LogBox } from 'react-native';
+import { Text, View, LogBox, Platform } from 'react-native';
+import { isIOS, isAndroid } from './utils/platform';
 
 // Import screens using the barrel file
 import { 
@@ -22,7 +23,7 @@ LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',
 ]);
 
-// Theme
+// Theme with platform-specific adjustments
 const theme = {
   colors: {
     primary: '#7c3aed', // purple-600
@@ -57,6 +58,9 @@ const ErrorBoundary = ({ children }) => {
 
 export default function App() {
   console.log("Starting Learnit Mobile App");
+  console.log("Platform:", Platform.OS);
+  console.log("Is iOS:", isIOS());
+  console.log("Is Android:", isAndroid());
 
   // Add more detailed logging
   useEffect(() => {
@@ -87,6 +91,15 @@ export default function App() {
                   headerTitleStyle: {
                     fontWeight: 'bold',
                   },
+                  // Apply platform-specific styling
+                  ...Platform.select({
+                    ios: {
+                      headerShadowVisible: false,
+                    },
+                    android: {
+                      headerElevation: 4,
+                    },
+                  }),
                 }}
               >
                 <Stack.Screen 

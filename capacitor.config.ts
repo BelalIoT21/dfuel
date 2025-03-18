@@ -15,12 +15,19 @@ const config: CapacitorConfig = {
       releaseType: 'development'
     }
   },
+  ios: {
+    contentInset: 'always',
+    scheme: 'app.lovable.learnitacademy',
+    backgroundColor: '#7c3aed'
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: "#7c3aed",
       showSpinner: true,
-      spinnerColor: "#ffffff"
+      spinnerColor: "#ffffff",
+      iosSpinnerStyle: "small",
+      androidSpinnerStyle: "large"
     }
   }
 };
