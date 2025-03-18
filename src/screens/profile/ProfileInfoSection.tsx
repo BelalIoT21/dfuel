@@ -7,7 +7,7 @@ import { User } from '@/types/database';
 
 interface ProfileInfoSectionProps {
   user: User;
-  updateProfile: (name: string, email: string) => Promise<boolean>;
+  updateProfile: (details: { name: string; email: string }) => Promise<boolean>;
 }
 
 const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) => {
@@ -17,14 +17,21 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
   const [loading, setLoading] = useState(false);
 
   const handleUpdateProfile = async () => {
-    if (!name || !email) {
+    if (!name.trim() || !email.trim()) {
       Alert.alert('Error', 'Name and email are required');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
     setLoading(true);
     try {
-      const success = await updateProfile(name, email);
+      const success = await updateProfile({ name: name.trim(), email: email.trim() });
       if (success) {
         Alert.alert('Success', 'Profile updated successfully');
         setIsEditing(false);
@@ -32,7 +39,7 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
         Alert.alert('Error', 'Failed to update profile');
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'Something went wrong');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -65,8 +72,8 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
               mode="outlined"
               onPress={() => {
                 setIsEditing(false);
-                setName(user.name);
-                setEmail(user.email);
+                setName(user.name || '');
+                setEmail(user.email || '');
               }}
               style={styles.buttonCancel}
             >

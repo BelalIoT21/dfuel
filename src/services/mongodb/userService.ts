@@ -107,6 +107,7 @@ class MongoUserService {
       // Handle password change specifically
       if (updates.password && updates.currentPassword) {
         // Verify current password
+        console.log(`Verifying password for user ${id}`);
         if (user.password !== updates.currentPassword) {
           console.error("Current password is incorrect");
           return false;

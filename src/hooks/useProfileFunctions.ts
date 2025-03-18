@@ -86,7 +86,7 @@ export const useProfileFunctions = (
         return true;
       }
 
-      // Only use mongoDbService directly
+      // Use MongoDB directly for profile updates
       console.log("Calling mongoDbService.updateUser with:", user.id, updates);
       const success = await mongoDbService.updateUser(user.id, updates);
       
@@ -155,7 +155,7 @@ export const useProfileFunctions = (
         return false;
       }
 
-      // Only use mongoDbService directly
+      // Use mongoDbService directly for password verification and update
       console.log("Calling mongoDbService.updateUser for password change");
       const success = await mongoDbService.updateUser(user.id, { 
         password: newPassword,
@@ -163,6 +163,13 @@ export const useProfileFunctions = (
       });
       
       if (success) {
+        // Only update password in localStorage if MongoDB update was successful
+        const userData = JSON.parse(localStorage.getItem('learnit_user') || '{}');
+        if (userData && userData.id === user.id) {
+          userData.password = newPassword;
+          localStorage.setItem('learnit_user', JSON.stringify(userData));
+        }
+        
         toast({
           title: "Password changed",
           description: "Your password has been changed successfully."

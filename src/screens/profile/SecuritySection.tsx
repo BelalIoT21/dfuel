@@ -16,8 +16,6 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -68,29 +66,17 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             label="New Password"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry={!showNewPassword}
+            secureTextEntry={true}
             mode="outlined"
             style={styles.input}
-            right={
-              <TextInput.Icon 
-                icon={showNewPassword ? "eye-off" : "eye"} 
-                onPress={() => setShowNewPassword(!showNewPassword)}
-              />
-            }
           />
           <TextInput
             label="Confirm New Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
+            secureTextEntry={true}
             mode="outlined"
             style={styles.input}
-            right={
-              <TextInput.Icon 
-                icon={showConfirmPassword ? "eye-off" : "eye"} 
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              />
-            }
           />
           <View style={styles.buttonRow}>
             <Button 
