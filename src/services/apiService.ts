@@ -1,24 +1,30 @@
-import { getEnv, getApiUrl } from '../utils/env';
+import { getEnv, getApiUrl, formatApiEndpoint } from '../utils/env';
 import { isAndroid, isCapacitor } from '../utils/platform';
 
 // Determine API endpoints based on environment
 const getApiEndpoints = () => {
-  const productionUrl = getApiUrl();
+  // Primary endpoint based on environment and platform
+  const primaryEndpoint = getApiUrl();
   
-  // If we have a production URL, use it as the primary endpoint
-  if (productionUrl) {
-    return [productionUrl, '/api'];
-  }
+  // Fallback endpoints with different ways to reach the server
+  const fallbackEndpoints = [
+    primaryEndpoint,
+    isAndroid() || isCapacitor() 
+      ? 'http://10.0.2.2:4000/api'
+      : 'http://localhost:4000/api',
+    '/api'  // Relative path as last resort
+  ];
   
-  // Otherwise, use development URLs based on platform
-  return isAndroid() || isCapacitor() 
-    ? ['http://10.0.2.2:4000/api', 'YOUR_COMPUTER_IP:4000/api', '/api'] 
-    : ['http://localhost:4000/api', '/api'];
+  // Return unique endpoints (remove duplicates)
+  return [...new Set(fallbackEndpoints)];
 };
 
 const API_ENDPOINTS = getApiEndpoints();
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
+
+console.log('API service initialized with endpoints:', API_ENDPOINTS);
+console.log('Using primary endpoint:', BASE_URL);
 
 interface ApiResponse<T> {
   data: T | null;

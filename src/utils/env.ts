@@ -3,6 +3,8 @@
  * Environment variable management
  */
 
+import { isAndroid, isCapacitor } from './platform';
+
 // Define environment types
 export type Environment = 'development' | 'production';
 
@@ -45,7 +47,7 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
   return defaultValue;
 };
 
-// Get API URL based on environment
+// Get API URL based on environment and platform
 export const getApiUrl = (): string => {
   const env = getEnvironment();
   
@@ -56,8 +58,32 @@ export const getApiUrl = (): string => {
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   
-  // For development, continue using the existing URLs
-  return '';
+  // For development, check if we're on Android emulator
+  if (isAndroid() || isCapacitor()) {
+    // Special IP for Android emulator to access host machine's localhost
+    return 'http://10.0.2.2:4000/api';
+  }
+  
+  // Default development URL for web
+  return 'http://localhost:4000/api';
+};
+
+// Ensure API endpoint always has correct format
+export const formatApiEndpoint = (endpoint: string): string => {
+  const apiUrl = getApiUrl();
+  
+  // If the endpoint already starts with http, assume it's a full URL
+  if (endpoint.startsWith('http')) {
+    return endpoint;
+  }
+  
+  // Remove leading slash from endpoint if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+  
+  // Make sure the apiUrl ends with a slash if it doesn't already
+  const formattedApiUrl = apiUrl.endsWith('/') ? apiUrl : `${apiUrl}/`;
+  
+  return `${formattedApiUrl}${cleanEndpoint}`;
 };
 
 // Check if the app is running in a Capacitor environment
