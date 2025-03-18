@@ -1,8 +1,8 @@
 
 import express from 'express';
 import {
-  registerUser as register,
-  loginUser as login,
+  registerUser,
+  loginUser,
   logout,
   getMe,
   updateProfile,
@@ -18,8 +18,8 @@ import { protect } from '../middleware/authMiddleware';
 const router = express.Router();
 
 // User registration and authentication
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
