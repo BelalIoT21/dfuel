@@ -86,16 +86,16 @@ export const UserSearch = ({
     try {
       console.log("Attempting to register new user:", newUser.email);
       
-      // Use register function from AuthContext, which uses MongoDB directly via the API
+      // Use register function from AuthContext to create user directly in MongoDB
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
         toast({
           title: "User Added",
-          description: `${newUser.name} has been added successfully.`
+          description: `${newUser.name} has been added successfully to MongoDB.`
         });
         
-        // Signal parent component to refresh user list directly from MongoDB
+        // Trigger immediate refresh of user list from MongoDB
         onUserAdded({ 
           refresh: true,
           message: "User added successfully. Refreshing user list from MongoDB..."
@@ -111,7 +111,7 @@ export const UserSearch = ({
         });
       }
     } catch (error) {
-      console.error('Error adding user:', error);
+      console.error('Error adding user to MongoDB:', error);
       toast({
         title: "Error",
         description: "Failed to add user to MongoDB. Please try again.",
@@ -191,7 +191,7 @@ export const UserSearch = ({
                   </Button>
                   <Button type="submit" disabled={isAdding}>
                     {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isAdding ? 'Adding...' : 'Add User'}
+                    {isAdding ? 'Adding...' : 'Add User to MongoDB'}
                   </Button>
                 </DialogFooter>
               </form>

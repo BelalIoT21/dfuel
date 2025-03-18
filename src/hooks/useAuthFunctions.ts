@@ -19,7 +19,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // MongoDB-only login via API, no localStorage for user data
+      // MongoDB-only login via API
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
       console.log("API login response:", JSON.stringify(apiResponse, null, 2));
@@ -111,10 +111,14 @@ export const useAuthFunctions = (
       // Extract data from the response structure
       const responseData = apiResponse.data?.data; // Access the nested data
       const userData = responseData?.user; // Directly access user object
-      const token = userData?.token; // Get token from user object
+      const token = responseData?.user?.token || responseData?.token; // Get token from user object or directly
+      
+      console.log("MongoDB response data:", responseData);
+      console.log("MongoDB user data:", userData);
+      console.log("MongoDB token:", token);
   
       // Validate required fields
-      if (!userData?._id || !userData?.email || !token) {
+      if (!userData || !userData._id || !userData.email || !token) {
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Registration failed",
@@ -130,7 +134,7 @@ export const useAuthFunctions = (
         name: userData.name || name || 'User',
         email: userData.email,
         isAdmin: userData.isAdmin || false,
-        certifications: [] // Explicitly set to empty array to ensure no default certifications
+        certifications: userData.certifications || [] // Ensure certifications array exists
       };
   
       console.log("Setting user data from MongoDB:", normalizedUser);
@@ -138,11 +142,18 @@ export const useAuthFunctions = (
       // Save token only, no user data in localStorage
       localStorage.setItem('token', token);
       apiService.setToken(token);
-      setUser(normalizedUser);
+      
+      // Only set user in state if we're not in an admin adding a user context
+      // (In UserSearch component we don't want to change the logged-in user)
+      if (user && user.isAdmin) {
+        console.log("Admin is adding a user, not changing current user");
+      } else {
+        setUser(normalizedUser);
+      }
   
       toast({
         title: "Registration successful",
-        description: `Welcome, ${normalizedUser.name}!`
+        description: `User ${normalizedUser.name} created successfully!`
       });
   
       return true;
