@@ -75,6 +75,3 @@ export const changePassword = async (req: Request, res: Response) => {
     });
   }
 };
-
-// Export only the changePassword function since we're removing the reset functionality
-export { changePassword };
