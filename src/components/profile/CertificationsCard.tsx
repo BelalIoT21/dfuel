@@ -159,6 +159,7 @@ const CertificationsCard = () => {
         description: "Failed to load machine data"
       });
     } finally {
+      // Ensure refreshing state is reset to false even if there's an error
       setLoading(false);
       setRefreshing(false);
     }
@@ -193,7 +194,10 @@ const CertificationsCard = () => {
   };
 
   const handleRefresh = () => {
-    fetchMachinesAndCertifications();
+    // Only trigger a refresh if not already refreshing
+    if (!refreshing) {
+      fetchMachinesAndCertifications();
+    }
   };
 
   if (!user) return null;
