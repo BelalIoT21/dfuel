@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key, RefreshCw, Award } from 'lucide-react';
+import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
@@ -28,14 +27,7 @@ const MACHINE_NAMES = {
   "6": "Machine Safety Course"
 };
 
-// Refresh interval in milliseconds
-const REFRESH_INTERVAL = 10000; // 10 seconds
-
-interface CertificationsCardProps {
-  activeTab?: string;
-}
-
-const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
+const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -45,82 +37,6 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
   const [machineStatuses, setMachineStatuses] = useState({});
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [allCertifications, setAllCertifications] = useState<any[]>([]);
-  const [userInitialized, setUserInitialized] = useState(false);
-  // Add a ref to track if a refresh operation is in progress
-  const isRefreshingRef = useRef(false);
-  // Add a ref for the interval timer
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Last tab state for comparison
-  const lastActiveTabRef = useRef<string | undefined>(undefined);
-  // Track first load
-  const firstLoadCompleteRef = useRef(false);
-
-  // This will trigger when the user object changes (like after login)
-  useEffect(() => {
-    if (user && !userInitialized) {
-      console.log("User detected, initializing certifications card data");
-      setUserInitialized(true);
-      
-      // Initial fetch of data
-      if (activeTab === 'certifications') {
-        fetchMachinesAndCertifications();
-      }
-      
-      // Start the refresh interval
-      startRefreshInterval();
-    }
-    
-    // Cleanup function to clear interval on unmount
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [user]);
-
-  // Use effect to handle tab changes
-  useEffect(() => {
-    // Check if activeTab is now 'certifications'
-    if (activeTab === 'certifications') {
-      console.log("Certifications tab activated, triggering refresh");
-      
-      // Always fetch data when tab is activated, regardless if it was active before
-      fetchMachinesAndCertifications();
-    }
-    
-    // Update the ref with current tab
-    lastActiveTabRef.current = activeTab;
-  }, [activeTab]);
-
-  // Function to start the refresh interval
-  const startRefreshInterval = () => {
-    // Clear any existing interval first
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    
-    // Set a new interval
-    intervalRef.current = setInterval(() => {
-      // Only refresh if we're on the certifications tab
-      if (lastActiveTabRef.current === 'certifications') {
-        console.log("Auto-refreshing certifications data...");
-        fetchMachinesAndCertifications();
-      } else {
-        console.log("Skipping auto-refresh as certifications tab is not active");
-      }
-    }, REFRESH_INTERVAL);
-    
-    console.log("Started automatic refresh interval");
-  };
-
-  // Initial load of standard machines if API fails
-  useEffect(() => {
-    if (availableMachineIds.length === 0) {
-      console.log("No machine IDs available, setting standard ones");
-      setAvailableMachineIds(STANDARD_MACHINE_IDS);
-    }
-  }, []);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -128,17 +44,7 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       return;
     }
     
-    // Prevent concurrent refreshes using the ref
-    if (isRefreshingRef.current) {
-      console.log("Refresh already in progress, skipping...");
-      return;
-    }
-    
-    // Set both state and ref for refresh tracking
     setRefreshing(true);
-    isRefreshingRef.current = true;
-    setLoading(true);
-    
     try {
       console.log("Fetching machines for CertificationsCard");
       
@@ -235,22 +141,21 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       
       console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
       setMachines(formattedMachines);
-      firstLoadCompleteRef.current = true;
     } catch (error) {
       console.error("Error fetching machines:", error);
       toast({
         title: "Error",
         description: "Failed to load machine data"
       });
-      // Set first load complete even if there was an error
-      firstLoadCompleteRef.current = true;
     } finally {
-      // Ensure both refreshing state and ref are reset to false even if there's an error
       setLoading(false);
       setRefreshing(false);
-      isRefreshingRef.current = false;
     }
   };
+
+  useEffect(() => {
+    fetchMachinesAndCertifications();
+  }, [user]);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
@@ -274,12 +179,7 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
   };
 
   const handleRefresh = () => {
-    // Only trigger a refresh if not already refreshing (checking both state and ref)
-    if (!refreshing && !isRefreshingRef.current) {
-      fetchMachinesAndCertifications();
-    } else {
-      console.log("Refresh already in progress, ignoring click");
-    }
+    fetchMachinesAndCertifications();
   };
 
   if (!user) return null;
@@ -312,82 +212,64 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {machines.length > 0 ? (
-              machines.map((machine) => (
-                <div key={machine.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
-                  <div className="font-medium text-purple-800 flex justify-between items-center">
-                    <span>{machine.name}</span>
-                    {machine.status && (
-                      <span className={`text-xs px-2 py-1 rounded capitalize ${getStatusClass(machine.status)}`}>
-                        {machine.status.replace('-', ' ')}
-                      </span>
-                    )}
-                  </div>
-                  {machine.certified ? (
-                    <>
-                      <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
-                        <Award className="h-3 w-3" />
-                        Certified
-                      </div>
-                      <div className="text-xs text-gray-500 mb-2">
-                        Certified on: {machine.date}
-                      </div>
-                      {machine.bookable ? (
-                        <div className="flex flex-col gap-2 mt-3">
-                          <BookMachineButton 
-                            machineId={machine.id}
-                            isCertified={machine.certified}
-                            machineStatus={machine.status}
-                            size="sm"
-                            className="w-full"
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-1 border-purple-200 hover:bg-purple-100"
-                            onClick={() => navigate(`/machine/${machine.id}`)}
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-purple-600 mt-2">
-                          Certification Complete
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-sm text-red-500 mb-1">Not certified</div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2 border-red-200 hover:bg-red-100 text-red-600"
-                        onClick={() => handleAction(machine.id, false, machine.bookable)}
-                      >
-                        Get Certified
-                      </Button>
-                    </>
+            {machines.map((machine) => (
+              <div key={machine.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
+                <div className="font-medium text-purple-800 flex justify-between items-center">
+                  <span>{machine.name}</span>
+                  {machine.status && (
+                    <span className={`text-xs px-2 py-1 rounded capitalize ${getStatusClass(machine.status)}`}>
+                      {machine.status.replace('-', ' ')}
+                    </span>
                   )}
                 </div>
-              ))
-            ) : (
-              <div className="col-span-2 text-center py-8 text-gray-500">
-                <div className="mb-2">No machines found</div>
-                {firstLoadCompleteRef.current && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleRefresh} 
-                    disabled={refreshing}
-                    className="mx-auto"
-                  >
-                    {refreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Try Again
-                  </Button>
+                {machine.certified ? (
+                  <>
+                    <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
+                      <Award className="h-3 w-3" />
+                      Certified
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      Certified on: {machine.date}
+                    </div>
+                    {machine.bookable ? (
+                      <div className="flex flex-col gap-2 mt-3">
+                        <BookMachineButton 
+                          machineId={machine.id}
+                          isCertified={machine.certified}
+                          machineStatus={machine.status}
+                          size="sm"
+                          className="w-full"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-1 border-purple-200 hover:bg-purple-100"
+                          onClick={() => navigate(`/machine/${machine.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-purple-600 mt-2">
+                        Certification Complete
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-red-500 mb-1">Not certified</div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2 border-red-200 hover:bg-red-100 text-red-600"
+                      onClick={() => handleAction(machine.id, false, machine.bookable)}
+                    >
+                      Get Certified
+                    </Button>
+                  </>
                 )}
               </div>
-            )}
+            ))}
           </div>
         )}
       </CardContent>
