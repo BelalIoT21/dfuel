@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import mongoose from 'mongoose';
 import { Booking } from '../../../server/src/models/Booking';

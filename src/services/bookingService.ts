@@ -90,7 +90,7 @@ class BookingService {
         try {
           console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${formattedDate}, time: ${time}`);
           
-          // Note: The server should always set status to 'Pending'
+          // Send request to create booking with Pending status
           const response = await apiService.addBooking(userIdStr, machineIdStr, formattedDate, time);
           
           if (response.data) {
