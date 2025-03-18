@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import mongoose from 'mongoose';
 import { Booking } from '../../../server/src/models/Booking';
@@ -92,24 +93,52 @@ class MongoBookingService {
         return false;
       }
       
-      let userIdQuery = userId;
-      let machineIdQuery = machineId;
+      // Define variables to store the query parameters
+      let userIdQuery: any = userId;
+      let machineIdQuery: any = machineId;
       
+      // Try to handle different ID formats
+      // For numeric IDs
       if (!isNaN(Number(userId))) {
         userIdQuery = Number(userId);
       } else if (mongoose.Types.ObjectId.isValid(userId)) {
         userIdQuery = new mongoose.Types.ObjectId(userId);
       }
       
-      if (mongoose.Types.ObjectId.isValid(machineId)) {
+      if (!isNaN(Number(machineId))) {
+        machineIdQuery = Number(machineId);
+      } else if (mongoose.Types.ObjectId.isValid(machineId)) {
         machineIdQuery = new mongoose.Types.ObjectId(machineId);
       }
       
       console.log(`Looking up user with ID: ${userIdQuery} (${typeof userIdQuery})`);
       console.log(`Looking up machine with ID: ${machineIdQuery} (${typeof machineIdQuery})`);
       
-      const user = await this.usersCollection.findOne({ _id: userIdQuery });
-      const machine = await this.machinesCollection.findOne({ _id: machineIdQuery });
+      // Try with the query parameter
+      let user = await this.usersCollection.findOne({ _id: userIdQuery });
+      let machine = await this.machinesCollection.findOne({ _id: machineIdQuery });
+      
+      // If not found, try with string ID
+      if (!user) {
+        console.log(`User not found with ID ${userIdQuery}, trying string ID...`);
+        user = await this.usersCollection.findOne({ _id: userId });
+      }
+      
+      if (!machine) {
+        console.log(`Machine not found with ID ${machineIdQuery}, trying string ID...`);
+        machine = await this.machinesCollection.findOne({ _id: machineId });
+      }
+      
+      // If still not found, try with numeric ID
+      if (!user && !isNaN(Number(userId))) {
+        console.log(`User not found with string ID, trying numeric ID...`);
+        user = await this.usersCollection.findOne({ _id: Number(userId) });
+      }
+      
+      if (!machine && !isNaN(Number(machineId))) {
+        console.log(`Machine not found with string ID, trying numeric ID...`);
+        machine = await this.machinesCollection.findOne({ _id: Number(machineId) });
+      }
       
       if (!user) {
         console.error(`User ${userId} not found`);

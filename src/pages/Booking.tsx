@@ -30,6 +30,16 @@ const BookingPage = () => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
 
   useEffect(() => {
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to book a machine',
+        variant: 'destructive'
+      });
+      navigate('/login', { state: { from: `/booking/${id}` } });
+      return;
+    }
+
     async function loadMachine() {
       try {
         if (!id) return;
@@ -66,7 +76,7 @@ const BookingPage = () => {
     }
     
     loadMachine();
-  }, [id]);
+  }, [id, navigate, user]);
 
   useEffect(() => {
     updateAvailableTimeSlots(selectedDate);
@@ -90,9 +100,19 @@ const BookingPage = () => {
   };
 
   const handleBooking = async () => {
-    if (!user || !machine || !selectedDate || !selectedTime) {
+    if (!user) {
+      console.log('User not logged in, redirecting to login');
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to book a machine',
+        variant: 'destructive'
+      });
+      navigate('/login', { state: { from: `/booking/${id}` } });
+      return;
+    }
+
+    if (!machine || !selectedDate || !selectedTime) {
       console.error('Missing booking information:', {
-        user: !!user,
         machine: !!machine,
         selectedDate: !!selectedDate,
         selectedTime: !!selectedTime
@@ -115,8 +135,8 @@ const BookingPage = () => {
       const machineId = machine.id || machine._id;
       
       console.log('Submitting booking with data:', {
-        userId: userId,
-        machineId: machineId,
+        userId,
+        machineId,
         date: formattedDate,
         time: selectedTime,
         userName: user.name,
@@ -234,70 +254,86 @@ const BookingPage = () => {
         Back
       </Button>
       
-      <Card className="shadow-lg border-purple-100">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
-          <CardTitle className="text-2xl text-purple-800">{machine?.name} Booking</CardTitle>
-          <CardDescription>
-            Select a date and time to book {machine?.name}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2">Select Date</h3>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="border rounded-md p-3"
-                disabled={(date) => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  return date < today;
-                }}
-              />
+      {user ? (
+        <Card className="shadow-lg border-purple-100">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+            <CardTitle className="text-2xl text-purple-800">{machine?.name} Booking</CardTitle>
+            <CardDescription>
+              Select a date and time to book {machine?.name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-medium text-gray-700 mb-2">Select Date</h3>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="border rounded-md p-3"
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
+                />
+              </div>
+              
+              <div>
+                <h3 className="font-medium text-gray-700 mb-2">Select Time</h3>
+                {availableTimeSlots.length > 0 ? (
+                  <Select value={selectedTime} onValueChange={setSelectedTime}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a time slot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTimeSlots.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-md text-center">
+                    <p className="text-gray-500">No available time slots for this date</p>
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2">Select Time</h3>
-              {availableTimeSlots.length > 0 ? (
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a time slot" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimeSlots.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto" 
+              onClick={handleBooking}
+              disabled={!selectedDate || !selectedTime || submitting || availableTimeSlots.length === 0}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
               ) : (
-                <div className="p-3 bg-gray-50 rounded-md text-center">
-                  <p className="text-gray-500">No available time slots for this date</p>
-                </div>
+                'Confirm Booking'
               )}
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700 w-full md:w-auto" 
-            onClick={handleBooking}
-            disabled={!selectedDate || !selectedTime || submitting || availableTimeSlots.length === 0}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              'Confirm Booking'
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>
+              Please log in to book this machine
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button onClick={() => navigate('/login', { state: { from: `/booking/${id}` } })}>
+              Log In
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
     </div>
   );
 };
