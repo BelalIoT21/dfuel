@@ -1,4 +1,3 @@
-
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService';
@@ -105,7 +104,6 @@ class MongoConnectionService {
   private async initializeData(): Promise<void> {
     try {
       console.log("Initializing MongoDB with seed data...");
-      // Make sure to seed machines first since other services might depend on them
       await mongoMachineService.seedDefaultMachines();
       await mongoSeedService.seedUsers();
       await mongoSeedService.seedBookings();
@@ -169,8 +167,5 @@ class MongoConnectionService {
   }
 }
 
-// Export the singleton instance
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;
-// Also export the class name for those who need type information
-export { MongoConnectionService };

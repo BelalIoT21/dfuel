@@ -1,238 +1,239 @@
 
 import { Request, Response } from 'express';
-import asyncHandler from 'express-async-handler';
 import { Machine } from '../models/Machine';
+import mongoose from 'mongoose';
 
-// @desc    Get all machines
-// @route   GET /api/machines
-// @access  Public
-export const getMachines = asyncHandler(async (req: Request, res: Response) => {
-  const machines = await Machine.find({});
-  res.json(machines);
-});
-
-// @desc    Get machine by ID
-// @route   GET /api/machines/:id
-// @access  Public
-export const getMachineById = asyncHandler(async (req: Request, res: Response) => {
-  const machine = await Machine.findById(req.params.id);
-  
-  if (machine) {
-    res.json(machine);
-  } else {
-    res.status(404);
-    throw new Error('Machine not found');
-  }
-});
-
-// @desc    Update machine
-// @route   PUT /api/machines/:id
-// @access  Private/Admin
-export const updateMachine = asyncHandler(async (req: Request, res: Response) => {
-  const { name, type, description, status, requiresCertification, difficulty, imageUrl, specifications } = req.body;
-  
-  const machine = await Machine.findById(req.params.id);
-  
-  if (!machine) {
-    res.status(404);
-    throw new Error('Machine not found');
-  }
-  
-  // Update machine properties
-  machine.name = name || machine.name;
-  machine.type = type || machine.type;
-  machine.description = description || machine.description;
-  machine.status = status || machine.status;
-  
-  if (requiresCertification !== undefined) {
-    machine.requiresCertification = requiresCertification;
-  }
-  
-  if (difficulty !== undefined) {
-    machine.difficulty = difficulty;
-  }
-  
-  if (imageUrl !== undefined) {
-    machine.imageUrl = imageUrl;
-  }
-  
-  if (specifications !== undefined) {
-    machine.specifications = specifications;
-  }
-  
-  const updatedMachine = await machine.save();
-  
-  res.json({
-    success: true,
-    machine: updatedMachine
-  });
-});
-
-// @desc    Delete machine
-// @route   DELETE /api/machines/:id
-// @access  Private/Admin
-export const deleteMachine = asyncHandler(async (req: Request, res: Response) => {
-  const machine = await Machine.findById(req.params.id);
-  
-  if (!machine) {
-    res.status(404);
-    throw new Error('Machine not found');
-  }
-  
-  await Machine.deleteOne({ _id: req.params.id });
-  
-  res.json({
-    success: true,
-    message: 'Machine removed'
-  });
-});
-
-// @desc    Update machine status
-// @route   PUT /api/machines/:id/status
-// @access  Private/Admin
-export const updateMachineStatus = asyncHandler(async (req: Request, res: Response) => {
-  const { status, maintenanceNote } = req.body;
-  const user = req.user as any; // Type as any to avoid the IUser import issue
-  
-  console.log(`Attempting to update machine ${req.params.id} status to ${status} by user ${user?.name || 'unknown'}`);
-  
-  if (!status) {
-    res.status(400);
-    throw new Error('Status is required');
-  }
-  
-  // Find the machine by string ID
-  const machine = await Machine.findById(req.params.id);
-  
-  if (!machine) {
-    res.status(404);
-    throw new Error('Machine not found');
-  }
-  
-  // Update machine status and note
-  machine.status = status;
-  
-  // Handle maintenance note
-  if (status.toLowerCase() === 'maintenance' && maintenanceNote) {
-    machine.maintenanceNote = maintenanceNote;
-  } else if (status.toLowerCase() !== 'maintenance') {
-    // Clear maintenance note when changing from maintenance to another status
-    machine.maintenanceNote = undefined;
-  }
-  
-  // Save the updated machine
-  const updatedMachine = await machine.save();
-  
-  console.log(`Machine ${req.params.id} status updated to ${updatedMachine.status}`);
-  if (updatedMachine.maintenanceNote) {
-    console.log(`Maintenance note: ${updatedMachine.maintenanceNote}`);
-  }
-  
-  res.json({
-    success: true,
-    machine: updatedMachine
-  });
-});
-
-// @desc    Check if all machines exist and seed if needed
-// @access  Internal
-export const checkAndSeedMachines = async () => {
-  console.log('Checking machines in database...');
-  
-  // Define the required machines with their IDs (1-6)
-  const requiredMachines = [
-    {
-      _id: "1",
-      name: "Laser Cutter",
-      type: "Laser Cutter",
-      description: "Professional grade 120W CO2 laser cutter for precision cutting and engraving.",
-      status: "Available",
-      requiresCertification: true,
-      bookedTimeSlots: [],
-      difficulty: "Intermediate",
-      imageUrl: "/machines/laser-cutter.jpg",
-      specifications: "Working area: 32\" x 20\", Power: 120W, Materials: Wood, Acrylic, Paper, Leather"
-    },
-    {
-      _id: "2",
-      name: "Ultimaker",
-      type: "3D Printer",
-      description: "High-precision 3D printer for detailed models and prototypes.",
-      status: "Available",
-      requiresCertification: true,
-      bookedTimeSlots: [],
-      difficulty: "Beginner",
-      imageUrl: "/machines/ultimaker.jpg",
-      specifications: "Build volume: 215 x 215 x 200 mm, Layer resolution: 20 microns, Materials: PLA, ABS, Nylon, TPU"
-    },
-    {
-      _id: "3",
-      name: "X1 E Carbon 3D Printer",
-      type: "3D Printer",
-      description: "High-speed multi-material 3D printer with exceptional print quality.",
-      status: "Available",
-      requiresCertification: true,
-      bookedTimeSlots: [],
-      difficulty: "Intermediate",
-      imageUrl: "/machines/bambu-printer.jpg",
-      specifications: "Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS"
-    },
-    {
-      _id: "4",
-      name: "Bambu Lab X1 E",
-      type: "3D Printer",
-      description: "Next-generation 3D printing technology with advanced features.",
-      status: "Available",
-      requiresCertification: true,
-      bookedTimeSlots: [],
-      difficulty: "Advanced",
-      imageUrl: "/machines/cnc-mill.jpg",
-      specifications: "Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC"
-    },
-    {
-      _id: "5",
-      name: "Safety Cabinet",
-      type: "Safety Equipment",
-      description: "Store hazardous materials safely.",
-      status: "Available",
-      requiresCertification: true,
-      bookedTimeSlots: [],
-      difficulty: "Basic",
-      imageUrl: "/machines/safety-cabinet.jpg",
-      specifications: "Capacity: 30 gallons, Fire resistant: 2 hours"
-    },
-    {
-      _id: "6",
-      name: "Safety Course",
-      type: "Certification",
-      description: "Basic safety training for the makerspace.",
-      status: "Available",
-      requiresCertification: false,
-      bookedTimeSlots: [],
-      difficulty: "Basic",
-      imageUrl: "/machines/safety-course.jpg",
-      specifications: "Duration: 1 hour, Required for all makerspace users"
-    }
-  ];
-  
-  // Check for each required machine
-  for (const requiredMachine of requiredMachines) {
-    const machineExists = await Machine.findById(requiredMachine._id);
+// Get all machines
+export const getMachines = async (req: Request, res: Response) => {
+  try {
+    // Check if we should filter special machines (5 and 6)
+    const filterSpecial = req.query.filterSpecial === 'true';
     
-    if (!machineExists) {
-      console.log(`Machine ${requiredMachine._id} (${requiredMachine.name}) not found, creating it...`);
-      try {
-        await Machine.create(requiredMachine);
-        console.log(`Machine ${requiredMachine._id} (${requiredMachine.name}) created successfully`);
-      } catch (error) {
-        console.error(`Error creating machine ${requiredMachine._id}:`, error);
-      }
-    } else {
-      console.log(`Machine ${requiredMachine._id} (${machineExists.name}) already exists`);
+    let query = {};
+    if (filterSpecial) {
+      // Filter out machines 5 and 6 if requested
+      query = { _id: { $nin: ['5', '6'] } };
     }
+    
+    const machines = await Machine.find(query);
+    console.log(`Retrieved ${machines.length} machines${filterSpecial ? ' (filtered)' : ''}`);
+    
+    // Normalize status field for all machines before sending response
+    const normalizedMachines = machines.map(machine => {
+      // Clone the document to avoid modifying the original
+      const machineObj = machine.toObject();
+      
+      // Create a normalized status field for client-side use only
+      // This doesn't modify the database schema field
+      const clientStatus = (() => {
+        if (machineObj.status === 'In Use') {
+          return 'in-use'; // Map "In Use" to "in-use" for frontend compatibility
+        } else if (machineObj.status) {
+          return machineObj.status.toLowerCase(); // Lowercase other statuses
+        }
+        return 'available'; // Default status
+      })();
+      
+      // Return a new object with the normalized client status
+      return {
+        ...machineObj,
+        status: clientStatus
+      };
+    });
+    
+    res.status(200).json(normalizedMachines);
+  } catch (error) {
+    console.error('Error in getMachines:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
-  
-  // Count total machines to verify
-  const totalMachines = await Machine.countDocuments();
-  console.log(`Total machines in database: ${totalMachines}`);
+};
+
+// Get machine by ID
+export const getMachineById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Handle string IDs properly
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+    
+    // Convert machine to plain object
+    const machineObj = machine.toObject();
+    
+    // Create a normalized status for client-side only
+    let clientStatus = 'available'; // Default
+    if (machineObj.status) {
+      if (machineObj.status === 'In Use') {
+        clientStatus = 'in-use'; // Map "In Use" to "in-use" for frontend
+      } else {
+        clientStatus = machineObj.status.toLowerCase();
+      }
+    }
+
+    // Return a new object with the normalized client status
+    res.status(200).json({
+      ...machineObj,
+      status: clientStatus
+    });
+  } catch (error) {
+    console.error('Error in getMachineById:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Update machine (admin only)
+export const updateMachine = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, status } = req.body;
+
+    // Handle string IDs properly
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+
+    // Update the machine
+    machine.name = name;
+    // Convert status to proper format (first letter capitalized)
+    if (status) {
+      // Ensure we're using a valid status from the Machine model
+      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
+      switch(status.toLowerCase()) {
+        case 'available':
+          normalizedStatus = 'Available';
+          break;
+        case 'maintenance':
+          normalizedStatus = 'Maintenance';
+          break;
+        case 'in-use':
+        case 'in use':
+        case 'out of order': // Map "out of order" to "In Use"
+          normalizedStatus = 'In Use';
+          break;
+        default:
+          normalizedStatus = 'Available';
+      }
+      machine.status = normalizedStatus;
+    }
+    
+    await machine.save();
+
+    res.status(200).json({ message: 'Machine updated successfully', machine });
+  } catch (error) {
+    console.error('Error in updateMachine:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Update machine status (admin only)
+export const updateMachineStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status, maintenanceNote } = req.body;
+
+    console.log(`Updating machine ${id} status to: ${status}, note: ${maintenanceNote}`);
+
+    // Find machine with proper ID handling
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+
+    if (!machine) {
+      console.error(`Machine not found with ID: ${id}`);
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+
+    // Special handling for Laser Cutter - force maintenance mode
+    if (id === '1') {
+      console.log("Setting Laser Cutter to maintenance mode");
+      machine.status = 'Maintenance';
+      machine.maintenanceNote = maintenanceNote || 'Under scheduled maintenance';
+    } else {
+      // Map status values to the exact string literals as defined in the Machine model
+      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
+      switch(status.toLowerCase()) {
+        case 'available':
+          normalizedStatus = 'Available';
+          break;
+        case 'maintenance':
+          normalizedStatus = 'Maintenance';
+          break;
+        case 'in-use':
+        case 'in use':
+        case 'out of order': // Map "out of order" to "In Use"
+          normalizedStatus = 'In Use';
+          break;
+        default:
+          normalizedStatus = 'Available';
+      }
+
+      // Update the machine status
+      machine.status = normalizedStatus;
+      machine.maintenanceNote = maintenanceNote || '';
+    }
+    
+    console.log(`Saving machine with status: ${machine.status}`);
+    await machine.save();
+
+    // Return normalized status for client
+    let clientStatus = machine.status === 'In Use' ? 'in-use' : machine.status.toLowerCase();
+
+    console.log(`Machine ${id} status updated successfully to: ${machine.status}, client will see: ${clientStatus}`);
+    res.status(200).json({ 
+      message: 'Machine status updated successfully', 
+      machine: {
+        ...machine.toObject(),
+        status: clientStatus
+      },
+      success: true 
+    });
+  } catch (error) {
+    console.error('Error in updateMachineStatus:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Delete machine (admin only)
+export const deleteMachine = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Handle string IDs properly
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+
+    // Delete the machine
+    await machine.deleteOne();
+
+    res.status(200).json({ message: 'Machine deleted successfully' });
+  } catch (error) {
+    console.error('Error in deleteMachine:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
 };

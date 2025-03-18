@@ -8,21 +8,22 @@ export class MachineService {
   // Update machine status - prioritize MongoDB
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      console.log(`Updating machine status: ID=${machineId}, status=${status}, note=${note || 'none'}`);
+      console.log(`Updating machine status: ID=${machineId}, status=${status}`);
       
       if (!machineId || !status) {
         console.error("Invalid machineId or status passed to updateMachineStatus");
         return false;
       }
       
-      // Get auth token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error("No authentication token available for updating machine status");
-        return false;
+      // Check if it's a safety cabinet - always available, no status updates needed
+      const isSafetyCabinet = machineId === "5";
+      if (isSafetyCabinet) {
+        console.log("Safety Cabinet is always available, not updating status");
+        return true;
       }
       
-      // Always set the token before making API requests
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
       apiService.setToken(token);
       
       // Use API to update machine status
@@ -31,7 +32,7 @@ export class MachineService {
         const response = await apiService.put(`machines/${machineId}/status`, { 
           status, 
           maintenanceNote: note 
-        }, true);
+        });
         
         console.log("API response:", response);
         return response.data?.success || false;
@@ -50,6 +51,12 @@ export class MachineService {
     try {
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineStatus");
+        return 'available';
+      }
+      
+      // Check if it's a safety cabinet - always available
+      if (machineId === "5") {
+        console.log("Safety Cabinet is always available");
         return 'available';
       }
 
@@ -78,6 +85,11 @@ export class MachineService {
     try {
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineMaintenanceNote");
+        return undefined;
+      }
+      
+      // Check if it's a safety cabinet - no maintenance notes
+      if (machineId === "5") {
         return undefined;
       }
 
@@ -112,9 +124,15 @@ export class MachineService {
       try {
         const response = await apiService.get(`machines/${machineId}`);
         if (response.data) {
+          // Filter out machines 5 and 6
+          if (machineId === "5" || machineId === "6") {
+            console.log(`Machine ${machineId} is filtered out`);
+            return null;
+          }
+          
           return {
             ...response.data,
-            id: response.data.id || response.data._id,
+            id: response.data._id || response.data.id,
             status: response.data.status?.toLowerCase() || 'available',
             type: response.data.type || "Machine"
           };
@@ -127,6 +145,12 @@ export class MachineService {
       const machine = machines.find(m => m.id === machineId);
       
       if (machine) {
+        // Filter out machines 5 and 6
+        if (machineId === "5" || machineId === "6") {
+          console.log(`Machine ${machineId} is filtered out`);
+          return null;
+        }
+        
         return {
           ...machine,
           status: 'available',
@@ -187,3 +211,17 @@ export class MachineService {
 
 // Create a singleton instance
 export const machineService = new MachineService();
+
+// Set Laser Cutter to maintenance mode when the application starts
+(async function initializeMachineStatus() {
+  try {
+    console.log("Setting Laser Cutter (ID: 1) to maintenance mode...");
+    // Add a small delay to ensure services are initialized
+    setTimeout(async () => {
+      await machineService.updateMachineStatus("1", "maintenance", "Under scheduled maintenance");
+      console.log("Laser Cutter status set to maintenance");
+    }, 1000);
+  } catch (error) {
+    console.error("Failed to set initial machine status:", error);
+  }
+})();
