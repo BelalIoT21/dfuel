@@ -22,6 +22,7 @@ const Index = () => {
   const prevServerStatusRef = useRef<string | null>(null);
   const checkingRef = useRef<boolean>(false);
   const attemptedEndpointsRef = useRef<string[]>([]);
+  const originalHeightRef = useRef<number>(0);
 
   useEffect(() => {
     loadEnv();
@@ -30,48 +31,46 @@ const Index = () => {
     // Log available endpoints for debugging
     const endpoints = getApiEndpoints();
     console.log("Available API endpoints:", endpoints);
+    
+    // Store initial window height
+    originalHeightRef.current = window.innerHeight;
+    console.log("Original window height:", originalHeightRef.current);
   }, []);
 
   useEffect(() => {
-    const handleKeyboardShow = () => {
-      console.log("Keyboard shown");
-      setKeyboardVisible(true);
-    };
-    
-    const handleKeyboardHide = () => {
-      console.log("Keyboard hidden");
-      setKeyboardVisible(false);
-    };
-    
-    if (isAndroid() || isIOS()) {
-      if (isAndroid()) {
-        // Better keyboard detection for Android
-        const originalHeight = window.innerHeight;
-        window.addEventListener('resize', () => {
-          const isKeyboardVisible = window.innerHeight < originalHeight * 0.75;
-          setKeyboardVisible(isKeyboardVisible);
-          console.log(`Keyboard detection: ${isKeyboardVisible ? 'shown' : 'hidden'}, height: ${window.innerHeight}/${originalHeight}`);
-        });
-      } else if (isIOS()) {
-        if (window.visualViewport) {
-          // More precise keyboard detection for iOS
-          const viewportHandler = () => {
-            const isKeyboardOpen = window.visualViewport!.height < window.innerHeight * 0.75;
-            setKeyboardVisible(isKeyboardOpen);
-            console.log(`iOS keyboard: ${isKeyboardOpen ? 'shown' : 'hidden'}, viewport: ${window.visualViewport!.height}/${window.innerHeight}`);
-          };
-          
-          window.visualViewport.addEventListener('resize', viewportHandler);
-          window.visualViewport.addEventListener('scroll', viewportHandler);
-          
-          return () => {
-            window.visualViewport!.removeEventListener('resize', viewportHandler);
-            window.visualViewport!.removeEventListener('scroll', viewportHandler);
-          };
+    // Enhanced keyboard detection
+    const handleKeyboardVisibility = () => {
+      if (isAndroid() || isIOS()) {
+        const currentHeight = window.innerHeight;
+        const threshold = originalHeightRef.current * 0.75;
+        const isKeyboardOpen = currentHeight < threshold;
+        
+        console.log(`Keyboard detection: height ${currentHeight}/${originalHeightRef.current}, threshold: ${threshold}`);
+        
+        if (isKeyboardOpen !== keyboardVisible) {
+          console.log(`Keyboard ${isKeyboardOpen ? 'shown' : 'hidden'}`);
+          setKeyboardVisible(isKeyboardOpen);
         }
       }
+    };
+    
+    // Set up event listeners based on platform
+    if (isAndroid() || isIOS()) {
+      if (window.visualViewport) {
+        // More precise keyboard detection for modern browsers
+        window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
+        return () => {
+          window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
+        };
+      } else {
+        // Fallback for browsers without visualViewport API
+        window.addEventListener('resize', handleKeyboardVisibility);
+        return () => {
+          window.removeEventListener('resize', handleKeyboardVisibility);
+        };
+      }
     }
-  }, []);
+  }, [keyboardVisible]);
 
   useEffect(() => {
     const checkServer = async () => {
@@ -139,8 +138,8 @@ const Index = () => {
                 // Only show toast if status changed from a different value
                 if (prevServerStatusRef.current !== 'connected') {
                   toast({
-                    title: 'Server Connected',
-                    description: `Successfully connected to the backend server at ${url}`,
+                    title: 'Connected',
+                    description: 'Successfully connected to the server',
                   });
                 }
               }
@@ -167,19 +166,19 @@ const Index = () => {
             
             if (apiResponse.data && apiResponse.status === 200) {
               // Only update status and show toast if status changed
-              if (serverStatus !== 'connected via API') {
-                setServerStatus('connected via API');
+              if (serverStatus !== 'connected') {
+                setServerStatus('connected');
                 
                 // Only show toast if status changed from a different value
-                if (prevServerStatusRef.current !== 'connected via API') {
+                if (prevServerStatusRef.current !== 'connected') {
                   toast({
-                    title: 'API Server Connected',
-                    description: 'Connected via alternative API endpoint',
+                    title: 'Connected',
+                    description: 'Successfully connected to the server',
                   });
                 }
               }
               
-              prevServerStatusRef.current = 'connected via API';
+              prevServerStatusRef.current = 'connected';
               connected = true;
             }
           } catch (apiError) {
@@ -198,8 +197,8 @@ const Index = () => {
             // Only show toast if status changed from a different value
             if (prevServerStatusRef.current !== 'disconnected') {
               toast({
-                title: 'Server Connection Failed',
-                description: `Could not connect to any server endpoint. Tried: ${attemptedEndpointsRef.current.join(', ')}`,
+                title: 'Disconnected',
+                description: 'Could not connect to the server',
                 variant: 'destructive'
               });
             }
@@ -247,7 +246,7 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoading);
 
-  const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
+  const isConnected = serverStatus === 'connected';
 
   if (authLoading) {
     return (
@@ -265,7 +264,7 @@ const Index = () => {
     );
   }
 
-  // Enhanced keyboard handling
+  // Enhanced keyboard handling with stronger transform
   const containerStyle = keyboardVisible && isMobile
     ? { 
         minHeight: '100vh', 
@@ -274,7 +273,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-20vh)'
+        transform: 'translateY(-40vh)'  // Increased transform to move content up more
       } 
     : { 
         minHeight: '100vh', 
@@ -300,12 +299,12 @@ const Index = () => {
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Server: Connected to {getLocalServerIP()}:4000
+                  Server: Connected
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Server: Unable to connect to {getLocalServerIP()}:4000
+                  Server: Disconnected
                 </>
               )}
             </div>
