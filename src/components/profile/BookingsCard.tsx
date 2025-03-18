@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { bookingService } from '@/services/bookingService';
 import mongoDbService from '@/services/mongoDbService';
 import BookingsList from './BookingsList';
 import EmptyBookingsView from './EmptyBookingsView';
+import { format, parseISO } from 'date-fns';
 
 const BookingsCard = () => {
   const { user } = useAuth();
@@ -67,35 +67,29 @@ const BookingsCard = () => {
     if (bookings && bookings.length > 0) {
       for (const booking of bookings) {
         try {
-          // First check if machine info is already in the booking
           if (booking.machineName) {
             names[booking.machineId || booking.machine] = booking.machineName;
             continue;
           }
           
-          // If nested machine object exists with name
           if (booking.machine && booking.machine.name) {
             names[booking.machineId || booking.machine._id] = booking.machine.name;
             continue;
           }
           
-          // Get machine ID from appropriate property
           const machineId = booking.machineId || 
                            (booking.machine && typeof booking.machine === 'object' ? 
                             booking.machine._id : booking.machine);
           
-          // Skip if no valid machine ID found
           if (!machineId) {
             console.log("No valid machine ID found for booking:", booking);
             continue;
           }
           
-          // Check static data first
           const machineFromData = machines.find(m => m.id === machineId);
           if (machineFromData) {
             names[machineId] = machineFromData.name;
           } else {
-            // Try to fetch from service
             const machine = await machineService.getMachineById(machineId);
             if (machine) {
               names[machineId] = machine.name;
@@ -256,7 +250,6 @@ const BookingsCard = () => {
   };
 
   const getMachineType = (machineId) => {
-    // First check if we have populated machine data with type
     const foundBooking = bookings.find(b => 
       (b.machineId === machineId || b.machine === machineId || 
       (b.machine && b.machine._id === machineId))
@@ -266,9 +259,29 @@ const BookingsCard = () => {
       return foundBooking.machine.type;
     }
     
-    // Fallback to static data
     const machine = machines.find(m => m.id === machineId);
     return machine ? machine.type : "Unknown";
+  };
+
+  const formatBookingDate = (dateString) => {
+    try {
+      if (!dateString) return '';
+      
+      if (typeof dateString === 'string' && dateString.includes('T') && dateString.includes('Z')) {
+        const date = parseISO(dateString);
+        return format(date, 'yyyy-MM-dd');
+      }
+      
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      
+      const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
   };
 
   return (
@@ -382,7 +395,7 @@ const BookingsCard = () => {
               <p className="text-sm font-semibold">{getMachineName(bookingToDelete.machineId || 
                                                                (bookingToDelete.machine && typeof bookingToDelete.machine === 'object' ? 
                                                                 bookingToDelete.machine._id : bookingToDelete.machine))}</p>
-              <p className="text-sm text-gray-500">{bookingToDelete.date} at {bookingToDelete.time}</p>
+              <p className="text-sm text-gray-500">{formatBookingDate(bookingToDelete.date)} at {bookingToDelete.time}</p>
               <p className="text-sm text-gray-500">Status: <span className={`
                 ${bookingToDelete.status === 'Approved' && 'text-green-600'} 
                 ${bookingToDelete.status === 'Pending' && 'text-yellow-600'}
