@@ -21,12 +21,15 @@ import { useEffect } from "react";
 import { loadEnv } from "./utils/env";
 import { toast } from "@/components/ui/use-toast";
 
-// Create a new query client
+// Create a new query client with more aggressive retry settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 3, // Increase retries for more resilience
+      retryDelay: attempt => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
       refetchOnWindowFocus: false,
+      refetchOnMount: true, // Refresh data when component mounts
+      staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     },
   },
 });

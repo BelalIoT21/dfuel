@@ -6,6 +6,7 @@ import userDatabase from '@/services/userDatabase';
 import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
+import { certificationService } from '@/services/certificationService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -40,6 +41,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ...response.data,
                 id: response.data._id || response.data.id
               };
+              
+              // Make sure certifications is always an array
+              if (!userData.certifications) {
+                userData.certifications = [];
+              } else if (!Array.isArray(userData.certifications)) {
+                userData.certifications = [String(userData.certifications)];
+              }
+              
+              console.log('User certifications from API:', userData.certifications);
+              
+              // If certifications is empty, try to get from certificationService
+              if (userData.certifications.length === 0 && userData.id) {
+                try {
+                  console.log('Fetching certifications separately from service...');
+                  const certifications = await certificationService.getUserCertifications(userData.id);
+                  if (Array.isArray(certifications) && certifications.length > 0) {
+                    console.log('Found certifications from service:', certifications);
+                    userData.certifications = certifications;
+                  }
+                } catch (certErr) {
+                  console.error('Error fetching certifications:', certErr);
+                }
+              }
+              
+              // Save the user data with up-to-date certifications
+              await storage.setItem('learnit_user', JSON.stringify(userData));
+              
               setUser(userData);
             } else {
               // If the token is invalid, remove it
@@ -51,7 +79,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const storedUser = await storage.getItem('learnit_user');
               if (storedUser) {
                 console.log('Retrieved user data from storage');
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                
+                // Make sure certifications is always an array
+                if (!parsedUser.certifications) {
+                  parsedUser.certifications = [];
+                } else if (!Array.isArray(parsedUser.certifications)) {
+                  parsedUser.certifications = [String(parsedUser.certifications)];
+                }
+                
+                setUser(parsedUser);
               }
             }
           } catch (error) {
@@ -67,16 +104,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     ...retryResponse.data,
                     id: retryResponse.data._id || retryResponse.data.id
                   };
+                  
+                  // Make sure certifications is always an array
+                  if (!userData.certifications) {
+                    userData.certifications = [];
+                  } else if (!Array.isArray(userData.certifications)) {
+                    userData.certifications = [String(userData.certifications)];
+                  }
+                  
+                  // Save the updated user data
+                  await storage.setItem('learnit_user', JSON.stringify(userData));
+                  
                   setUser(userData);
                 } else {
                   // Now we can remove the token after second failure
                   localStorage.removeItem('token');
                   apiService.setToken(null);
+                  
+                  // Try from storage as a last resort
+                  const storedUser = await storage.getItem('learnit_user');
+                  if (storedUser) {
+                    try {
+                      const parsedUser = JSON.parse(storedUser);
+                      
+                      // Make sure certifications is always an array
+                      if (!parsedUser.certifications) {
+                        parsedUser.certifications = [];
+                      } else if (!Array.isArray(parsedUser.certifications)) {
+                        parsedUser.certifications = [String(parsedUser.certifications)];
+                      }
+                      
+                      setUser(parsedUser);
+                    } catch (parseError) {
+                      console.error('Error parsing stored user:', parseError);
+                    }
+                  }
                 }
               } catch (retryError) {
                 console.error('Retry failed, removing token:', retryError);
                 localStorage.removeItem('token');
                 apiService.setToken(null);
+                
+                // Try from storage as a last resort
+                const storedUser = await storage.getItem('learnit_user');
+                if (storedUser) {
+                  try {
+                    setUser(JSON.parse(storedUser));
+                  } catch (parseError) {
+                    console.error('Error parsing stored user:', parseError);
+                  }
+                }
               } finally {
                 setLoading(false);
               }
@@ -88,7 +165,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const storedUser = await storage.getItem('learnit_user');
           if (storedUser) {
             console.log('Retrieved user data from storage');
-            setUser(JSON.parse(storedUser));
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              
+              // Make sure certifications is always an array
+              if (!parsedUser.certifications) {
+                parsedUser.certifications = [];
+              } else if (!Array.isArray(parsedUser.certifications)) {
+                parsedUser.certifications = [String(parsedUser.certifications)];
+              }
+              
+              // If user ID is available but certifications array is empty, try to fetch them
+              if (parsedUser.id && parsedUser.certifications.length === 0) {
+                try {
+                  console.log('Fetching certifications separately for stored user...');
+                  const certifications = await certificationService.getUserCertifications(parsedUser.id);
+                  if (Array.isArray(certifications) && certifications.length > 0) {
+                    console.log('Found certifications for stored user:', certifications);
+                    parsedUser.certifications = certifications;
+                    
+                    // Update storage with fetched certifications
+                    await storage.setItem('learnit_user', JSON.stringify(parsedUser));
+                  }
+                } catch (certErr) {
+                  console.error('Error fetching certifications for stored user:', certErr);
+                }
+              }
+              
+              setUser(parsedUser);
+            } catch (parseError) {
+              console.error('Error parsing stored user:', parseError);
+            }
           }
         }
       } catch (error) {

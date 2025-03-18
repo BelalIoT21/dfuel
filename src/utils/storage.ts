@@ -1,4 +1,3 @@
-
 import { isWeb } from './platform';
 
 /**
@@ -69,21 +68,48 @@ class StorageService {
   }
 
   /**
-   * Clear all localStorage items except the token
+   * Clear all localStorage items except the token and user data
    */
   async clearExceptToken(): Promise<void> {
     if (isWeb) {
       try {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('learnit_user');
+        
+        // Store the certifications separately to preserve them
+        let certifications = [];
+        if (userData) {
+          try {
+            const parsedUser = JSON.parse(userData);
+            certifications = parsedUser.certifications || [];
+          } catch (e) {
+            console.error('Error parsing user data to preserve certifications:', e);
+          }
+        }
+        
         localStorage.clear();
+        
         if (token) {
           localStorage.setItem('token', token);
         }
+        
         if (userData) {
-          localStorage.setItem('learnit_user', userData);
+          // Make sure to properly preserve certifications when restoring user data
+          try {
+            const parsedUser = JSON.parse(userData);
+            // Ensure we keep the certifications we extracted earlier
+            if (Array.isArray(certifications) && certifications.length > 0) {
+              parsedUser.certifications = certifications;
+            }
+            localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
+          } catch (e) {
+            // If there was an error parsing, just restore the original data
+            localStorage.setItem('learnit_user', userData);
+            console.error('Error preserving certifications during clear:', e);
+          }
         }
-        console.log('Cleared all localStorage data except auth data');
+        
+        console.log('Cleared all localStorage data except auth data and certifications');
       } catch (error) {
         console.error('Error clearing localStorage:', error);
       }
@@ -93,6 +119,7 @@ class StorageService {
         if (AsyncStorage) {
           const token = await AsyncStorage.getItem('token');
           const userData = await AsyncStorage.getItem('learnit_user');
+          
           // In a real implementation, we would need to get all keys and remove them except auth data
           const allKeys = await AsyncStorage.getAllKeys();
           const keysToRemove = allKeys.filter(key => key !== 'token' && key !== 'learnit_user');

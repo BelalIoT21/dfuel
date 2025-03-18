@@ -51,6 +51,16 @@ export const useAuthFunctions = (
         return false;
       }
   
+      // Ensure certifications are properly set and always an array
+      if (!userData.certifications) {
+        userData.certifications = [];
+      } else if (!Array.isArray(userData.certifications)) {
+        // Convert to array if it's not already
+        userData.certifications = [String(userData.certifications)];
+      }
+      
+      console.log("User certifications from API:", userData.certifications);
+  
       // Normalize user data (map `_id` to `id` for consistency)
       const normalizedUser = {
         ...userData,
@@ -66,7 +76,9 @@ export const useAuthFunctions = (
       apiService.setToken(token); // Set token in API service
       
       // Also save user data to storage for quick access
-      await storage.setItem('learnit_user', JSON.stringify(normalizedUser));
+      const stringifiedUser = JSON.stringify(normalizedUser);
+      console.log("Saving user data to storage:", stringifiedUser);
+      await storage.setItem('learnit_user', stringifiedUser);
   
       setUser(normalizedUser as User); // Update the user state
   
