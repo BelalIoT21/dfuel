@@ -15,9 +15,6 @@ import BookMachineButton from './BookMachineButton';
 // Define special machine IDs that are always displayed regardless of availability
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
-// Define standard machine IDs that we know should exist
-const STANDARD_MACHINE_IDS = ["1", "2", "3", "4", "5", "6"];
-
 // Define known machines with correct name mappings for fallback
 const MACHINE_NAMES = {
   "1": "Laser Cutter",
@@ -58,9 +55,6 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Always include all standard machines, even if they're not in the database
-      const machinesData = [];
-      
       // Get user certifications
       let userCerts = [];
       try {
@@ -76,9 +70,11 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       
       // Fetch machine statuses
       const statuses = {};
+      
+      // Get machines from database
+      let dbMachines = [];
       try {
-        // Try to get actual machines from the database first
-        const dbMachines = await machineService.getMachines();
+        dbMachines = await machineService.getMachines();
         console.log("Machines fetched from database:", dbMachines);
         
         // Get statuses for all machines
@@ -94,34 +90,58 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
         }
       } catch (err) {
         console.error("Error fetching machines from database:", err);
-        // If database fetch fails, use default statuses
-        STANDARD_MACHINE_IDS.forEach(id => {
-          statuses[id] = id === "1" ? "maintenance" : "available";
-        });
       }
+      
+      // Add Special Machines (5 and 6) statuses
+      SPECIAL_MACHINE_IDS.forEach(id => {
+        statuses[id] = 'available'; // Special machines are always available
+      });
+      
       setMachineStatuses(statuses);
       
-      // Format the machines for display, always include all standard machines
-      for (const machineId of STANDARD_MACHINE_IDS) {
-        // Skip if it's a safety cabinet or safety course (IDs 5 and 6)
-        if (machineId === "5" || machineId === "6") continue;
-        
+      // Create a map of machines by ID for easy lookup
+      const machinesById = {};
+      dbMachines.forEach(machine => {
+        const id = (machine.id || machine._id).toString();
+        machinesById[id] = machine;
+      });
+      
+      // Format the machines for display
+      // Start with database machines
+      const machinesData = dbMachines.map(machine => {
+        const machineId = (machine.id || machine._id).toString();
         const certDate = user?.certificationDates?.[machineId] 
           ? new Date(user.certificationDates[machineId])
           : new Date();
-        
-        // Use our predefined machine names
-        const machineName = MACHINE_NAMES[machineId];
-        
-        machinesData.push({
+          
+        return {
           id: machineId,
-          name: machineName,
+          name: machine.name || MACHINE_NAMES[machineId] || `Machine ${machineId}`,
           certified: userCerts.includes(machineId),
           date: format(certDate, 'dd/MM/yyyy'),
           bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
           status: statuses[machineId] || 'available'
-        });
-      }
+        };
+      });
+      
+      // Then add special machines (5 and 6) if they're not already in the list
+      SPECIAL_MACHINE_IDS.forEach(machineId => {
+        // Check if this special machine is already in the list
+        if (!machinesData.some(m => m.id === machineId)) {
+          const certDate = user?.certificationDates?.[machineId] 
+            ? new Date(user.certificationDates[machineId])
+            : new Date();
+            
+          machinesData.push({
+            id: machineId,
+            name: MACHINE_NAMES[machineId],
+            certified: userCerts.includes(machineId),
+            date: format(certDate, 'dd/MM/yyyy'),
+            bookable: false, // Special machines aren't bookable
+            status: 'available' // Special machines are always available
+          });
+        }
+      });
       
       console.log(`Displaying machines: ${machinesData.map(m => m.name).join(', ')}`);
       setMachines(machinesData);
