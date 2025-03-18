@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -14,19 +13,6 @@ import BookMachineButton from './BookMachineButton';
 
 // Define special machine IDs that are always displayed regardless of availability
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
-
-// Define standard machine IDs that we know should exist
-const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
-
-// Define known machines with correct name mappings for fallback
-const MACHINE_NAMES = {
-  "1": "Laser Cutter",
-  "2": "Ultimaker",
-  "3": "X1 E Carbon 3D Printer",
-  "4": "Bambu Lab X1 E",
-  "5": "Safety Cabinet",
-  "6": "Machine Safety Course"
-};
 
 const CertificationsCard = () => {
   const { user } = useAuth();
@@ -48,31 +34,27 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Prepare the list of machines to consider - start with standard machines
-      let combinedMachineIds = [...STANDARD_MACHINE_IDS];
-      
-      // Fetch the current available machines to determine what exists in the database
+      // Fetch active machines from database
+      let databaseMachines: any[] = [];
       try {
-        const allCurrentMachines = await machineService.getMachines();
-        console.log("All current machines:", allCurrentMachines.length);
-        
-        // Extract IDs from current machines and add to our combined list
-        const currentMachineIds = allCurrentMachines.map(machine => 
-          (machine.id || machine._id).toString()
-        );
-        
-        // Add API machines to our list (removes duplicates using Set)
-        combinedMachineIds = [...new Set([...combinedMachineIds, ...currentMachineIds])];
-        setAvailableMachineIds(combinedMachineIds);
-        console.log("Available machine IDs:", combinedMachineIds);
+        databaseMachines = await machineService.getMachines();
+        console.log("Fetched machines from database:", databaseMachines.length);
       } catch (error) {
-        console.error("Error fetching available machines:", error);
-        // In case of error, use standard machines as fallback
-        setAvailableMachineIds(STANDARD_MACHINE_IDS);
+        console.error("Error fetching machines from database:", error);
+        databaseMachines = [];
       }
       
-      // Get the certification list from our service
-      const allCertifications = certificationService.getAllCertifications();
+      // Extract available machine IDs from database machines
+      const databaseMachineIds = databaseMachines.map(machine => 
+        (machine.id || machine._id).toString()
+      );
+      
+      console.log("Available machine IDs from database:", databaseMachineIds);
+      setAvailableMachineIds(databaseMachineIds);
+      
+      // Get the certification list - these are the machines we'll show
+      const allCertifications = await fetchAvailableMachinesForCertification(databaseMachines);
+      console.log("All certifications filtered:", allCertifications.length);
       
       // Get fresh user certifications from the service
       let userCerts = [];
@@ -91,8 +73,8 @@ const CertificationsCard = () => {
       
       // Fetch machine statuses
       const statuses = {};
-      for (const cert of allCertifications) {
-        const machineId = cert.id.toString();
+      for (const machine of databaseMachines) {
+        const machineId = (machine.id || machine._id).toString();
         try {
           const status = await machineService.getMachineStatus(machineId);
           statuses[machineId] = status;
@@ -103,37 +85,22 @@ const CertificationsCard = () => {
       }
       setMachineStatuses(statuses);
       
-      // Format the machines for display with correct names
-      // Only filter out "cnc mill" by name, show all standard machines plus API machines
-      const formattedMachines = allCertifications
-        .filter(machine => {
-          const machineId = machine.id.toString();
-          const machineName = MACHINE_NAMES[machineId] || machine.name;
-          
-          // Check if the machine should be displayed
-          return (machineName.toLowerCase() !== "cnc mill") && 
-                 (SPECIAL_MACHINE_IDS.includes(machineId) ||  // Always include safety cabinet and safety course
-                  STANDARD_MACHINE_IDS.includes(machineId) || // Include standard machines
-                  combinedMachineIds.includes(machineId));    // Include if it's available in the API
-        })
-        .map(machine => {
-          const machineId = machine.id.toString();
-          const certDate = user?.certificationDates?.[machineId] 
-            ? new Date(user.certificationDates[machineId])
-            : new Date();
-          
-          // Use our predefined machine names as fallback
-          const machineName = MACHINE_NAMES[machineId] || machine.name;
-          
-          return {
-            id: machineId,
-            name: machineName,
-            certified: userCerts.includes(machineId),
-            date: format(certDate, 'dd/MM/yyyy'),
-            bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
-            status: statuses[machineId] || 'unknown'
-          };
-        });
+      // Format the machines for display
+      const formattedMachines = allCertifications.map(machine => {
+        const machineId = machine.id.toString();
+        const certDate = user?.certificationDates?.[machineId] 
+          ? new Date(user.certificationDates[machineId])
+          : new Date();
+        
+        return {
+          id: machineId,
+          name: machine.name,
+          certified: userCerts.includes(machineId),
+          date: format(certDate, 'dd/MM/yyyy'),
+          bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
+          status: statuses[machineId] || 'unknown'
+        };
+      });
       
       console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
       setMachines(formattedMachines);
@@ -147,6 +114,23 @@ const CertificationsCard = () => {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  // Helper function to fetch available machines for certification
+  const fetchAvailableMachinesForCertification = async (databaseMachines: any[]): Promise<any[]> => {
+    // Filter machines, keeping only those that exist in the database or are special (5, 6)
+    return databaseMachines.filter(machine => {
+      const machineId = (machine.id || machine._id).toString();
+      const machineName = machine.name?.toLowerCase();
+      
+      // Skip "cnc mill" machines
+      if (machineName && machineName === "cnc mill") {
+        return false;
+      }
+      
+      // Include all other machines
+      return true;
+    });
   };
 
   useEffect(() => {
@@ -218,6 +202,10 @@ const CertificationsCard = () => {
           <div className="text-center py-8 text-gray-500">
             <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
             <div>Loading machines...</div>
+          </div>
+        ) : machines.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <div>No machines available for certification</div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

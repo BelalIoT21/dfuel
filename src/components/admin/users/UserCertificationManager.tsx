@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
 import { certificationDatabaseService } from '@/services/database/certificationService';
+import { machineService } from '@/services/machineService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -13,21 +14,15 @@ interface UserCertificationManagerProps {
   onCertificationAdded: () => void;
 }
 
-// Define all certifications
-const CERTIFICATIONS = [
-  { id: "1", name: "Laser Cutter" },
-  { id: "2", name: "Ultimaker" },
-  { id: "3", name: "X1 E Carbon 3D Printer" },
-  { id: "4", name: "Bambu Lab X1 E" },
-  { id: "5", name: "Safety Cabinet" },
-  { id: "6", name: "Safety Course" },
-];
+// Define special machine IDs
+const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
 export const UserCertificationManager = ({ user, onCertificationAdded }: UserCertificationManagerProps) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
+  const [availableMachines, setAvailableMachines] = useState<any[]>([]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -58,11 +53,62 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       setUserCertifications(certifications);
     }
   };
+  
+  // Function to fetch available machines
+  const fetchAvailableMachines = async () => {
+    try {
+      console.log("Fetching available machines for certification");
+      
+      // Fetch machines from database
+      const machines = await machineService.getMachines();
+      console.log(`Fetched ${machines.length} machines from database`);
+      
+      // Add special machines (Safety Cabinet and Safety Course) if they're not in the database
+      const specialMachineIds = SPECIAL_MACHINE_IDS.map(id => id.toString());
+      
+      // Filter out any machines named "cnc mill"
+      const filteredMachines = machines.filter(machine => {
+        const machineName = machine.name?.toLowerCase();
+        return !machineName || machineName !== "cnc mill";
+      });
+      
+      // Ensure each machine has an ID
+      const processedMachines = filteredMachines.map(machine => ({
+        id: (machine.id || machine._id).toString(),
+        name: machine.name
+      }));
+      
+      // Check if special machines are already in the database
+      for (const specialId of specialMachineIds) {
+        if (!processedMachines.some(m => m.id === specialId)) {
+          // Add special machine with appropriate name
+          let specialName = "Special Machine";
+          if (specialId === "5") specialName = "Safety Cabinet";
+          if (specialId === "6") specialName = "Safety Course";
+          
+          processedMachines.push({
+            id: specialId,
+            name: specialName
+          });
+        }
+      }
+      
+      setAvailableMachines(processedMachines);
+    } catch (error) {
+      console.error("Error fetching available machines:", error);
+      // Fallback to special machines only
+      setAvailableMachines([
+        { id: "5", name: "Safety Cabinet" },
+        { id: "6", name: "Safety Course" }
+      ]);
+    }
+  };
 
-  // Load user certifications on dialog open
+  // Load user certifications and available machines on dialog open
   useEffect(() => {
     if (open && user) {
       refreshCertifications();
+      fetchAvailableMachines();
     }
   }, [open, user]);
 
@@ -199,40 +245,47 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         <ScrollArea className={isMobile ? "h-[50vh]" : "max-h-[70vh]"}>
           <div className="py-4 px-1">
             <h4 className="text-sm font-medium mb-2">Certifications</h4>
-            <div className="grid grid-cols-1 gap-2">
-              {CERTIFICATIONS.map(certification => {
-                const isCertified = userCertifications.includes(certification.id);
-                return (
-                  <div key={certification.id} className="flex justify-between items-center border p-2 rounded">
-                    <span>{certification.name}</span>
-                    <div>
-                      {isCertified ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveCertification(certification.id)}
-                          disabled={loading === certification.id}
-                          className="bg-red-50 hover:bg-red-100 border-red-200"
-                        >
-                          {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          Remove
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddCertification(certification.id)}
-                          disabled={loading === certification.id}
-                        >
-                          {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          Add
-                        </Button>
-                      )}
+            {availableMachines.length === 0 ? (
+              <div className="text-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading machines...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {availableMachines.map(machine => {
+                  const isCertified = userCertifications.includes(machine.id);
+                  return (
+                    <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
+                      <span>{machine.name}</span>
+                      <div>
+                        {isCertified ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveCertification(machine.id)}
+                            disabled={loading === machine.id}
+                            className="bg-red-50 hover:bg-red-100 border-red-200"
+                          >
+                            {loading === machine.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Remove
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddCertification(machine.id)}
+                            disabled={loading === machine.id}
+                          >
+                            {loading === machine.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Add
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {userCertifications.length > 0 && (
               <div className="mt-4 border-t pt-4">

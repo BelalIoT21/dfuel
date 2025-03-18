@@ -10,20 +10,7 @@ interface CertificationsSectionProps {
   user: User;
 }
 
-// Define known machines with correct ID mappings for fallback
-const KNOWN_MACHINES = {
-  "1": { name: "Laser Cutter", type: "Laser Cutter" },
-  "2": { name: "Ultimaker", type: "3D Printer" },
-  "3": { name: "X1 E Carbon 3D Printer", type: "3D Printer" },
-  "4": { name: "Bambu Lab X1 E", type: "3D Printer" },
-  "5": { name: "Safety Cabinet", type: "Safety Cabinet" },
-  "6": { name: "Safety Course", type: "Safety Course" },
-};
-
-// Define standard machine IDs that we know should exist
-const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
-
-// Define special machine IDs that should always be displayed
+// Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
@@ -62,85 +49,61 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     const types: Record<string, string> = {};
     
     try {
-      // Populate with known machines for fallback - ensure correct ID mapping
-      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
-        names[id] = machine.name;
-        types[id] = machine.type;
-      });
-      
-      // Fetch available machines from API
+      // Fetch all machines from database
+      let databaseMachines: any[] = [];
       try {
-        const allMachines = await machineService.getMachines();
-        console.log(`Got ${allMachines.length} machines to check which ones still exist`);
+        databaseMachines = await machineService.getMachines();
+        console.log(`Got ${databaseMachines.length} machines from database`);
         
-        // Extract IDs from available machines
-        const machineIds = allMachines.map(machine => 
+        // Process machines to get names and types
+        databaseMachines.forEach(machine => {
+          const id = (machine.id || machine._id).toString();
+          names[id] = machine.name;
+          types[id] = machine.type || 'Machine';
+        });
+        
+        // Extract machine IDs
+        const machineIds = databaseMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
         
-        // Combine API machines with our standard machine IDs
-        const combinedMachineIds = [...new Set([...machineIds, ...STANDARD_MACHINE_IDS])];
+        // Add special machine IDs if they're not already in the list
+        const combinedMachineIds = [...new Set([...machineIds, ...SPECIAL_MACHINE_IDS])];
         setAvailableMachineIds(combinedMachineIds);
         console.log("Available machine IDs:", combinedMachineIds);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        // In case of error, use standard machine IDs as fallback
-        setAvailableMachineIds(STANDARD_MACHINE_IDS);
+        // In case of error, use special machine IDs as fallback
+        setAvailableMachineIds(SPECIAL_MACHINE_IDS);
       }
       
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
-      // Update machine names and types for certifications where needed
+      // For any certifications that don't have names yet, try to fetch individually
       if (certifications && certifications.length > 0) {
-        // Try to get detailed machine info for any machines we don't know about
-        const unknownCertIds = certifications.filter(
-          certId => !KNOWN_MACHINES[certId]
-        );
+        const unknownCertIds = certifications.filter(certId => !names[certId]);
         
         if (unknownCertIds.length > 0) {
-          try {
-            const allMachines = await machineService.getMachines();
-            
-            // Create a map for quick lookup
-            const machineMap = {};
-            allMachines.forEach(machine => {
-              if (machine.id) {
-                machineMap[machine.id] = machine;
-              }
-            });
-            
-            // Process unknown certifications
-            for (const certId of unknownCertIds) {
-              // Check our map
-              if (machineMap[certId]) {
-                names[certId] = machineMap[certId].name;
-                types[certId] = machineMap[certId].type || 'Machine';
+          console.log("Unknown certification IDs:", unknownCertIds);
+          
+          // Try to fetch each unknown machine
+          for (const certId of unknownCertIds) {
+            try {
+              const machine = await machineService.getMachineById(certId);
+              if (machine) {
+                names[certId] = machine.name;
+                types[certId] = machine.type || 'Machine';
               } else {
-                // If not in the map, try individual fetch
-                try {
-                  const machine = await machineService.getMachineById(certId);
-                  if (machine) {
-                    names[certId] = machine.name;
-                    types[certId] = machine.type || 'Machine';
-                  } else {
-                    names[certId] = `Machine ${certId}`;
-                    types[certId] = 'Machine';
-                  }
-                } catch (error) {
-                  console.error(`Error fetching machine ${certId}:`, error);
-                  names[certId] = `Machine ${certId}`;
-                  types[certId] = 'Machine';
-                }
+                // If machine not found, use generic name
+                names[certId] = `Machine ${certId}`;
+                types[certId] = 'Machine';
               }
-            }
-          } catch (error) {
-            console.error("Failed to fetch machines:", error);
-            // Fall back to simple names for unknowns
-            unknownCertIds.forEach(certId => {
+            } catch (error) {
+              console.error(`Error fetching machine ${certId}:`, error);
               names[certId] = `Machine ${certId}`;
               types[certId] = 'Machine';
-            });
+            }
           }
         }
       }
@@ -163,25 +126,23 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   };
 
-  // Filter certifications - only exclude "cnc mill" by name, but keep all standard machines
+  // Filter certifications - only show certifications for machines that exist in the database
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
     return certifications.filter(certId => {
-      const machineName = machineNames[certId]?.toLowerCase();
+      // Always include special machines (Safety Cabinet and Safety Course)
+      if (SPECIAL_MACHINE_IDS.includes(certId)) {
+        return true;
+      }
       
-      // Filter logic:
-      // 1. Always include special machines (safety cabinet and safety course)
-      // 2. Include if it's in the standard machines
-      // 3. Skip machines with name "cnc mill"
-      return (machineName && machineName !== "cnc mill" && 
-              (SPECIAL_MACHINE_IDS.includes(certId) || 
-               STANDARD_MACHINE_IDS.includes(certId) ||
-               availableMachineIds.includes(certId)));
+      // Include if machine exists in the database
+      return availableMachineIds.includes(certId);
     });
   };
 
   console.log("User certifications in CertificationsSection:", userCertifications);
+  console.log("Available machine IDs:", availableMachineIds);
 
   return (
     <View style={styles.section}>
