@@ -75,26 +75,6 @@ class MongoMachineService {
     }
     
     try {
-      // Special case for Laser Cutter - always set to maintenance
-      if (machineId === '1') {
-        console.log(`Forcing maintenance status for Laser Cutter (ID: ${machineId})`);
-        const result = await this.machineStatusesCollection.updateOne(
-          { machineId },
-          { $set: { machineId, status: 'maintenance', note: note || 'Under scheduled maintenance', updatedAt: new Date() } },
-          { upsert: true }
-        );
-        
-        // Also update the machine document if it exists
-        if (this.machinesCollection) {
-          await this.machinesCollection.updateOne(
-            { _id: machineId },
-            { $set: { status: 'Maintenance', maintenanceNote: note || 'Under scheduled maintenance' } }
-          );
-        }
-        
-        return result.acknowledged;
-      }
-      
       // Convert "out of order" to "in-use" for the database
       let normalizedStatus = status;
       if (status.toLowerCase() === 'out of order') {
@@ -128,7 +108,7 @@ class MongoMachineService {
         
         await this.machinesCollection.updateOne(
           { _id: machineId },
-          { $set: { status: dbStatus } }
+          { $set: { status: dbStatus, maintenanceNote: note } }
         );
       }
       
@@ -263,20 +243,30 @@ class MongoMachineService {
     
     try {
       const count = await this.machinesCollection.countDocuments();
-      if (count === 0) {
-        console.log("No machines found in MongoDB, seeding default machines...");
+      
+      // Get existing machine IDs
+      const existingMachines = await this.machinesCollection.find({}, { projection: { _id: 1 } }).toArray();
+      const existingMachineIds = existingMachines.map(m => m._id);
+      
+      // Define expected machine IDs
+      const expectedMachineIds = ['1', '2', '3', '4'];
+      
+      // Check if any expected machine IDs are missing
+      const missingMachineIds = expectedMachineIds.filter(id => !existingMachineIds.includes(id));
+      
+      if (count === 0 || missingMachineIds.length > 0) {
+        console.log("Missing machines or empty collection, seeding default machines...");
         
         const defaultMachines: MongoMachine[] = [
           { 
             _id: '1', 
             name: 'Laser Cutter', 
             type: 'Laser Cutter', 
-            status: 'Maintenance', // Initialize with maintenance status
+            status: 'Available', // Don't force maintenance status
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
             difficulty: 'Advanced',
-            imageUrl: '/machines/laser-cutter.jpg',
-            maintenanceNote: 'Under scheduled maintenance'
+            imageUrl: '/machines/laser-cutter.jpg'
           },
           { 
             _id: '2', 
@@ -310,29 +300,30 @@ class MongoMachineService {
           }
         ];
         
-        // Create machine entries
-        for (const machine of defaultMachines) {
-          await this.addMachine(machine);
+        // Create only missing machine entries
+        if (missingMachineIds.length > 0) {
+          const missingMachines = defaultMachines.filter(machine => 
+            missingMachineIds.includes(machine._id)
+          );
+          
+          for (const machine of missingMachines) {
+            await this.addMachine(machine);
+            console.log(`Added missing machine: ${machine.name} (ID: ${machine._id})`);
+          }
+        } else {
+          // Create all machine entries if collection is empty
+          for (const machine of defaultMachines) {
+            await this.addMachine(machine);
+          }
         }
         
         console.log("Successfully seeded default machines to MongoDB");
       } else {
-        console.log(`Found ${count} existing machines in MongoDB, skipping seed`);
+        console.log(`Found ${count} existing machines in MongoDB, checking names and types...`);
         
-        // Always set the Laser Cutter to maintenance mode
-        await this.machinesCollection.updateOne(
-          { _id: '1' },
-          { $set: { 
-            name: 'Laser Cutter', 
-            type: 'Laser Cutter', 
-            status: 'Maintenance',
-            maintenanceNote: 'Under scheduled maintenance'
-          }},
-          { upsert: true }
-        );
-        
-        // Make sure other machine IDs have the correct names
+        // Make sure machine IDs have the correct names
         const updates = [
+          { _id: '1', name: 'Laser Cutter', type: 'Laser Cutter' },
           { _id: '2', name: 'Ultimaker', type: '3D Printer' },
           { _id: '3', name: 'X1 E Carbon 3D Printer', type: '3D Printer' },
           { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' }
@@ -346,14 +337,8 @@ class MongoMachineService {
           );
         }
         
-        // Remove machines 5 and 6 if they exist (they're special machines not stored here)
-        await this.machinesCollection.deleteMany({ _id: { $in: ['5', '6'] } });
-        console.log("Updated machine names and removed safety machines if needed");
+        console.log("Updated machine names and types if needed");
       }
-
-      // Update Laser Cutter status to maintenance after seed
-      await this.updateMachineStatus('1', 'maintenance', 'Under scheduled maintenance');
-      
     } catch (error) {
       console.error("Error seeding default machines to MongoDB:", error);
     }
