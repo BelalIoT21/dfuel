@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { List, ActivityIndicator } from 'react-native-paper';
@@ -9,22 +8,25 @@ import { toast } from '@/components/ui/use-toast';
 
 interface CertificationsSectionProps {
   user: User;
-  navigation?: any; // Optional navigation prop
 }
 
 // Define known machines with correct ID mappings for fallback
 const KNOWN_MACHINES = {
   "1": { name: "Laser Cutter", type: "Laser Cutter" },
+  "2": { name: "Ultimaker", type: "3D Printer" },
   "3": { name: "X1 E Carbon 3D Printer", type: "3D Printer" },
   "4": { name: "Bambu Lab X1 E", type: "3D Printer" },
   "5": { name: "Safety Cabinet", type: "Safety Cabinet" },
   "6": { name: "Safety Course", type: "Safety Course" },
 };
 
+// Define standard machine IDs that we know should exist
+const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
+
 // Define special machine IDs that should always be displayed
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
-const CertificationsSection = ({ user, navigation }: CertificationsSectionProps) => {
+const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +62,13 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
     const types: Record<string, string> = {};
     
     try {
-      // Fetch available machines first to know which ones exist
+      // Populate with known machines for fallback - ensure correct ID mapping
+      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
+        names[id] = machine.name;
+        types[id] = machine.type;
+      });
+      
+      // Fetch available machines from API
       try {
         const allMachines = await machineService.getMachines();
         console.log(`Got ${allMachines.length} machines to check which ones still exist`);
@@ -69,40 +77,30 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
         const machineIds = allMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
-        setAvailableMachineIds(machineIds);
-        console.log("Available machine IDs:", machineIds);
+        
+        // Combine API machines with our standard machine IDs
+        const combinedMachineIds = [...new Set([...machineIds, ...STANDARD_MACHINE_IDS])];
+        setAvailableMachineIds(combinedMachineIds);
+        console.log("Available machine IDs:", combinedMachineIds);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        // In case of error, use all known machines as fallback
-        setAvailableMachineIds(Object.keys(KNOWN_MACHINES));
+        // In case of error, use standard machine IDs as fallback
+        setAvailableMachineIds(STANDARD_MACHINE_IDS);
       }
-      
-      // First populate with known machines for fallback - ensure correct ID mapping
-      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
-        names[id] = machine.name;
-        types[id] = machine.type;
-      });
       
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
-      // Filter certifications to only include actually available machines or special machines (5 and 6)
-      const validCertifications = certifications.filter(certId => 
-        availableMachineIds.includes(certId) || 
-        SPECIAL_MACHINE_IDS.includes(certId)
-      );
-      console.log(`Filtered from ${certifications.length} to ${validCertifications.length} valid certifications`);
-      
-      if (validCertifications && validCertifications.length > 0) {
-        // Only fetch unknown machines
-        const unknownCertIds = validCertifications.filter(
+      // Update machine names and types for certifications where needed
+      if (certifications && certifications.length > 0) {
+        // Try to get detailed machine info for any machines we don't know about
+        const unknownCertIds = certifications.filter(
           certId => !KNOWN_MACHINES[certId]
         );
         
         if (unknownCertIds.length > 0) {
           try {
             const allMachines = await machineService.getMachines();
-            console.log(`Got ${allMachines.length} machines to map unknown certifications`);
             
             // Create a map for quick lookup
             const machineMap = {};
@@ -146,9 +144,6 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
           }
         }
       }
-      
-      // Update state with valid certifications
-      setUserCertifications(validCertifications);
     } catch (error) {
       console.error("Error in fetchMachineNames:", error);
     } finally {
@@ -168,25 +163,21 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
     fetchMachineNames();
   };
 
-  const handleBackToDashboard = () => {
-    if (navigation) {
-      navigation.navigate('Home');
-    }
-  };
-
-  // Filter certifications to exclude machines not in availableMachineIds, except for special machines
+  // Filter certifications - only exclude "cnc mill" by name, but keep all standard machines
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
     return certifications.filter(certId => {
-      // Always include special machines (safety cabinet and safety course)
-      // and also include if it's in the available machines from API
-      const isAvailableMachine = SPECIAL_MACHINE_IDS.includes(certId) || 
-                                availableMachineIds.includes(certId);
-                                
       const machineName = machineNames[certId]?.toLowerCase();
-      // Filter out "cnc mill" machine
-      return machineName && machineName !== "cnc mill" && isAvailableMachine;
+      
+      // Filter logic:
+      // 1. Always include special machines (safety cabinet and safety course)
+      // 2. Include if it's in the standard machines
+      // 3. Skip machines with name "cnc mill"
+      return (machineName && machineName !== "cnc mill" && 
+              (SPECIAL_MACHINE_IDS.includes(certId) || 
+               STANDARD_MACHINE_IDS.includes(certId) ||
+               availableMachineIds.includes(certId)));
     });
   };
 
@@ -196,21 +187,13 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.sectionTitle}>Certifications</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={handleBackToDashboard}
-          >
-            <Text style={styles.buttonText}>Back to Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.refreshButton} 
-            onPress={onRefresh}
-            disabled={refreshing}
-          >
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.refreshButton} 
+          onPress={onRefresh}
+          disabled={refreshing}
+        >
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
       
       {isLoading ? (
@@ -259,10 +242,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -270,14 +249,6 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     padding: 4,
-    marginLeft: 8,
-  },
-  backButton: {
-    padding: 4,
-  },
-  buttonText: {
-    color: '#7c3aed',
-    fontSize: 14,
   },
   refreshButtonText: {
     color: '#7c3aed',

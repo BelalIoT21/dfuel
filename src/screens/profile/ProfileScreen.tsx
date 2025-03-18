@@ -59,10 +59,7 @@ const ProfileScreen = ({ navigation }) => {
 
       <Divider />
 
-      <CertificationsSection 
-        user={user} 
-        navigation={navigation}
-      />
+      <CertificationsSection user={user} />
 
       <LogoutButton 
         onLogout={async () => {
