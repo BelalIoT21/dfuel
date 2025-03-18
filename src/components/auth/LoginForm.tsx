@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { PasswordResetDialog } from './PasswordResetDialog';
+import { AlertCircle } from "lucide-react";
 import { motion } from 'framer-motion';
 
 interface LoginFormProps {
@@ -36,8 +34,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -118,39 +114,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
             <div className="relative">
               <Input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                className={`w-full ${passwordError ? 'border-red-500' : ''}`}
               />
-              <button 
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
             </div>
             {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
-          </motion.div>
-          
-          <motion.div className="text-right" variants={itemAnimation}>
-            <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
-              <DialogTrigger asChild>
-                <button
-                  type="button"
-                  className="text-sm text-purple-600 hover:underline"
-                >
-                  Forgot your password?
-                </button>
-              </DialogTrigger>
-              <PasswordResetDialog 
-                isOpen={isForgotPasswordOpen} 
-                onOpenChange={setIsForgotPasswordOpen}
-              />
-            </Dialog>
           </motion.div>
           
           <motion.div variants={itemAnimation}>

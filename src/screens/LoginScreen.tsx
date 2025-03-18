@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Surface, ActivityIndicator } from 'react-native-paper';
@@ -11,7 +10,6 @@ const LoginScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const { user, login, register } = useAuth();
 
   useEffect(() => {
@@ -80,15 +78,9 @@ const LoginScreen = ({ navigation }) => {
             label="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry={!showPassword}
+            secureTextEntry
             style={styles.input}
             mode="outlined"
-            right={
-              <TextInput.Icon 
-                icon={showPassword ? "eye-off" : "eye"} 
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
           />
 
           {!isLogin && (
