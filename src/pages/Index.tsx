@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -22,60 +21,52 @@ const Index = () => {
   const prevServerStatusRef = useRef<string | null>(null);
   const checkingRef = useRef<boolean>(false);
   const attemptedEndpointsRef = useRef<string[]>([]);
+  const originalHeightRef = useRef<number>(0);
 
   useEffect(() => {
     loadEnv();
     console.log("Environment loaded");
     
-    // Log available endpoints for debugging
     const endpoints = getApiEndpoints();
     console.log("Available API endpoints:", endpoints);
+    
+    originalHeightRef.current = window.innerHeight;
+    console.log("Original window height:", originalHeightRef.current);
   }, []);
 
   useEffect(() => {
-    const handleKeyboardShow = () => {
-      console.log("Keyboard shown");
-      setKeyboardVisible(true);
-    };
-    
-    const handleKeyboardHide = () => {
-      console.log("Keyboard hidden");
-      setKeyboardVisible(false);
+    const handleKeyboardVisibility = () => {
+      if (isAndroid() || isIOS()) {
+        const currentHeight = window.innerHeight;
+        const threshold = originalHeightRef.current * 0.75;
+        const isKeyboardOpen = currentHeight < threshold;
+        
+        console.log(`Keyboard detection: height ${currentHeight}/${originalHeightRef.current}, threshold: ${threshold}`);
+        
+        if (isKeyboardOpen !== keyboardVisible) {
+          console.log(`Keyboard ${isKeyboardOpen ? 'shown' : 'hidden'}`);
+          setKeyboardVisible(isKeyboardOpen);
+        }
+      }
     };
     
     if (isAndroid() || isIOS()) {
-      if (isAndroid()) {
-        // Better keyboard detection for Android
-        const originalHeight = window.innerHeight;
-        window.addEventListener('resize', () => {
-          const isKeyboardVisible = window.innerHeight < originalHeight * 0.75;
-          setKeyboardVisible(isKeyboardVisible);
-          console.log(`Keyboard detection: ${isKeyboardVisible ? 'shown' : 'hidden'}, height: ${window.innerHeight}/${originalHeight}`);
-        });
-      } else if (isIOS()) {
-        if (window.visualViewport) {
-          // More precise keyboard detection for iOS
-          const viewportHandler = () => {
-            const isKeyboardOpen = window.visualViewport!.height < window.innerHeight * 0.75;
-            setKeyboardVisible(isKeyboardOpen);
-            console.log(`iOS keyboard: ${isKeyboardOpen ? 'shown' : 'hidden'}, viewport: ${window.visualViewport!.height}/${window.innerHeight}`);
-          };
-          
-          window.visualViewport.addEventListener('resize', viewportHandler);
-          window.visualViewport.addEventListener('scroll', viewportHandler);
-          
-          return () => {
-            window.visualViewport!.removeEventListener('resize', viewportHandler);
-            window.visualViewport!.removeEventListener('scroll', viewportHandler);
-          };
-        }
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
+        return () => {
+          window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
+        };
+      } else {
+        window.addEventListener('resize', handleKeyboardVisibility);
+        return () => {
+          window.removeEventListener('resize', handleKeyboardVisibility);
+        };
       }
     }
-  }, []);
+  }, [keyboardVisible]);
 
   useEffect(() => {
     const checkServer = async () => {
-      // Prevent multiple concurrent checks
       if (checkingRef.current) {
         console.log("Server check already in progress, skipping");
         return;
@@ -88,7 +79,6 @@ const Index = () => {
         const serverIP = getEnv('CUSTOM_SERVER_IP');
         console.log(`Using server IP: ${serverIP}`);
         
-        // Try multiple endpoints
         const endpoints = [
           `http://${serverIP}:4000/api/health`,
           'http://localhost:4000/api/health',
@@ -107,9 +97,8 @@ const Index = () => {
           
           attemptedEndpointsRef.current.push(url);
           
-          // Set a timeout to prevent hanging on the fetch request
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased timeout
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
           
           try {
             const response = await fetch(url, {
@@ -122,7 +111,6 @@ const Index = () => {
             });
             clearTimeout(timeoutId);
             
-            // Log the complete response for debugging
             console.log(`Response from ${url}:`, {
               status: response.status,
               statusText: response.statusText,
@@ -132,15 +120,13 @@ const Index = () => {
             if (response.ok) {
               console.log("Server health check successful");
               
-              // Only update status and show toast if status changed
               if (serverStatus !== 'connected') {
                 setServerStatus('connected');
                 
-                // Only show toast if status changed from a different value
                 if (prevServerStatusRef.current !== 'connected') {
                   toast({
-                    title: 'Server Connected',
-                    description: `Successfully connected to the backend server at ${url}`,
+                    title: 'Connected',
+                    description: 'Successfully connected to the server',
                   });
                 }
               }
@@ -158,7 +144,6 @@ const Index = () => {
           }
         }
         
-        // If we couldn't connect with any direct endpoint, try the apiService
         if (!connected) {
           console.log("Trying API service health check as fallback");
           try {
@@ -166,20 +151,18 @@ const Index = () => {
             console.log("API health check response:", apiResponse);
             
             if (apiResponse.data && apiResponse.status === 200) {
-              // Only update status and show toast if status changed
-              if (serverStatus !== 'connected via API') {
-                setServerStatus('connected via API');
+              if (serverStatus !== 'connected') {
+                setServerStatus('connected');
                 
-                // Only show toast if status changed from a different value
-                if (prevServerStatusRef.current !== 'connected via API') {
+                if (prevServerStatusRef.current !== 'connected') {
                   toast({
-                    title: 'API Server Connected',
-                    description: 'Connected via alternative API endpoint',
+                    title: 'Connected',
+                    description: 'Successfully connected to the server',
                   });
                 }
               }
               
-              prevServerStatusRef.current = 'connected via API';
+              prevServerStatusRef.current = 'connected';
               connected = true;
             }
           } catch (apiError) {
@@ -187,19 +170,16 @@ const Index = () => {
           }
         }
         
-        // If we still couldn't connect, set status to disconnected
         if (!connected) {
           console.log("All connection attempts failed");
           
-          // Only update status and show toast if status changed
           if (serverStatus !== 'disconnected') {
             setServerStatus('disconnected');
             
-            // Only show toast if status changed from a different value
             if (prevServerStatusRef.current !== 'disconnected') {
               toast({
-                title: 'Server Connection Failed',
-                description: `Could not connect to any server endpoint. Tried: ${attemptedEndpointsRef.current.join(', ')}`,
+                title: 'Disconnected',
+                description: 'Could not connect to the server',
                 variant: 'destructive'
               });
             }
@@ -212,12 +192,10 @@ const Index = () => {
       }
     };
     
-    // Initial check with a short delay to let the app initialize
     setTimeout(() => {
       checkServer();
     }, 1000);
     
-    // Check server at a reduced frequency (45 seconds)
     const intervalId = setInterval(checkServer, 45000);
     
     return () => clearInterval(intervalId);
@@ -247,7 +225,7 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoading);
 
-  const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
+  const isConnected = serverStatus === 'connected';
 
   if (authLoading) {
     return (
@@ -265,7 +243,6 @@ const Index = () => {
     );
   }
 
-  // Enhanced keyboard handling
   const containerStyle = keyboardVisible && isMobile
     ? { 
         minHeight: '100vh', 
@@ -274,7 +251,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-20vh)'
+        transform: 'translateY(-40vh)' 
       } 
     : { 
         minHeight: '100vh', 
@@ -300,12 +277,12 @@ const Index = () => {
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Server: Connected to {getLocalServerIP()}:4000
+                  Connected
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Server: Unable to connect to {getLocalServerIP()}:4000
+                  Disconnected
                 </>
               )}
             </div>
