@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
 import { isAndroid, isCapacitor } from '../../../utils/platform';
+import { getApiEndpoints } from '../../../utils/env';
 
 export const useMachineData = (user, navigation) => {
   const [machineData, setMachineData] = useState([]);
@@ -16,13 +17,31 @@ export const useMachineData = (user, navigation) => {
       console.log("Checking server connection status for machine data...");
       const timestamp = new Date().getTime(); // Add timestamp to bypass cache
       
-      // Use correct URL for Android emulator
-      const serverUrl = isAndroid() || isCapacitor() 
-        ? 'http://10.0.2.2:4000/api/health'  // Special IP for Android emulator
-        : 'http://localhost:4000/api/health';
+      // Try all possible endpoints for the health check
+      const endpoints = getApiEndpoints();
+      console.log("Attempting to connect using endpoints:", endpoints);
       
-      const response = await fetch(`${serverUrl}?t=${timestamp}`);
-      const isConnected = response.ok;
+      let isConnected = false;
+      
+      for (const baseUrl of endpoints) {
+        try {
+          const healthEndpoint = baseUrl.endsWith('/') 
+            ? `${baseUrl}health` 
+            : `${baseUrl}/health`;
+          
+          console.log(`Trying health check at: ${healthEndpoint}?t=${timestamp}`);
+          const response = await fetch(`${healthEndpoint}?t=${timestamp}`);
+          
+          if (response.ok) {
+            console.log(`Server connection successful at: ${healthEndpoint}`);
+            isConnected = true;
+            break;
+          }
+        } catch (endpointError) {
+          console.log(`Health check failed for endpoint: ${baseUrl}`, endpointError);
+        }
+      }
+      
       setIsServerConnected(isConnected);
       console.log("Server connection status:", isConnected ? "Connected" : "Disconnected");
       return isConnected;

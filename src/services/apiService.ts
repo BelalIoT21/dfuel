@@ -1,22 +1,13 @@
-import { getEnv, getApiUrl, formatApiEndpoint } from '../utils/env';
+import { getEnv, getApiEndpoints, formatApiEndpoint } from '../utils/env';
 import { isAndroid, isCapacitor } from '../utils/platform';
 
 // Determine API endpoints based on environment
 const getApiEndpoints = () => {
-  // Primary endpoint based on environment and platform
-  const primaryEndpoint = getApiUrl();
+  // Get all possible endpoints
+  const endpoints = getApiEndpoints();
   
-  // Fallback endpoints with different ways to reach the server
-  const fallbackEndpoints = [
-    primaryEndpoint,
-    isAndroid() || isCapacitor() 
-      ? 'http://10.0.2.2:4000/api'
-      : 'http://localhost:4000/api',
-    '/api'  // Relative path as last resort
-  ];
-  
-  // Return unique endpoints (remove duplicates)
-  return [...new Set(fallbackEndpoints)];
+  console.log('API service initialized with endpoints:', endpoints);
+  return endpoints;
 };
 
 const API_ENDPOINTS = getApiEndpoints();
@@ -52,7 +43,12 @@ class ApiService {
     authRequired: boolean = true
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${BASE_URL}/${endpoint}`;
+      // Handle full URLs vs relative endpoints
+      const url = endpoint.startsWith('http') 
+        ? endpoint 
+        : `${BASE_URL}/${endpoint}`;
+      
+      console.log(`API request to: ${url} (method: ${method})`);
       
       // Get token in this specific order of precedence:
       // 1. Use the token set via setToken
@@ -95,12 +91,15 @@ class ApiService {
           break; // If successful, exit the retry loop
         } catch (fetchError) {
           console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
+          console.error("Fetch error details:", fetchError);
           retryCount++;
           
           if (retryCount < maxRetries) {
             // Try a different endpoint before giving up
             this.switchEndpoint();
-            const newUrl = `${BASE_URL}/${endpoint}`;
+            const newUrl = endpoint.startsWith('http') 
+              ? endpoint 
+              : `${BASE_URL}/${endpoint}`;
             console.log(`Retrying with endpoint: ${newUrl}`);
           } else {
             throw fetchError; // All retries failed, propagate the error

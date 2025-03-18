@@ -47,6 +47,25 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
   return defaultValue;
 };
 
+// Get all possible API URLs for the current environment and platform
+export const getApiEndpoints = (): string[] => {
+  // For local development on Android emulator
+  if (isAndroid() || isCapacitor()) {
+    return [
+      'http://10.0.2.2:4000/api',
+      'http://10.0.2.2:8080/api', // Try alternate port
+      'http://localhost:4000/api', // Sometimes works on newer emulators
+      '/api' // Relative fallback
+    ];
+  }
+  
+  // For web development
+  return [
+    'http://localhost:4000/api',
+    '/api' // Relative fallback
+  ];
+};
+
 // Get API URL based on environment and platform
 export const getApiUrl = (): string => {
   const env = getEnvironment();
@@ -58,14 +77,10 @@ export const getApiUrl = (): string => {
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   
-  // For development, check if we're on Android emulator
-  if (isAndroid() || isCapacitor()) {
-    // Special IP for Android emulator to access host machine's localhost
-    return 'http://10.0.2.2:4000/api';
-  }
-  
-  // Default development URL for web
-  return 'http://localhost:4000/api';
+  // For development, get the first endpoint from the list
+  const endpoints = getApiEndpoints();
+  console.log('Available API endpoints:', endpoints);
+  return endpoints[0];
 };
 
 // Ensure API endpoint always has correct format
