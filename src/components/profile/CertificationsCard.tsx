@@ -52,15 +52,21 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   // Last tab state for comparison
   const lastActiveTabRef = useRef<string | undefined>(undefined);
+  // Track first load
+  const firstLoadCompleteRef = useRef(false);
 
   // This will trigger when the user object changes (like after login)
   useEffect(() => {
     if (user && !userInitialized) {
       console.log("User detected, initializing certifications card data");
       setUserInitialized(true);
-      fetchMachinesAndCertifications();
       
-      // Start the refresh interval after initial load
+      // Initial fetch of data
+      if (activeTab === 'certifications') {
+        fetchMachinesAndCertifications();
+      }
+      
+      // Start the refresh interval
       startRefreshInterval();
     }
     
@@ -73,11 +79,13 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
     };
   }, [user]);
 
-  // Add effect to handle tab changes
+  // Use effect to handle tab changes
   useEffect(() => {
-    // Check if activeTab is now 'certifications' but was different before
-    if (activeTab === 'certifications' && lastActiveTabRef.current !== 'certifications') {
+    // Check if activeTab is now 'certifications'
+    if (activeTab === 'certifications') {
       console.log("Certifications tab activated, triggering refresh");
+      
+      // Always fetch data when tab is activated, regardless if it was active before
       fetchMachinesAndCertifications();
     }
     
@@ -105,6 +113,14 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
     
     console.log("Started automatic refresh interval");
   };
+
+  // Initial load of standard machines if API fails
+  useEffect(() => {
+    if (availableMachineIds.length === 0) {
+      console.log("No machine IDs available, setting standard ones");
+      setAvailableMachineIds(STANDARD_MACHINE_IDS);
+    }
+  }, []);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -219,12 +235,15 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       
       console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
       setMachines(formattedMachines);
+      firstLoadCompleteRef.current = true;
     } catch (error) {
       console.error("Error fetching machines:", error);
       toast({
         title: "Error",
         description: "Failed to load machine data"
       });
+      // Set first load complete even if there was an error
+      firstLoadCompleteRef.current = true;
     } finally {
       // Ensure both refreshing state and ref are reset to false even if there's an error
       setLoading(false);
@@ -232,13 +251,6 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       isRefreshingRef.current = false;
     }
   };
-
-  // Initial load
-  useEffect(() => {
-    if (user && availableMachineIds.length > 0) {
-      fetchMachinesAndCertifications();
-    }
-  }, [availableMachineIds]);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
@@ -361,7 +373,19 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
               ))
             ) : (
               <div className="col-span-2 text-center py-8 text-gray-500">
-                <div>No machines found. Please click refresh to try again.</div>
+                <div className="mb-2">No machines found</div>
+                {firstLoadCompleteRef.current && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRefresh} 
+                    disabled={refreshing}
+                    className="mx-auto"
+                  >
+                    {refreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Try Again
+                  </Button>
+                )}
               </div>
             )}
           </div>

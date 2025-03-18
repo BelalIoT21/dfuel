@@ -36,7 +36,7 @@ const Profile = () => {
     }, 300);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [defaultTab]);
 
   // Show loading state
   if (isLoading) {
@@ -63,7 +63,7 @@ const Profile = () => {
         
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
-        <Tabs value={defaultTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="w-full mb-2 grid grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="certifications">Certifications</TabsTrigger>
