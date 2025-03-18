@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 const BASE_URL = '/api';
@@ -47,8 +48,9 @@ export const apiService = {
   // Auth endpoints
   async login(email: string, password: string) {
     try {
+      // Updated URL to match the server endpoint path
       console.log(`Making API request: POST /auth/login`);
-      const response = await axios.post(`${BASE_URL}/auth/login`, { email, password });
+      const response = await axios.post(`/auth/login`, { email, password });
       console.log('Login response:', response.data);
       return { data: response.data };
     } catch (error: any) {
@@ -62,7 +64,8 @@ export const apiService = {
   async register(userData: { email: string; password: string; name?: string }) {
     try {
       console.log(`Making API request: POST /auth/register`);
-      const response = await axios.post(`${BASE_URL}/auth/register`, userData);
+      // Updated URL to match the server endpoint path
+      const response = await axios.post(`/auth/register`, userData);
       return { data: response.data };
     } catch (error: any) {
       console.error('API register error:', error.response?.data || error.message);
@@ -75,7 +78,8 @@ export const apiService = {
   async getCurrentUser() {
     try {
       console.log(`Making API request: GET /auth/me`);
-      const response = await axios.get(`${BASE_URL}/auth/me`);
+      // Updated URL to match the server endpoint path
+      const response = await axios.get(`/auth/me`);
       return { data: response.data };
     } catch (error: any) {
       console.error('API getCurrentUser error:', error.response?.data || error.message);
