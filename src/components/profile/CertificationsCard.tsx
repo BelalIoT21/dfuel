@@ -22,6 +22,9 @@ const MACHINE_NAMES = {
   "6": "Machine Safety Course"
 };
 
+// Define the list of deleted machine IDs
+const DELETED_MACHINE_IDS = ["1"];
+
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -55,8 +58,10 @@ const CertificationsCard = () => {
         console.log("Available machine IDs:", currentMachineIds);
       } catch (error) {
         console.error("Error fetching available machines:", error);
-        // In case of error, include all standard machines
-        setAvailableMachineIds(Object.keys(MACHINE_NAMES));
+        // In case of error, use all standard machines except the deleted ones
+        setAvailableMachineIds(
+          Object.keys(MACHINE_NAMES).filter(id => !DELETED_MACHINE_IDS.includes(id))
+        );
       }
       
       // Get the certification list from our service
@@ -92,15 +97,18 @@ const CertificationsCard = () => {
       setMachineStatuses(statuses);
       
       // Format the machines for display with correct names
-      // only include machines that still exist in the database
+      // only include machines that still exist in the database or are in our predefined list (except deleted ones)
       const formattedMachines = allCertifications
         .filter(machine => {
           const machineId = machine.id.toString();
-          // Include only machines that are in the available machines list
-          // Always include safety cabinet and safety course
-          return availableMachineIds.includes(machineId) ||
-                 machineId === "5" || 
-                 machineId === "6";
+          // Check if the machine should be displayed
+          // 1. Always include safety cabinet and safety course
+          // 2. Include if it's in the available machines from API
+          // 3. Include standard machines 2-4 that aren't in DELETED_MACHINE_IDS
+          return machineId === "5" || 
+                 machineId === "6" ||
+                 availableMachineIds.includes(machineId) ||
+                 (machineId in MACHINE_NAMES && !DELETED_MACHINE_IDS.includes(machineId));
         })
         .map(machine => {
           const machineId = machine.id.toString();
