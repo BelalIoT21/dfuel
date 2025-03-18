@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { List, ActivityIndicator } from 'react-native-paper';
@@ -9,12 +8,12 @@ import { toast } from '@/components/ui/use-toast';
 
 interface CertificationsSectionProps {
   user: User;
-  navigation?: any; // Optional navigation prop
 }
 
 // Define known machines with correct ID mappings for fallback
 const KNOWN_MACHINES = {
   "1": { name: "Laser Cutter", type: "Laser Cutter" },
+  "2": { name: "Ultimaker", type: "3D Printer" },
   "3": { name: "X1 E Carbon 3D Printer", type: "3D Printer" },
   "4": { name: "Bambu Lab X1 E", type: "3D Printer" },
   "5": { name: "Safety Cabinet", type: "Safety Cabinet" },
@@ -24,7 +23,7 @@ const KNOWN_MACHINES = {
 // Define special machine IDs that should always be displayed
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
-const CertificationsSection = ({ user, navigation }: CertificationsSectionProps) => {
+const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
   const [machineTypes, setMachineTypes] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -168,24 +167,21 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
     fetchMachineNames();
   };
 
-  const handleBackToDashboard = () => {
-    if (navigation) {
-      navigation.navigate('Home');
-    }
-  };
-
   // Filter certifications to exclude machines not in availableMachineIds, except for special machines
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
     return certifications.filter(certId => {
-      // Always include special machines (safety cabinet and safety course)
-      // and also include if it's in the available machines from API
+      const machineName = machineNames[certId]?.toLowerCase();
+      
+      // Filter logic:
+      // 1. Always include special machines (safety cabinet and safety course)
+      // 2. Include if it's in the available machines from API
+      // 3. Skip machines with name "cnc mill"
       const isAvailableMachine = SPECIAL_MACHINE_IDS.includes(certId) || 
                                 availableMachineIds.includes(certId);
                                 
-      const machineName = machineNames[certId]?.toLowerCase();
-      // Filter out "cnc mill" machine
+      // Also continue to filter out CNC Mill
       return machineName && machineName !== "cnc mill" && isAvailableMachine;
     });
   };
@@ -196,21 +192,13 @@ const CertificationsSection = ({ user, navigation }: CertificationsSectionProps)
     <View style={styles.section}>
       <View style={styles.header}>
         <Text style={styles.sectionTitle}>Certifications</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={handleBackToDashboard}
-          >
-            <Text style={styles.buttonText}>Back to Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.refreshButton} 
-            onPress={onRefresh}
-            disabled={refreshing}
-          >
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.refreshButton} 
+          onPress={onRefresh}
+          disabled={refreshing}
+        >
+          <Text style={styles.refreshButtonText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
       
       {isLoading ? (
@@ -259,10 +247,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -270,14 +254,6 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     padding: 4,
-    marginLeft: 8,
-  },
-  backButton: {
-    padding: 4,
-  },
-  buttonText: {
-    color: '#7c3aed',
-    fontSize: 14,
   },
   refreshButtonText: {
     color: '#7c3aed',

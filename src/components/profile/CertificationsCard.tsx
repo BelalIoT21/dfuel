@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Cou
 // Define known machines with correct name mappings for fallback
 const MACHINE_NAMES = {
   "1": "Laser Cutter",
+  "2": "Ultimaker",
   "3": "X1 E Carbon 3D Printer",
   "4": "Bambu Lab X1 E",
   "5": "Safety Cabinet",
@@ -178,10 +178,6 @@ const CertificationsCard = () => {
     fetchMachinesAndCertifications();
   };
 
-  const handleBackToDashboard = () => {
-    navigate('/home');
-  };
-
   if (!user) return null;
 
   return (
@@ -194,24 +190,15 @@ const CertificationsCard = () => {
           </CardTitle>
           <CardDescription>Manage your machine certifications</CardDescription>
         </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleBackToDashboard}
-            className="border-purple-200 hover:bg-purple-100"
-          >
-            Back to Dashboard
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh} 
-            disabled={refreshing}
-          >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          className="ml-auto"
+        >
+          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        </Button>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         {loading ? (
