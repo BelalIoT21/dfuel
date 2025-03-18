@@ -1,3 +1,4 @@
+
 export interface Machine {
   id: string;
   name: string;
@@ -123,6 +124,24 @@ export const machines: Machine[] = [
     status: 'available'
   },
   {
+    id: '3',
+    name: 'CNC Router',
+    description: 'Computer-controlled cutting machine for precise woodworking and fabrication',
+    image: '/placeholder.svg',
+    courseCompleted: false,
+    quizPassed: false,
+    specs: {
+      manufacturer: 'ShopBot',
+      model: 'PRSalpha',
+      'cutting area': '4\' x 8\'',
+      'max speed': '1800 inches per minute',
+      'supported materials': ['Wood', 'Plastic', 'Aluminum', 'Foam'],
+      features: ['Automatic tool changing', 'High-resolution stepper motors', 'Dust collection system']
+    },
+    maintenanceDate: '2023-05-30',
+    status: 'available'
+  },
+  {
     id: '4',
     name: 'X1 E Carbon 3D Printer',
     description: 'Advanced 3D printer for carbon fiber composites',
@@ -240,6 +259,51 @@ export const courses: Record<string, CourseContent> = {
       }
     ]
   },
+  '3': {
+    id: '3',
+    machineId: '3',
+    title: 'CNC Router Safety Course',
+    content: `
+      <h1>Welcome to the CNC Router Safety Course</h1>
+      <p>This course will teach you how to safely operate our CNC Router for woodworking and fabrication.</p>
+      <h2>Course Outline</h2>
+      <ul>
+        <li>Introduction to CNC Routing</li>
+        <li>Safety Precautions</li>
+        <li>Workpiece Setup</li>
+        <li>Tool Selection</li>
+        <li>Operational Procedures</li>
+      </ul>
+    `,
+    duration: '90 minutes',
+    slides: [
+      {
+        title: 'Introduction to CNC Routing',
+        content: 'CNC routing is a computer-controlled cutting process used for cutting various materials like wood, composites, aluminum, and plastics. It uses a rotating cutting tool to remove material from a workpiece.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safety Equipment Requirements',
+        content: 'Always wear safety glasses, hearing protection, and dust mask when operating the CNC router. Keep loose clothing, hair, and jewelry away from the machine at all times.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Workpiece Preparation',
+        content: 'Ensure your material is properly secured to the bed using clamps or vacuum hold-downs. Never try to hold material by hand. Double-check that all clamps are clear of the cutting path.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Tool Selection and Setup',
+        content: 'Different materials require specific cutting tools. Always use the appropriate bit for your material. Ensure the tool is properly seated and tightened in the collet.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Emergency Procedures',
+        content: 'Know the location of emergency stop buttons. In case of any issues like unusual sounds, vibrations, or tool breakage, immediately press the emergency stop button and notify staff.',
+        image: '/placeholder.svg'
+      }
+    ]
+  },
   '4': {
     id: '4',
     machineId: '4',
@@ -249,10 +313,11 @@ export const courses: Record<string, CourseContent> = {
       <p>This course will teach you how to safely operate the X1 E Carbon 3D Printer.</p>
       <h2>Course Outline</h2>
       <ul>
-        <li>Introduction to 3D Printing</li>
+        <li>Introduction to Carbon Fiber 3D Printing</li>
         <li>Safety Precautions</li>
+        <li>Material Handling</li>
         <li>Operating Procedures</li>
-        <li>Maintenance</li>
+        <li>Post-Processing</li>
       </ul>
     `,
     duration: '75 minutes',
@@ -264,7 +329,7 @@ export const courses: Record<string, CourseContent> = {
       },
       {
         title: 'Safety Precautions',
-        content: 'Always wear nitrile gloves when handling carbon fiber filaments. Use proper ventilation to avoid inhaling particles.',
+        content: 'Always wear nitrile gloves when handling carbon fiber filaments. Use proper ventilation to avoid inhaling particles. Carbon fiber dust can be hazardous if inhaled.',
         image: '/placeholder.svg'
       },
       {
@@ -273,8 +338,13 @@ export const courses: Record<string, CourseContent> = {
         image: '/placeholder.svg'
       },
       {
+        title: 'Operating Procedures',
+        content: 'Prepare your model in the dedicated software. The X1 E requires specific slicing parameters to properly lay carbon fiber strands. Follow the material-specific temperature guidelines.',
+        image: '/placeholder.svg'
+      },
+      {
         title: 'Maintenance',
-        content: 'Carbon fiber materials are abrasive and will wear out standard brass nozzles quickly. Use hardened steel nozzles and replace them regularly.',
+        content: 'Carbon fiber materials are abrasive and will wear out standard brass nozzles quickly. Use hardened steel nozzles and replace them regularly. Clean the print bed after each use.',
         image: '/placeholder.svg'
       }
     ]
@@ -483,6 +553,67 @@ export const quizzes: Record<string, Quiz> = {
           'Pause the print and re-level the bed',
           'Increase the bed temperature',
           'Start a new print',
+        ],
+        correctAnswer: 1,
+      },
+    ],
+  },
+  '3': {
+    id: '3',
+    machineId: '3',
+    questions: [
+      {
+        id: '3-1',
+        question: 'What personal protective equipment is required when operating the CNC router?',
+        options: [
+          'Just safety glasses',
+          'Safety glasses and gloves only',
+          'Safety glasses, hearing protection, and dust mask',
+          'No protective equipment is necessary',
+        ],
+        correctAnswer: 2,
+      },
+      {
+        id: '3-2',
+        question: 'How should material be secured to the CNC router bed?',
+        options: [
+          'Hold it by hand for maximum control',
+          'Use clamps or vacuum hold-downs',
+          'Use double-sided tape only',
+          'Material doesn\'t need to be secured if it\'s heavy enough',
+        ],
+        correctAnswer: 1,
+      },
+      {
+        id: '3-3',
+        question: 'What should you check before starting a CNC router job?',
+        options: [
+          'Just make sure the power is on',
+          'Only verify your material is the right size',
+          'Ensure all clamps are clear of the cutting path and the correct tool is installed',
+          'Check that the dust collection is turned off to see the cutting better',
+        ],
+        correctAnswer: 2,
+      },
+      {
+        id: '3-4',
+        question: 'What should you do if you hear unusual noises during CNC operation?',
+        options: [
+          'Ignore it, CNC machines are normally loud',
+          'Increase the feed rate to finish faster',
+          'Immediately press the emergency stop button',
+          'Adjust the workpiece while the machine is running',
+        ],
+        correctAnswer: 2,
+      },
+      {
+        id: '3-5',
+        question: 'What is the proper procedure when a CNC job is complete?',
+        options: [
+          'Immediately remove the material while the machine is still running',
+          'Wait for the spindle to come to a complete stop before approaching the machine',
+          'Turn off the main power immediately',
+          'Leave the area, your job is done',
         ],
         correctAnswer: 1,
       },

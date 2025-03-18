@@ -60,15 +60,27 @@ const MachineDetail = () => {
           return;
         }
         
-        // Get machine status
+        // Get machine status - make sure to fetch it directly to get the latest status
         try {
+          // Using specific endpoint for machine status to ensure we get the freshest data
           const statusResponse = await apiService.getMachineStatus(id || '');
-          if (statusResponse.data) {
-            setMachineStatus(statusResponse.data.status);
+          if (statusResponse.data && statusResponse.data.status) {
+            console.log(`Fetched machine status from API: ${statusResponse.data.status}`);
+            setMachineStatus(statusResponse.data.status.toLowerCase());
+          } else if (machineData.status) {
+            // If specific status endpoint fails but we have status in machine data
+            console.log(`Using status from machine data: ${machineData.status}`);
+            setMachineStatus(typeof machineData.status === 'string' ? machineData.status.toLowerCase() : 'available');
           }
         } catch (statusError) {
           console.error('Error fetching machine status:', statusError);
-          setMachineStatus('available');
+          // If there's an error, use the status from the machine data if available
+          if (machineData.status) {
+            console.log(`Fallback to machine data status: ${machineData.status}`);
+            setMachineStatus(typeof machineData.status === 'string' ? machineData.status.toLowerCase() : 'available');
+          } else {
+            setMachineStatus('available');
+          }
         }
         
         setMachine(machineData);
