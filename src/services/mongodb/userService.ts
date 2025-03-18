@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -95,6 +94,15 @@ class MongoUserService {
     if (!id) return false;
 
     try {
+      console.log(`MongoUserService: Updating user ${id} with:`, updates);
+      
+      // First get the user to make sure they exist
+      const user = await this.getUserById(id);
+      if (!user) {
+        console.error(`User ${id} not found for update`);
+        return false;
+      }
+      
       // Ensure lastLogin is a valid date if provided
       if (updates.lastLogin) {
         try {
@@ -109,9 +117,14 @@ class MongoUserService {
         { id },
         { $set: updates }
       );
-      return result.modifiedCount > 0;
+      
+      console.log(`MongoDB update result: modified=${result.modifiedCount}, matched=${result.matchedCount}`);
+      
+      // Consider it successful if a document was matched, even if not modified
+      // (could happen if updating with the same values)
+      return result.matchedCount > 0;
     } catch (error) {
-      console.error("Error updating user in MongoDB:", error);
+      console.error(`Error updating user ${id} in MongoDB:`, error);
       return false;
     }
   }

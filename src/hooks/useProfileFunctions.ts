@@ -1,5 +1,6 @@
+
 import { User } from '@/types/database';
-import userDatabase from '@/services/userDatabase';
+import mongoDbService from '@/services/mongoDbService';
 import { useToast } from '@/hooks/use-toast';
 import { localStorageService } from '@/services/localStorageService';
 
@@ -13,7 +14,7 @@ export const useProfileFunctions = (
     if (!user) return false;
     
     try {
-      const success = await userDatabase.addCertification(user.id, machineId);
+      const success = await mongoDbService.updateUserCertifications(user.id, machineId);
       if (success) {
         // Update user context with new certification
         const updatedUser = { ...user, certifications: [...user.certifications, machineId] };
@@ -89,16 +90,13 @@ export const useProfileFunctions = (
       // Create a new user object with the updated details for state update
       const updatedUser = { ...user, ...updates };
       
-      // First update in localStorage to ensure we have a fallback
-      localStorageService.updateUser(user.id, updates);
-      
-      // Update local state immediately
+      // Update local state immediately for better UX
       setUser(updatedUser);
       localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
       
-      // Then try database update
-      console.log("Calling userDatabase.updateUserProfile with:", user.id, updates);
-      const success = await userDatabase.updateUserProfile(user.id, updates);
+      // Use MongoDB service directly
+      console.log("Calling mongoDbService.updateUser with:", user.id, updates);
+      const success = await mongoDbService.updateUser(user.id, updates);
       
       if (success) {
         console.log("Profile update successful");
@@ -108,12 +106,13 @@ export const useProfileFunctions = (
         });
         return true;
       } else {
-        console.log("Database update failed, but local storage was updated");
+        console.log("MongoDB update failed");
         toast({
-          title: "Profile partially updated",
-          description: "Your profile has been updated locally but might not persist across sessions."
+          title: "Error",
+          description: "Failed to update profile in database",
+          variant: "destructive"
         });
-        return true;
+        return false;
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -157,47 +156,30 @@ export const useProfileFunctions = (
         return false;
       }
 
-      // Verify current password using local storage first for improved reliability
-      const storedUser = localStorageService.findUserById(user.id);
-      if (storedUser && storedUser.password !== currentPassword) {
+      // Update password in MongoDB directly
+      console.log("Calling mongoDbService.updateUser for password change");
+      const success = await mongoDbService.updateUser(user.id, { 
+        password: newPassword,
+        currentPassword: currentPassword
+      });
+      
+      if (success) {
+        // Update local storage user with new password for session continuity
+        localStorageService.updateUser(user.id, { password: newPassword });
+        
+        toast({
+          title: "Password changed",
+          description: "Your password has been changed successfully."
+        });
+        return true;
+      } else {
         toast({
           title: "Error",
-          description: "Current password is incorrect.",
+          description: "Failed to change password. Current password may be incorrect.",
           variant: "destructive"
         });
         return false;
       }
-      
-      // Update password everywhere
-      try {
-        const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
-        
-        if (success) {
-          toast({
-            title: "Password changed",
-            description: "Your password has been changed successfully."
-          });
-          return true;
-        }
-      } catch (error) {
-        console.error("Error from userDatabase.changePassword:", error);
-        if (error instanceof Error) {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to change password",
-            variant: "destructive"
-          });
-        }
-        return false;
-      }
-      
-      return false;
     } catch (error) {
       console.error("Error in changePassword:", error);
       toast({

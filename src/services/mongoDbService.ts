@@ -397,51 +397,99 @@ class MongoDbService {
     }
   }
 
-  async updateUser(userId: string, updates: { name?: string, email?: string, password?: string, currentPassword?: string }) {
+  async updateUser(userId: string, updates: { name?: string, email?: string, password?: string, currentPassword?: string }): Promise<boolean> {
+    console.log(`MongoDbService: updateUser for user ${userId}`, updates);
+    
     if (isWeb) {
+      console.log("Updating user via direct MongoDB connection");
+      
       try {
-        // For password update
+        // For password change - need to verify current password
         if (updates.password && updates.currentPassword) {
-          console.log("Sending password change request to MongoDB directly");
-          // Connect directly to MongoDB for the password change
-          const response = await fetch('http://localhost:4000/api/auth/change-password', {
-            method: 'POST',
+          console.log("Handling password change via direct MongoDB connection");
+          
+          // First verify current password
+          const user = await this.getUserById(userId);
+          if (!user) {
+            console.error("User not found for password change");
+            return false;
+          }
+          
+          if (user.password !== updates.currentPassword) {
+            console.error("Current password is incorrect");
+            return false;
+          }
+          
+          // If verification passes, update with new password
+          const passwordUpdateData = { password: updates.password };
+          
+          try {
+            // Try to use server API first for better security
+            const response = await fetch('http://localhost:4000/api/auth/change-password', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                currentPassword: updates.currentPassword,
+                newPassword: updates.password
+              })
+            });
+            
+            const data = await response.json();
+            console.log("MongoDB password change response:", data);
+            
+            if (data && data.success) {
+              console.log("Password updated successfully via server API");
+              return true;
+            }
+          } catch (serverError) {
+            console.error("Error using server API for password change:", serverError);
+          }
+          
+          // Direct MongoDB update as fallback
+          console.log("Using direct MongoDB update for password");
+          return await mongoUserService.updateUser(userId, passwordUpdateData);
+        }
+        
+        // For regular profile updates (name/email)
+        const profileUpdates = {
+          ...(updates.name && { name: updates.name }),
+          ...(updates.email && { email: updates.email })
+        };
+        
+        if (Object.keys(profileUpdates).length === 0) {
+          console.log("No valid profile updates provided");
+          return false;
+        }
+        
+        // Try server API first
+        try {
+          console.log("Updating profile via server API");
+          const response = await fetch('http://localhost:4000/api/auth/profile', {
+            method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
-            body: JSON.stringify({
-              currentPassword: updates.currentPassword || '',
-              newPassword: updates.password
-            })
+            body: JSON.stringify(profileUpdates)
           });
           
           const data = await response.json();
-          console.log("MongoDB password change response:", data);
-          return data && data.success;
+          if (data && data.success) {
+            console.log("Profile updated successfully via server API");
+            return true;
+          }
+        } catch (serverError) {
+          console.error("Error using server API for profile update:", serverError);
         }
         
-        // For regular profile updates
-        const token = localStorage.getItem('token');
-        const endpoint = 'auth/profile';
-        console.log("Updating user profile via API:", endpoint);
-        
-        const response = await fetch(`http://localhost:4000/api/${endpoint}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ 
-            name: updates.name,
-            email: updates.email
-          })
-        });
-        
-        const data = await response.json();
-        return data && data.success;
+        // Direct MongoDB update as fallback
+        console.log("Using direct MongoDB update for profile");
+        return await mongoUserService.updateUser(userId, profileUpdates);
       } catch (error) {
-        console.error(`Error updating user ${userId} via MongoDB:`, error);
+        console.error("Error in updateUser:", error);
         return false;
       }
     }
@@ -451,7 +499,28 @@ class MongoDbService {
         console.error("Invalid userId passed to updateUser");
         return false;
       }
-      console.log(`MongoDbService: Updating user ${userId}`);
+      
+      // If updating password, verify current password first
+      if (updates.password && updates.currentPassword) {
+        const user = await mongoUserService.getUserById(userId);
+        if (!user) {
+          console.error("User not found for password change");
+          return false;
+        }
+        
+        if (user.password !== updates.currentPassword) {
+          console.error("Current password is incorrect");
+          return false;
+        }
+        
+        // Remove currentPassword from updates
+        const { currentPassword, ...passwordUpdate } = updates;
+        console.log("Verified current password, updating with new password");
+        return await mongoUserService.updateUser(userId, passwordUpdate);
+      }
+      
+      // Regular update
+      console.log(`MongoDbService: Updating user ${userId} with`, updates);
       const success = await mongoUserService.updateUser(userId, updates);
       console.log(`MongoDB update user result: ${success}`);
       return success;
