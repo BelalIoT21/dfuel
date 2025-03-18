@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.lovable.learnitacademy',
-  appName: 'learnit-academy',
+  appName: 'Learnit',
   webDir: 'dist',
   server: {
     url: 'https://65989570-cd1d-40f5-b27e-214d8336aca9.lovableproject.com?forceHideBadge=true',
