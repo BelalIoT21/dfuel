@@ -2,7 +2,6 @@
 import { User } from '@/types/database';
 import mongoDbService from '@/services/mongoDbService';
 import { useToast } from '@/hooks/use-toast';
-import { localStorageService } from '@/services/localStorageService';
 
 export const useProfileFunctions = (
   user: User | null, 
@@ -87,18 +86,18 @@ export const useProfileFunctions = (
         return true;
       }
 
-      // Create a new user object with the updated details for state update
-      const updatedUser = { ...user, ...updates };
-      
-      // Update local state immediately for better UX
-      setUser(updatedUser);
-      localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-      
-      // Use MongoDB service directly
+      // Only use mongoDbService directly
       console.log("Calling mongoDbService.updateUser with:", user.id, updates);
       const success = await mongoDbService.updateUser(user.id, updates);
       
       if (success) {
+        // Create a new user object with the updated details for state update
+        const updatedUser = { ...user, ...updates };
+        
+        // Update local state immediately for better UX
+        setUser(updatedUser);
+        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        
         console.log("Profile update successful");
         toast({
           title: "Profile updated",
@@ -156,7 +155,7 @@ export const useProfileFunctions = (
         return false;
       }
 
-      // Update password in MongoDB directly
+      // Only use mongoDbService directly
       console.log("Calling mongoDbService.updateUser for password change");
       const success = await mongoDbService.updateUser(user.id, { 
         password: newPassword,
@@ -164,9 +163,6 @@ export const useProfileFunctions = (
       });
       
       if (success) {
-        // Update local storage user with new password for session continuity
-        localStorageService.updateUser(user.id, { password: newPassword });
-        
         toast({
           title: "Password changed",
           description: "Your password has been changed successfully."

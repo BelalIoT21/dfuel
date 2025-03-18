@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
 import mongoConnectionService from './connectionService';
@@ -88,7 +89,7 @@ class MongoUserService {
     }
   }
 
-  async updateUser(id: string, updates: Partial<MongoUser>): Promise<boolean> {
+  async updateUser(id: string, updates: Partial<MongoUser> & { currentPassword?: string }): Promise<boolean> {
     await this.initCollection();
     if (!this.usersCollection) return false;
     if (!id) return false;
@@ -103,6 +104,28 @@ class MongoUserService {
         return false;
       }
       
+      // Handle password change specifically
+      if (updates.password && updates.currentPassword) {
+        // Verify current password
+        if (user.password !== updates.currentPassword) {
+          console.error("Current password is incorrect");
+          return false;
+        }
+        
+        // Remove currentPassword from updates as it's not a field in the DB
+        const { currentPassword, ...passwordUpdate } = updates;
+        
+        // Update the user with new password
+        const result = await this.usersCollection.updateOne(
+          { id },
+          { $set: passwordUpdate }
+        );
+        
+        console.log(`MongoDB password update result: modified=${result.modifiedCount}, matched=${result.matchedCount}`);
+        return result.matchedCount > 0;
+      }
+      
+      // For regular profile updates (no password change)
       // Ensure lastLogin is a valid date if provided
       if (updates.lastLogin) {
         try {
