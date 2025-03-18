@@ -39,6 +39,9 @@ export const registerUser = async (req: Request, res: Response) => {
     });
 
     if (user) {
+      // Generate a token for the new user
+      const token = generateToken(user._id.toString());
+      
       res.status(201).json({
         data: {
           user: {
@@ -47,8 +50,8 @@ export const registerUser = async (req: Request, res: Response) => {
             email: user.email,
             isAdmin: user.isAdmin,
             certifications: [], // Ensure empty certifications array in response
-            token: generateToken(user._id.toString()),
           },
+          token
         },
       });
     } else {

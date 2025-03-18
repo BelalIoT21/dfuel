@@ -111,14 +111,14 @@ export const useAuthFunctions = (
       // Extract data from the response structure
       const responseData = apiResponse.data?.data; // Access the nested data
       const userData = responseData?.user; // Directly access user object
-      const token = responseData?.user?.token || responseData?.token; // Get token from user object or directly
+      const token = responseData?.token || userData?.token; // Get token from user object or directly
       
       console.log("MongoDB response data:", responseData);
       console.log("MongoDB user data:", userData);
       console.log("MongoDB token:", token);
   
       // Validate required fields
-      if (!userData || !userData._id || !userData.email || !token) {
+      if (!userData || !userData._id || !userData.email) {
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Registration failed",
@@ -128,28 +128,35 @@ export const useAuthFunctions = (
         return false;
       }
   
-      // Normalize user data - EXPLICITLY set empty certifications array
+      // If we're registering from the admin interface, we don't want to set the user or token
+      // Just return success so the admin can stay logged in
+      if (user && user.isAdmin) {
+        console.log("Admin is adding a user, registration successful");
+        return true;
+      }
+  
+      // For normal registration, proceed with setting token and user
+      if (token) {
+        // Save token only, no user data in localStorage
+        localStorage.setItem('token', token);
+        apiService.setToken(token);
+      } else {
+        console.warn("No token received from registration, user may need to login");
+      }
+  
+      // Normalize user data
       const normalizedUser = {
         id: String(userData._id),
         name: userData.name || name || 'User',
         email: userData.email,
         isAdmin: userData.isAdmin || false,
-        certifications: userData.certifications || [] // Ensure certifications array exists
+        certifications: userData.certifications || [] 
       };
   
       console.log("Setting user data from MongoDB:", normalizedUser);
-  
-      // Save token only, no user data in localStorage
-      localStorage.setItem('token', token);
-      apiService.setToken(token);
       
       // Only set user in state if we're not in an admin adding a user context
-      // (In UserSearch component we don't want to change the logged-in user)
-      if (user && user.isAdmin) {
-        console.log("Admin is adding a user, not changing current user");
-      } else {
-        setUser(normalizedUser);
-      }
+      setUser(normalizedUser as User);
   
       toast({
         title: "Registration successful",

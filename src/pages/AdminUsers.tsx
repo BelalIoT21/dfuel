@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
-import userDatabase from '../services/userDatabase';
 import { UserSearch } from '../components/admin/users/UserSearch';
 import { UsersTable } from '../components/admin/users/UsersTable';
 import { UserWithoutSensitiveInfo } from '../types/database';
@@ -46,21 +44,50 @@ const AdminUsers = () => {
         }));
         
         setUsers(formattedUsers);
-        console.log(`Processed ${formattedUsers.length} users from API`);
+        console.log(`Processed ${formattedUsers.length} users from MongoDB API`);
         return;
       }
       
-      // If API fails, try userDatabase
-      const allUsers = await userDatabase.getAllUsers();
-      console.log(`Fetched ${allUsers.length} users from userDatabase`);
-      setUsers(allUsers);
+      console.log("API failed to return users, trying alternative method");
+      // If no users from API, try to get at least the current user
+      if (user) {
+        setUsers([{
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: new Date().toISOString()
+        }]);
+        console.log("Set at least current user in users list");
+      } else {
+        console.log("No users available");
+        setUsers([]);
+      }
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
         title: "Error",
-        description: "Failed to load users",
+        description: "Failed to load users from MongoDB",
         variant: "destructive"
       });
+      
+      // Fallback to at least show current user
+      if (user) {
+        console.log("Fallback: Using current user only");
+        setUsers([{
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: new Date().toISOString()
+        }]);
+      } else {
+        setUsers([]);
+      }
     } finally {
       setRefreshing(false);
       setLoading(false);
@@ -85,9 +112,11 @@ const AdminUsers = () => {
     );
   }
 
-  const handleUserAdded = (newUser: UserWithoutSensitiveInfo) => {
-    // Add the new user to the existing users array and refresh
-    setUsers([...users, newUser]);
+  const handleUserAdded = (data: any) => {
+    console.log("User added, refreshing user list");
+    
+    // Immediate fetch to get the latest data from MongoDB
+    fetchUsers();
   };
   
   const handleUserDeleted = () => {

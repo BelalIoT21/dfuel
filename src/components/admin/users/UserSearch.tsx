@@ -98,7 +98,10 @@ export const UserSearch = ({
         // Trigger immediate refresh of user list from MongoDB
         onUserAdded({ 
           refresh: true,
-          message: "User added successfully. Refreshing user list from MongoDB..."
+          newUser: {
+            name: newUser.name,
+            email: newUser.email
+          }
         });
         
         setDialogOpen(false);
