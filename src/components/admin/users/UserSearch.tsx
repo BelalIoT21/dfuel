@@ -87,6 +87,7 @@ export const UserSearch = ({
       console.log("Attempting to register new user:", newUser.email);
       
       // Use the register function from AuthContext directly
+      // This will go through the API and store in MongoDB rather than localStorage
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
@@ -95,18 +96,13 @@ export const UserSearch = ({
           description: `${newUser.name} has been added successfully.`
         });
         
-        // Create a standardized user object with empty certifications array
-        const formattedUser = {
-          id: "newly-registered-" + Date.now(), // Temporary ID until we refresh
-          name: newUser.name,
-          email: newUser.email,
-          isAdmin: false,
-          certifications: [], // Explicitly empty array
-          lastLogin: new Date().toISOString()
-        };
+        // Instead of creating a temporary user object, 
+        // signal the parent component to refresh the user list from MongoDB
+        onUserAdded({ 
+          refresh: true,
+          message: "User added successfully. Refreshing user list..."
+        });
         
-        // Notify parent component about the new user
-        onUserAdded(formattedUser);
         setDialogOpen(false);
         resetForm();
       } else {
