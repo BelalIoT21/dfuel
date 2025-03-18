@@ -177,9 +177,9 @@ const MachineDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto page-transition">
-        <Link to="/profile?tab=certifications" className="inline-flex items-center text-purple-600 hover:text-purple-800 mb-6">
+        <Link to="/home" className="inline-flex items-center text-purple-600 hover:text-purple-800 mb-6">
           <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Certifications
+          Back to Machines
         </Link>
 
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
