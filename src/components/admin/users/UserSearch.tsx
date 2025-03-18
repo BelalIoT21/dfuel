@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { apiService } from '@/services/apiService';
 
 export const UserSearch = ({ 
   searchTerm, 
@@ -87,6 +86,7 @@ export const UserSearch = ({
     try {
       console.log("Attempting to register new user:", newUser.email);
       
+      // Use the register function from AuthContext directly
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
@@ -95,43 +95,18 @@ export const UserSearch = ({
           description: `${newUser.name} has been added successfully.`
         });
         
-        try {
-          const userResponse = await apiService.getUserByEmail(newUser.email);
-          if (userResponse.data) {
-            console.log("Retrieved user data after registration:", userResponse.data);
-            
-            // Ensure the user has an empty certifications array
-            const formattedUser = {
-              id: userResponse.data._id || userResponse.data.id,
-              name: userResponse.data.name,
-              email: userResponse.data.email,
-              isAdmin: userResponse.data.isAdmin || false,
-              certifications: [], // Explicitly empty array
-              lastLogin: userResponse.data.lastLogin || new Date().toISOString()
-            };
-            
-            onUserAdded(formattedUser);
-          } else {
-            console.log("Couldn't get specific user data, will refresh list instead");
-            onUserAdded({
-              id: "refresh-needed",
-              name: newUser.name,
-              email: newUser.email,
-              isAdmin: false,
-              certifications: [] // Explicitly empty array
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching user after registration:", error);
-          onUserAdded({
-            id: "refresh-needed",
-            name: newUser.name,
-            email: newUser.email,
-            isAdmin: false,
-            certifications: [] // Explicitly empty array
-          });
-        }
+        // Create a standardized user object with empty certifications array
+        const formattedUser = {
+          id: "newly-registered-" + Date.now(), // Temporary ID until we refresh
+          name: newUser.name,
+          email: newUser.email,
+          isAdmin: false,
+          certifications: [], // Explicitly empty array
+          lastLogin: new Date().toISOString()
+        };
         
+        // Notify parent component about the new user
+        onUserAdded(formattedUser);
         setDialogOpen(false);
         resetForm();
       } else {
