@@ -30,6 +30,7 @@ const CertificationsCard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
   const [machineStatuses, setMachineStatuses] = useState({});
+  const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -40,6 +41,23 @@ const CertificationsCard = () => {
     setRefreshing(true);
     try {
       console.log("Fetching machines for CertificationsCard");
+      
+      // Fetch the current available machines first to filter deleted machines
+      try {
+        const allCurrentMachines = await machineService.getMachines();
+        console.log("All current machines:", allCurrentMachines.length);
+        
+        // Extract IDs from current machines
+        const currentMachineIds = allCurrentMachines.map(machine => 
+          (machine.id || machine._id).toString()
+        );
+        setAvailableMachineIds(currentMachineIds);
+        console.log("Available machine IDs:", currentMachineIds);
+      } catch (error) {
+        console.error("Error fetching available machines:", error);
+        // In case of error, include all standard machines
+        setAvailableMachineIds(Object.keys(MACHINE_NAMES));
+      }
       
       // Get the certification list from our service
       const allCertifications = certificationService.getAllCertifications();
@@ -74,24 +92,34 @@ const CertificationsCard = () => {
       setMachineStatuses(statuses);
       
       // Format the machines for display with correct names
-      const formattedMachines = allCertifications.map(machine => {
-        const machineId = machine.id.toString();
-        const certDate = user?.certificationDates?.[machineId] 
-          ? new Date(user.certificationDates[machineId])
-          : new Date();
-        
-        // Use our predefined machine names
-        const machineName = MACHINE_NAMES[machineId] || machine.name;
-        
-        return {
-          id: machineId,
-          name: machineName,
-          certified: userCerts.includes(machineId),
-          date: format(certDate, 'dd/MM/yyyy'),
-          bookable: machineId !== "5" && machineId !== "6", // Safety Cabinet and Safety Course aren't bookable
-          status: statuses[machineId] || 'unknown'
-        };
-      });
+      // only include machines that still exist in the database
+      const formattedMachines = allCertifications
+        .filter(machine => {
+          const machineId = machine.id.toString();
+          // Include only machines that are in the available machines list
+          // Always include safety cabinet and safety course
+          return availableMachineIds.includes(machineId) ||
+                 machineId === "5" || 
+                 machineId === "6";
+        })
+        .map(machine => {
+          const machineId = machine.id.toString();
+          const certDate = user?.certificationDates?.[machineId] 
+            ? new Date(user.certificationDates[machineId])
+            : new Date();
+          
+          // Use our predefined machine names
+          const machineName = MACHINE_NAMES[machineId] || machine.name;
+          
+          return {
+            id: machineId,
+            name: machineName,
+            certified: userCerts.includes(machineId),
+            date: format(certDate, 'dd/MM/yyyy'),
+            bookable: machineId !== "5" && machineId !== "6", // Safety Cabinet and Safety Course aren't bookable
+            status: statuses[machineId] || 'unknown'
+          };
+        });
       
       console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
       setMachines(formattedMachines);

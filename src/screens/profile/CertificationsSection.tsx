@@ -27,6 +27,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
+  const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   
   const fetchCertifications = async () => {
     try {
@@ -56,6 +57,23 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     const types: Record<string, string> = {};
     
     try {
+      // Fetch available machines first to filter out deleted ones
+      try {
+        const allMachines = await machineService.getMachines();
+        console.log(`Got ${allMachines.length} machines to check which ones still exist`);
+        
+        // Extract IDs from available machines
+        const machineIds = allMachines.map(machine => 
+          (machine.id || machine._id).toString()
+        );
+        setAvailableMachineIds(machineIds);
+        console.log("Available machine IDs:", machineIds);
+      } catch (error) {
+        console.error("Error fetching machines:", error);
+        // In case of error, assume all known machines are available
+        setAvailableMachineIds(Object.keys(KNOWN_MACHINES));
+      }
+      
       // First populate with known machines - ensure correct ID mapping
       Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
         names[id] = machine.name;
@@ -65,9 +83,15 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
-      if (certifications && certifications.length > 0) {
+      // Filter certifications to only include available machines and special machines (5 and 6)
+      const validCertifications = certifications.filter(certId => 
+        availableMachineIds.includes(certId) || certId === "5" || certId === "6"
+      );
+      console.log(`Filtered from ${certifications.length} to ${validCertifications.length} valid certifications`);
+      
+      if (validCertifications && validCertifications.length > 0) {
         // Only fetch unknown machines
-        const unknownCertIds = certifications.filter(
+        const unknownCertIds = validCertifications.filter(
           certId => !KNOWN_MACHINES[certId]
         );
         
@@ -118,6 +142,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           }
         }
       }
+      
+      // Update state with valid certifications
+      setUserCertifications(validCertifications);
     } catch (error) {
       console.error("Error in fetchMachineNames:", error);
     } finally {
@@ -137,12 +164,16 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   };
 
-  // Filter certifications to exclude "CNC Mill" before displaying
+  // Filter certifications to exclude deleted machines and "CNC Mill" before displaying
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
+    
     return certifications.filter(certId => {
       const machineName = machineNames[certId]?.toLowerCase();
-      return machineName && machineName !== "cnc mill";
+      // Filter out machines that don't exist anymore (except safety cabinet and safety course)
+      const isAvailableMachine = certId === "5" || certId === "6" || availableMachineIds.includes(certId);
+      // Also continue to filter out CNC Mill
+      return machineName && machineName !== "cnc mill" && isAvailableMachine;
     });
   };
 
