@@ -18,9 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import userDatabase from '@/services/userDatabase';
-import mongoDbService from '@/services/mongoDbService';
 import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/apiService';
 
 interface UsersTableProps {
   users: any[];
@@ -195,11 +194,12 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      console.log(`Trying MongoDB deletion for user ${userId}`);
-      const success = await mongoDbService.deleteUser(userId);
-      console.log(`MongoDB deleteUser result: ${success}`);
+      // Use the direct API service instead of MongoDB service
+      console.log(`Trying API deletion for user ${userId}`);
+      const response = await apiService.deleteUser(userId);
+      console.log(`API deleteUser response:`, response);
       
-      if (success) {
+      if (response && !response.error) {
         toast({
           title: "User Deleted",
           description: "User has been permanently deleted.",
@@ -211,7 +211,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
       } else {
         toast({
           title: "Error",
-          description: "Failed to delete user. They may have special permissions.",
+          description: response.error || "Failed to delete user. They may have special permissions.",
           variant: "destructive"
         });
       }
