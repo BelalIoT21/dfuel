@@ -1,105 +1,115 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import { connectDB } from './config/db';
-import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { SeedService } from './utils/seed';
-import { ensureAdminUser } from './controllers/auth/adminController';
 
-// Routes
-import authRoutes from './routes/authRoutes';
+import express from 'express';
+import mongoose from 'mongoose';
+import morgan from 'morgan';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+// Import routes
 import userRoutes from './routes/userRoutes';
+import authRoutes from './routes/authRoutes';
 import machineRoutes from './routes/machineRoutes';
 import bookingRoutes from './routes/bookingRoutes';
 import certificationRoutes from './routes/certificationRoutes';
 import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/healthRoutes';
 
-// Load environment variables
-dotenv.config();
+// Import error middleware
+import { errorHandler, notFound } from './middleware/errorMiddleware';
 
-// Connect to MongoDB
-connectDB().then(async () => {
-  // Ensure admin user exists
-  console.log('Ensuring admin user exists...');
-  try {
-    await ensureAdminUser();
-    console.log('Admin user seeding completed.');
-  } catch (err) {
-    console.error('Error seeding admin user:', err);
-  }
+// Import database connection
+import { connectDB } from './config/db';
 
-  // Seed the database after connection (only in development)
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Checking if database needs seeding...');
-    try {
-      await SeedService.seedDatabase();
-      console.log('Database seeding completed (if needed)');
-    } catch (err) {
-      console.error('Error seeding database:', err);
-    }
-  }
-});
+// Import machine check function
+import { checkAndSeedMachines } from './controllers/machineController';
 
+// Connect to MongoDB database
+connectDB();
+
+// Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 4000;
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Enhanced CORS configuration
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow any origin
-    console.log('Request origin:', origin);
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for development
-}));
-app.use(morgan('dev'));
-app.use(cookieParser());
-
-// Log all incoming requests for debugging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} from ${req.ip}`);
-  if (req.method !== 'GET') {
-    console.log('Body:', JSON.stringify(req.body));
-  }
-  next();
+// Set up global rate limiter
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
+// Apply rate limiter to all requests
+app.use(limiter);
+
+// Set up middleware
+app.use(morgan('dev')); // Logging middleware
+app.use(express.json()); // Body parsing middleware
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    // Log the request origin
+    console.log('Request origin:', origin);
+    
+    // Allow all origins
+    return callback(null, true);
+  },
+  credentials: true
+})); // CORS middleware
+app.use(helmet({ contentSecurityPolicy: false })); // Security headers middleware
+
+// Set up API routes
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/certifications', certificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health', healthRoutes);
 
-// Health check endpoint (root level)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
-});
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+  // Set static folder
+  app.use(express.static(path.join(__dirname, '../../client/build')));
+  
+  // Any route that is not an API route should be handled by React
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../client/build/index.html'));
+  });
+} else {
+  // In development, return a simple message for the root route
+  app.get('/', (req, res) => {
+    res.send('API is running...');
+  });
+}
 
-// Error handling middleware
+// Set up error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
-// Start the server
-app.listen(PORT, () => {
+// Define port
+const PORT = process.env.PORT || 4000;
+
+// Start server
+const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`API available at http://localhost:${PORT}/api`);
+  
+  // Check and seed machines if needed
+  checkAndSeedMachines()
+    .then(() => console.log('Machine check completed'))
+    .catch(err => console.error('Error during machine check:', err));
 });
 
-export default app;
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err: Error) => {
+  console.log(`Unhandled Rejection: ${err.message}`);
+  // Close server & exit process
+  server.close(() => process.exit(1));
+});

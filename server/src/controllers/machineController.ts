@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -182,11 +181,15 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     // Update the machine status
     machine.status = normalizedStatus;
     
-    // Only set maintenance note if provided, otherwise clear it
+    // Only set maintenance note if provided
     if (maintenanceNote !== undefined) {
-      machine.maintenanceNote = maintenanceNote;
-    } else {
-      machine.maintenanceNote = '';
+      // If we're switching to Available status, clear the note
+      if (normalizedStatus === 'Available') {
+        machine.maintenanceNote = '';
+      } else {
+        // Otherwise set it if provided or clear it if empty string
+        machine.maintenanceNote = maintenanceNote;
+      }
     }
     
     console.log(`Saving machine with status: ${machine.status}`);
@@ -234,5 +237,40 @@ export const deleteMachine = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in deleteMachine:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Check and seed machines if needed - called at server startup
+export const checkAndSeedMachines = async () => {
+  try {
+    console.log('Checking if all machines exist in database...');
+    
+    // Expected machine IDs
+    const expectedMachineIds = ['1', '2', '3', '4', '5', '6'];
+    
+    // Check if all machines exist
+    const existingMachines = await Machine.find({ _id: { $in: expectedMachineIds } });
+    const existingIds = existingMachines.map(m => m._id.toString());
+    
+    console.log(`Found ${existingMachines.length} of ${expectedMachineIds.length} expected machines`);
+    
+    // Find missing machines
+    const missingIds = expectedMachineIds.filter(id => !existingIds.includes(id));
+    
+    if (missingIds.length > 0) {
+      console.log(`Missing machines with IDs: ${missingIds.join(', ')}. Reseeding...`);
+      
+      // Import the seed data
+      const { seedMachines } = require('../utils/seed');
+      
+      // Run the seed function to add missing machines
+      await seedMachines(true, missingIds);
+      
+      console.log('Machine reseeding completed successfully');
+    } else {
+      console.log('All expected machines exist in the database');
+    }
+  } catch (error) {
+    console.error('Error checking and seeding machines:', error);
   }
 };

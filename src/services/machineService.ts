@@ -15,8 +15,13 @@ export class MachineService {
         return false;
       }
       
-      // Get auth token from localStorage
+      // Get auth token from localStorage and set it before making the request
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error("No authentication token available for updating machine status");
+        return false;
+      }
+      
       apiService.setToken(token);
       
       // Use API to update machine status
@@ -25,7 +30,7 @@ export class MachineService {
         const response = await apiService.put(`machines/${machineId}/status`, { 
           status, 
           maintenanceNote: note 
-        });
+        }, true); // Set authRequired to true explicitly
         
         console.log("API response:", response);
         return response.data?.success || false;
