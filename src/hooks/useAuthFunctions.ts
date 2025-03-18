@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { User } from '@/types/database'; // Adjust the import path as needed
+import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
 
@@ -19,7 +19,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // API login request
+      // API login request only - no localStorage
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
       console.log("API login response:", JSON.stringify(apiResponse, null, 2));
@@ -93,7 +93,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
   
-      // API registration request
+      // API registration request only - no localStorage
       const apiResponse = await apiService.register({ email, password, name });
       console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
   
@@ -168,9 +168,8 @@ export const useAuthFunctions = (
     // Clear user state
     setUser(null);
 
-    // Remove all auth-related data
+    // Remove token only (no other localStorage usage)
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
 
     // Clear the token from API service
     apiService.setToken(null);
