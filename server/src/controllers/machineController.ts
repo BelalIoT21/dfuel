@@ -1,7 +1,8 @@
+
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import Machine from '../models/Machine';
-import { IUser } from '../models/User';
+import { Machine } from '../models/Machine';
+import User from '../models/User';
 
 // @desc    Get all machines
 // @route   GET /api/machines
@@ -25,12 +26,74 @@ export const getMachineById = asyncHandler(async (req: Request, res: Response) =
   }
 });
 
+// @desc    Update machine
+// @route   PUT /api/machines/:id
+// @access  Private/Admin
+export const updateMachine = asyncHandler(async (req: Request, res: Response) => {
+  const { name, type, description, status, requiresCertification, difficulty, imageUrl, specifications } = req.body;
+  
+  const machine = await Machine.findById(req.params.id);
+  
+  if (!machine) {
+    res.status(404);
+    throw new Error('Machine not found');
+  }
+  
+  // Update machine properties
+  machine.name = name || machine.name;
+  machine.type = type || machine.type;
+  machine.description = description || machine.description;
+  machine.status = status || machine.status;
+  
+  if (requiresCertification !== undefined) {
+    machine.requiresCertification = requiresCertification;
+  }
+  
+  if (difficulty !== undefined) {
+    machine.difficulty = difficulty;
+  }
+  
+  if (imageUrl !== undefined) {
+    machine.imageUrl = imageUrl;
+  }
+  
+  if (specifications !== undefined) {
+    machine.specifications = specifications;
+  }
+  
+  const updatedMachine = await machine.save();
+  
+  res.json({
+    success: true,
+    machine: updatedMachine
+  });
+});
+
+// @desc    Delete machine
+// @route   DELETE /api/machines/:id
+// @access  Private/Admin
+export const deleteMachine = asyncHandler(async (req: Request, res: Response) => {
+  const machine = await Machine.findById(req.params.id);
+  
+  if (!machine) {
+    res.status(404);
+    throw new Error('Machine not found');
+  }
+  
+  await Machine.deleteOne({ _id: req.params.id });
+  
+  res.json({
+    success: true,
+    message: 'Machine removed'
+  });
+});
+
 // @desc    Update machine status
 // @route   PUT /api/machines/:id/status
 // @access  Private/Admin
 export const updateMachineStatus = asyncHandler(async (req: Request, res: Response) => {
   const { status, maintenanceNote } = req.body;
-  const user = req.user as IUser;
+  const user = req.user as any; // Type as any to avoid the IUser import issue
   
   console.log(`Attempting to update machine ${req.params.id} status to ${status} by user ${user?.name || 'unknown'}`);
   

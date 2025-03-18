@@ -40,7 +40,7 @@ router.put(
   updateLimiter, // Apply rate limiting
   [
     body('name').notEmpty().withMessage('Name is required'),
-    body('status').isIn(['Available', 'Maintenance', 'Out of Order', 'In Use']).withMessage('Valid status is required'),
+    body('status').isIn(['available', 'maintenance', 'in-use']).withMessage('Valid status is required'),
   ],
   updateMachine
 );
