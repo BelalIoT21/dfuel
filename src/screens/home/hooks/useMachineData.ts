@@ -85,6 +85,13 @@ export const useMachineData = (user, navigation) => {
         return;
       }
       
+      // Sort machines by ID to ensure consistent ordering
+      machines.sort((a, b) => {
+        const idA = (a.id || a._id).toString();
+        const idB = (b.id || b._id).toString();
+        return parseInt(idA) - parseInt(idB);
+      });
+      
       // Filter out machines with IDs 5 and 6 (safety cabinet and safety course)
       const actualMachines = machines.filter(machine => {
         const id = machine.id || machine._id;
@@ -140,7 +147,10 @@ export const useMachineData = (user, navigation) => {
         }
       }
       
-      console.log("Machines with status:", machinesWithStatus.length, "items");
+      // Sort the machines with status by ID
+      machinesWithStatus.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      
+      console.log("Machines with status (sorted):", machinesWithStatus.length, "items");
       setMachineData(machinesWithStatus);
     } catch (error) {
       console.error("Error loading machine data:", error);

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { List, ActivityIndicator } from 'react-native-paper';
@@ -69,8 +70,11 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         
         // Add special machine IDs if they're not already in the list
         const combinedMachineIds = [...new Set([...machineIds, ...SPECIAL_MACHINE_IDS])];
-        setAvailableMachineIds(combinedMachineIds);
-        console.log("Available machine IDs:", combinedMachineIds);
+        
+        // Sort machine IDs numerically to ensure proper order
+        const sortedMachineIds = [...combinedMachineIds].sort((a, b) => parseInt(a) - parseInt(b));
+        setAvailableMachineIds(sortedMachineIds);
+        console.log("Available machine IDs (sorted):", sortedMachineIds);
       } catch (error) {
         console.error("Error fetching machines:", error);
         // In case of error, use special machine IDs as fallback
@@ -130,7 +134,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
-    return certifications.filter(certId => {
+    // Filter out certifications that don't exist in available machines
+    const validCertifications = certifications.filter(certId => {
       // Always include special machines (Safety Cabinet and Safety Course)
       if (SPECIAL_MACHINE_IDS.includes(certId)) {
         return true;
@@ -139,10 +144,15 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Include if machine exists in the database
       return availableMachineIds.includes(certId);
     });
+    
+    // Sort certifications by ID to ensure proper display order
+    return validCertifications.sort((a, b) => parseInt(a) - parseInt(b));
   };
 
   console.log("User certifications in CertificationsSection:", userCertifications);
   console.log("Available machine IDs:", availableMachineIds);
+
+  const sortedCertifications = filterCertifications(userCertifications);
 
   return (
     <View style={styles.section}>
@@ -162,14 +172,14 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           <ActivityIndicator color="#7c3aed" size="small" />
           <Text style={styles.loadingText}>Loading certifications...</Text>
         </View>
-      ) : userCertifications && userCertifications.length > 0 ? (
+      ) : sortedCertifications && sortedCertifications.length > 0 ? (
         <ScrollView 
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
           <List.Section>
-            {filterCertifications(userCertifications).map((certId) => (
+            {sortedCertifications.map((certId) => (
               <List.Item
                 key={certId}
                 title={machineNames[certId] || `Machine ${certId}`}

@@ -31,11 +31,16 @@ export class SeedService {
       if (missingMachineIds.length > 0) {
         console.log(`Missing machine IDs: ${missingMachineIds.join(', ')}. Seeding missing machines...`);
         await seedMissingMachines(missingMachineIds);
+        
+        // After seeding, we need to ensure proper order
+        await ensureMachineOrder();
         return;
       }
 
       if (userCount > 0 && machineCount > 0 && bookingCount > 0) {
-        console.log('Database already seeded. All expected machines present. Skipping...');
+        console.log('Database already seeded. All expected machines present. Checking order...');
+        // Always check and fix order even if all machines exist
+        await ensureMachineOrder();
         return;
       }
 
@@ -51,10 +56,66 @@ export class SeedService {
       console.log('Creating all machines...');
       await seedAllMachines();
       console.log('Database seeded successfully!');
+      
+      // Ensure proper order
+      await ensureMachineOrder();
     } catch (error) {
       console.error('Error seeding database:', error);
       throw error;
     }
+  }
+}
+
+// New function to ensure machine order
+async function ensureMachineOrder() {
+  try {
+    console.log('Ensuring machines are in correct order...');
+    
+    // Get all machines
+    const machines = await Machine.find().sort({ _id: 1 }).lean();
+    
+    // Check if we need to reorder
+    let needsReordering = false;
+    for (let i = 0; i < machines.length - 1; i++) {
+      // Compare numeric values of _id
+      if (parseInt(machines[i]._id) > parseInt(machines[i+1]._id)) {
+        needsReordering = true;
+        break;
+      }
+    }
+    
+    if (needsReordering) {
+      console.log('Machines need reordering. Reordering...');
+      
+      // Sort machines by ID
+      const sortedMachines = [...machines].sort((a, b) => 
+        parseInt(a._id) - parseInt(b._id)
+      );
+      
+      // Delete all machines
+      await Machine.deleteMany({});
+      
+      // Reinsert in correct order
+      for (const machine of sortedMachines) {
+        // Remove MongoDB-specific fields
+        delete machine.__v;
+        delete machine._id;
+        
+        // Create a new machine with the original ID
+        const newMachine = new Machine({
+          ...machine,
+          _id: machine._id.toString()
+        });
+        
+        await newMachine.save();
+      }
+      
+      console.log('Machine reordering complete!');
+    } else {
+      console.log('Machines are already in correct order.');
+    }
+  } catch (error) {
+    console.error('Error ensuring machine order:', error);
   }
 }
 
@@ -129,9 +190,15 @@ async function seedAllMachines() {
     },
   ];
 
-  const createdMachines = await Machine.insertMany(machines);
-  console.log(`Created ${createdMachines.length} machines successfully`);
-  return createdMachines;
+  // Insert machines in order
+  for (const machine of machines) {
+    const newMachine = new Machine(machine);
+    await newMachine.save();
+    console.log(`Created machine ${machine._id}: ${machine.name}`);
+  }
+  
+  console.log(`Created ${machines.length} machines successfully in specific order`);
+  return machines;
 }
 
 // Define machine template type
@@ -223,12 +290,22 @@ async function seedMissingMachines(missingIds: string[]) {
     },
   };
   
-  const missingMachines = missingIds.map(id => machineTemplates[id]);
+  // Sort missing IDs numerically to ensure proper order
+  const sortedMissingIds = [...missingIds].sort((a, b) => parseInt(a) - parseInt(b));
+  console.log(`Adding missing machines in order: ${sortedMissingIds.join(', ')}`);
+  
+  const missingMachines = sortedMissingIds.map(id => machineTemplates[id]);
   
   try {
-    const createdMachines = await Machine.insertMany(missingMachines);
-    console.log(`Created ${createdMachines.length} missing machines: ${missingIds.join(', ')}`);
-    return createdMachines;
+    // Add each machine individually in sorted order
+    for (const machine of missingMachines) {
+      const newMachine = new Machine(machine);
+      await newMachine.save();
+      console.log(`Created missing machine: ${machine.name} (ID: ${machine._id})`);
+    }
+    
+    console.log(`Added ${missingMachines.length} missing machines in order`);
+    return missingMachines;
   } catch (err) {
     console.error('Error creating missing machines:', err);
     
@@ -236,7 +313,7 @@ async function seedMissingMachines(missingIds: string[]) {
     console.log('Attempting to create machines one by one...');
     const results = [];
     
-    for (const id of missingIds) {
+    for (const id of sortedMissingIds) {
       try {
         const machine = new Machine(machineTemplates[id]);
         await machine.save();

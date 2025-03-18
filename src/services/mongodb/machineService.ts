@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -127,8 +128,9 @@ class MongoMachineService {
     }
     
     try {
-      const machines = await this.machinesCollection.find().toArray();
-      console.log(`Retrieved ${machines.length} machines from MongoDB`);
+      // Updated to sort by _id numerically
+      const machines = await this.machinesCollection.find().sort({ _id: 1 }).toArray();
+      console.log(`Retrieved ${machines.length} machines from MongoDB in order by ID`);
       
       // Filter out machines 5 and 6
       const filteredMachines = machines.filter(machine => 
@@ -257,12 +259,13 @@ class MongoMachineService {
       if (count === 0 || missingMachineIds.length > 0) {
         console.log("Missing machines or empty collection, seeding default machines...");
         
+        // Sort machine templates by ID to ensure proper order
         const defaultMachines: MongoMachine[] = [
           { 
             _id: '1', 
             name: 'Laser Cutter', 
             type: 'Laser Cutter', 
-            status: 'Available', // Don't force maintenance status
+            status: 'Available',
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
             difficulty: 'Advanced',
@@ -300,15 +303,18 @@ class MongoMachineService {
           }
         ];
         
-        // Create only missing machine entries
+        // Create only missing machine entries in specific order
         if (missingMachineIds.length > 0) {
-          const missingMachines = defaultMachines.filter(machine => 
-            missingMachineIds.includes(machine._id)
-          );
+          // Sort missing IDs numerically
+          const sortedMissingIds = [...missingMachineIds].sort((a, b) => parseInt(a) - parseInt(b));
           
-          for (const machine of missingMachines) {
-            await this.addMachine(machine);
-            console.log(`Added missing machine: ${machine.name} (ID: ${machine._id})`);
+          // Create machines in sorted order
+          for (const id of sortedMissingIds) {
+            const machine = defaultMachines.find(m => m._id === id);
+            if (machine) {
+              await this.addMachine(machine);
+              console.log(`Added missing machine: ${machine.name} (ID: ${machine._id})`);
+            }
           }
         } else {
           // Create all machine entries if collection is empty

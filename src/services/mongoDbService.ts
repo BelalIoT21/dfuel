@@ -1,3 +1,4 @@
+
 import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoBookingService from './mongodb/bookingService';
@@ -111,11 +112,21 @@ class MongoDbService {
         const response = await apiService.get(`machines?t=${timestamp}`);
         if (response.data && Array.isArray(response.data)) {
           console.log(`API returned ${response.data.length} machines`);
+          
           // Filter out machines 5 and 6
           const filteredMachines = response.data.filter(machine => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
           });
+          
+          // Sort machines by ID
+          filteredMachines.sort((a, b) => {
+            const idA = (a.id || a._id).toString();
+            const idB = (b.id || b._id).toString();
+            return parseInt(idA) - parseInt(idB);
+          });
+          
+          console.log("Machines sorted by ID:", filteredMachines.map(m => m.id || m._id));
           return filteredMachines;
         }
       } catch (error) {
@@ -127,6 +138,17 @@ class MongoDbService {
     try {
       const machines = await mongoMachineService.getMachines();
       console.log(`MongoDB returned ${machines?.length || 0} machines`);
+      
+      // Sort machines by ID
+      if (machines && machines.length > 0) {
+        machines.sort((a, b) => {
+          const idA = a._id.toString();
+          const idB = b._id.toString();
+          return parseInt(idA) - parseInt(idB);
+        });
+        console.log("Machines sorted by ID:", machines.map(m => m._id));
+      }
+      
       return machines || [];
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
