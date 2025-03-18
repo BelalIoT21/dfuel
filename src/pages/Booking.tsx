@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const timeSlots = [
   '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', 
@@ -28,6 +30,7 @@ const BookingPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -151,16 +154,20 @@ const BookingPage = () => {
       );
       
       if (success) {
+        setBookingSuccess(true);
         toast({
-          title: 'Booking Successful',
-          description: `You have booked ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTime}`,
+          title: 'Booking Submitted',
+          description: `Your booking request for ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTime} has been submitted and is pending approval.`,
         });
-        navigate('/profile');
+        // Don't navigate immediately to allow user to see the success message
+        setTimeout(() => {
+          navigate('/profile');
+        }, 3000);
       } else {
-        setError('Failed to create booking. Please try again.');
+        setError('Failed to create booking. This time slot may already be booked.');
         toast({
           title: 'Booking Failed',
-          description: 'Unable to create your booking. Please check all fields and try again.',
+          description: 'Unable to create your booking. This time slot may already be booked.',
           variant: 'destructive'
         });
       }
@@ -243,6 +250,23 @@ const BookingPage = () => {
     );
   }
 
+  if (bookingSuccess) {
+    return (
+      <div className="container mx-auto max-w-3xl p-4 py-8">
+        <Alert className="bg-green-50 border-green-200 text-green-800 mb-4">
+          <AlertTitle>Booking Submitted Successfully</AlertTitle>
+          <AlertDescription>
+            Your booking request for {machine.name} on {format(selectedDate!, 'MMMM d, yyyy')} at {selectedTime} has been submitted.
+            It is now pending approval from an administrator. You will be redirected to your profile page shortly.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate('/profile')} className="w-full">
+          Go to Profile
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto max-w-3xl p-4 py-8">
       <Button
@@ -314,7 +338,7 @@ const BookingPage = () => {
                   Processing...
                 </>
               ) : (
-                'Confirm Booking'
+                'Submit Booking Request'
               )}
             </Button>
           </CardFooter>

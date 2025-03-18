@@ -158,6 +158,22 @@ class MongoBookingService {
         return false;
       }
       
+      // Check for existing bookings at the same time slot before creating a new one
+      const existingBooking = await this.bookingsCollection.findOne({
+        machine: machineId,
+        date: {
+          $gte: new Date(bookingDate.setHours(0, 0, 0, 0)),
+          $lt: new Date(bookingDate.setHours(23, 59, 59, 999))
+        },
+        time: time,
+        status: { $in: ['Pending', 'Approved'] }
+      });
+      
+      if (existingBooking) {
+        console.error(`Booking already exists for machine ${machineId} on ${date} at ${time}`);
+        return false;
+      }
+      
       const clientId = `booking-${Date.now()}`;
       
       const booking: MongoBooking = {
@@ -165,7 +181,7 @@ class MongoBookingService {
         machine: machineId,
         date: bookingDate,
         time,
-        status: 'Pending',
+        status: 'Pending', // Always set initial status to Pending
         clientId,
         createdAt: new Date(),
         updatedAt: new Date(),
