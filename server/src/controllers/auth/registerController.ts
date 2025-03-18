@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import User from '../../models/User';
@@ -28,12 +29,13 @@ export const registerUser = async (req: Request, res: Response) => {
     // Get the next _id
     const nextId = await getNextUserId();
 
-    // Create user
+    // Create user with explicitly empty certifications array
     const user = await User.create({
       _id: nextId, // Assign the next _id
       name: userName, // Use the provided name or default "User"
       email,
       password,
+      certifications: [], // Explicitly set empty certifications array
     });
 
     if (user) {
@@ -44,7 +46,7 @@ export const registerUser = async (req: Request, res: Response) => {
             name: user.name,
             email: user.email,
             isAdmin: user.isAdmin,
-            certifications: user.certifications,
+            certifications: [], // Ensure empty certifications array in response
             token: generateToken(user._id.toString()),
           },
         },

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { SearchIcon, PlusCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,7 +86,6 @@ export const UserSearch = ({
     try {
       console.log("Attempting to register new user:", newUser.email);
       
-      // Use the register function from auth context
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
@@ -96,27 +94,22 @@ export const UserSearch = ({
           description: `${newUser.name} has been added successfully.`
         });
         
-        // Try to get the user data to pass to parent component
         try {
           const userResponse = await apiService.getUserByEmail(newUser.email);
           if (userResponse.data) {
             console.log("Retrieved user data after registration:", userResponse.data);
             
-            // Format the user data for consistency
             const formattedUser = {
               id: userResponse.data._id || userResponse.data.id,
               name: userResponse.data.name,
               email: userResponse.data.email,
               isAdmin: userResponse.data.isAdmin || false,
-              // Explicitly set certifications to an empty array to ensure no default certifications
               certifications: [],
               lastLogin: userResponse.data.lastLogin || new Date().toISOString()
             };
             
-            // Update parent component with new user
             onUserAdded(formattedUser);
           } else {
-            // If we can't get the user data, just refresh the user list
             console.log("Couldn't get specific user data, will refresh list instead");
             onUserAdded({
               id: "refresh-needed",
@@ -128,7 +121,6 @@ export const UserSearch = ({
           }
         } catch (error) {
           console.error("Error fetching user after registration:", error);
-          // Still consider it a success, just refresh the list
           onUserAdded({
             id: "refresh-needed",
             name: newUser.name,
@@ -138,7 +130,6 @@ export const UserSearch = ({
           });
         }
         
-        // Close dialog and reset form
         setDialogOpen(false);
         resetForm();
       } else {
