@@ -49,17 +49,8 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     }
     
-    // Only update password if it's changed
-    if (await bcrypt.compare(newPassword, user.password)) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password cannot be the same as the current password'
-      });
-    }
-    
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // Don't hash the password here - User model will handle hashing in the pre-save hook
+    user.password = newPassword;
     
     await user.save();
     

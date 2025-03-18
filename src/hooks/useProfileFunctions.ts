@@ -166,7 +166,7 @@ export const useProfileFunctions = (
         apiService.setToken(token);
       }
 
-      // Use apiService directly for password change
+      // Send raw passwords to API - they will be handled properly by MongoDB's pre-save hook
       console.log("Calling apiService.changePassword");
       const response = await apiService.changePassword(currentPassword, newPassword);
       

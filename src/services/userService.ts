@@ -86,7 +86,8 @@ export class UserService {
         throw new Error("Password must be at least 6 characters");
       }
       
-      // Update password in database with current password verification
+      // We pass the raw passwords to the database service, which will send them to MongoDB
+      // MongoDB's User model will handle the hashing in its pre-save hook
       return await databaseService.updateUserProfile(userId, { 
         password: newPassword,
         currentPassword: currentPassword
