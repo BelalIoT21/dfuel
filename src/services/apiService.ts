@@ -1,12 +1,22 @@
-import { getEnv } from '../utils/env';
+import { getEnv, getApiUrl } from '../utils/env';
 import { isAndroid, isCapacitor } from '../utils/platform';
 
-// We need to use different API endpoints for Android
-// Android can't access localhost on your development machine
-const API_ENDPOINTS = isAndroid() || isCapacitor() 
-  ? ['http://10.0.2.2:4000/api', 'YOUR_COMPUTER_IP:4000/api', '/api'] 
-  : ['http://localhost:4000/api', '/api'];
+// Determine API endpoints based on environment
+const getApiEndpoints = () => {
+  const productionUrl = getApiUrl();
+  
+  // If we have a production URL, use it as the primary endpoint
+  if (productionUrl) {
+    return [productionUrl, '/api'];
+  }
+  
+  // Otherwise, use development URLs based on platform
+  return isAndroid() || isCapacitor() 
+    ? ['http://10.0.2.2:4000/api', 'YOUR_COMPUTER_IP:4000/api', '/api'] 
+    : ['http://localhost:4000/api', '/api'];
+};
 
+const API_ENDPOINTS = getApiEndpoints();
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
