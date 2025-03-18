@@ -105,6 +105,7 @@ class MongoConnectionService {
   private async initializeData(): Promise<void> {
     try {
       console.log("Initializing MongoDB with seed data...");
+      // Make sure to seed machines first since other services might depend on them
       await mongoMachineService.seedDefaultMachines();
       await mongoSeedService.seedUsers();
       await mongoSeedService.seedBookings();

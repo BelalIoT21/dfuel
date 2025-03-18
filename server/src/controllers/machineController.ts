@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Machine } from '../models/Machine';
-import User from '../models/User';
 
 // @desc    Get all machines
 // @route   GET /api/machines
@@ -102,6 +101,7 @@ export const updateMachineStatus = asyncHandler(async (req: Request, res: Respon
     throw new Error('Status is required');
   }
   
+  // Find the machine by string ID
   const machine = await Machine.findById(req.params.id);
   
   if (!machine) {
@@ -112,17 +112,21 @@ export const updateMachineStatus = asyncHandler(async (req: Request, res: Respon
   // Update machine status and note
   machine.status = status;
   
-  // Only set maintenance note if provided and status is maintenance
-  // Otherwise, clear the maintenance note if status is not maintenance
-  if (status === 'maintenance' && maintenanceNote) {
+  // Handle maintenance note
+  if (status.toLowerCase() === 'maintenance' && maintenanceNote) {
     machine.maintenanceNote = maintenanceNote;
-  } else if (status !== 'maintenance') {
-    // Clear maintenance note when changing from maintenance to available
+  } else if (status.toLowerCase() !== 'maintenance') {
+    // Clear maintenance note when changing from maintenance to another status
     machine.maintenanceNote = undefined;
   }
   
+  // Save the updated machine
   const updatedMachine = await machine.save();
-  console.log(`Machine ${req.params.id} updated: status=${updatedMachine.status}, note=${updatedMachine.maintenanceNote || 'none'}`);
+  
+  console.log(`Machine ${req.params.id} status updated to ${updatedMachine.status}`);
+  if (updatedMachine.maintenanceNote) {
+    console.log(`Maintenance note: ${updatedMachine.maintenanceNote}`);
+  }
   
   res.json({
     success: true,
@@ -142,7 +146,7 @@ export const checkAndSeedMachines = async () => {
       name: "Laser Cutter",
       type: "Laser Cutter",
       description: "Professional grade 120W CO2 laser cutter for precision cutting and engraving.",
-      status: "available",
+      status: "Available",
       requiresCertification: true,
       bookedTimeSlots: [],
       difficulty: "Intermediate",
@@ -154,7 +158,7 @@ export const checkAndSeedMachines = async () => {
       name: "Ultimaker",
       type: "3D Printer",
       description: "High-precision 3D printer for detailed models and prototypes.",
-      status: "available",
+      status: "Available",
       requiresCertification: true,
       bookedTimeSlots: [],
       difficulty: "Beginner",
@@ -166,7 +170,7 @@ export const checkAndSeedMachines = async () => {
       name: "X1 E Carbon 3D Printer",
       type: "3D Printer",
       description: "High-speed multi-material 3D printer with exceptional print quality.",
-      status: "available",
+      status: "Available",
       requiresCertification: true,
       bookedTimeSlots: [],
       difficulty: "Intermediate",
@@ -178,7 +182,7 @@ export const checkAndSeedMachines = async () => {
       name: "Bambu Lab X1 E",
       type: "3D Printer",
       description: "Next-generation 3D printing technology with advanced features.",
-      status: "available",
+      status: "Available",
       requiresCertification: true,
       bookedTimeSlots: [],
       difficulty: "Advanced",
@@ -190,7 +194,7 @@ export const checkAndSeedMachines = async () => {
       name: "Safety Cabinet",
       type: "Safety Equipment",
       description: "Store hazardous materials safely.",
-      status: "available",
+      status: "Available",
       requiresCertification: true,
       bookedTimeSlots: [],
       difficulty: "Basic",
@@ -202,7 +206,7 @@ export const checkAndSeedMachines = async () => {
       name: "Safety Course",
       type: "Certification",
       description: "Basic safety training for the makerspace.",
-      status: "available",
+      status: "Available",
       requiresCertification: false,
       bookedTimeSlots: [],
       difficulty: "Basic",
