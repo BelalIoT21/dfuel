@@ -3,13 +3,13 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we don't use localStorage at all since we're using MongoDB exclusively
+ * For web, we explicitly block all localStorage usage since we're using MongoDB exclusively
  * For native environments, we still use AsyncStorage for session persistence
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only, no localStorage used');
+      console.log('Web environment - MongoDB only, localStorage access blocked');
       return null;
     } else {
       try {
@@ -28,7 +28,7 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only, skipping localStorage');
+      console.log('Web environment - MongoDB only, localStorage access blocked');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -43,7 +43,7 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      console.log('Web environment - MongoDB only, skipping localStorage');
+      console.log('Web environment - MongoDB only, localStorage access blocked');
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();

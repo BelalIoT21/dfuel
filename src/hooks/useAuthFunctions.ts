@@ -19,7 +19,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // API login request only - no localStorage
+      // MongoDB-only login via API, no localStorage for user data
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
       console.log("API login response:", JSON.stringify(apiResponse, null, 2));
@@ -58,7 +58,7 @@ export const useAuthFunctions = (
   
       console.log("Setting user data in state:", normalizedUser);
   
-      // Save the token for future API requests
+      // Save only the token in localStorage for auth persistence
       console.log("Saving token to localStorage");
       localStorage.setItem('token', token);
       apiService.setToken(token); // Set token in API service
@@ -76,7 +76,7 @@ export const useAuthFunctions = (
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. Server may be unavailable.",
+        description: "An unexpected error occurred. MongoDB server may be unavailable.",
         variant: "destructive"
       });
       return false;
@@ -93,7 +93,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
   
-      // API registration request only - no localStorage
+      // MongoDB-only registration via API
       const apiResponse = await apiService.register({ email, password, name });
       console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
   
@@ -108,7 +108,7 @@ export const useAuthFunctions = (
         return false;
       }
   
-      // Extract data from the correct response structure
+      // Extract data from the response structure
       const responseData = apiResponse.data?.data; // Access the nested data
       const userData = responseData?.user; // Directly access user object
       const token = userData?.token; // Get token from user object
@@ -118,7 +118,7 @@ export const useAuthFunctions = (
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Registration failed",
-          description: "The server returned incomplete data. Please try again.",
+          description: "The MongoDB server returned incomplete data. Please try again.",
           variant: "destructive"
         });
         return false;
@@ -133,9 +133,9 @@ export const useAuthFunctions = (
         certifications: [] // Explicitly set to empty array to ensure no default certifications
       };
   
-      console.log("Setting user data:", normalizedUser);
+      console.log("Setting user data from MongoDB:", normalizedUser);
   
-      // Save token and update state
+      // Save token only, no user data in localStorage
       localStorage.setItem('token', token);
       apiService.setToken(token);
       setUser(normalizedUser);
@@ -147,10 +147,10 @@ export const useAuthFunctions = (
   
       return true;
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("MongoDB registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An unexpected error occurred with MongoDB. Please try again.",
         variant: "destructive"
       });
       return false;
@@ -163,12 +163,12 @@ export const useAuthFunctions = (
    * Handles user logout.
    */
   const logout = () => {
-    console.log("Logging out user");
+    console.log("Logging out user from MongoDB session");
 
     // Clear user state
     setUser(null);
 
-    // Remove token only (no other localStorage usage)
+    // Remove token only - no other localStorage usage
     localStorage.removeItem('token');
 
     // Clear the token from API service
