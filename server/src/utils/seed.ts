@@ -203,6 +203,9 @@ async function seedAllMachines() {
     },
   ];
 
+  // Sort machines by ID to ensure proper insertion order
+  machines.sort((a, b) => parseInt(a._id) - parseInt(b._id));
+  
   // Insert machines in order
   for (const machine of machines) {
     const newMachine = new Machine(machine);
