@@ -1,3 +1,4 @@
+
 /**
  * Environment variable management
  */
@@ -18,11 +19,11 @@ export const getEnvironment = (): Environment => {
 // Load environment variables into the application
 export const loadEnv = (): void => {
   // This function is a placeholder for loading environment variables
-  // In a real application, this would load variables from various sources
   console.log('Environment variables loaded');
   
-  // Set the default server IP
+  // Set the default server IP - Try both IP and localhost options
   setEnv('CUSTOM_SERVER_IP', '192.168.47.238');
+  console.log('Server IP set to:', getEnv('CUSTOM_SERVER_IP'));
 };
 
 // Set environment variables with validation
@@ -38,7 +39,7 @@ export const setEnv = (key: string, value: string): void => {
     (window as any).__ENV__[key] = value;
   }
   
-  console.log(`Environment variable set: ${key}`);
+  console.log(`Environment variable set: ${key}=${value}`);
 };
 
 // Get environment variables
@@ -61,7 +62,6 @@ export const getLocalServerIP = (): string => {
 };
 
 // Check if the app is running on a physical device vs emulator
-// This is a best-guess approach and might need refinement
 export const isPhysicalDevice = (): boolean => {
   // If using Capacitor, assume physical device when not in dev mode
   if (isCapacitor() && getEnvironment() === 'production') {
@@ -82,9 +82,12 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  // Always use the hardcoded server IP
+  const serverIP = getEnv('CUSTOM_SERVER_IP');
+  
+  // Try multiple different connection options to maximize chances of success
   return [
-    `http://192.168.47.238:4000/api`,
+    `http://${serverIP}:4000/api`,
+    'http://localhost:4000/api',
     '/api' // Relative fallback
   ];
 };
@@ -94,9 +97,7 @@ export const getApiUrl = (): string => {
   const env = getEnvironment();
   
   // In a production environment, this would use environment variables
-  // or a configuration specific to your hosting platform
   if (env === 'production') {
-    // Get from environment or use default production URL
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   
