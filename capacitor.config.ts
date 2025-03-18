@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.65989570cd1d40f5b27e214d8336aca9',
+  appId: 'com.lovable.learnitacademy',
   appName: 'learnit-academy',
   webDir: 'dist',
   server: {
@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'always',
-    scheme: 'app.lovable.learnitacademy',
+    scheme: 'com.lovable.learnitacademy',
     backgroundColor: '#7c3aed'
   },
   plugins: {
