@@ -1,16 +1,17 @@
-import { getEnv, getApiEndpoints, formatApiEndpoint } from '../utils/env';
+
+import { getEnv, getApiEndpoints as getApiEndpointsFromEnv, formatApiEndpoint } from '../utils/env';
 import { isAndroid, isCapacitor } from '../utils/platform';
 
 // Determine API endpoints based on environment
-const getApiEndpoints = () => {
+const getAvailableEndpoints = () => {
   // Get all possible endpoints
-  const endpoints = getApiEndpoints();
+  const endpoints = getApiEndpointsFromEnv();
   
   console.log('API service initialized with endpoints:', endpoints);
   return endpoints;
 };
 
-const API_ENDPOINTS = getApiEndpoints();
+const API_ENDPOINTS = getAvailableEndpoints();
 let currentEndpointIndex = 0;
 let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
 
