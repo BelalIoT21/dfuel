@@ -1,8 +1,10 @@
+
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
 import { UserWithoutSensitiveInfo } from '../types/database';
 import { apiService } from './apiService';
+import { localStorageService } from './localStorageService';
 
 class UserDatabase {
   async getAllUsers() {
@@ -178,6 +180,18 @@ class UserDatabase {
     try {
       console.log(`UserDatabase: Updating profile for user ${userId}`, updates);
       
+      // Try API first
+      try {
+        console.log("Attempting to update profile via API...");
+        const response = await apiService.updateProfile(userId, updates);
+        if (response.data && response.data.success) {
+          console.log("Successfully updated user profile via API");
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API error when updating profile:", apiError);
+      }
+      
       // Use MongoDB directly
       console.log("Using MongoDB directly for profile update...");
       const mongoSuccess = await mongoDbService.updateUser(userId, updates);
@@ -189,9 +203,15 @@ class UserDatabase {
       
       // Last resort: try localStorage service
       console.log("Falling back to localStorage for profile update...");
-      const localStorageSuccess = await userService.updateProfile(userId, updates);
-      console.log(`LocalStorage update result: ${localStorageSuccess}`);
-      return localStorageSuccess;
+      try {
+        // Make sure we use the localStorageService directly
+        const localStorageSuccess = await localStorageService.updateUser(userId, updates);
+        console.log(`LocalStorage update result: ${localStorageSuccess}`);
+        return localStorageSuccess;
+      } catch (localStorageError) {
+        console.error("LocalStorage error when updating profile:", localStorageError);
+        return false;
+      }
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
       return false;
@@ -201,6 +221,18 @@ class UserDatabase {
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
     try {
       console.log(`UserDatabase: Changing password for user ${userId}`);
+      
+      // Try API first
+      try {
+        console.log("Attempting to change password via API...");
+        const response = await apiService.changePassword(currentPassword, newPassword);
+        if (response.data && response.data.success) {
+          console.log("Successfully changed password via API");
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API error when changing password:", apiError);
+      }
       
       // Use MongoDB directly
       console.log("Using MongoDB directly for password change...");
@@ -222,7 +254,9 @@ class UserDatabase {
         return true;
       }
       
-      throw new Error('Password change failed or service unavailable');
+      // Last resort: try userService
+      console.log("Falling back to userService for password change...");
+      return await userService.changePassword(userId, currentPassword, newPassword);
     } catch (error) {
       console.error('Error in changePassword:', error);
       throw error;

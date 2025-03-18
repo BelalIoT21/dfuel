@@ -14,6 +14,11 @@ export class UserService {
     return databaseService.findUserByEmail(email);
   }
   
+  // Find user by ID
+  async findUserById(id: string): Promise<User | undefined> {
+    return databaseService.findUserById(id);
+  }
+  
   // Authenticate user
   async authenticate(email: string, password: string): Promise<UserWithoutSensitiveInfo | null> {
     return databaseService.authenticate(email, password);
@@ -24,18 +29,23 @@ export class UserService {
     return databaseService.registerUser(email, password, name);
   }
   
-  // Update user profile - fixed to use updateProfile method name
+  // Update user profile
   async updateProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
-    // Check if user is admin
-    const user = await databaseService.findUserById(userId);
-    if (user?.isAdmin && updates.email) {
-      const { adminPassword } = getAdminCredentials();
-      // Update the admin email in our environment system
-      setAdminCredentials(updates.email, adminPassword);
+    try {
+      // Check if user is admin
+      const user = await databaseService.findUserById(userId);
+      if (user?.isAdmin && updates.email) {
+        const { adminPassword } = getAdminCredentials();
+        // Update the admin email in our environment system
+        setAdminCredentials(updates.email, adminPassword);
+      }
+      
+      // Call the correct method in databaseService
+      return await databaseService.updateUserProfile(userId, updates);
+    } catch (error) {
+      console.error('Error in userService.updateProfile:', error);
+      return false;
     }
-    
-    // Call the correct method in databaseService
-    return databaseService.updateUserProfile(userId, updates);
   }
 
   // Change user password

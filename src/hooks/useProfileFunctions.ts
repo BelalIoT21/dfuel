@@ -43,17 +43,25 @@ export const useProfileFunctions = (
     if (!user) return false;
     
     try {
+      console.log(`useProfileFunctions: Updating profile for user ${user.id}`, details);
       const success = await userDatabase.updateUserProfile(user.id, details);
+      
       if (success) {
+        console.log("Profile update successful, updating user state in hook");
+        // Create a new user object with the updated details
         const updatedUser = { ...user, ...details };
+        
+        // Update the state and local storage
         setUser(updatedUser);
         localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+        
         toast({
           title: "Profile updated",
           description: "Your profile has been updated successfully."
         });
         return true;
       } else {
+        console.error("Profile update failed in database");
         toast({
           title: "Error",
           description: "Failed to update profile.",
@@ -76,7 +84,9 @@ export const useProfileFunctions = (
     if (!user) return false;
     
     try {
+      console.log(`useProfileFunctions: Changing password for user ${user.id}`);
       const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
+      
       if (success) {
         toast({
           title: "Password changed",
@@ -95,7 +105,7 @@ export const useProfileFunctions = (
       console.error("Error changing password:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive"
       });
       return false;
