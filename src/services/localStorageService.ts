@@ -1,4 +1,3 @@
-
 import { User, Booking, MachineStatus, UserWithoutSensitiveInfo } from '../types/database';
 import { storage } from '../utils/storage';
 
@@ -10,6 +9,24 @@ const machineStatusKey = 'learnit_machine_status';
 class LocalStorageService {
   constructor() {
     // No longer creating a default admin automatically
+  }
+  
+  /**
+   * Clear all localStorage items except the token
+   */
+  clearAllDataExceptToken(): boolean {
+    try {
+      const token = localStorage.getItem('token');
+      localStorage.clear();
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+      console.log('Successfully cleared all localStorage data except token');
+      return true;
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+      return false;
+    }
   }
   
   // User operations

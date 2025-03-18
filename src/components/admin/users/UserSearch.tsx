@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { SearchIcon, PlusCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +49,18 @@ export const UserSearch = ({
       password: ''
     });
   };
+
+  const clearLocalStorageExceptToken = () => {
+    const token = localStorage.getItem('token');
+    
+    localStorage.clear();
+    
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+    
+    console.log("Cleared all localStorage data except auth token");
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,16 +97,16 @@ export const UserSearch = ({
     try {
       console.log("Attempting to register new user:", newUser.email);
       
-      // Use register function from AuthContext to create user directly in MongoDB
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
+        clearLocalStorageExceptToken();
+        
         toast({
           title: "User Added",
-          description: `${newUser.name} has been added successfully to MongoDB.`
+          description: `${newUser.name} has been added successfully.`
         });
         
-        // Trigger immediate refresh of user list from MongoDB
         onUserAdded({ 
           refresh: true,
           newUser: {
@@ -109,15 +120,15 @@ export const UserSearch = ({
       } else {
         toast({
           title: "Error",
-          description: "This email may already be registered in MongoDB.",
+          description: "This email may already be registered.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Error adding user to MongoDB:', error);
+      console.error('Error adding user:', error);
       toast({
         title: "Error",
-        description: "Failed to add user to MongoDB. Please try again.",
+        description: "Failed to add user. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -194,7 +205,7 @@ export const UserSearch = ({
                   </Button>
                   <Button type="submit" disabled={isAdding}>
                     {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isAdding ? 'Adding...' : 'Add User to MongoDB'}
+                    {isAdding ? 'Adding...' : 'Add User'}
                   </Button>
                 </DialogFooter>
               </form>

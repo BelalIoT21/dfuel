@@ -83,6 +83,40 @@ class StorageService {
     }
   }
 
+  /**
+   * Clear all localStorage items except the token
+   */
+  async clearExceptToken(): Promise<void> {
+    if (isWeb) {
+      try {
+        const token = localStorage.getItem('token');
+        localStorage.clear();
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+        console.log('Cleared all localStorage data except token');
+      } catch (error) {
+        console.error('Error clearing localStorage:', error);
+      }
+    } else {
+      try {
+        const AsyncStorage = this.getNativeStorage();
+        if (AsyncStorage) {
+          const token = await AsyncStorage.getItem('token');
+          // In a real implementation, we would need to get all keys and remove them except token
+          // For now, we'll just preserve the token
+          if (token) {
+            const allKeys = await AsyncStorage.getAllKeys();
+            const keysToRemove = allKeys.filter(key => key !== 'token');
+            await AsyncStorage.multiRemove(keysToRemove);
+          }
+        }
+      } catch (error) {
+        console.error('Error clearing AsyncStorage:', error);
+      }
+    }
+  }
+
   // Helper method to safely get AsyncStorage without build-time issues
   private getNativeStorage(): any {
     // This approach prevents bundlers from trying to resolve the import at build time

@@ -49,7 +49,10 @@ export const registerUser = async (req: Request, res: Response) => {
             name: user.name,
             email: user.email,
             isAdmin: user.isAdmin,
-            certifications: [], // Ensure empty certifications array in response
+            certifications: user.certifications || [], // Ensure we return certifications
+            bookings: user.bookings || [], // Include bookings if available
+            updatedAt: user.updatedAt, // Include timestamps
+            createdAt: user.createdAt
           },
           token
         },

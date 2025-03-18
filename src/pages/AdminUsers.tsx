@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
@@ -22,10 +23,28 @@ const AdminUsers = () => {
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   
+  // Helper function to clear localStorage data except token
+  const clearLocalStorageExceptToken = () => {
+    const token = localStorage.getItem('token');
+    
+    // Clear all localStorage items
+    localStorage.clear();
+    
+    // Restore token if it existed
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+    
+    console.log("Cleared all localStorage data except auth token");
+  };
+  
   const fetchUsers = async () => {
     setRefreshing(true);
     try {
       console.log("Fetching all users for admin dashboard");
+      
+      // Clear localStorage first to ensure we're getting fresh data
+      clearLocalStorageExceptToken();
       
       // Try API first
       const response = await apiService.getAllUsers();
@@ -115,11 +134,17 @@ const AdminUsers = () => {
   const handleUserAdded = (data: any) => {
     console.log("User added, refreshing user list");
     
+    // Clear localStorage to ensure we get fresh data
+    clearLocalStorageExceptToken();
+    
     // Immediate fetch to get the latest data from MongoDB
     fetchUsers();
   };
   
   const handleUserDeleted = () => {
+    // Clear localStorage to ensure we get fresh data
+    clearLocalStorageExceptToken();
+    
     // Refresh the users list after a user is deleted
     console.log("User deleted, refreshing user list");
     fetchUsers();
