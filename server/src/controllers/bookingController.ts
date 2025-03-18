@@ -1,10 +1,10 @@
 
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import { Booking } from '../models/Booking';
+import { Booking, IBooking } from '../models/Booking';
 import mongoose from 'mongoose';
 import User from '../models/User';
-import Machine from '../models/Machine';
+import { Machine } from '../models/Machine'; // Fix import - Machine is not a default export
 
 // Create booking
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
@@ -121,6 +121,7 @@ export const getAllBookings = asyncHandler(async (req: Request, res: Response) =
       })
       .sort({ createdAt: -1 });
     
+    // Use the IBooking interface for correct typing
     const formattedBookings = bookings.map(booking => {
       const user = booking.user as any;
       const machine = booking.machine as any;
@@ -130,11 +131,12 @@ export const getAllBookings = asyncHandler(async (req: Request, res: Response) =
         _id: booking._id,
         id: booking._id,
         machineId: booking.machine,
-        machineName: booking.machineName || (machine && machine.name ? machine.name : 'Unknown'),
-        machineType: booking.machineType || (machine && machine.type ? machine.type : 'Unknown'),
+        // Access properties safely with optional chaining
+        machineName: booking.get('machineName') || (machine && machine.name ? machine.name : 'Unknown'),
+        machineType: booking.get('machineType') || (machine && machine.type ? machine.type : 'Unknown'),
         userId: booking.user,
-        userName: booking.userName || (user && user.name ? user.name : 'Unknown'),
-        userEmail: booking.userEmail || (user && user.email ? user.email : 'Unknown'),
+        userName: booking.get('userName') || (user && user.name ? user.name : 'Unknown'),
+        userEmail: booking.get('userEmail') || (user && user.email ? user.email : 'Unknown'),
         date: booking.date,
         time: booking.time,
         status: booking.status,
