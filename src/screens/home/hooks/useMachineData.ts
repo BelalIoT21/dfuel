@@ -68,16 +68,22 @@ export const useMachineData = (user, navigation) => {
       const timestamp = new Date().getTime();
       
       // First get all available machines to know which IDs exist in the database
-      const machines = await machineService.getMachines(timestamp);
-      
-      if (!machines || machines.length === 0) {
-        console.error("No machines data available from MongoDB");
-        setLoading(false);
-        setRefreshing(false);
-        return;
+      let machines = [];
+      try {
+        machines = await machineService.getMachines(timestamp);
+        console.log("Fetched machines data:", machines?.length || 0, "items");
+      } catch (error) {
+        console.error("Error fetching machines:", error);
+        machines = [];
       }
       
-      console.log("Fetched machines data:", machines.length, "items");
+      if (!machines || machines.length === 0) {
+        console.error("No machines data available");
+        setLoading(false);
+        setRefreshing(false);
+        setMachineData([]);
+        return;
+      }
       
       // Filter out machines with IDs 5 and 6 (safety cabinet and safety course)
       const actualMachines = machines.filter(machine => {
@@ -88,54 +94,49 @@ export const useMachineData = (user, navigation) => {
       
       console.log("Actual machines after filtering safety items:", actualMachines.length);
       
+      if (actualMachines.length === 0) {
+        console.log("No machines left after filtering");
+        setMachineData([]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
       // Create an array to hold machines with their statuses
       const machinesWithStatus = [];
       
       // Load status for each machine individually to ensure fresh data
       for (const machine of actualMachines) {
         try {
-          console.log("Loading status for machine:", machine.id);
+          const machineId = machine.id || machine._id;
+          console.log("Loading status for machine:", machineId);
           
-          // Direct API fetch for each machine to get fresh status
-          let status = 'available'; // Default status
+          // Default status
+          let status = 'available';
           let maintenanceNote = '';
           
           try {
-            // Fetch directly from API with cache-busting
-            const response = await fetch(`http://localhost:4000/api/machines/${machine.id}?t=${Date.now()}`);
-            if (response.ok) {
-              const data = await response.json();
-              status = data.status || 'available';
-              maintenanceNote = data.maintenanceNote || '';
-              console.log(`Fetched status for machine ${machine.id}:`, status);
-            }
-          } catch (apiError) {
-            console.error(`API error for machine ${machine.id}:`, apiError);
+            // Try to get status from the service
+            status = await machineService.getMachineStatus(machineId.toString());
+            console.log(`Fetched status for machine ${machineId}:`, status);
             
-            // Fallback to mongoDbService if API fails
-            try {
-              const statusData = await mongoDbService.getMachineStatus(machine.id, timestamp);
-              status = statusData ? statusData.status : 'available';
-              console.log(`Fallback status for machine ${machine.id}:`, status);
-            } catch (fallbackError) {
-              console.error(`Fallback error for machine ${machine.id}:`, fallbackError);
-            }
+            // Try to get maintenance note if available
+            maintenanceNote = await machineService.getMachineMaintenanceNote(machineId.toString()) || '';
+          } catch (statusError) {
+            console.error(`Error fetching status for machine ${machineId}:`, statusError);
           }
           
           // Add machine with its status to the array
           machinesWithStatus.push({
             ...machine,
+            id: machineId.toString(),
             status: status || 'available',
             maintenanceNote
           });
           
         } catch (error) {
-          console.error(`Error loading status for machine ${machine.id}:`, error);
-          // Add machine with default status if there was an error
-          machinesWithStatus.push({
-            ...machine,
-            status: 'available'
-          });
+          console.error(`Error processing machine:`, error);
+          // Skip this machine
         }
       }
       
@@ -143,6 +144,7 @@ export const useMachineData = (user, navigation) => {
       setMachineData(machinesWithStatus);
     } catch (error) {
       console.error("Error loading machine data:", error);
+      setMachineData([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

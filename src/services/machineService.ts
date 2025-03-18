@@ -132,6 +132,7 @@ export class MachineService {
           
           return {
             ...response.data,
+            id: response.data._id || response.data.id,
             status: response.data.status?.toLowerCase() || 'available',
             type: response.data.type || "Machine"
           };
@@ -166,44 +167,41 @@ export class MachineService {
   }
   
   // Helper method to get machines
-  async getMachines(): Promise<any[]> {
+  async getMachines(timestamp?: number): Promise<any[]> {
     try {
+      console.log("Getting machines, timestamp:", timestamp || "none");
+      
       // Use API to get machines
       try {
-        const response = await apiService.get('machines');
+        const endpoint = timestamp ? `machines?t=${timestamp}` : 'machines';
+        const response = await apiService.get(endpoint);
+        
         if (response.data && Array.isArray(response.data)) {
-          // Filter out machines 5 and 6
-          const filteredMachines = response.data.filter(machine => {
-            const id = machine.id || machine._id;
-            return id !== '5' && id !== '6';
-          });
+          console.log(`Retrieved ${response.data.length} machines from API`);
           
-          return filteredMachines.map(machine => ({
+          // Ensure each machine has an id field (might be _id in MongoDB)
+          return response.data.map(machine => ({
             ...machine,
+            id: machine.id || machine._id,
             type: machine.type || "Machine",
             status: machine.status?.toLowerCase() || 'available'
           }));
+        } else {
+          console.error("API returned invalid data format for machines:", response.data);
         }
       } catch (error) {
         console.error("API error getting machines:", error);
       }
       
+      console.log("Falling back to static machines data");
       // Fallback to static machines data
-      const filteredMachines = machines.filter(machine => 
-        machine.id !== '5' && machine.id !== '6'
-      );
-      
-      return filteredMachines.map(machine => ({
+      return machines.map(machine => ({
         ...machine,
         type: machine.type || "Machine" 
       }));
     } catch (error) {
       console.error("Error getting machines data:", error);
-      const filteredMachines = machines.filter(machine => 
-        machine.id !== '5' && machine.id !== '6'
-      );
-      
-      return filteredMachines.map(machine => ({
+      return machines.map(machine => ({
         ...machine,
         type: machine.type || "Machine"
       }));
