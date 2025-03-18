@@ -17,7 +17,7 @@ export const createBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
     
-    // Check if machine exists
+    // Check if machine exists - don't convert to ObjectId here, use as-is
     const machine = await Machine.findById(machineId);
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
@@ -35,7 +35,9 @@ export const createBooking = async (req: Request, res: Response) => {
     
     // For admin users, bypass certification check
     if (machine.requiresCertification && !req.user.isAdmin) {
-      const user = await User.findById(req.user._id);
+      // Convert user ID to number for User model
+      const userId = Number(req.user._id);
+      const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
@@ -76,15 +78,19 @@ export const createBooking = async (req: Request, res: Response) => {
       }
     }
     
-    // Get user name
-    const user = await User.findById(req.user._id);
+    // Get user name - convert user ID to number for User model
+    const userId = Number(req.user._id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Create booking with user and machine names
+    console.log(`Creating booking with user: ${userId} (${typeof userId}), machine: ${machineId} (${typeof machineId})`);
+    
+    // Create booking with user and machine names 
+    // Use the user ID and machine ID directly without trying to convert to ObjectId
     const booking = new Booking({
-      user: req.user._id,
+      user: userId,
       machine: machineId,
       date,
       time,
@@ -105,7 +111,7 @@ export const createBooking = async (req: Request, res: Response) => {
     
     // Add booking reference to user's bookings array
     await User.findByIdAndUpdate(
-      req.user._id,
+      userId,
       { $push: { bookings: createdBooking._id } }
     );
     

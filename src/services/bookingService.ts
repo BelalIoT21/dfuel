@@ -65,8 +65,12 @@ class BookingService {
     try {
       if (isWeb) {
         try {
-          // Changed from createBooking to addBooking to match the actual method name in apiService
-          const response = await apiService.addBooking(userId, machineId, date, time);
+          // Convert userId and machineId to strings to ensure proper format
+          const userIdStr = String(userId);
+          const machineIdStr = String(machineId);
+          
+          console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}`);
+          const response = await apiService.addBooking(userIdStr, machineIdStr, date, time);
           if (response.data && response.data.success) {
             console.log('Successfully created booking via API');
             toast({
@@ -82,7 +86,10 @@ class BookingService {
       
       // Always try mongoDbService regardless of platform
       console.log('Creating booking in MongoDB...');
-      const success = await mongoDbService.createBooking(userId, machineId, date, time);
+      // Convert userId and machineId to strings before passing to MongoDB service
+      const userIdStr = String(userId);
+      const machineIdStr = String(machineId);
+      const success = await mongoDbService.createBooking(userIdStr, machineIdStr, date, time);
       
       if (success) {
         console.log('Successfully created booking in MongoDB');

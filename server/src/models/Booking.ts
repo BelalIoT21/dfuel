@@ -2,8 +2,8 @@
 import mongoose from 'mongoose';
 
 export interface IBooking extends mongoose.Document {
-  user: mongoose.Types.ObjectId;
-  machine: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId | number | string;
+  machine: mongoose.Types.ObjectId | string;
   date: Date;
   time: string;
   status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
@@ -17,12 +17,12 @@ export interface IBooking extends mongoose.Document {
 const bookingSchema = new mongoose.Schema<IBooking>(
   {
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed, // Changed from ObjectId to Mixed to accept numbers and strings
       ref: 'User',
       required: true,
     },
     machine: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed, // Changed from ObjectId to Mixed to accept strings
       ref: 'Machine',
       required: true,
     },
