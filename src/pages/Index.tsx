@@ -12,7 +12,7 @@ import { Check, WifiOff } from 'lucide-react';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const { user, login, register } = useAuth();
+  const { user, loading: authLoading, login, register } = useAuth();
   const navigate = useNavigate();
 
   // Check server connection
@@ -68,11 +68,11 @@ const Index = () => {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
       navigate('/home');
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
@@ -90,9 +90,27 @@ const Index = () => {
   };
 
   // Debug rendering
-  console.log("Rendering Index component");
+  console.log("Rendering Index component, auth loading:", authLoading);
 
   const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
+
+  // Show loading spinner while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
+        <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If user is already logged in, show loading until redirect happens
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
+        <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">

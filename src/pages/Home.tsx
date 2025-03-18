@@ -19,12 +19,18 @@ interface ExtendedMachine {
 }
 
 const Home = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [machineData, setMachineData] = useState<ExtendedMachine[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Only redirect if auth is fully loaded and user is not present
+    if (!authLoading && user === null) {
+      navigate('/');
+      return;
+    }
+    
     if (user?.isAdmin) {
       navigate('/admin');
       return;
@@ -69,10 +75,19 @@ const Home = () => {
     if (user) {
       loadMachineData();
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
-  if (!user) {
-    navigate('/');
+  // Don't render anything while auth is still loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white p-6 flex justify-center items-center">
+        <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Don't redirect immediately, let the useEffect handle it
+  if (!user && !authLoading) {
     return null;
   }
 
