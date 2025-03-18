@@ -97,7 +97,7 @@ async function ensureMachineOrder() {
       
       // Reinsert in correct order
       for (const machine of sortedMachines) {
-        // Create a new machine object without MongoDB-specific fields
+        // Create a new machine object with only the necessary fields
         const machineData = {
           _id: machine._id.toString(),
           name: machine.name,
@@ -108,7 +108,14 @@ async function ensureMachineOrder() {
           difficulty: machine.difficulty,
           imageUrl: machine.imageUrl,
           specifications: machine.specifications,
-          // Include any other fields that should be preserved
+          // Include any other relevant fields
+          maintenanceNote: machine.maintenanceNote,
+          bookedTimeSlots: machine.bookedTimeSlots || [],
+          details: machine.details,
+          certificationInstructions: machine.certificationInstructions,
+          linkedCourseId: machine.linkedCourseId,
+          linkedQuizId: machine.linkedQuizId,
+          note: machine.note
         };
         
         // Create a new machine with the filtered data
