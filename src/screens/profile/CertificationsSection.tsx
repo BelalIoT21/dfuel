@@ -10,7 +10,7 @@ interface CertificationsSectionProps {
   user: User;
 }
 
-// Define known machines with correct ID mappings
+// Define known machines with correct ID mappings for fallback
 const KNOWN_MACHINES = {
   "1": { name: "Laser Cutter", type: "Laser Cutter" },
   "2": { name: "Ultimaker", type: "3D Printer" },
@@ -20,8 +20,8 @@ const KNOWN_MACHINES = {
   "6": { name: "Safety Course", type: "Safety Course" },
 };
 
-// Define the list of deleted machine IDs
-const DELETED_MACHINE_IDS = ["1"];
+// Define special machine IDs that should always be displayed
+const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
 const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [machineNames, setMachineNames] = useState<{[key: string]: string}>({});
@@ -72,13 +72,11 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         console.log("Available machine IDs:", machineIds);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        // In case of error, use all known machines except the deleted ones
-        setAvailableMachineIds(
-          Object.keys(KNOWN_MACHINES).filter(id => !DELETED_MACHINE_IDS.includes(id))
-        );
+        // In case of error, use all known machines as fallback
+        setAvailableMachineIds(Object.keys(KNOWN_MACHINES));
       }
       
-      // First populate with known machines - ensure correct ID mapping
+      // First populate with known machines for fallback - ensure correct ID mapping
       Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
         names[id] = machine.name;
         types[id] = machine.type;
@@ -87,13 +85,10 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
-      // Filter certifications to only include available machines, standard machines 2-4 
-      // that aren't in DELETED_MACHINE_IDS, and special machines (5 and 6)
+      // Filter certifications to only include actually available machines or special machines (5 and 6)
       const validCertifications = certifications.filter(certId => 
         availableMachineIds.includes(certId) || 
-        certId === "5" || 
-        certId === "6" ||
-        (certId in KNOWN_MACHINES && !DELETED_MACHINE_IDS.includes(certId))
+        SPECIAL_MACHINE_IDS.includes(certId)
       );
       console.log(`Filtered from ${certifications.length} to ${validCertifications.length} valid certifications`);
       
@@ -172,7 +167,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   };
 
-  // Filter certifications to exclude deleted machines and "CNC Mill" before displaying
+  // Filter certifications to exclude machines not in availableMachineIds, except for special machines
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
@@ -180,14 +175,11 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       const machineName = machineNames[certId]?.toLowerCase();
       
       // Filter logic:
-      // 1. Always include safety cabinet and safety course
+      // 1. Always include special machines (safety cabinet and safety course)
       // 2. Include if it's in the available machines from API
-      // 3. Include standard machines 2-4 that aren't in DELETED_MACHINE_IDS
-      // 4. Skip machines with name "cnc mill"
-      const isAvailableMachine = certId === "5" || 
-                                certId === "6" || 
-                                availableMachineIds.includes(certId) ||
-                                (certId in KNOWN_MACHINES && !DELETED_MACHINE_IDS.includes(certId));
+      // 3. Skip machines with name "cnc mill"
+      const isAvailableMachine = SPECIAL_MACHINE_IDS.includes(certId) || 
+                                availableMachineIds.includes(certId);
                                 
       // Also continue to filter out CNC Mill
       return machineName && machineName !== "cnc mill" && isAvailableMachine;

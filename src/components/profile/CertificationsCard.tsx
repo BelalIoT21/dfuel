@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,10 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import BookMachineButton from './BookMachineButton';
 
-// Define known machines with correct ID mappings
+// Define special machine IDs that are always displayed regardless of availability
+const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
+
+// Define known machines with correct name mappings for fallback
 const MACHINE_NAMES = {
   "1": "Laser Cutter",
   "2": "Ultimaker",
@@ -21,9 +23,6 @@ const MACHINE_NAMES = {
   "5": "Safety Cabinet",
   "6": "Machine Safety Course"
 };
-
-// Define the list of deleted machine IDs
-const DELETED_MACHINE_IDS = ["1"];
 
 const CertificationsCard = () => {
   const { user } = useAuth();
@@ -45,7 +44,7 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Fetch the current available machines first to filter deleted machines
+      // Fetch the current available machines to determine what exists in the database
       try {
         const allCurrentMachines = await machineService.getMachines();
         console.log("All current machines:", allCurrentMachines.length);
@@ -58,10 +57,8 @@ const CertificationsCard = () => {
         console.log("Available machine IDs:", currentMachineIds);
       } catch (error) {
         console.error("Error fetching available machines:", error);
-        // In case of error, use all standard machines except the deleted ones
-        setAvailableMachineIds(
-          Object.keys(MACHINE_NAMES).filter(id => !DELETED_MACHINE_IDS.includes(id))
-        );
+        // In case of error, use all standard machines as fallback
+        setAvailableMachineIds(Object.keys(MACHINE_NAMES));
       }
       
       // Get the certification list from our service
@@ -97,18 +94,14 @@ const CertificationsCard = () => {
       setMachineStatuses(statuses);
       
       // Format the machines for display with correct names
-      // only include machines that still exist in the database or are in our predefined list (except deleted ones)
+      // only include machines that actually exist in the database OR are special machines (5, 6)
       const formattedMachines = allCertifications
         .filter(machine => {
           const machineId = machine.id.toString();
+          
           // Check if the machine should be displayed
-          // 1. Always include safety cabinet and safety course
-          // 2. Include if it's in the available machines from API
-          // 3. Include standard machines 2-4 that aren't in DELETED_MACHINE_IDS
-          return machineId === "5" || 
-                 machineId === "6" ||
-                 availableMachineIds.includes(machineId) ||
-                 (machineId in MACHINE_NAMES && !DELETED_MACHINE_IDS.includes(machineId));
+          return SPECIAL_MACHINE_IDS.includes(machineId) || // Always include safety cabinet and safety course 
+                 availableMachineIds.includes(machineId);   // Include if it's available in the API
         })
         .map(machine => {
           const machineId = machine.id.toString();
@@ -116,7 +109,7 @@ const CertificationsCard = () => {
             ? new Date(user.certificationDates[machineId])
             : new Date();
           
-          // Use our predefined machine names
+          // Use our predefined machine names as fallback
           const machineName = MACHINE_NAMES[machineId] || machine.name;
           
           return {
@@ -124,7 +117,7 @@ const CertificationsCard = () => {
             name: machineName,
             certified: userCerts.includes(machineId),
             date: format(certDate, 'dd/MM/yyyy'),
-            bookable: machineId !== "5" && machineId !== "6", // Safety Cabinet and Safety Course aren't bookable
+            bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
             status: statuses[machineId] || 'unknown'
           };
         });
