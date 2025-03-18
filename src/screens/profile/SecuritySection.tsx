@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { TextInput, Button, IconButton } from 'react-native-paper';
@@ -62,12 +63,12 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             secureTextEntry={!showCurrentPassword}
             mode="outlined"
             style={styles.input}
-            right={currentPassword.length > 0 ? (
+            right={
               <TextInput.Icon 
                 icon={showCurrentPassword ? "eye-off" : "eye"} 
                 onPress={() => setShowCurrentPassword(!showCurrentPassword)}
               />
-            ) : null}
+            }
           />
           <TextInput
             label="New Password"
@@ -76,12 +77,12 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             secureTextEntry={!showNewPassword}
             mode="outlined"
             style={styles.input}
-            right={newPassword.length > 0 ? (
+            right={
               <TextInput.Icon 
                 icon={showNewPassword ? "eye-off" : "eye"} 
                 onPress={() => setShowNewPassword(!showNewPassword)}
               />
-            ) : null}
+            }
           />
           <TextInput
             label="Confirm New Password"
@@ -90,12 +91,12 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             secureTextEntry={!showConfirmPassword}
             mode="outlined"
             style={styles.input}
-            right={confirmPassword.length > 0 ? (
+            right={
               <TextInput.Icon 
                 icon={showConfirmPassword ? "eye-off" : "eye"} 
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               />
-            ) : null}
+            }
           />
           <View style={styles.buttonRow}>
             <Button 
