@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,9 @@ import BookMachineButton from './BookMachineButton';
 
 // Define special machine IDs that are always displayed regardless of availability
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
+
+// Define standard machine IDs that we know should exist
+const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
 
 // Define known machines with correct name mappings for fallback
 const MACHINE_NAMES = {
@@ -44,21 +48,27 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
+      // Prepare the list of machines to consider - start with standard machines
+      let combinedMachineIds = [...STANDARD_MACHINE_IDS];
+      
       // Fetch the current available machines to determine what exists in the database
       try {
         const allCurrentMachines = await machineService.getMachines();
         console.log("All current machines:", allCurrentMachines.length);
         
-        // Extract IDs from current machines
+        // Extract IDs from current machines and add to our combined list
         const currentMachineIds = allCurrentMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
-        setAvailableMachineIds(currentMachineIds);
-        console.log("Available machine IDs:", currentMachineIds);
+        
+        // Add API machines to our list (removes duplicates using Set)
+        combinedMachineIds = [...new Set([...combinedMachineIds, ...currentMachineIds])];
+        setAvailableMachineIds(combinedMachineIds);
+        console.log("Available machine IDs:", combinedMachineIds);
       } catch (error) {
         console.error("Error fetching available machines:", error);
-        // In case of error, use all standard machines as fallback
-        setAvailableMachineIds(Object.keys(MACHINE_NAMES));
+        // In case of error, use standard machines as fallback
+        setAvailableMachineIds(STANDARD_MACHINE_IDS);
       }
       
       // Get the certification list from our service
@@ -94,14 +104,17 @@ const CertificationsCard = () => {
       setMachineStatuses(statuses);
       
       // Format the machines for display with correct names
-      // only include machines that actually exist in the database OR are special machines (5, 6)
+      // Only filter out "cnc mill" by name, show all standard machines plus API machines
       const formattedMachines = allCertifications
         .filter(machine => {
           const machineId = machine.id.toString();
+          const machineName = MACHINE_NAMES[machineId] || machine.name;
           
           // Check if the machine should be displayed
-          return SPECIAL_MACHINE_IDS.includes(machineId) || // Always include safety cabinet and safety course 
-                 availableMachineIds.includes(machineId);   // Include if it's available in the API
+          return (machineName.toLowerCase() !== "cnc mill") && 
+                 (SPECIAL_MACHINE_IDS.includes(machineId) ||  // Always include safety cabinet and safety course
+                  STANDARD_MACHINE_IDS.includes(machineId) || // Include standard machines
+                  combinedMachineIds.includes(machineId));    // Include if it's available in the API
         })
         .map(machine => {
           const machineId = machine.id.toString();

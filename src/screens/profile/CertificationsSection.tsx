@@ -20,6 +20,9 @@ const KNOWN_MACHINES = {
   "6": { name: "Safety Course", type: "Safety Course" },
 };
 
+// Define standard machine IDs that we know should exist
+const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
+
 // Define special machine IDs that should always be displayed
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 
@@ -59,7 +62,13 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     const types: Record<string, string> = {};
     
     try {
-      // Fetch available machines first to know which ones exist
+      // Populate with known machines for fallback - ensure correct ID mapping
+      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
+        names[id] = machine.name;
+        types[id] = machine.type;
+      });
+      
+      // Fetch available machines from API
       try {
         const allMachines = await machineService.getMachines();
         console.log(`Got ${allMachines.length} machines to check which ones still exist`);
@@ -68,40 +77,30 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         const machineIds = allMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
-        setAvailableMachineIds(machineIds);
-        console.log("Available machine IDs:", machineIds);
+        
+        // Combine API machines with our standard machine IDs
+        const combinedMachineIds = [...new Set([...machineIds, ...STANDARD_MACHINE_IDS])];
+        setAvailableMachineIds(combinedMachineIds);
+        console.log("Available machine IDs:", combinedMachineIds);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        // In case of error, use all known machines as fallback
-        setAvailableMachineIds(Object.keys(KNOWN_MACHINES));
+        // In case of error, use standard machine IDs as fallback
+        setAvailableMachineIds(STANDARD_MACHINE_IDS);
       }
-      
-      // First populate with known machines for fallback - ensure correct ID mapping
-      Object.entries(KNOWN_MACHINES).forEach(([id, machine]) => {
-        names[id] = machine.name;
-        types[id] = machine.type;
-      });
       
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
-      // Filter certifications to only include actually available machines or special machines (5 and 6)
-      const validCertifications = certifications.filter(certId => 
-        availableMachineIds.includes(certId) || 
-        SPECIAL_MACHINE_IDS.includes(certId)
-      );
-      console.log(`Filtered from ${certifications.length} to ${validCertifications.length} valid certifications`);
-      
-      if (validCertifications && validCertifications.length > 0) {
-        // Only fetch unknown machines
-        const unknownCertIds = validCertifications.filter(
+      // Update machine names and types for certifications where needed
+      if (certifications && certifications.length > 0) {
+        // Try to get detailed machine info for any machines we don't know about
+        const unknownCertIds = certifications.filter(
           certId => !KNOWN_MACHINES[certId]
         );
         
         if (unknownCertIds.length > 0) {
           try {
             const allMachines = await machineService.getMachines();
-            console.log(`Got ${allMachines.length} machines to map unknown certifications`);
             
             // Create a map for quick lookup
             const machineMap = {};
@@ -145,9 +144,6 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           }
         }
       }
-      
-      // Update state with valid certifications
-      setUserCertifications(validCertifications);
     } catch (error) {
       console.error("Error in fetchMachineNames:", error);
     } finally {
@@ -167,7 +163,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   };
 
-  // Filter certifications to exclude machines not in availableMachineIds, except for special machines
+  // Filter certifications - only exclude "cnc mill" by name, but keep all standard machines
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
@@ -176,13 +172,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       
       // Filter logic:
       // 1. Always include special machines (safety cabinet and safety course)
-      // 2. Include if it's in the available machines from API
+      // 2. Include if it's in the standard machines
       // 3. Skip machines with name "cnc mill"
-      const isAvailableMachine = SPECIAL_MACHINE_IDS.includes(certId) || 
-                                availableMachineIds.includes(certId);
-                                
-      // Also continue to filter out CNC Mill
-      return machineName && machineName !== "cnc mill" && isAvailableMachine;
+      return (machineName && machineName !== "cnc mill" && 
+              (SPECIAL_MACHINE_IDS.includes(certId) || 
+               STANDARD_MACHINE_IDS.includes(certId) ||
+               availableMachineIds.includes(certId)));
     });
   };
 
