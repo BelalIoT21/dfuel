@@ -206,6 +206,7 @@ class UserDatabase {
             Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
           );
           
+          // Notice we no longer pass userId since it will come from the token
           const response = await apiService.updateProfile(userId, filteredUpdates);
           if (response.data && response.data.success) {
             console.log("Successfully updated user profile via API");
