@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
@@ -31,6 +32,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
 
     setLoading(true);
     try {
+      console.log("Attempting to change password via SecuritySection");
       const success = await changePassword(currentPassword, newPassword);
       if (success) {
         Alert.alert('Success', 'Password changed successfully');
@@ -42,7 +44,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
         Alert.alert('Error', 'Failed to change password');
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'Something went wrong');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }

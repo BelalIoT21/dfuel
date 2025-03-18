@@ -221,15 +221,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
+      console.log("AuthContext: Updating profile with:", updates);
       const success = await userDatabase.updateUserProfile(user.id, updates);
       
       if (success) {
+        console.log("Profile update successful, updating user state");
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
+      console.log("Profile update failed in database layer");
       return false;
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -241,28 +244,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      console.log("Attempting to change password in AuthContext...");
+      console.log("AuthContext: Attempting to change password");
       
-      try {
-        console.log("Attempting to change password via API...");
-        const response = await apiService.changePassword(currentPassword, newPassword);
-        if (response.data && !response.error) {
-          console.log("Successfully changed password via API");
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error when changing password:", apiError);
-      }
-      
-      console.log("Falling back to userDatabase.changePassword...");
+      console.log("Using userDatabase.changePassword directly...");
       const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
       
-      if (success) {
-        console.log("Password changed successfully with userDatabase");
-        return true;
-      }
-      
-      throw new Error('Current password is incorrect or service unavailable');
+      return success;
     } catch (error) {
       console.error('Error changing password:', error);
       throw error;

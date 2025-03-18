@@ -16,6 +16,7 @@ const PersonalInfoCard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -53,9 +54,29 @@ const PersonalInfoCard = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    updateProfile({ name, email });
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    if (!name.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      console.log("Attempting to update profile with:", { name, email });
+      const success = await updateProfile({ name, email });
+      
+      if (success) {
+        toast.success("Profile updated successfully");
+        setIsEditing(false);
+      } else {
+        toast.error("Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("An error occurred while updating profile");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -139,8 +160,25 @@ const PersonalInfoCard = () => {
               />
             </div>
             <div className="flex gap-2 pt-2">
-              <Button onClick={handleSaveProfile} className="bg-purple-600 hover:bg-purple-700">Save</Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)} className="border-purple-200">Cancel</Button>
+              <Button 
+                onClick={handleSaveProfile} 
+                className="bg-purple-600 hover:bg-purple-700"
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Saving..." : "Save"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setName(user.name || '');
+                  setEmail(user.email || '');
+                }} 
+                className="border-purple-200"
+                disabled={isUpdating}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         ) : (

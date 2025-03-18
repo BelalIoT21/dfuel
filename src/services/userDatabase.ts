@@ -178,24 +178,17 @@ class UserDatabase {
     try {
       console.log(`UserDatabase: Updating profile for user ${userId}`, updates);
       
-      // Try MongoDB directly for password changes
-      if (updates.password) {
-        console.log("Update includes password change, using MongoDB directly");
-        const mongoSuccess = await mongoDbService.updateUser(userId, updates);
-        if (mongoSuccess) {
-          console.log("Successfully updated user profile with password in MongoDB");
-          return true;
-        }
-      } else {
-        // For non-password updates, try MongoDB
-        const mongoSuccess = await mongoDbService.updateUser(userId, updates);
-        if (mongoSuccess) {
-          console.log("Successfully updated user profile in MongoDB");
-          return true;
-        }
+      // Use MongoDB directly
+      console.log("Using MongoDB directly for profile update...");
+      const mongoSuccess = await mongoDbService.updateUser(userId, updates);
+      
+      if (mongoSuccess) {
+        console.log("Successfully updated user profile in MongoDB");
+        return true;
       }
       
       // Last resort: try userService (localStorage)
+      console.log("Falling back to localStorage for profile update...");
       const localSuccess = await userService.updateUser(userId, updates);
       console.log(`LocalStorage update result: ${localSuccess}`);
       return localSuccess;
@@ -221,7 +214,6 @@ class UserDatabase {
       
       // Update password directly in MongoDB
       const success = await mongoDbService.updateUser(userId, { 
-        currentPassword,
         password: newPassword 
       });
       
@@ -230,7 +222,7 @@ class UserDatabase {
         return true;
       }
       
-      throw new Error('Current password is incorrect or service unavailable');
+      throw new Error('Password change failed or service unavailable');
     } catch (error) {
       console.error('Error in changePassword:', error);
       throw error;
