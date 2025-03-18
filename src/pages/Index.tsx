@@ -28,14 +28,17 @@ const Index = () => {
     loadEnv();
     console.log("Environment loaded");
     
+    // Log available endpoints for debugging
     const endpoints = getApiEndpoints();
     console.log("Available API endpoints:", endpoints);
     
+    // Store initial window height
     originalHeightRef.current = window.innerHeight;
     console.log("Original window height:", originalHeightRef.current);
   }, []);
 
   useEffect(() => {
+    // Enhanced keyboard detection
     const handleKeyboardVisibility = () => {
       if (isAndroid() || isIOS()) {
         const currentHeight = window.innerHeight;
@@ -51,13 +54,16 @@ const Index = () => {
       }
     };
     
+    // Set up event listeners based on platform
     if (isAndroid() || isIOS()) {
       if (window.visualViewport) {
+        // More precise keyboard detection for modern browsers
         window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
         return () => {
           window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
         };
       } else {
+        // Fallback for browsers without visualViewport API
         window.addEventListener('resize', handleKeyboardVisibility);
         return () => {
           window.removeEventListener('resize', handleKeyboardVisibility);
@@ -68,6 +74,7 @@ const Index = () => {
 
   useEffect(() => {
     const checkServer = async () => {
+      // Prevent multiple concurrent checks
       if (checkingRef.current) {
         console.log("Server check already in progress, skipping");
         return;
@@ -80,6 +87,7 @@ const Index = () => {
         const serverIP = getEnv('CUSTOM_SERVER_IP');
         console.log(`Using server IP: ${serverIP}`);
         
+        // Try multiple endpoints
         const endpoints = [
           `http://${serverIP}:4000/api/health`,
           'http://localhost:4000/api/health',
@@ -98,8 +106,9 @@ const Index = () => {
           
           attemptedEndpointsRef.current.push(url);
           
+          // Set a timeout to prevent hanging on the fetch request
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased timeout
           
           try {
             const response = await fetch(url, {
@@ -112,6 +121,7 @@ const Index = () => {
             });
             clearTimeout(timeoutId);
             
+            // Log the complete response for debugging
             console.log(`Response from ${url}:`, {
               status: response.status,
               statusText: response.statusText,
@@ -121,9 +131,11 @@ const Index = () => {
             if (response.ok) {
               console.log("Server health check successful");
               
+              // Only update status and show toast if status changed
               if (serverStatus !== 'connected') {
                 setServerStatus('connected');
                 
+                // Only show toast if status changed from a different value
                 if (prevServerStatusRef.current !== 'connected') {
                   toast({
                     title: 'Connected',
@@ -145,6 +157,7 @@ const Index = () => {
           }
         }
         
+        // If we couldn't connect with any direct endpoint, try the apiService
         if (!connected) {
           console.log("Trying API service health check as fallback");
           try {
@@ -152,9 +165,11 @@ const Index = () => {
             console.log("API health check response:", apiResponse);
             
             if (apiResponse.data && apiResponse.status === 200) {
+              // Only update status and show toast if status changed
               if (serverStatus !== 'connected') {
                 setServerStatus('connected');
                 
+                // Only show toast if status changed from a different value
                 if (prevServerStatusRef.current !== 'connected') {
                   toast({
                     title: 'Connected',
@@ -171,12 +186,15 @@ const Index = () => {
           }
         }
         
+        // If we still couldn't connect, set status to disconnected
         if (!connected) {
           console.log("All connection attempts failed");
           
+          // Only update status and show toast if status changed
           if (serverStatus !== 'disconnected') {
             setServerStatus('disconnected');
             
+            // Only show toast if status changed from a different value
             if (prevServerStatusRef.current !== 'disconnected') {
               toast({
                 title: 'Disconnected',
@@ -193,10 +211,12 @@ const Index = () => {
       }
     };
     
+    // Initial check with a short delay to let the app initialize
     setTimeout(() => {
       checkServer();
     }, 1000);
     
+    // Check server at a reduced frequency (45 seconds)
     const intervalId = setInterval(checkServer, 45000);
     
     return () => clearInterval(intervalId);
@@ -230,7 +250,7 @@ const Index = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
         <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
       </div>
     );
@@ -238,12 +258,13 @@ const Index = () => {
 
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
         <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
       </div>
     );
   }
 
+  // Enhanced keyboard handling with stronger transform
   const containerStyle = keyboardVisible && isMobile
     ? { 
         minHeight: '100vh', 
@@ -252,22 +273,20 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-60vh)',
-        backgroundColor: '#FFFFFF'
+        transform: 'translateY(-40vh)'  // Increased transform to move content up more
       } 
     : { 
         minHeight: '100vh', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(0)',
-        backgroundColor: '#FFFFFF'
+        transform: 'translateY(0)'
       };
 
   return (
     <div 
-      className="flex flex-col items-center justify-center bg-white p-4" 
+      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
@@ -280,12 +299,12 @@ const Index = () => {
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Connected
+                  Server: Connected
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Disconnected
+                  Server: Disconnected
                 </>
               )}
             </div>

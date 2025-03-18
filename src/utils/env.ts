@@ -21,8 +21,9 @@ export const loadEnv = (): void => {
   // This function is a placeholder for loading environment variables
   console.log('Environment variables loaded');
   
-  // Set the default server IP to be consistent across platforms
-  setEnv('CUSTOM_SERVER_IP', 'localhost');
+  // Set the default server IP - Based on platform
+  const pcIP = '192.168.47.238'; // Store PC IP for Android
+  setEnv('CUSTOM_SERVER_IP', pcIP);
   console.log('Server IP set to:', getEnv('CUSTOM_SERVER_IP'));
 };
 
@@ -44,9 +45,16 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // Use localhost:4000 for all platforms for consistency
+  // For Android, use the PC IP
   if (key === 'CUSTOM_SERVER_IP') {
-    return 'localhost';
+    if (isAndroid()) {
+      return '192.168.47.238'; // PC's IP for Android
+    }
+    
+    // For web or iOS, prefer localhost
+    if (!isCapacitor()) {
+      return 'localhost';
+    }
   }
   
   if (typeof window !== 'undefined' && (window as any).__ENV__) {
@@ -57,7 +65,12 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 
 // Get the local server IP for the device being used
 export const getLocalServerIP = (): string => {
-  // Always return localhost for consistency
+  // Return the appropriate IP based on platform
+  if (isAndroid()) {
+    return '192.168.47.238'; // PC's IP for Android
+  }
+  
+  // For web or iOS, prefer localhost
   return 'localhost';
 };
 
@@ -82,7 +95,18 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  // Use consistent localhost:4000 endpoints for all platforms
+  // Get the appropriate server IP based on platform
+  const serverIP = getLocalServerIP();
+  
+  if (isAndroid()) {
+    // Android should use PC's IP address
+    return [
+      `http://192.168.47.238:4000/api`,
+      '/api' // Relative fallback
+    ];
+  }
+  
+  // Web and iOS should use localhost first
   return [
     `http://localhost:4000/api`,
     `http://127.0.0.1:4000/api`,
@@ -99,8 +123,10 @@ export const getApiUrl = (): string => {
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   
-  // For development, always use localhost:4000
-  return 'http://localhost:4000/api';
+  // For development, get the first endpoint from the list
+  const endpoints = getApiEndpoints();
+  console.log('Available API endpoints:', endpoints);
+  return endpoints[0];
 };
 
 // Ensure API endpoint always has correct format
