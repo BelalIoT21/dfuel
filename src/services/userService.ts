@@ -24,8 +24,8 @@ export class UserService {
     return databaseService.registerUser(email, password, name);
   }
   
-  // Update user profile
-  async updateUserProfile(userId: string, updates: {name?: string, email?: string}): Promise<boolean> {
+  // Update user profile - fixed to use updateProfile method name
+  async updateProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
     // Check if user is admin
     const user = await databaseService.findUserById(userId);
     if (user?.isAdmin && updates.email) {
@@ -34,6 +34,7 @@ export class UserService {
       setAdminCredentials(updates.email, adminPassword);
     }
     
+    // Call the correct method in databaseService
     return databaseService.updateUserProfile(userId, updates);
   }
 
@@ -61,7 +62,6 @@ export class UserService {
     return success;
   }
 
-  
   // Request password reset
   async requestPasswordReset(email: string): Promise<boolean> {
     const user = await databaseService.findUserByEmail(email);

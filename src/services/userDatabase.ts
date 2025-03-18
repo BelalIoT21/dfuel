@@ -187,11 +187,11 @@ class UserDatabase {
         return true;
       }
       
-      // Last resort: try userService (localStorage)
+      // Last resort: try localStorage service
       console.log("Falling back to localStorage for profile update...");
-      const localSuccess = await userService.updateUser(userId, updates);
-      console.log(`LocalStorage update result: ${localSuccess}`);
-      return localSuccess;
+      const localStorageSuccess = await userService.updateProfile(userId, updates);
+      console.log(`LocalStorage update result: ${localStorageSuccess}`);
+      return localStorageSuccess;
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
       return false;
