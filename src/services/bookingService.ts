@@ -62,6 +62,17 @@ class BookingService {
   async createBooking(userId, machineId, date, time) {
     console.log(`BookingService.createBooking: Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
     
+    // Check for missing information
+    if (!userId || !machineId || !date || !time) {
+      console.error('Missing required booking information:', { userId, machineId, date, time });
+      toast({
+        title: "Missing Information",
+        description: "Please ensure all booking details are provided",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
     try {
       if (isWeb) {
         try {
@@ -69,7 +80,7 @@ class BookingService {
           const userIdStr = String(userId);
           const machineIdStr = String(machineId);
           
-          console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}`);
+          console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${date}, time: ${time}`);
           const response = await apiService.addBooking(userIdStr, machineIdStr, date, time);
           if (response.data && response.data.success) {
             console.log('Successfully created booking via API');
@@ -89,6 +100,15 @@ class BookingService {
       // Convert userId and machineId to strings before passing to MongoDB service
       const userIdStr = String(userId);
       const machineIdStr = String(machineId);
+      
+      // Log the exact data being sent to MongoDB
+      console.log('Sending to MongoDB:', {
+        userId: userIdStr,
+        machineId: machineIdStr,
+        date,
+        time
+      });
+      
       const success = await mongoDbService.createBooking(userIdStr, machineIdStr, date, time);
       
       if (success) {

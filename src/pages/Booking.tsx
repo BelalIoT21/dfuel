@@ -96,6 +96,13 @@ const BookingPage = () => {
 
   const handleBooking = async () => {
     if (!user || !machine || !selectedDate || !selectedTime) {
+      console.error('Missing booking information:', {
+        user: !!user,
+        machine: !!machine,
+        selectedDate: !!selectedDate,
+        selectedTime: !!selectedTime
+      });
+      
       toast({
         title: 'Missing information',
         description: 'Please select a date and time for your booking',
@@ -104,25 +111,19 @@ const BookingPage = () => {
       return;
     }
     
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-    const dateTimeSlot = `${formattedDate}-${selectedTime}`;
-    
-    // Double-check if the slot is still available
-    if (bookedSlots.includes(dateTimeSlot)) {
-      toast({
-        title: 'Time slot unavailable',
-        description: 'This time slot has just been booked. Please select another time.',
-        variant: 'destructive'
-      });
-      // Refresh available time slots
-      updateAvailableTimeSlots(selectedDate);
-      return;
-    }
-    
     try {
       setSubmitting(true);
-      console.log('Submitting booking...');
-      console.log(`Machine ID: ${machine.id || machine._id}, Machine Name: ${machine.name}`);
+      
+      // Ensure date is properly formatted
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      console.log('Submitting booking with data:', {
+        userId: user.id,
+        machineId: machine.id || machine._id,
+        date: formattedDate,
+        time: selectedTime,
+        machineName: machine.name
+      });
       
       const success = await bookingService.createBooking(
         user.id,
@@ -132,9 +133,6 @@ const BookingPage = () => {
       );
       
       if (success) {
-        // Add the newly booked slot to the list
-        setBookedSlots(prev => [...prev, dateTimeSlot]);
-        
         toast({
           title: 'Booking Successful',
           description: `You have booked ${machine.name} on ${formattedDate} at ${selectedTime}`,
