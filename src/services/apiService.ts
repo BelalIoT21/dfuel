@@ -32,11 +32,24 @@ export const apiService = {
   // Set token
   setToken,
   
+  // Health check
+  async checkHealth() {
+    try {
+      console.log(`Making API request: GET /health`);
+      const response = await axios.get(`${BASE_URL}/health`);
+      return { data: response.data, status: response.status };
+    } catch (error: any) {
+      console.error('API health check error:', error.response?.data || error.message);
+      return { error: error.response?.data?.message || error.message };
+    }
+  },
+  
   // Auth endpoints
   async login(email: string, password: string) {
     try {
       console.log(`Making API request: POST /auth/login`);
       const response = await axios.post(`${BASE_URL}/auth/login`, { email, password });
+      console.log('Login response:', response.data);
       return { data: response.data };
     } catch (error: any) {
       console.error('API login error:', error.response?.data || error.message);
@@ -59,7 +72,6 @@ export const apiService = {
     }
   },
   
-  // User endpoints
   async getCurrentUser() {
     try {
       console.log(`Making API request: GET /auth/me`);
@@ -93,7 +105,6 @@ export const apiService = {
     }
   },
   
-  // NEW: Delete user
   async deleteUser(userId: string) {
     try {
       console.log(`Making API request: DELETE /users/${userId}`);
