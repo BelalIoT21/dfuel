@@ -44,25 +44,31 @@ const Index = () => {
     
     if (isAndroid() || isIOS()) {
       if (isAndroid()) {
+        // Better keyboard detection for Android
+        const originalHeight = window.innerHeight;
         window.addEventListener('resize', () => {
-          const isKeyboardVisible = window.innerHeight < window.outerHeight * 0.8;
+          const isKeyboardVisible = window.innerHeight < originalHeight * 0.75;
           setKeyboardVisible(isKeyboardVisible);
+          console.log(`Keyboard detection: ${isKeyboardVisible ? 'shown' : 'hidden'}, height: ${window.innerHeight}/${originalHeight}`);
         });
       } else if (isIOS()) {
         if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', () => {
-            setKeyboardVisible(window.visualViewport!.height < window.innerHeight * 0.85);
-          });
+          // More precise keyboard detection for iOS
+          const viewportHandler = () => {
+            const isKeyboardOpen = window.visualViewport!.height < window.innerHeight * 0.75;
+            setKeyboardVisible(isKeyboardOpen);
+            console.log(`iOS keyboard: ${isKeyboardOpen ? 'shown' : 'hidden'}, viewport: ${window.visualViewport!.height}/${window.innerHeight}`);
+          };
+          
+          window.visualViewport.addEventListener('resize', viewportHandler);
+          window.visualViewport.addEventListener('scroll', viewportHandler);
+          
+          return () => {
+            window.visualViewport!.removeEventListener('resize', viewportHandler);
+            window.visualViewport!.removeEventListener('scroll', viewportHandler);
+          };
         }
       }
-      
-      return () => {
-        if (isAndroid()) {
-          window.removeEventListener('resize', () => {});
-        } else if (isIOS() && window.visualViewport) {
-          window.visualViewport.removeEventListener('resize', () => {});
-        }
-      };
     }
   }, []);
 
@@ -258,34 +264,47 @@ const Index = () => {
     );
   }
 
+  // Enhanced keyboard handling
   const containerStyle = keyboardVisible && isMobile
-    ? { minHeight: '100vh', paddingBottom: '40vh', transition: 'padding 0.3s ease' }
-    : { minHeight: '100vh', transition: 'padding 0.3s ease' };
+    ? { 
+        minHeight: '100vh', 
+        paddingBottom: '0', 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'flex-start', 
+        transition: 'all 0.3s ease',
+        transform: 'translateY(-20vh)'
+      } 
+    : { 
+        minHeight: '100vh', 
+        transition: 'all 0.3s ease',
+        transform: 'translateY(0)'
+      };
 
   return (
     <div 
-      className="flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mb-auto' : 'my-auto'}`}>
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          {serverStatus && (
+          {serverStatus && !keyboardVisible && (
             <div className={isConnected
               ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
               : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Server: Connected to {getEnv('CUSTOM_SERVER_IP')}:4000
+                  Server: Connected to {getLocalServerIP()}:4000
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Server: Unable to connect to {getEnv('CUSTOM_SERVER_IP')}:4000
+                  Server: Unable to connect to {getLocalServerIP()}:4000
                 </>
               )}
             </div>
