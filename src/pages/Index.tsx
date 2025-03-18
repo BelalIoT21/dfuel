@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -18,6 +18,7 @@ const Index = () => {
   const { user, loading: authLoading, login, register } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const prevServerStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     loadEnv();
@@ -71,36 +72,63 @@ const Index = () => {
         
         if (response.ok) {
           console.log("Server health check successful");
-          setServerStatus('connected');
           
-          toast({
-            title: 'Server Connected',
-            description: `Successfully connected to the backend server at ${serverIP}:4000`,
-          });
+          // Only update status and show toast if status changed
+          if (serverStatus !== 'connected') {
+            setServerStatus('connected');
+            
+            // Only show toast if status changed from a different value
+            if (prevServerStatusRef.current !== 'connected') {
+              toast({
+                title: 'Server Connected',
+                description: `Successfully connected to the backend server at ${serverIP}:4000`,
+              });
+            }
+          }
+          
+          prevServerStatusRef.current = 'connected';
         } else {
           throw new Error(`Server returned ${response.status}`);
         }
       } catch (error) {
         console.error("Server connection error:", error);
-        setServerStatus('disconnected');
         
-        let errorMessage = `Could not connect to the backend server at 192.168.47.238:4000. Please ensure the server is running.`;
+        // Only update status and show toast if status changed
+        if (serverStatus !== 'disconnected') {
+          setServerStatus('disconnected');
+          
+          // Only show toast if status changed from a different value
+          if (prevServerStatusRef.current !== 'disconnected') {
+            let errorMessage = `Could not connect to the backend server at 192.168.47.238:4000. Please ensure the server is running.`;
+            
+            toast({
+              title: 'Server Connection Failed',
+              description: errorMessage,
+              variant: 'destructive'
+            });
+          }
+        }
         
-        toast({
-          title: 'Server Connection Failed',
-          description: errorMessage,
-          variant: 'destructive'
-        });
+        prevServerStatusRef.current = 'disconnected';
         
         try {
           const apiResponse = await apiService.checkHealth();
           if (apiResponse.data && apiResponse.status === 200) {
-            setServerStatus('connected via API');
             
-            toast({
-              title: 'API Server Connected',
-              description: 'Connected via alternative API endpoint',
-            });
+            // Only update status and show toast if status changed
+            if (serverStatus !== 'connected via API') {
+              setServerStatus('connected via API');
+              
+              // Only show toast if status changed from a different value
+              if (prevServerStatusRef.current !== 'connected via API') {
+                toast({
+                  title: 'API Server Connected',
+                  description: 'Connected via alternative API endpoint',
+                });
+              }
+            }
+            
+            prevServerStatusRef.current = 'connected via API';
           }
         } catch (apiError) {
           console.error("API service connection also failed:", apiError);
@@ -112,7 +140,7 @@ const Index = () => {
     const intervalId = setInterval(checkServer, 10000);
     
     return () => clearInterval(intervalId);
-  }, []);
+  }, [serverStatus]);
 
   useEffect(() => {
     if (user && !authLoading) {
