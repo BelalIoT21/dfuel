@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { getHealth } from '../controllers/healthController';
+import { healthCheck } from '../controllers/healthController';
 
 const router = express.Router();
 
@@ -13,6 +13,6 @@ router.use((req, res, next) => {
 });
 
 // Get system health status - used for connectivity checks
-router.get('/', getHealth);
+router.get('/', healthCheck);
 
 export default router;

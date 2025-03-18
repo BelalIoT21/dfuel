@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 
 // Health check controller
-export const healthCheck = async (req: Request, res: Response) => {
+export const getHealth = async (req: Request, res: Response) => {
   try {
     const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     
@@ -50,3 +50,6 @@ export const healthCheck = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Export the healthCheck function as an alias for backward compatibility
+export const healthCheck = getHealth;
