@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import mongoose from 'mongoose';
 import { Booking } from '../../../server/src/models/Booking';
@@ -214,22 +213,99 @@ class MongoBookingService {
   
   async deleteBooking(bookingId: string): Promise<boolean> {
     await this.initCollections();
-    if (!this.bookingsCollection) {
-      console.error("Bookings collection not initialized");
+    if (!this.bookingsCollection || !this.usersCollection) {
+      console.error("Collections not initialized");
       return false;
     }
     
     try {
-      let result;
+      console.log(`Attempting to delete booking ${bookingId}`);
       
+      // Find the booking first to get its details
+      let booking = null;
+      let bookingIdToUse = bookingId;
+      
+      // Try finding by MongoDB ObjectId
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
-        result = await this.bookingsCollection.deleteOne({ _id: new mongoose.Types.ObjectId(bookingId) });
-      } else {
-        result = await this.bookingsCollection.deleteOne({ clientId: bookingId });
+        booking = await this.bookingsCollection.findOne({ 
+          _id: new mongoose.Types.ObjectId(bookingId) 
+        });
+        
+        if (booking) {
+          console.log(`Found booking with ObjectId: ${bookingId}`);
+          bookingIdToUse = booking._id;
+        }
       }
       
-      console.log(`Booking deleted: ${result.deletedCount > 0}`);
-      return result.deletedCount > 0;
+      // If not found, try with clientId
+      if (!booking) {
+        booking = await this.bookingsCollection.findOne({ clientId: bookingId });
+        if (booking) {
+          console.log(`Found booking with clientId: ${bookingId}`);
+          bookingIdToUse = booking._id;
+        }
+      }
+      
+      // If still not found, try with string id field
+      if (!booking) {
+        booking = await this.bookingsCollection.findOne({ id: bookingId });
+        if (booking) {
+          console.log(`Found booking with id field: ${bookingId}`);
+          bookingIdToUse = booking._id;
+        }
+      }
+      
+      if (!booking) {
+        console.log(`No booking found with any ID format: ${bookingId}`);
+        return false;
+      }
+      
+      // Get user ID from the booking
+      const userId = booking.user;
+      console.log(`Booking belongs to user: ${userId}`);
+      
+      // Delete the booking
+      let result;
+      if (mongoose.Types.ObjectId.isValid(bookingIdToUse)) {
+        result = await this.bookingsCollection.deleteOne({ 
+          _id: new mongoose.Types.ObjectId(bookingIdToUse) 
+        });
+      } else {
+        result = await this.bookingsCollection.deleteOne({ _id: bookingIdToUse });
+      }
+      
+      console.log(`Booking deletion result:`, result);
+      
+      if (result.deletedCount === 0) {
+        console.log(`No booking was deleted with ID: ${bookingIdToUse}`);
+        return false;
+      }
+      
+      // Update user's bookings array to remove this booking
+      if (userId) {
+        try {
+          let userIdToUse = userId;
+          
+          // Convert to ObjectId if valid
+          if (mongoose.Types.ObjectId.isValid(userId)) {
+            userIdToUse = new mongoose.Types.ObjectId(userId);
+          }
+          
+          // Find the user and update their bookings array
+          const userUpdateResult = await this.usersCollection.updateOne(
+            { _id: userIdToUse },
+            { $pull: { bookings: bookingIdToUse } }
+          );
+          
+          console.log(`User update result:`, userUpdateResult);
+        } catch (userError) {
+          console.error(`Error updating user's bookings array:`, userError);
+          // Continue since the booking was deleted successfully
+        }
+      }
+      
+      console.log(`Successfully deleted booking: ${bookingId}`);
+      return true;
     } catch (error) {
       console.error(`Error deleting booking ${bookingId} from MongoDB:`, error);
       return false;

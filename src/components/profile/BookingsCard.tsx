@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -27,17 +28,21 @@ const BookingsCard = () => {
   const [bookings, setBookings] = useState([]);
   const { toast } = useToast();
   
+  // Fetch bookings when component mounts or user changes
   useEffect(() => {
     const loadBookings = async () => {
       if (user && user.id) {
         try {
           console.log("Loading bookings for user:", user.id);
+          setIsRefreshing(true);
           const userBookings = await bookingService.getUserBookings(user.id);
           console.log("Retrieved bookings from service:", userBookings);
           setBookings(userBookings || []);
         } catch (error) {
           console.error("Error loading bookings:", error);
           loadBookingsFromStorage();
+        } finally {
+          setIsRefreshing(false);
         }
       }
     };
@@ -132,28 +137,38 @@ const BookingsCard = () => {
     setIsProcessing(true);
     
     try {
+      console.log("Attempting to delete booking:", bookingToDelete.id || bookingToDelete._id);
+      
       let success = false;
+      let errorMessage = '';
+      
+      // First try MongoDB service
       try {
         success = await mongoDbService.deleteBooking(bookingToDelete.id || bookingToDelete._id);
         console.log(`MongoDB deleteBooking result: ${success}`);
       } catch (mongoError) {
         console.error("MongoDB delete booking error:", mongoError);
+        errorMessage = mongoError.message || 'MongoDB deletion failed';
       }
       
+      // If MongoDB fails, try booking service API
       if (!success) {
-        success = await bookingService.deleteBooking(bookingToDelete.id || bookingToDelete._id);
+        try {
+          success = await bookingService.deleteBooking(bookingToDelete.id || bookingToDelete._id);
+          console.log(`BookingService deleteBooking result: ${success}`);
+        } catch (bookingError) {
+          console.error("BookingService delete error:", bookingError);
+          errorMessage = errorMessage || bookingError.message || 'API deletion failed';
+        }
       }
       
-      if (success) {
-        toast({
-          title: "Booking Deleted",
-          description: "Your booking has been deleted successfully.",
-        });
-      }
-      
-      const updatedBookings = bookings.filter(b => (b.id || b._id) !== (bookingToDelete.id || bookingToDelete._id));
+      // Update UI and local state regardless of deletion success
+      const updatedBookings = bookings.filter(b => 
+        (b.id || b._id) !== (bookingToDelete.id || bookingToDelete._id)
+      );
       setBookings(updatedBookings);
       
+      // Update local storage to maintain UI consistency
       const storedUser = localStorage.getItem('learnit_user');
       if (storedUser) {
         try {
@@ -164,30 +179,35 @@ const BookingsCard = () => {
           console.error("Error updating localStorage after deletion:", e);
         }
       }
-    } catch (error) {
-      console.error("Error deleting booking:", error);
       
-      const updatedBookings = bookings.filter(b => (b.id || b._id) !== (bookingToDelete.id || bookingToDelete._id));
-      setBookings(updatedBookings);
-      
-      const storedUser = localStorage.getItem('learnit_user');
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          parsedUser.bookings = updatedBookings;
-          localStorage.setItem('learnit_user', JSON.stringify(parsedUser));
-        } catch (e) {
-          console.error("Error updating localStorage after deletion error:", e);
-        }
+      // Show appropriate toast
+      if (success) {
+        toast({
+          title: "Booking Deleted",
+          description: "Your booking has been deleted successfully."
+        });
+      } else {
+        toast({
+          title: "Booking Removed",
+          description: "The booking has been removed from your profile." + 
+                      (errorMessage ? " Server reported: " + errorMessage : ""),
+        });
+        
+        // Schedule a refresh to get the latest state from server
+        setTimeout(() => handleRefreshBookings(), 1000);
       }
+    } catch (error) {
+      console.error("Error in confirmDeleteBooking:", error);
       
       toast({
-        title: "Booking Removed",
-        description: "The booking has been removed from your profile.",
+        title: "Error",
+        description: "There was an issue deleting your booking. Please refresh and try again.",
+        variant: "destructive"
       });
     } finally {
       setIsProcessing(false);
       setDeleteDialogOpen(false);
+      setBookingToDelete(null);
     }
   };
 
@@ -196,6 +216,7 @@ const BookingsCard = () => {
     
     try {
       if (user && user.id) {
+        console.log("Refreshing bookings for user:", user.id);
         const userBookings = await bookingService.getUserBookings(user.id);
         console.log("Refreshed bookings from service:", userBookings);
         setBookings(userBookings || []);
@@ -267,7 +288,7 @@ const BookingsCard = () => {
     try {
       if (!dateString) return '';
       
-      if (typeof dateString === 'string' && dateString.includes('T') && dateString.includes('Z')) {
+      if (typeof dateString === 'string' && dateString.includes('T')) {
         const date = parseISO(dateString);
         return format(date, 'yyyy-MM-dd');
       }
@@ -326,6 +347,7 @@ const BookingsCard = () => {
         </CardContent>
       </Card>
 
+      {/* Booking details dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -381,6 +403,7 @@ const BookingsCard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -417,7 +440,12 @@ const BookingsCard = () => {
               onClick={confirmDeleteBooking}
               disabled={isProcessing}
             >
-              {isProcessing ? "Deleting..." : "Delete Booking"}
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : "Delete Booking"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -206,13 +206,26 @@ class BookingService {
       
       if (isWeb) {
         try {
-          const response = await apiService.deleteBooking(bookingId);
-          if (response.status === 200) {
-            console.log('Successfully deleted booking via API');
+          // First try to use the auth specific endpoint which is more reliable
+          console.log(`Deleting booking via auth API endpoint`);
+          const response = await apiService.delete(`auth/bookings/${bookingId}`);
+          if (response.data && response.data.success) {
+            console.log('Successfully deleted booking via auth API');
             return true;
           }
-        } catch (error) {
-          console.error('API error deleting booking:', error);
+        } catch (authApiError) {
+          console.error('Auth API error deleting booking:', authApiError);
+          // Fall back to the standard booking endpoint
+          try {
+            const response = await apiService.delete(`bookings/${bookingId}`);
+            if (response.status === 200) {
+              console.log('Successfully deleted booking via standard API');
+              return true;
+            }
+          } catch (standardApiError) {
+            console.error('Standard API error deleting booking:', standardApiError);
+            // Continue to MongoDB deletion attempt
+          }
         }
       }
       
@@ -225,7 +238,7 @@ class BookingService {
         return true;
       }
       
-      console.error('Failed to delete booking');
+      console.error('Failed to delete booking through any method');
       return false;
     } catch (error) {
       console.error('Error in deleteBooking:', error);

@@ -333,9 +333,27 @@ class MongoDbService {
 
   async deleteBooking(bookingId: string) {
     if (isWeb) {
+      console.log("MongoDB access attempted from web environment, using API fallback");
       try {
+        // First try the auth API endpoint (more reliable)
+        try {
+          console.log(`Deleting booking via auth API: ${bookingId}`);
+          const authResponse = await apiService.delete(`auth/bookings/${bookingId}`);
+          if (authResponse.data && authResponse.data.success) {
+            console.log("Successfully deleted booking via auth API");
+            return true;
+          }
+        } catch (authError) {
+          console.error(`Error deleting booking ${bookingId} via auth API:`, authError);
+        }
+        
+        // Fall back to standard booking endpoint
+        console.log(`Deleting booking via standard API: ${bookingId}`);
         const response = await apiService.delete(`bookings/${bookingId}`);
-        return response.status === 200;
+        const success = response.status === 200 || 
+                      (response.data && response.data.success);
+        console.log(`API booking deletion result: ${success}`);
+        return success;
       } catch (error) {
         console.error(`Error deleting booking ${bookingId} via API:`, error);
         return false;
@@ -343,11 +361,17 @@ class MongoDbService {
     }
     
     try {
+      if (!bookingId) {
+        console.error("Invalid bookingId passed to deleteBooking");
+        return false;
+      }
+      
+      console.log(`MongoDbService: Deleting booking ${bookingId}`);
       const success = await mongoBookingService.deleteBooking(bookingId);
       console.log(`MongoDB delete booking result: ${success}`);
       return success;
     } catch (error) {
-      console.error(`Error deleting booking ${bookingId} from MongoDB:`, error);
+      console.error(`Error deleting booking ${bookingId}:`, error);
       return false;
     }
   }

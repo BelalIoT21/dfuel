@@ -29,7 +29,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
       }
       
       // Handle ISO strings with timezone indicator
-      if (typeof dateString === 'string' && dateString.includes('T') && dateString.includes('Z')) {
+      if (typeof dateString === 'string' && dateString.includes('T')) {
         const date = parseISO(dateString);
         return format(date, 'yyyy-MM-dd');
       }
