@@ -23,6 +23,11 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
       return;
     }
 
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'New password must be at least 6 characters long');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       Alert.alert('Error', 'New passwords do not match');
       return;

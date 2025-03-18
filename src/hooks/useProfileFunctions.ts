@@ -2,6 +2,7 @@
 import { User } from '@/types/database';
 import mongoDbService from '@/services/mongoDbService';
 import { useToast } from '@/hooks/use-toast';
+import { apiService } from '@/services/apiService';
 
 export const useProfileFunctions = (
   user: User | null, 
@@ -85,11 +86,11 @@ export const useProfileFunctions = (
         return true;
       }
 
-      // Use MongoDB directly for profile updates
-      console.log("Calling mongoDbService.updateUser with:", user.id, updates);
-      const success = await mongoDbService.updateUser(user.id, updates);
+      // Use API service directly to update profile
+      console.log("Calling apiService.updateProfile with:", user.id, updates);
+      const response = await apiService.updateProfile(user.id, updates);
       
-      if (success) {
+      if (response.data && response.data.success) {
         // Create a new user object with the updated details for state update
         const updatedUser = { ...user, ...updates };
         
@@ -103,10 +104,10 @@ export const useProfileFunctions = (
         });
         return true;
       } else {
-        console.log("MongoDB update failed");
+        console.log("Profile update failed");
         toast({
           title: "Error",
-          description: "Failed to update profile in database",
+          description: response.error || "Failed to update profile in database",
           variant: "destructive"
         });
         return false;
@@ -153,23 +154,22 @@ export const useProfileFunctions = (
         return false;
       }
 
-      // Use mongoDbService directly for password verification and update
-      console.log("Calling mongoDbService.updateUser for password change");
-      const success = await mongoDbService.updateUser(user.id, { 
-        password: newPassword,
-        currentPassword: currentPassword
-      });
+      // Use apiService directly for password change
+      console.log("Calling apiService.changePassword");
+      const response = await apiService.changePassword(currentPassword, newPassword);
       
-      if (success) {
+      if (response.data && response.data.success) {
         toast({
           title: "Password changed",
           description: "Your password has been changed successfully."
         });
         return true;
       } else {
+        const errorMessage = response.error || "Failed to change password. Current password may be incorrect.";
+        console.error("Password change failed:", errorMessage);
         toast({
           title: "Error",
-          description: "Failed to change password. Current password may be incorrect.",
+          description: errorMessage,
           variant: "destructive"
         });
         return false;

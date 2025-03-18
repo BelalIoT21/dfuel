@@ -22,7 +22,7 @@ router.post('/logout', logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 
-// Password management
+// Password management - only change password functionality
 router.post('/change-password', protect, changePassword);
 
 // Profile and bookings routes
