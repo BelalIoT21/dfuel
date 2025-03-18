@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'Learnit',
   webDir: 'dist',
   server: {
-    url: 'http://192.168.47.238:4000',
+    url: 'http://localhost:4000',
     cleartext: true
   },
   bundledWebRuntime: false,
@@ -18,14 +18,14 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'always',
     scheme: 'com.lovable.learnitacademy',
-    backgroundColor: '#7c3aed'
+    backgroundColor: '#ffffff'
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: "#7c3aed",
+      backgroundColor: "#ffffff",
       showSpinner: true,
-      spinnerColor: "#ffffff",
+      spinnerColor: "#7c3aed",
       iosSpinnerStyle: "small",
       androidSpinnerStyle: "large"
     }

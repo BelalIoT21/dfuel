@@ -22,7 +22,7 @@ const LoadingFallback = () => (
     alignItems: 'center', 
     height: '100vh',
     flexDirection: 'column',
-    backgroundColor: '#f5f3ff'
+    backgroundColor: '#FFFFFF'
   }}>
     <div style={{ fontSize: '24px', color: '#7c3aed', marginBottom: '16px' }}>
       Loading Learnit Academy...

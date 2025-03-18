@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -229,7 +230,7 @@ const Index = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
       </div>
     );
@@ -237,7 +238,7 @@ const Index = () => {
 
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-white p-4">
         <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
       </div>
     );
@@ -251,20 +252,22 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-40vh)' 
+        transform: 'translateY(-60vh)',
+        backgroundColor: '#FFFFFF'
       } 
     : { 
         minHeight: '100vh', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(0)'
+        transform: 'translateY(0)',
+        backgroundColor: '#FFFFFF'
       };
 
   return (
     <div 
-      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      className="flex flex-col items-center justify-center bg-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
