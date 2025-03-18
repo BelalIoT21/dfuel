@@ -74,14 +74,23 @@ class BookingService {
     }
     
     try {
+      // Ensure date is properly formatted (YYYY-MM-DD)
+      let formattedDate = date;
+      if (date instanceof Date) {
+        formattedDate = date.toISOString().split('T')[0];
+      }
+      
+      // Ensure IDs are strings
+      const userIdStr = String(userId);
+      const machineIdStr = String(machineId);
+      
+      console.log(`Processing booking with userId: ${userIdStr} (${typeof userIdStr}), machineId: ${machineIdStr} (${typeof machineIdStr}), date: ${formattedDate}, time: ${time}`);
+      
       if (isWeb) {
         try {
-          // Convert userId and machineId to strings to ensure proper format
-          const userIdStr = String(userId);
-          const machineIdStr = String(machineId);
+          console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${formattedDate}, time: ${time}`);
+          const response = await apiService.addBooking(userIdStr, machineIdStr, formattedDate, time);
           
-          console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${date}, time: ${time}`);
-          const response = await apiService.addBooking(userIdStr, machineIdStr, date, time);
           if (response.data && response.data.success) {
             console.log('Successfully created booking via API');
             toast({
@@ -89,6 +98,8 @@ class BookingService {
               description: "Your booking has been created successfully",
             });
             return true;
+          } else {
+            console.error('API booking failed:', response.data);
           }
         } catch (error) {
           console.error('API error creating booking:', error);
@@ -97,25 +108,22 @@ class BookingService {
       
       // Always try mongoDbService regardless of platform
       console.log('Creating booking in MongoDB...');
-      // Convert userId and machineId to strings before passing to MongoDB service
-      const userIdStr = String(userId);
-      const machineIdStr = String(machineId);
       
       // Log the exact data being sent to MongoDB
       console.log('Sending to MongoDB:', {
         userId: userIdStr,
         machineId: machineIdStr,
-        date,
+        date: formattedDate,
         time
       });
       
-      const success = await mongoDbService.createBooking(userIdStr, machineIdStr, date, time);
+      const success = await mongoDbService.createBooking(userIdStr, machineIdStr, formattedDate, time);
       
       if (success) {
         console.log('Successfully created booking in MongoDB');
         toast({
           title: "Booking Created",
-          description: "Your booking has been saved to MongoDB",
+          description: "Your booking has been saved successfully",
         });
         return true;
       } else {

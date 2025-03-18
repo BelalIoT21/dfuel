@@ -38,10 +38,8 @@ class MongoBookingService {
     }
     
     try {
-      // Find all bookings
       const bookings = await this.bookingsCollection.find().toArray();
       
-      // Enrich bookings with user and machine information
       const enrichedBookings = await this.enrichBookingsWithDetails(bookings);
       
       console.log(`Retrieved ${bookings.length} bookings from MongoDB`);
@@ -60,18 +58,15 @@ class MongoBookingService {
     }
     
     try {
-      // Convert string ID to ObjectId if needed
       let userIdQuery = userId;
       if (mongoose.Types.ObjectId.isValid(userId)) {
         userIdQuery = new mongoose.Types.ObjectId(userId);
       }
       
-      // Find bookings for the user
       const bookings = await this.bookingsCollection.find({ 
         user: userIdQuery 
       }).toArray();
       
-      // Enrich bookings with user and machine information
       const enrichedBookings = await this.enrichBookingsWithDetails(bookings);
       
       console.log(`Retrieved ${bookings.length} bookings for user ${userId} from MongoDB`);
@@ -84,15 +79,37 @@ class MongoBookingService {
   
   async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     await this.initCollections();
-    if (!this.bookingsCollection) {
+    if (!this.bookingsCollection || !this.usersCollection || !this.machinesCollection) {
       console.error("Bookings collection not initialized");
       return false;
     }
     
     try {
-      // Get user and machine details
-      const user = await this.usersCollection?.findOne({ _id: userId });
-      const machine = await this.machinesCollection?.findOne({ _id: machineId });
+      console.log(`Creating booking with userId: ${userId} (${typeof userId}), machineId: ${machineId} (${typeof machineId}), date: ${date}, time: ${time}`);
+      
+      if (!userId || !machineId || !date || !time) {
+        console.error('Missing required booking information:', { userId, machineId, date, time });
+        return false;
+      }
+      
+      let userIdQuery = userId;
+      let machineIdQuery = machineId;
+      
+      if (!isNaN(Number(userId))) {
+        userIdQuery = Number(userId);
+      } else if (mongoose.Types.ObjectId.isValid(userId)) {
+        userIdQuery = new mongoose.Types.ObjectId(userId);
+      }
+      
+      if (mongoose.Types.ObjectId.isValid(machineId)) {
+        machineIdQuery = new mongoose.Types.ObjectId(machineId);
+      }
+      
+      console.log(`Looking up user with ID: ${userIdQuery} (${typeof userIdQuery})`);
+      console.log(`Looking up machine with ID: ${machineIdQuery} (${typeof machineIdQuery})`);
+      
+      const user = await this.usersCollection.findOne({ _id: userIdQuery });
+      const machine = await this.machinesCollection.findOne({ _id: machineIdQuery });
       
       if (!user) {
         console.error(`User ${userId} not found`);
@@ -104,25 +121,31 @@ class MongoBookingService {
         return false;
       }
       
-      // Create client-side ID for easier reference
+      console.log(`Found user: ${user.name}, machine: ${machine.name}`);
+      
+      const bookingDate = new Date(date);
+      if (isNaN(bookingDate.getTime())) {
+        console.error(`Invalid date format: ${date}`);
+        return false;
+      }
+      
       const clientId = `booking-${Date.now()}`;
       
-      // Create booking object
       const booking: MongoBooking = {
         user: userId,
         machine: machineId,
-        date: new Date(date),
+        date: bookingDate,
         time,
         status: 'Pending',
         clientId,
         createdAt: new Date(),
         updatedAt: new Date(),
-        // Add user and machine details
         userName: user.name || 'Unknown User',
         machineName: machine.name || 'Unknown Machine',
       };
       
-      // Insert booking
+      console.log('Creating booking with data:', booking);
+      
       const result = await this.bookingsCollection.insertOne(booking);
       
       console.log(`Booking created with ID: ${result.insertedId}`);
@@ -143,11 +166,9 @@ class MongoBookingService {
     try {
       let result;
       
-      // Try to find by MongoDB ID first
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
         result = await this.bookingsCollection.deleteOne({ _id: new mongoose.Types.ObjectId(bookingId) });
       } else {
-        // If not a valid ObjectId, it might be a client-generated ID
         result = await this.bookingsCollection.deleteOne({ clientId: bookingId });
       }
       
@@ -169,14 +190,12 @@ class MongoBookingService {
     try {
       let result;
       
-      // Try to find by MongoDB ID first
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
         result = await this.bookingsCollection.updateOne(
           { _id: new mongoose.Types.ObjectId(bookingId) },
           { $set: { status, updatedAt: new Date() } }
         );
       } else {
-        // If not a valid ObjectId, it might be a client-generated ID
         result = await this.bookingsCollection.updateOne(
           { clientId: bookingId },
           { $set: { status, updatedAt: new Date() } }
@@ -191,7 +210,6 @@ class MongoBookingService {
     }
   }
   
-  // Helper method to enrich bookings with user and machine details
   private async enrichBookingsWithDetails(bookings: any[]): Promise<any[]> {
     if (!this.usersCollection || !this.machinesCollection) {
       return bookings;
@@ -201,11 +219,10 @@ class MongoBookingService {
     
     for (const booking of bookings) {
       try {
-        // If booking already has userName and machineName, use those
         if (booking.userName && booking.machineName) {
           enrichedBookings.push({
             ...booking,
-            id: booking._id.toString(), // Add id field for client compatibility
+            id: booking._id.toString(),
           });
           continue;
         }
@@ -213,7 +230,6 @@ class MongoBookingService {
         let userId = booking.user;
         let machineId = booking.machine;
         
-        // Convert string IDs to ObjectId if needed
         if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId)) {
           userId = new mongoose.Types.ObjectId(userId);
         }
@@ -222,14 +238,12 @@ class MongoBookingService {
           machineId = new mongoose.Types.ObjectId(machineId);
         }
         
-        // Get user and machine details
         const user = await this.usersCollection.findOne({ _id: userId });
         const machine = await this.machinesCollection.findOne({ _id: machineId });
         
-        // Add user and machine details to booking
         enrichedBookings.push({
           ...booking,
-          id: booking._id.toString(), // Add id field for client compatibility
+          id: booking._id.toString(),
           userName: user?.name || 'Unknown User',
           machineName: machine?.name || 'Unknown Machine',
         });
@@ -237,7 +251,7 @@ class MongoBookingService {
         console.error("Error enriching booking with details:", error);
         enrichedBookings.push({
           ...booking,
-          id: booking._id.toString(), // Add id field for client compatibility
+          id: booking._id.toString(),
         });
       }
     }

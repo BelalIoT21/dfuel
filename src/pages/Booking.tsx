@@ -41,20 +41,17 @@ const BookingPage = () => {
           console.log(`Successfully loaded machine:`, foundMachine);
           setMachine(foundMachine);
           
-          // Fetch existing bookings to determine availability
           const allBookings = await bookingService.getAllBookings();
           const machineBookings = allBookings.filter(
             booking => booking.machineId === id || booking.machine === id && 
             (booking.status === 'Approved' || booking.status === 'Pending')
           );
           
-          // Create a list of booked slots in format "YYYY-MM-DD-HH:MM AM/PM"
           const bookedDateTimeSlots = machineBookings.map(booking => 
             `${booking.date}-${booking.time}`
           );
           setBookedSlots(bookedDateTimeSlots);
           
-          // Update available time slots when date changes
           updateAvailableTimeSlots(selectedDate);
         } else {
           console.error(`Machine not found with ID: ${id}`);
@@ -80,7 +77,6 @@ const BookingPage = () => {
     
     const formattedDate = format(date, 'yyyy-MM-dd');
     
-    // Filter out already booked time slots for this date
     const available = timeSlots.filter(time => {
       const dateTimeSlot = `${formattedDate}-${time}`;
       return !bookedSlots.includes(dateTimeSlot);
@@ -88,7 +84,6 @@ const BookingPage = () => {
     
     setAvailableTimeSlots(available);
     
-    // If currently selected time is no longer available, reset it
     if (selectedTime && !available.includes(selectedTime)) {
       setSelectedTime('');
     }
@@ -114,20 +109,23 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       
-      // Ensure date is properly formatted
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
+      const userId = user.id || user._id;
+      const machineId = machine.id || machine._id;
+      
       console.log('Submitting booking with data:', {
-        userId: user.id,
-        machineId: machine.id || machine._id,
+        userId: userId,
+        machineId: machineId,
         date: formattedDate,
         time: selectedTime,
+        userName: user.name,
         machineName: machine.name
       });
       
       const success = await bookingService.createBooking(
-        user.id,
-        machine.id || machine._id,
+        userId,
+        machineId,
         formattedDate,
         selectedTime
       );
@@ -135,14 +133,14 @@ const BookingPage = () => {
       if (success) {
         toast({
           title: 'Booking Successful',
-          description: `You have booked ${machine.name} on ${formattedDate} at ${selectedTime}`,
+          description: `You have booked ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTime}`,
         });
         navigate('/profile');
       } else {
         setError('Failed to create booking. Please try again.');
         toast({
           title: 'Booking Failed',
-          description: 'Unable to create your booking. Please try again later.',
+          description: 'Unable to create your booking. Please check all fields and try again.',
           variant: 'destructive'
         });
       }
