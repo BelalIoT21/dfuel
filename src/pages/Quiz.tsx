@@ -305,13 +305,13 @@ const Quiz = () => {
                 </Alert>
               )}
             </CardContent>
-            <CardFooter className="flex gap-2 justify-end">
+            <CardFooter className="flex flex-col sm:flex-row gap-2 justify-end items-stretch pb-6">
               {!isPassing && (
                 <>
-                  <Button variant="outline" onClick={handleReturnToCourse}>
+                  <Button variant="outline" onClick={handleReturnToCourse} className="w-full sm:w-auto">
                     Review Course
                   </Button>
-                  <Button onClick={handleRetry} className="bg-purple-600 hover:bg-purple-700">
+                  <Button onClick={handleRetry} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
                     Retry Quiz
                   </Button>
                 </>
@@ -319,7 +319,7 @@ const Quiz = () => {
               
               <Button 
                 onClick={handleReturnToMachine} 
-                className={isPassing ? "bg-purple-600 hover:bg-purple-700" : "bg-purple-600 hover:bg-purple-700"}
+                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700"
               >
                 Return to Machine
               </Button>
@@ -344,7 +344,7 @@ const Quiz = () => {
           Return to Machine
         </Button>
         
-        <Card>
+        <Card className="mb-16 sm:mb-0">
           <CardHeader>
             <CardTitle>Safety Quiz</CardTitle>
             <CardDescription>
@@ -399,11 +399,12 @@ const Quiz = () => {
               </RadioGroup>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-between sticky bottom-0 bg-white border-t p-4 z-10">
             <Button 
               variant="outline" 
               onClick={handlePrevious}
               disabled={currentQuestion === 0}
+              className="min-w-[80px]"
             >
               Previous
             </Button>
@@ -411,7 +412,7 @@ const Quiz = () => {
               {currentQuestion < quizData?.questions.length - 1 ? (
                 <Button 
                   onClick={handleNext}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-purple-600 hover:bg-purple-700 min-w-[80px]"
                 >
                   Next
                 </Button>
@@ -419,7 +420,7 @@ const Quiz = () => {
                 <Button 
                   onClick={handleSubmit}
                   disabled={!selectedAnswers.every(answer => answer !== undefined)}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-purple-600 hover:bg-purple-700 min-w-[80px]"
                 >
                   Submit Quiz
                 </Button>
