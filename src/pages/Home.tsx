@@ -5,8 +5,8 @@ import { machines } from '../utils/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
-import userDatabase from '../services/userDatabase';
 import { toast } from '@/components/ui/use-toast';
+import { machineService } from '../services/machineService';
 
 interface ExtendedMachine {
   id: string;
@@ -35,7 +35,8 @@ const Home = () => {
         setLoading(true);
         const extendedMachines = await Promise.all(machines.map(async (machine) => {
           try {
-            const status = await userDatabase.getMachineStatus(machine.id);
+            // Use machineService instead of userDatabase
+            const status = await machineService.getMachineStatus(machine.id);
             return {
               ...machine,
               status: (status as 'available' | 'maintenance' | 'in-use') || 'available'
