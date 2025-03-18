@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
@@ -110,62 +109,6 @@ export class MachineService {
     }
   }
   
-  // Get machine by ID
-  async getMachineById(machineId: string): Promise<any | null> {
-    try {
-      console.log(`Getting machine by ID: ${machineId}`);
-      
-      if (!machineId) {
-        console.error("Invalid machineId passed to getMachineById");
-        return null;
-      }
-      
-      // Use API to get machine by ID
-      try {
-        const response = await apiService.get(`machines/${machineId}`);
-        if (response.data) {
-          // Filter out machines 5 and 6
-          if (machineId === "5" || machineId === "6") {
-            console.log(`Machine ${machineId} is filtered out`);
-            return null;
-          }
-          
-          return {
-            ...response.data,
-            id: response.data._id || response.data.id,
-            status: response.data.status?.toLowerCase() || 'available',
-            type: response.data.type || "Machine"
-          };
-        }
-      } catch (error) {
-        console.error("API error getting machine by ID:", error);
-      }
-      
-      // Fallback to the static machines data
-      const machine = machines.find(m => m.id === machineId);
-      
-      if (machine) {
-        // Filter out machines 5 and 6
-        if (machineId === "5" || machineId === "6") {
-          console.log(`Machine ${machineId} is filtered out`);
-          return null;
-        }
-        
-        return {
-          ...machine,
-          status: 'available',
-          type: machine.type || "Machine"
-        };
-      }
-      
-      console.error(`Machine not found with ID: ${machineId}`);
-      return null;
-    } catch (error) {
-      console.error(`Error getting machine with ID ${machineId}:`, error);
-      return null;
-    }
-  }
-  
   // Helper method to get machines
   async getMachines(timestamp?: number): Promise<any[]> {
     try {
@@ -205,6 +148,50 @@ export class MachineService {
         ...machine,
         type: machine.type || "Machine"
       }));
+    }
+  }
+  
+  // Get machine by ID
+  async getMachineById(machineId: string): Promise<any | null> {
+    try {
+      console.log(`Getting machine by ID: ${machineId}`);
+      
+      if (!machineId) {
+        console.error("Invalid machineId passed to getMachineById");
+        return null;
+      }
+      
+      // Use API to get machine by ID
+      try {
+        const response = await apiService.get(`machines/${machineId}`);
+        if (response.data) {
+          return {
+            ...response.data,
+            id: response.data._id || response.data.id,
+            status: response.data.status?.toLowerCase() || 'available',
+            type: response.data.type || "Machine"
+          };
+        }
+      } catch (error) {
+        console.error("API error getting machine by ID:", error);
+      }
+      
+      // Fallback to the static machines data
+      const machine = machines.find(m => m.id === machineId);
+      
+      if (machine) {
+        return {
+          ...machine,
+          status: 'available',
+          type: machine.type || "Machine"
+        };
+      }
+      
+      console.error(`Machine not found with ID: ${machineId}`);
+      return null;
+    } catch (error) {
+      console.error(`Error getting machine with ID ${machineId}:`, error);
+      return null;
     }
   }
 }
