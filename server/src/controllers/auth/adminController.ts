@@ -17,7 +17,7 @@ export const ensureAdminUser = async () => {
       console.log(`Creating default admin user with email: ${adminEmail}`);
       
       // Get the admin password from env
-      const adminPassword = process.env.ADMIN_PASSWORD;
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
       
       if (!adminPassword) {
         throw new Error('ADMIN_PASSWORD is not defined in environment variables');
@@ -53,7 +53,7 @@ export const ensureAdminUser = async () => {
       // Always ensure admin email is in sync with .env
       if (existingAdmin.email !== adminEmail) {
         console.log(`Updating admin email from ${existingAdmin.email} to ${adminEmail}`);
-        existingAdmin.email = adminEmail;
+        existingAdmin.email = adminEmail || 'admin@learnit.com'; // Fix: Add fallback value
         await existingAdmin.save();
         console.log('Admin email updated successfully');
       }
