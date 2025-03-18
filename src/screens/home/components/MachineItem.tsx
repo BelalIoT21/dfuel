@@ -58,16 +58,17 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Only display machineType chip if there's an actual value
   const showMachineType = machineType && machineType.trim() !== '';
   
-  // Ensure userCertifications is an array and all elements are strings
-  const userCertsAsString = Array.isArray(userCertifications) 
-    ? userCertifications.map(cert => String(cert)) 
+  // Convert certifications to array of strings for consistent comparison
+  const certsArray = Array.isArray(userCertifications) 
+    ? userCertifications.map(cert => String(cert))
     : [];
     
   // Check if user is certified for this machine
-  const isCertified = userCertsAsString.includes(String(machine.id));
+  const isCertified = certsArray.includes(machineId);
 
-  console.log(`Machine ${machine.id} (${machineName}) certification status:`, isCertified);
-  console.log(`User certifications:`, userCertsAsString);
+  console.log(`Machine ${machineId} (${machineName}) certification status:`, isCertified);
+  console.log(`Machine ID:`, machineId);
+  console.log(`User certifications:`, certsArray);
 
   return (
     <TouchableOpacity
