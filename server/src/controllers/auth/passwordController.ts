@@ -1,6 +1,7 @@
 
 import { Request, Response } from 'express';
 import User from '../../models/User';
+import bcrypt from 'bcryptjs';
 
 // @desc    Request password reset
 // @route   POST /api/auth/forgot-password
@@ -79,6 +80,49 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// @desc    Change password
+// @route   POST /api/auth/change-password
+// @access  Private
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId || !currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate new password
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error in changePassword:', error);
+    res.status(500).json({
+      message: 'Server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };

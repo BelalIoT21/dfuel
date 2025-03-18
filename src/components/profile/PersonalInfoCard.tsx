@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,12 +80,20 @@ const PersonalInfoCard = () => {
       return;
     }
     
-    const success = await changePassword(currentPassword, newPassword);
-    if (success) {
-      setIsPasswordDialogOpen(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+    try {
+      const success = await changePassword(currentPassword, newPassword);
+      if (success) {
+        setIsPasswordDialogOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordError('Failed to change password');
+      }
     }
   };
 

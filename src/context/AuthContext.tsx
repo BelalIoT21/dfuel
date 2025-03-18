@@ -7,6 +7,7 @@ import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { certificationService } from '@/services/certificationService';
+import { userDatabaseService } from '@/services/database/userService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -251,14 +252,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update profile
-  const updateProfile = async (name: string, email: string) => {
+  const updateProfile = async (updates: { name?: string, email?: string }) => {
     if (!user) return false;
     
     try {
-      const success = await userDatabase.updateUserProfile(user.id, { name, email });
+      const success = await userDatabase.updateUserProfile(user.id, updates);
       
       if (success) {
-        const updatedUser = { ...user, name, email };
+        const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
         // For native, still store in AsyncStorage
         await storage.setItem('learnit_user', JSON.stringify(updatedUser));
@@ -277,8 +278,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      // First verify the current password
-      const authenticatedUser = await userDatabase.authenticate(user.email, currentPassword);
+      // First verify the current password using userDatabaseService instead of userDatabase
+      const authenticatedUser = await userDatabaseService.authenticate(user.email, currentPassword);
       
       if (!authenticatedUser) {
         throw new Error('Current password is incorrect');
