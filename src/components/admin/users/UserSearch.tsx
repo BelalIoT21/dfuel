@@ -14,8 +14,8 @@ import {
   DialogTrigger 
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import userDatabase from '../../../services/userDatabase';
-import mongoDbService from '@/services/mongoDbService';
+import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/apiService';
 
 export const UserSearch = ({ 
   searchTerm, 
@@ -34,6 +34,7 @@ export const UserSearch = ({
     password: ''
   });
   const { toast } = useToast();
+  const { register } = useAuth();
   
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -84,45 +85,61 @@ export const UserSearch = ({
     setIsAdding(true);
     
     try {
-      // Try MongoDB first
-      let registeredUser = null;
-      try {
-        registeredUser = await mongoDbService.createUser({
-          name: newUser.name,
-          email: newUser.email,
-          password: newUser.password,
-          isAdmin: false,
-          certifications: [],
-          bookings: [],
-          lastLogin: new Date().toISOString(),
-        });
-      } catch (mongoError) {
-        console.error("MongoDB error creating user:", mongoError);
-      }
+      console.log("Attempting to register new user:", newUser.email);
       
-      // If MongoDB fails, use regular user service
-      if (!registeredUser) {
-        registeredUser = await userDatabase.registerUser(
-          newUser.email,
-          newUser.password,
-          newUser.name
-        );
-      }
+      // Use the register function from auth context
+      const success = await register(newUser.email, newUser.password, newUser.name);
       
-      if (registeredUser) {
+      if (success) {
         toast({
           title: "User Added",
           description: `${newUser.name} has been added successfully.`
         });
         
-        // Close dialog but do not navigate away
+        // Try to get the user data to pass to parent component
+        try {
+          const userResponse = await apiService.getUserByEmail(newUser.email);
+          if (userResponse.data) {
+            console.log("Retrieved user data after registration:", userResponse.data);
+            
+            // Format the user data for consistency
+            const formattedUser = {
+              id: userResponse.data._id || userResponse.data.id,
+              name: userResponse.data.name,
+              email: userResponse.data.email,
+              isAdmin: userResponse.data.isAdmin || false,
+              certifications: userResponse.data.certifications || [],
+              lastLogin: userResponse.data.lastLogin || new Date().toISOString()
+            };
+            
+            // Update parent component with new user
+            onUserAdded(formattedUser);
+          } else {
+            // If we can't get the user data, just refresh the user list
+            console.log("Couldn't get specific user data, will refresh list instead");
+            onUserAdded({
+              id: "refresh-needed",
+              name: newUser.name,
+              email: newUser.email,
+              isAdmin: false,
+              certifications: []
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching user after registration:", error);
+          // Still consider it a success, just refresh the list
+          onUserAdded({
+            id: "refresh-needed",
+            name: newUser.name,
+            email: newUser.email,
+            isAdmin: false,
+            certifications: []
+          });
+        }
+        
+        // Close dialog and reset form
         setDialogOpen(false);
-        
-        // Reset form
         resetForm();
-        
-        // Update parent component with new user
-        onUserAdded(registeredUser);
       } else {
         toast({
           title: "Error",
