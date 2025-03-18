@@ -29,7 +29,9 @@ const config: CapacitorConfig = {
       iosSpinnerStyle: "small",
       androidSpinnerStyle: "large"
     }
-  }
+  },
+  // Add explicit background color for Android
+  backgroundColor: "#ffffff"
 };
 
 export default config;

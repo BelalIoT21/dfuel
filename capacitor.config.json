@@ -27,5 +27,6 @@
       "iosSpinnerStyle": "small",
       "androidSpinnerStyle": "large"
     }
-  }
+  },
+  "backgroundColor": "#ffffff"
 }

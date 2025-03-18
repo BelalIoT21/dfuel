@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -226,8 +227,6 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoading);
 
-  const isConnected = serverStatus === 'connected';
-
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -252,12 +251,14 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-60vh)' 
+        transform: 'translateY(-60vh)',
+        backgroundColor: '#fff' // Explicitly set background color
       } 
     : { 
         minHeight: '100vh', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(0)'
+        transform: 'translateY(0)',
+        backgroundColor: '#fff' // Explicitly set background color
       };
 
   return (
