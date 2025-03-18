@@ -417,27 +417,43 @@ class MongoDbService {
           }
           
           // Verify the current password matches
+          console.log(`Verifying password for user ${userId}`);
           if (user.password !== updates.currentPassword) {
             console.error("Current password is incorrect");
             return false;
           }
           
-          // Password verified, proceed with update
-          console.log("Current password verified, updating to new password");
+          // Remove currentPassword from updates as it's not a field in the DB
+          const { currentPassword, ...passwordUpdate } = updates;
+          
+          // Update the user with new password
+          const result = await mongoUserService.updateUser(userId, passwordUpdate);
+          
+          console.log(`MongoDB password update result: modified=${result ? 'yes' : 'no'}`);
+          return result;
         } catch (verifyError) {
           console.error("Error verifying current password:", verifyError);
           return false;
         }
       }
       
-      // Use MongoDB service directly
-      console.log(`MongoDbService: Updating user ${userId} with:`, updates);
-      const success = await mongoUserService.updateUser(userId, updates);
-      console.log(`MongoDB update user result: ${success}`);
+      // For regular profile updates (no password change)
+      // Ensure lastLogin is a valid date if provided
+      if (updates.lastLogin) {
+        try {
+          updates.lastLogin = new Date(updates.lastLogin).toISOString();
+        } catch (e) {
+          console.error("Invalid date format for lastLogin in updates, using current date");
+          updates.lastLogin = new Date().toISOString();
+        }
+      }
+
+      const result = await mongoUserService.updateUser(userId, updates);
       
-      return success;
+      console.log(`MongoDB update result: ${result ? 'success' : 'failed'}`);
+      return result;
     } catch (error) {
-      console.error("Error in updateUser:", error);
+      console.error(`Error updating user ${userId} in MongoDB:`, error);
       return false;
     }
   }
