@@ -108,7 +108,8 @@ export const UserSearch = ({
               name: userResponse.data.name,
               email: userResponse.data.email,
               isAdmin: userResponse.data.isAdmin || false,
-              certifications: userResponse.data.certifications || [],
+              // Explicitly set certifications to an empty array to ensure no default certifications
+              certifications: [],
               lastLogin: userResponse.data.lastLogin || new Date().toISOString()
             };
             

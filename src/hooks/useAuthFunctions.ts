@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database'; // Adjust the import path as needed
 import { useToast } from '@/hooks/use-toast';
@@ -123,13 +124,13 @@ export const useAuthFunctions = (
         return false;
       }
   
-      // Normalize user data
+      // Normalize user data - explicitly set empty certifications array
       const normalizedUser = {
         id: String(userData._id),
         name: userData.name || name || 'User',
         email: userData.email,
         isAdmin: userData.isAdmin || false,
-        certifications: userData.certifications || []
+        certifications: [] // Explicitly set to empty array to ensure no default certifications
       };
   
       console.log("Setting user data:", normalizedUser);
