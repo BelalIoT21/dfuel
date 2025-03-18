@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { SearchIcon, PlusCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -99,12 +100,13 @@ export const UserSearch = ({
           if (userResponse.data) {
             console.log("Retrieved user data after registration:", userResponse.data);
             
+            // Ensure the user has an empty certifications array
             const formattedUser = {
               id: userResponse.data._id || userResponse.data.id,
               name: userResponse.data.name,
               email: userResponse.data.email,
               isAdmin: userResponse.data.isAdmin || false,
-              certifications: [],
+              certifications: [], // Explicitly empty array
               lastLogin: userResponse.data.lastLogin || new Date().toISOString()
             };
             
@@ -116,7 +118,7 @@ export const UserSearch = ({
               name: newUser.name,
               email: newUser.email,
               isAdmin: false,
-              certifications: []
+              certifications: [] // Explicitly empty array
             });
           }
         } catch (error) {
@@ -126,7 +128,7 @@ export const UserSearch = ({
             name: newUser.name,
             email: newUser.email,
             isAdmin: false,
-            certifications: []
+            certifications: [] // Explicitly empty array
           });
         }
         

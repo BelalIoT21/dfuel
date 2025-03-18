@@ -29,7 +29,11 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, default: false },
-    certifications: { type: [String], default: [] },
+    certifications: { 
+      type: [String], 
+      default: [], // Explicitly empty array by default
+      required: true 
+    },
     resetCode: {
       code: String,
       expiry: Date,
