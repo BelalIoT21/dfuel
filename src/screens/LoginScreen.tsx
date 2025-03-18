@@ -11,6 +11,7 @@ const LoginScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { user, login, register } = useAuth();
 
   useEffect(() => {
@@ -79,9 +80,15 @@ const LoginScreen = ({ navigation }) => {
             label="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             style={styles.input}
             mode="outlined"
+            right={
+              <TextInput.Icon 
+                icon={showPassword ? "eye-off" : "eye"} 
+                onPress={() => setShowPassword(!showPassword)}
+              />
+            }
           />
 
           {!isLogin && (
