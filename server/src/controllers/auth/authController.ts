@@ -2,7 +2,7 @@
 // Export all auth controller functions as a single module
 import { registerUser } from './registerController';
 import { loginUser } from './loginController';
-import { forgotPassword, resetPassword } from './passwordController';
+import { forgotPassword, resetPassword, changePassword } from './passwordController';
 import { getUserProfile, getUserBookings, deleteUserBooking } from './profileController';
 import { Request, Response } from 'express';
 
@@ -11,6 +11,7 @@ export {
   loginUser,
   forgotPassword,
   resetPassword,
+  changePassword,
   getUserProfile,
   getUserBookings,
   deleteUserBooking
