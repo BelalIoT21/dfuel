@@ -48,28 +48,31 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Prepare the list of machines to consider - start with standard machines
-      let combinedMachineIds = [...STANDARD_MACHINE_IDS];
-      
-      // Fetch the current available machines to determine what exists in the database
+      // Fetch all available machines from the API to get an up-to-date list
+      let actualMachineIds: string[] = [];
       try {
         const allCurrentMachines = await machineService.getMachines();
         console.log("All current machines:", allCurrentMachines.length);
         
-        // Extract IDs from current machines and add to our combined list
-        const currentMachineIds = allCurrentMachines.map(machine => 
+        // Extract IDs from current machines
+        actualMachineIds = allCurrentMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
-        
-        // Add API machines to our list (removes duplicates using Set)
-        combinedMachineIds = [...new Set([...combinedMachineIds, ...currentMachineIds])];
-        setAvailableMachineIds(combinedMachineIds);
-        console.log("Available machine IDs:", combinedMachineIds);
+        console.log("Actual machine IDs from API:", actualMachineIds);
       } catch (error) {
         console.error("Error fetching available machines:", error);
-        // In case of error, use standard machines as fallback
-        setAvailableMachineIds(STANDARD_MACHINE_IDS);
+        actualMachineIds = [];
       }
+      
+      // Only include machines that actually exist in the database
+      // For machines not in the database, only include special ones (safety cabinet and safety course)
+      const validMachineIds = [...new Set([
+        ...actualMachineIds,
+        ...SPECIAL_MACHINE_IDS // Always include safety cabinet and safety course
+      ])];
+      
+      setAvailableMachineIds(validMachineIds);
+      console.log("Valid machine IDs after filtering:", validMachineIds);
       
       // Get the certification list from our service
       const allCertifications = certificationService.getAllCertifications();
@@ -89,32 +92,38 @@ const CertificationsCard = () => {
       
       console.log("User certifications in CertificationsCard:", userCerts);
       
-      // Fetch machine statuses
+      // Fetch machine statuses for available machines
       const statuses = {};
-      for (const cert of allCertifications) {
-        const machineId = cert.id.toString();
+      for (const machineId of validMachineIds) {
         try {
+          // Special handling for safety cabinet - always available
+          if (machineId === "5") {
+            console.log("Safety Cabinet is always available");
+            statuses[machineId] = 'available';
+            continue;
+          }
+          
           const status = await machineService.getMachineStatus(machineId);
           statuses[machineId] = status;
         } catch (err) {
-          console.error("Error fetching machine status:", err);
+          console.error(`Error fetching machine status for ${machineId}:`, err);
           statuses[machineId] = 'unknown';
         }
       }
       setMachineStatuses(statuses);
       
       // Format the machines for display with correct names
-      // Only filter out "cnc mill" by name, show all standard machines plus API machines
+      // Only filter out "cnc mill" by name, show all valid machines
       const formattedMachines = allCertifications
         .filter(machine => {
           const machineId = machine.id.toString();
           const machineName = MACHINE_NAMES[machineId] || machine.name;
           
-          // Check if the machine should be displayed
+          // Check if the machine should be displayed:
+          // - Not "cnc mill"
+          // - Is in our valid machine IDs list
           return (machineName.toLowerCase() !== "cnc mill") && 
-                 (SPECIAL_MACHINE_IDS.includes(machineId) ||  // Always include safety cabinet and safety course
-                  STANDARD_MACHINE_IDS.includes(machineId) || // Include standard machines
-                  combinedMachineIds.includes(machineId));    // Include if it's available in the API
+                 (validMachineIds.includes(machineId));
         })
         .map(machine => {
           const machineId = machine.id.toString();
