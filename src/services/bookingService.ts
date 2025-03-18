@@ -65,7 +65,8 @@ class BookingService {
     try {
       if (isWeb) {
         try {
-          const response = await apiService.createBooking(machineId, date, time);
+          // Changed from createBooking to addBooking to match the actual method name in apiService
+          const response = await apiService.addBooking(userId, machineId, date, time);
           if (response.data && response.data.success) {
             console.log('Successfully created booking via API');
             toast({
