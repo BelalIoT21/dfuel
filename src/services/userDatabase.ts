@@ -1,4 +1,3 @@
-
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
@@ -193,37 +192,26 @@ class UserDatabase {
       }
       
       // Fall back to MongoDB
-      try {
-        console.log("Falling back to MongoDB password change...");
-        const mongoSuccess = await mongoDbService.updateUser(userId, { password: newPassword });
-        if (mongoSuccess) {
-          console.log("Successfully changed password in MongoDB");
-          return true;
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error when changing password:", mongoError);
+      console.log("Falling back to MongoDB password change...");
+      
+      // First verify current password
+      const user = await mongoDbService.getUserById(userId);
+      if (!user) {
+        console.error("User not found in MongoDB");
+        throw new Error("User not found");
       }
       
-      // Last resort: check if userService can verify current password
-      console.log("Falling back to localStorage verification");
-      const user = await userService.findUserByEmail("");
-      if (user && user.password === currentPassword) {
-        try {
-          // Use updateUserProfile instead of updateUser
-          const success = await this.updateUserProfile(userId, { password: newPassword });
-          console.log(`LocalStorage password change result: ${success}`);
-          return success;
-        } catch (e) {
-          console.error("Error updating password in localStorage:", e);
-          return false;
-        }
-      } else {
-        console.log("Current password verification failed");
-        return false;
+      // Update password directly in MongoDB
+      const success = await mongoDbService.updateUser(userId, { password: newPassword });
+      if (success) {
+        console.log("Successfully changed password in MongoDB");
+        return true;
       }
+      
+      throw new Error('Current password is incorrect or service unavailable');
     } catch (error) {
       console.error('Error in changePassword:', error);
-      return false;
+      throw error;
     }
   }
   

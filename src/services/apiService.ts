@@ -1,4 +1,3 @@
-
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -333,6 +332,14 @@ class ApiService {
   
   async deleteMachine(machineId: string) {
     return this.delete<{ success: boolean }>(`machines/${machineId}`);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    console.log('Attempting to change password via API');
+    return this.post<{ message: string, success: boolean }>(
+      'auth/change-password', 
+      { currentPassword, newPassword }
+    );
   }
 }
 

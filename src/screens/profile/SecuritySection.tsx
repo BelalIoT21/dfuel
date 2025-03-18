@@ -16,7 +16,6 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -60,15 +59,9 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             label="Current Password"
             value={currentPassword}
             onChangeText={setCurrentPassword}
-            secureTextEntry={!showCurrentPassword}
+            secureTextEntry={true}
             mode="outlined"
             style={styles.input}
-            right={
-              <TextInput.Icon 
-                icon={showCurrentPassword ? "eye-off" : "eye"} 
-                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-              />
-            }
           />
           <TextInput
             label="New Password"

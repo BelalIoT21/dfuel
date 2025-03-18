@@ -10,7 +10,7 @@ import {
   getUserBookings,
   deleteUserBooking
 } from '../controllers/auth/authController';
-import { changePassword } from '../controllers/authController';
+import { changePassword } from '../controllers/auth/passwordController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();

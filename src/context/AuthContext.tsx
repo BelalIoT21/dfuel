@@ -241,12 +241,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return false;
     
     try {
-      console.log("Attempting to change password...");
+      console.log("Attempting to change password in AuthContext...");
       
       try {
         console.log("Attempting to change password via API...");
         const response = await apiService.changePassword(currentPassword, newPassword);
-        if (response.data && response.data.message) {
+        if (response.data && !response.error) {
           console.log("Successfully changed password via API");
           return true;
         }
