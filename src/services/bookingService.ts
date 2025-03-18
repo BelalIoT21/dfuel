@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 import mongoDbService from './mongoDbService';
 import { toast } from '@/components/ui/use-toast';
@@ -91,12 +90,8 @@ class BookingService {
           console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${formattedDate}, time: ${time}`);
           const response = await apiService.addBooking(userIdStr, machineIdStr, formattedDate, time);
           
-          if (response.data && response.data.success) {
-            console.log('Successfully created booking via API');
-            toast({
-              title: "Booking Created",
-              description: "Your booking has been created successfully",
-            });
+          if (response.data) {
+            console.log('Successfully created booking via API:', response.data);
             return true;
           } else {
             console.error('API booking failed:', response.data);
@@ -121,27 +116,13 @@ class BookingService {
       
       if (success) {
         console.log('Successfully created booking in MongoDB');
-        toast({
-          title: "Booking Created",
-          description: "Your booking has been saved successfully",
-        });
         return true;
       } else {
         console.error('Failed to create booking in MongoDB');
-        toast({
-          title: "Booking Failed",
-          description: "Unable to create your booking. Please try again.",
-          variant: "destructive"
-        });
         return false;
       }
     } catch (error) {
       console.error('Error in createBooking:', error);
-      toast({
-        title: "Booking Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
       return false;
     }
   }

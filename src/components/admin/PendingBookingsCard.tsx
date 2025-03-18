@@ -42,19 +42,18 @@ export const PendingBookingsCard = ({
       } else {
         // Handle approval/rejection
         console.log(`Updating booking status: ID=${bookingId}, new status=${action}`);
-        // Try API first
-        let success = false;
-        try {
-          success = await bookingService.updateBookingStatus(bookingId, action);
-          console.log(`API updateBookingStatus result: ${success}`);
-        } catch (apiError) {
-          console.error("API error updating booking status:", apiError);
-        }
+        // Try MongoDB directly first since it's more reliable
+        let success = await mongoDbService.updateBookingStatus(bookingId, action);
+        console.log(`MongoDB updateBookingStatus result: ${success}`);
         
-        // If API fails, try MongoDB directly
+        // If MongoDB fails, try API 
         if (!success) {
-          success = await mongoDbService.updateBookingStatus(bookingId, action);
-          console.log(`MongoDB updateBookingStatus result: ${success}`);
+          try {
+            success = await bookingService.updateBookingStatus(bookingId, action);
+            console.log(`API updateBookingStatus result: ${success}`);
+          } catch (apiError) {
+            console.error("API error updating booking status:", apiError);
+          }
         }
         
         if (success) {

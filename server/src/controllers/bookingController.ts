@@ -94,7 +94,7 @@ export const createBooking = async (req: Request, res: Response) => {
       machine: machineId,
       date,
       time,
-      // Auto-approve bookings made by admins
+      // Auto-approve bookings made by admins, otherwise always Pending
       status: req.user.isAdmin ? 'Approved' : 'Pending',
       // Add user and machine names
       userName: user.name,
