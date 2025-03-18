@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import mongoose from 'mongoose';
 import { Booking } from '../../../server/src/models/Booking';
@@ -245,20 +246,37 @@ class MongoBookingService {
     try {
       let result;
       
+      // Try updating by MongoDB ID first
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
+        console.log(`Updating booking with ObjectId: ${bookingId}`);
         result = await this.bookingsCollection.updateOne(
           { _id: new mongoose.Types.ObjectId(bookingId) },
           { $set: { status, updatedAt: new Date() } }
         );
       } else {
+        // If not a valid ObjectId, try updating by clientId
+        console.log(`Updating booking with clientId: ${bookingId}`);
         result = await this.bookingsCollection.updateOne(
           { clientId: bookingId },
           { $set: { status, updatedAt: new Date() } }
         );
       }
       
-      console.log(`Booking status updated: ${result.modifiedCount > 0}`);
-      return result.modifiedCount > 0;
+      console.log(`Booking status update result:`, result);
+      
+      // Check if document was actually modified and make sure result exists
+      if (result && result.modifiedCount > 0) {
+        console.log(`✅ Booking ${bookingId} status updated to ${status}`);
+        return true;
+      } else if (result && result.matchedCount > 0 && result.modifiedCount === 0) {
+        // Document found but not modified (might have already had the status)
+        console.log(`⚠️ Booking ${bookingId} was found but status not changed (might already be ${status})`);
+        // Still return true since the booking exists with the wanted status
+        return true;
+      } else {
+        console.log(`❌ No booking found with ID ${bookingId}`);
+        return false;
+      }
     } catch (error) {
       console.error(`Error updating booking ${bookingId} status in MongoDB:`, error);
       return false;
