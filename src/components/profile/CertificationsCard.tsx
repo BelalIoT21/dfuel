@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -39,6 +39,8 @@ const CertificationsCard = () => {
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [allCertifications, setAllCertifications] = useState<any[]>([]);
   const [userInitialized, setUserInitialized] = useState(false);
+  // Add a ref to track if a refresh operation is in progress
+  const isRefreshingRef = useRef(false);
 
   // This will trigger when the user object changes (like after login)
   useEffect(() => {
@@ -55,7 +57,16 @@ const CertificationsCard = () => {
       return;
     }
     
+    // Prevent concurrent refreshes using the ref
+    if (isRefreshingRef.current) {
+      console.log("Refresh already in progress, skipping...");
+      return;
+    }
+    
+    // Set both state and ref for refresh tracking
     setRefreshing(true);
+    isRefreshingRef.current = true;
+    
     try {
       console.log("Fetching machines for CertificationsCard");
       
@@ -159,9 +170,10 @@ const CertificationsCard = () => {
         description: "Failed to load machine data"
       });
     } finally {
-      // Ensure refreshing state is reset to false even if there's an error
+      // Ensure both refreshing state and ref are reset to false even if there's an error
       setLoading(false);
       setRefreshing(false);
+      isRefreshingRef.current = false;
     }
   };
 
@@ -194,9 +206,11 @@ const CertificationsCard = () => {
   };
 
   const handleRefresh = () => {
-    // Only trigger a refresh if not already refreshing
-    if (!refreshing) {
+    // Only trigger a refresh if not already refreshing (checking both state and ref)
+    if (!refreshing && !isRefreshingRef.current) {
       fetchMachinesAndCertifications();
+    } else {
+      console.log("Refresh already in progress, ignoring click");
     }
   };
 
