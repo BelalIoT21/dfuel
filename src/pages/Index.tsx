@@ -51,14 +51,13 @@ const Index = () => {
     };
     
     if (isAndroid() || isIOS()) {
-      window.addEventListener('resize', handleKeyboardVisibility);
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
         return () => {
           window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
-          window.removeEventListener('resize', handleKeyboardVisibility);
         };
       } else {
+        window.addEventListener('resize', handleKeyboardVisibility);
         return () => {
           window.removeEventListener('resize', handleKeyboardVisibility);
         };
@@ -252,7 +251,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-60vh)' 
+        transform: 'translateY(-40vh)' 
       } 
     : { 
         minHeight: '100vh', 
@@ -265,17 +264,17 @@ const Index = () => {
       className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
           {serverStatus && !keyboardVisible && (
-            <div className={serverStatus === 'connected'
+            <div className={isConnected
               ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
               : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
-              {serverStatus === 'connected' ? (
+              {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
                   Connected
