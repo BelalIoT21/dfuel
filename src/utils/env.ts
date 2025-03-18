@@ -3,7 +3,7 @@
  * Environment variable management
  */
 
-import { isAndroid, isCapacitor } from './platform';
+import { isAndroid, isCapacitor, isIOS } from './platform';
 
 // Define environment types
 export type Environment = 'development' | 'production';
@@ -47,14 +47,62 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
   return defaultValue;
 };
 
+// Get the local server IP for the device being used
+export const getLocalServerIP = (): string => {
+  // For Android emulator
+  if (isAndroid() && !isPhysicalDevice()) {
+    return '10.0.2.2'; // Special IP for Android emulator
+  }
+  
+  // For Android physical device or iOS
+  // User might need to set this manually based on their network
+  const customIP = getEnv('CUSTOM_SERVER_IP', '');
+  if (customIP) {
+    console.log(`Using custom server IP: ${customIP}`);
+    return customIP;
+  }
+  
+  return 'localhost'; // Default fallback
+};
+
+// Check if the app is running on a physical device vs emulator
+// This is a best-guess approach and might need refinement
+export const isPhysicalDevice = (): boolean => {
+  // If using Capacitor, assume physical device when not in dev mode
+  if (isCapacitor() && getEnvironment() === 'production') {
+    return true;
+  }
+  
+  // Look for emulator indicators in user agent
+  if (typeof navigator !== 'undefined' && navigator.userAgent) {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('android') && (ua.includes('emulator') || ua.includes('sdk_gphone'))) {
+      return false; // Likely an emulator
+    }
+  }
+  
+  // Default to false for web environment
+  return false;
+};
+
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  // For local development on Android emulator
+  const serverIP = getLocalServerIP();
+  console.log(`Using server IP for endpoints: ${serverIP}`);
+  
+  // For Android emulator or physical device
   if (isAndroid() || isCapacitor()) {
     return [
-      'http://10.0.2.2:4000/api',
-      'http://10.0.2.2:8080/api', // Try alternate port
-      'http://localhost:4000/api', // Sometimes works on newer emulators
+      `http://${serverIP}:4000/api`,
+      `http://${serverIP}:8080/api`, // Try alternate port
+      '/api' // Relative fallback
+    ];
+  }
+  
+  // For iOS
+  if (isIOS()) {
+    return [
+      `http://${serverIP}:4000/api`,
       '/api' // Relative fallback
     ];
   }
