@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 import mongoDbService from './mongoDbService';
 import { toast } from '@/components/ui/use-toast';
@@ -92,6 +93,7 @@ class BookingService {
           
           if (response.data) {
             console.log('Successfully created booking via API:', response.data);
+            // The API should set the status to 'Pending' for non-admin users
             return true;
           } else {
             console.error('API booking failed:', response.data);

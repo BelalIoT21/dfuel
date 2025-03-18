@@ -12,12 +12,20 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
     );
   }
 
+  const getBookingMachineId = (booking) => {
+    if (booking.machineId) return booking.machineId;
+    if (booking.machine && typeof booking.machine === 'object') return booking.machine._id;
+    return booking.machine;
+  };
+
   return (
     <div className="space-y-4">
       {bookings.map((booking) => (
         <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
           <div>
-            <p className="font-medium text-purple-800">{getMachineName(booking.machineId)}</p>
+            <p className="font-medium text-purple-800">
+              {booking.machineName || getMachineName(getBookingMachineId(booking))}
+            </p>
             <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
           </div>
           <div className="flex items-center gap-3">

@@ -186,12 +186,13 @@ class MongoBookingService {
       
       const clientId = `booking-${Date.now()}`;
       
+      // Always set status to Pending for regular users, regardless of user role
       const booking: MongoBooking = {
         user: userId,
         machine: machineId,
         date: bookingDate,
         time,
-        status: 'Pending', // ALWAYS set initial status to Pending
+        status: 'Pending', // ALWAYS Pending for initial booking
         clientId,
         createdAt: new Date(),
         updatedAt: new Date(),

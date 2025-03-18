@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -66,18 +67,43 @@ const BookingsCard = () => {
     if (bookings && bookings.length > 0) {
       for (const booking of bookings) {
         try {
-          const machineFromData = machines.find(m => m.id === booking.machineId);
+          // First check if machine info is already in the booking
+          if (booking.machineName) {
+            names[booking.machineId || booking.machine] = booking.machineName;
+            continue;
+          }
+          
+          // If nested machine object exists with name
+          if (booking.machine && booking.machine.name) {
+            names[booking.machineId || booking.machine._id] = booking.machine.name;
+            continue;
+          }
+          
+          // Get machine ID from appropriate property
+          const machineId = booking.machineId || 
+                           (booking.machine && typeof booking.machine === 'object' ? 
+                            booking.machine._id : booking.machine);
+          
+          // Skip if no valid machine ID found
+          if (!machineId) {
+            console.log("No valid machine ID found for booking:", booking);
+            continue;
+          }
+          
+          // Check static data first
+          const machineFromData = machines.find(m => m.id === machineId);
           if (machineFromData) {
-            names[booking.machineId] = machineFromData.name;
+            names[machineId] = machineFromData.name;
           } else {
-            const machine = await machineService.getMachineById(booking.machineId);
+            // Try to fetch from service
+            const machine = await machineService.getMachineById(machineId);
             if (machine) {
-              names[booking.machineId] = machine.name;
+              names[machineId] = machine.name;
             }
           }
         } catch (error) {
-          console.error(`Error fetching machine ${booking.machineId}:`, error);
-          names[booking.machineId] = getMachineName(booking.machineId);
+          console.error(`Error fetching machine for booking:`, error);
+          names[booking.machineId || booking.machine] = getMachineName(booking.machineId || booking.machine);
         }
       }
     }
@@ -114,14 +140,14 @@ const BookingsCard = () => {
     try {
       let success = false;
       try {
-        success = await mongoDbService.deleteBooking(bookingToDelete.id);
+        success = await mongoDbService.deleteBooking(bookingToDelete.id || bookingToDelete._id);
         console.log(`MongoDB deleteBooking result: ${success}`);
       } catch (mongoError) {
         console.error("MongoDB delete booking error:", mongoError);
       }
       
       if (!success) {
-        success = await bookingService.deleteBooking(bookingToDelete.id);
+        success = await bookingService.deleteBooking(bookingToDelete.id || bookingToDelete._id);
       }
       
       if (success) {
@@ -131,7 +157,7 @@ const BookingsCard = () => {
         });
       }
       
-      const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
+      const updatedBookings = bookings.filter(b => (b.id || b._id) !== (bookingToDelete.id || bookingToDelete._id));
       setBookings(updatedBookings);
       
       const storedUser = localStorage.getItem('learnit_user');
@@ -147,7 +173,7 @@ const BookingsCard = () => {
     } catch (error) {
       console.error("Error deleting booking:", error);
       
-      const updatedBookings = bookings.filter(b => b.id !== bookingToDelete.id);
+      const updatedBookings = bookings.filter(b => (b.id || b._id) !== (bookingToDelete.id || bookingToDelete._id));
       setBookings(updatedBookings);
       
       const storedUser = localStorage.getItem('learnit_user');
@@ -230,6 +256,17 @@ const BookingsCard = () => {
   };
 
   const getMachineType = (machineId) => {
+    // First check if we have populated machine data with type
+    const foundBooking = bookings.find(b => 
+      (b.machineId === machineId || b.machine === machineId || 
+      (b.machine && b.machine._id === machineId))
+    );
+    
+    if (foundBooking && foundBooking.machine && foundBooking.machine.type) {
+      return foundBooking.machine.type;
+    }
+    
+    // Fallback to static data
     const machine = machines.find(m => m.id === machineId);
     return machine ? machine.type : "Unknown";
   };
@@ -300,7 +337,15 @@ const BookingsCard = () => {
                 <div>
                   <p className="font-medium">Machine Details</p>
                   <p className="text-sm text-gray-600">
-                    {getMachineName(selectedBooking.machineId)} - {getMachineType(selectedBooking.machineId)}
+                    {getMachineName(selectedBooking.machineId || 
+                                   (selectedBooking.machine && typeof selectedBooking.machine === 'object' ? 
+                                    selectedBooking.machine._id : selectedBooking.machine))} 
+                    {getMachineType(selectedBooking.machineId || 
+                                  (selectedBooking.machine && typeof selectedBooking.machine === 'object' ? 
+                                   selectedBooking.machine._id : selectedBooking.machine)) !== "Unknown" && 
+                      ` - ${getMachineType(selectedBooking.machineId || 
+                                         (selectedBooking.machine && typeof selectedBooking.machine === 'object' ? 
+                                          selectedBooking.machine._id : selectedBooking.machine))}`}
                   </p>
                 </div>
               </div>
@@ -334,7 +379,9 @@ const BookingsCard = () => {
           
           {bookingToDelete && (
             <div className="py-4">
-              <p className="text-sm font-semibold">{getMachineName(bookingToDelete.machineId)}</p>
+              <p className="text-sm font-semibold">{getMachineName(bookingToDelete.machineId || 
+                                                               (bookingToDelete.machine && typeof bookingToDelete.machine === 'object' ? 
+                                                                bookingToDelete.machine._id : bookingToDelete.machine))}</p>
               <p className="text-sm text-gray-500">{bookingToDelete.date} at {bookingToDelete.time}</p>
               <p className="text-sm text-gray-500">Status: <span className={`
                 ${bookingToDelete.status === 'Approved' && 'text-green-600'} 

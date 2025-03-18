@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Booking } from '../models/Booking';
 import User from '../models/User';
@@ -94,8 +93,8 @@ export const createBooking = async (req: Request, res: Response) => {
       machine: machineId,
       date,
       time,
-      // Auto-approve bookings made by admins, otherwise always Pending
-      status: req.user.isAdmin ? 'Approved' : 'Pending',
+      // ALWAYS set initial status to Pending, even for admins
+      status: 'Pending',
       // Add user and machine names
       userName: user.name,
       machineName: machine.name
@@ -103,11 +102,6 @@ export const createBooking = async (req: Request, res: Response) => {
     
     const createdBooking = await booking.save();
     console.log('Created booking in MongoDB:', createdBooking);
-    
-    // If admin auto-approved, add to machine's booked time slots
-    if (req.user.isAdmin && machine.addBookedTimeSlot) {
-      await machine.addBookedTimeSlot(timeSlot);
-    }
     
     // Add booking reference to user's bookings array
     await User.findByIdAndUpdate(
