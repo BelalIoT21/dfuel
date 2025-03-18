@@ -44,7 +44,7 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // Use localhost:4000 for all platforms for consistency
+  // Always use localhost for consistency across platforms
   if (key === 'CUSTOM_SERVER_IP') {
     return 'localhost';
   }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,27 +14,11 @@ import { machineDatabaseService } from '@/services/database/machineService';
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [editingMachineId, setEditingMachineId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'Machine',
-    status: 'Available',
-    requiresCertification: true,
-    difficulty: 'Intermediate',
-    imageUrl: '/placeholder.svg',
-    details: '',
-    specifications: '',
-    certificationInstructions: '',
-    linkedCourseId: '',
-    linkedQuizId: '',
-  });
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -95,79 +80,6 @@ const AdminMachines = () => {
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-  const handleEditMachine = (id: string) => {
-    setEditingMachineId(id);
-    const machine = machinesList.find(m => m.id === id || m._id === id);
-    if (machine) {
-      setFormData({
-        name: machine.name,
-        description: machine.description || '',
-        type: 'Machine',
-        status: machine.status || 'Available',
-        requiresCertification: machine.requiresCertification !== undefined ? machine.requiresCertification : true,
-        difficulty: machine.difficulty || 'Intermediate',
-        imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
-        details: machine.details || '',
-        specifications: machine.specifications || '',
-        certificationInstructions: machine.certificationInstructions || '',
-        linkedCourseId: machine.linkedCourseId || '',
-        linkedQuizId: machine.linkedQuizId || '',
-      });
-    }
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingMachineId) return;
-    
-    try {
-      setIsSubmitting(true);
-      
-      const updatedMachine = await machineDatabaseService.updateMachine(editingMachineId, formData);
-      
-      if (!updatedMachine) {
-        throw new Error("Failed to update machine");
-      }
-      
-      toast({
-        title: "Machine Updated",
-        description: `${formData.name} has been updated successfully.`
-      });
-      
-      setMachinesList(prev => 
-        prev.map(m => 
-          (m.id === editingMachineId || m._id === editingMachineId) 
-            ? { ...m, ...updatedMachine } 
-            : m
-        )
-      );
-      
-      setEditingMachineId(null);
-      setFormData({
-        name: '',
-        description: '',
-        type: 'Machine',
-        status: 'Available',
-        requiresCertification: true,
-        difficulty: 'Intermediate',
-        imageUrl: '/placeholder.svg',
-        details: '',
-        specifications: '',
-        certificationInstructions: '',
-        linkedCourseId: '',
-        linkedQuizId: '',
-      });
-    } catch (error) {
-      console.error("Error updating machine:", error);
-      toast({
-        title: "Error Updating Machine",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteMachine = async (id: string) => {
     try {
@@ -291,9 +203,6 @@ const AdminMachines = () => {
                       </div>
                       
                       <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" onClick={() => handleEditMachine(machine.id || machine._id)}>
-                          Edit
-                        </Button>
                         <Button size="sm" variant="outline" asChild>
                           <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
                         </Button>

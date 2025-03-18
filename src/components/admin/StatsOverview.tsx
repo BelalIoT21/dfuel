@@ -16,6 +16,14 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   const [bookingsCount, setBookingsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
+  const [machineCount, setMachineCount] = useState(0);
+  
+  // Set machine count when machines prop changes
+  useEffect(() => {
+    if (Array.isArray(machines)) {
+      getMachineCount(machines);
+    }
+  }, [machines]);
   
   // Fetch the actual bookings count
   useEffect(() => {
@@ -88,17 +96,18 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     fetchUsers();
   }, [allUsers]);
   
-  // Get machine count - exclude only machines 5 and 6
-  const getMachineCount = () => {
-    if (!Array.isArray(machines)) {
-      console.log("Machines is not an array:", machines);
+  // Get actual machine count based on the machines array
+  const getMachineCount = (machinesArray: any[]) => {
+    if (!Array.isArray(machinesArray)) {
+      console.log("Machines is not an array:", machinesArray);
+      setMachineCount(0);
       return 0;
     }
     
-    console.log("Total machines before filtering:", machines.length);
+    console.log("Total machines before filtering:", machinesArray.length);
     
     // Filter out ONLY machines with IDs 5 and 6 (safety cabinet and safety course)
-    const filteredMachines = machines.filter(machine => {
+    const filteredMachines = machinesArray.filter(machine => {
       const id = machine.id || machine._id;
       const stringId = String(id); // Convert to string to ensure consistent comparison
       return stringId !== '5' && stringId !== '6';
@@ -106,8 +115,11 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     
     console.log("Filtered machines count:", filteredMachines.length);
     
-    // Always return 4 for the count since we know there are exactly 4 machines
-    return 4;
+    // Update state with the count
+    setMachineCount(filteredMachines.length);
+    
+    // Return the actual count from the filtered array
+    return filteredMachines.length;
   };
   
   // Basic statistics for the admin dashboard
@@ -121,7 +133,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     },
     { 
       title: 'Total Machines', 
-      value: getMachineCount(), 
+      value: machineCount, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
       change: '',
       link: '/admin/machines'
