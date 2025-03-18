@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
+import { Key, RefreshCw, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
@@ -16,7 +16,7 @@ import BookMachineButton from './BookMachineButton';
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
 // Define standard machine IDs that we know should exist
-const STANDARD_MACHINE_IDS = ["1", "3", "4", "5", "6"];
+const STANDARD_MACHINE_IDS = ["1", "2", "3", "4", "5", "6"];
 
 // Define known machines with correct name mappings for fallback
 const MACHINE_NAMES = {
@@ -40,8 +40,13 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
   const [machineStatuses, setMachineStatuses] = useState({});
-  const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
-  const [allCertifications, setAllCertifications] = useState<any[]>([]);
+
+  // Load machines when component mounts or when activeTab changes to 'certifications'
+  useEffect(() => {
+    if (activeTab === 'certifications') {
+      fetchMachinesAndCertifications();
+    }
+  }, [user, activeTab]);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -53,40 +58,10 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Fetch the current available machines directly from the database 
-      let dbMachines = [];
-      try {
-        dbMachines = await machineService.getMachines();
-        console.log("Machines fetched from database:", dbMachines.length);
-        
-        // Extract machine IDs
-        const dbMachineIds = dbMachines.map(machine => 
-          (machine.id || machine._id).toString()
-        );
-        
-        // Add the special machines that might not be in the database
-        SPECIAL_MACHINE_IDS.forEach(id => {
-          if (!dbMachineIds.includes(id)) {
-            dbMachineIds.push(id);
-          }
-        });
-        
-        setAvailableMachineIds(dbMachineIds);
-        console.log("Available machine IDs:", dbMachineIds);
-      } catch (error) {
-        console.error("Error fetching machines from database:", error);
-        // Fall back to standard machine IDs if database fetch fails
-        setAvailableMachineIds(STANDARD_MACHINE_IDS);
-      }
+      // Always include all standard machines, even if they're not in the database
+      const machinesData = [];
       
-      // Create a certification list from the available machine IDs
-      const certList = availableMachineIds.map(id => ({
-        id,
-        name: MACHINE_NAMES[id] || `Machine ${id}`
-      }));
-      setAllCertifications(certList);
-      
-      // Get fresh user certifications from the service
+      // Get user certifications
       let userCerts = [];
       try {
         userCerts = await certificationService.getUserCertifications(user.id);
@@ -101,51 +76,55 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       
       // Fetch machine statuses
       const statuses = {};
-      for (const machine of dbMachines) {
-        const machineId = (machine.id || machine._id).toString();
-        try {
-          const status = await machineService.getMachineStatus(machineId);
-          statuses[machineId] = status;
-        } catch (err) {
-          console.error("Error fetching machine status:", err);
-          statuses[machineId] = 'unknown';
+      try {
+        // Try to get actual machines from the database first
+        const dbMachines = await machineService.getMachines();
+        console.log("Machines fetched from database:", dbMachines);
+        
+        // Get statuses for all machines
+        for (const machine of dbMachines) {
+          const machineId = (machine.id || machine._id).toString();
+          try {
+            const status = await machineService.getMachineStatus(machineId);
+            statuses[machineId] = status;
+          } catch (err) {
+            console.error("Error fetching machine status:", err);
+            statuses[machineId] = 'available'; // Default to available
+          }
         }
+      } catch (err) {
+        console.error("Error fetching machines from database:", err);
+        // If database fetch fails, use default statuses
+        STANDARD_MACHINE_IDS.forEach(id => {
+          statuses[id] = id === "1" ? "maintenance" : "available";
+        });
       }
       setMachineStatuses(statuses);
       
-      // Format the machines for display
-      const formattedMachines = certList
-        .filter(machine => {
-          const machineId = machine.id.toString();
-          const machineName = MACHINE_NAMES[machineId] || machine.name;
-          
-          // Filter out CNC Mill but keep all other machines that exist in the database
-          // or are special machines (Safety Cabinet and Safety Course)
-          return (machineName.toLowerCase() !== "cnc mill") && 
-                 (SPECIAL_MACHINE_IDS.includes(machineId) || 
-                  availableMachineIds.includes(machineId));
-        })
-        .map(machine => {
-          const machineId = machine.id.toString();
-          const certDate = user?.certificationDates?.[machineId] 
-            ? new Date(user.certificationDates[machineId])
-            : new Date();
-          
-          // Use our predefined machine names as fallback
-          const machineName = MACHINE_NAMES[machineId] || machine.name;
-          
-          return {
-            id: machineId,
-            name: machineName,
-            certified: userCerts.includes(machineId),
-            date: format(certDate, 'dd/MM/yyyy'),
-            bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
-            status: statuses[machineId] || 'unknown'
-          };
+      // Format the machines for display, always include all standard machines
+      for (const machineId of STANDARD_MACHINE_IDS) {
+        // Skip if it's a safety cabinet or safety course (IDs 5 and 6)
+        if (machineId === "5" || machineId === "6") continue;
+        
+        const certDate = user?.certificationDates?.[machineId] 
+          ? new Date(user.certificationDates[machineId])
+          : new Date();
+        
+        // Use our predefined machine names
+        const machineName = MACHINE_NAMES[machineId];
+        
+        machinesData.push({
+          id: machineId,
+          name: machineName,
+          certified: userCerts.includes(machineId),
+          date: format(certDate, 'dd/MM/yyyy'),
+          bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
+          status: statuses[machineId] || 'available'
         });
+      }
       
-      console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
-      setMachines(formattedMachines);
+      console.log(`Displaying machines: ${machinesData.map(m => m.name).join(', ')}`);
+      setMachines(machinesData);
     } catch (error) {
       console.error("Error fetching machines:", error);
       toast({
@@ -157,20 +136,6 @@ const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
       setRefreshing(false);
     }
   };
-
-  // Load machines when component mounts or when activeTab changes to 'certifications'
-  useEffect(() => {
-    if (activeTab === 'certifications') {
-      fetchMachinesAndCertifications();
-    }
-  }, [user, activeTab]);
-  
-  // Make sure we have standard machine IDs if nothing is set yet
-  useEffect(() => {
-    if (availableMachineIds.length === 0) {
-      setAvailableMachineIds(STANDARD_MACHINE_IDS);
-    }
-  }, []);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
