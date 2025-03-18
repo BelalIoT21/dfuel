@@ -205,7 +205,8 @@ class ApiService {
   }
   
   async updateProfile(userId: string, updates: any) {
-    return this.put<{ success: boolean }>(`auth/profile`, updates);
+    console.log(`Updating profile via API with:`, updates);
+    return this.put<{ success: boolean, user: any }>(`auth/profile`, updates);
   }
   
   async addCertification(userId: string, certificationId: string) {

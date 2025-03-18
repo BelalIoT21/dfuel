@@ -211,6 +211,9 @@ class UserDatabase {
           if (response.data && response.data.success) {
             console.log("Successfully updated user profile via API");
             return true;
+          } else if (response.error) {
+            console.error("API error when updating profile:", response.error);
+            throw new Error(response.error);
           }
         }
       } catch (apiError) {
