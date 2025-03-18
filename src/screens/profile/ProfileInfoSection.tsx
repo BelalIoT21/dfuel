@@ -31,7 +31,14 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
 
     setLoading(true);
     try {
-      // Ensure token is set in localStorage before update
+      // Get token from localStorage before making the request
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'Authentication token not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      
       const success = await updateProfile({ name: name.trim(), email: email.trim() });
       if (success) {
         Alert.alert('Success', 'Profile updated successfully');

@@ -90,10 +90,17 @@ export const useProfileFunctions = (
       const token = localStorage.getItem('token');
       if (token) {
         apiService.setToken(token);
+      } else {
+        toast({
+          title: "Error",
+          description: "Authentication token not found. Please log in again.",
+          variant: "destructive"
+        });
+        return false;
       }
 
       // Use API service directly to update profile
-      console.log("Calling apiService.updateProfile with:", user.id, updates);
+      console.log("Calling apiService.updateProfile with:", updates);
       const response = await apiService.updateProfile(user.id, updates);
       
       if (response.data && response.data.success) {

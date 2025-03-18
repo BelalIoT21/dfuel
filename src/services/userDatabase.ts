@@ -1,3 +1,4 @@
+
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
@@ -206,7 +207,7 @@ class UserDatabase {
             Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
           );
           
-          // Notice we no longer pass userId since it will come from the token
+          // Make the API request to update the profile
           const response = await apiService.updateProfile(userId, filteredUpdates);
           if (response.data && response.data.success) {
             console.log("Successfully updated user profile via API");
@@ -214,15 +215,14 @@ class UserDatabase {
           } else if (response.error) {
             console.error("API error when updating profile:", response.error);
             throw new Error(response.error);
+          } else {
+            return false;
           }
         }
       } catch (apiError) {
         console.error("API error when updating profile:", apiError);
         throw apiError;
       }
-      
-      // If we reached here, the API didn't explicitly succeed or fail
-      return false;
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
       throw error;
