@@ -52,7 +52,7 @@ export class UserService {
   }
   
   // Update user profile
-  async updateProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
+  async updateProfile(userId: string, updates: {name?: string, email?: string}): Promise<boolean> {
     try {
       console.log(`Attempting to update user profile in userService: ${userId}`, updates);
       

@@ -47,6 +47,7 @@ class ApiService {
       
       if (authRequired && authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
+        console.log("Using token for authorization:", authToken ? 'token-present' : 'no-token');
       }
       
       const options: RequestInit = {
@@ -60,6 +61,7 @@ class ApiService {
       }
       
       console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
+      console.log("Request headers:", headers);
       
       // Try with retry and endpoint switching logic
       let response;
@@ -336,6 +338,8 @@ class ApiService {
 
   async changePassword(currentPassword: string, newPassword: string) {
     console.log('Attempting to change password via API');
+    
+    // Ensure we're using the correct endpoint
     return this.post<{ message: string, success: boolean }>(
       'auth/change-password', 
       { currentPassword, newPassword }

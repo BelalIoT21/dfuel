@@ -171,40 +171,56 @@ class UserDatabase {
     }
   }
   
-  async updateUserProfile(userId: string, updates: {name?: string; email?: string; password?: string}): Promise<boolean> {
+  async updateUserProfile(userId: string, updates: {name?: string; email?: string; password?: string; currentPassword?: string}): Promise<boolean> {
     try {
       console.log(`UserDatabase: Updating profile for user ${userId}`, updates);
       
-      // Try API first
+      // Try API first with proper auth token
       try {
         console.log("Attempting to update profile via API...");
-        const response = await apiService.updateProfile(userId, updates);
-        if (response.data && response.data.success) {
-          console.log("Successfully updated user profile via API");
-          return true;
+        
+        // For password change
+        if (updates.password && updates.currentPassword) {
+          const response = await apiService.changePassword(updates.currentPassword, updates.password);
+          if (response.data && response.data.success) {
+            console.log("Successfully changed password via API");
+            return true;
+          } else {
+            console.error("API error when changing password:", response.error);
+            if (response.error?.includes('Current password is incorrect')) {
+              throw new Error('Current password is incorrect');
+            }
+            return false;
+          }
+        }
+        
+        // For profile update
+        else {
+          const profileUpdates = {
+            name: updates.name,
+            email: updates.email
+          };
+          
+          // Filter out undefined values
+          const filteredUpdates = Object.fromEntries(
+            Object.entries(profileUpdates).filter(([_, v]) => v !== undefined)
+          );
+          
+          const response = await apiService.updateProfile(userId, filteredUpdates);
+          if (response.data && response.data.success) {
+            console.log("Successfully updated user profile via API");
+            return true;
+          }
         }
       } catch (apiError) {
         console.error("API error when updating profile:", apiError);
+        throw apiError;
       }
       
-      // Use MongoDB directly
-      console.log("Using MongoDB directly for profile update...");
-      
-      try {
-        const mongoSuccess = await mongoDbService.updateUser(userId, updates);
-        if (mongoSuccess) {
-          console.log("Successfully updated user profile in MongoDB");
-          return true;
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error when updating profile:", mongoError);
-      }
-      
-      console.error("Failed to update user profile in any data source");
       return false;
     } catch (error) {
       console.error('Error in updateUserProfile:', error);
-      return false;
+      throw error;
     }
   }
   
@@ -212,9 +228,16 @@ class UserDatabase {
     try {
       console.log(`UserDatabase: Changing password for user ${userId}`);
       
-      // Try API first
+      // Use API service
       try {
         console.log("Attempting to change password via API...");
+        
+        // Ensure token is set
+        const token = localStorage.getItem('token');
+        if (token) {
+          apiService.setToken(token);
+        }
+        
         const response = await apiService.changePassword(currentPassword, newPassword);
         if (response.data && response.data.success) {
           console.log("Successfully changed password via API");
@@ -229,33 +252,6 @@ class UserDatabase {
       } catch (apiError) {
         console.error("API error when changing password:", apiError);
         throw apiError;
-      }
-      
-      // If API fails, try MongoDB directly
-      try {
-        // Get user from MongoDB to verify current password
-        const user = await mongoDbService.getUserById(userId);
-        if (!user) {
-          console.error(`User ${userId} not found in MongoDB`);
-          throw new Error("User not found");
-        }
-        
-        // Update password in MongoDB
-        const success = await mongoDbService.updateUser(userId, { 
-          password: newPassword,
-          currentPassword: currentPassword
-        });
-        
-        if (success) {
-          console.log("Successfully changed password in MongoDB");
-          return true;
-        } else {
-          console.error("Failed to update password in MongoDB");
-          throw new Error("Failed to update password");
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error when changing password:", mongoError);
-        throw mongoError;
       }
     } catch (error) {
       console.error('Error in changePassword:', error);

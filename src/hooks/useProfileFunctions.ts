@@ -86,6 +86,12 @@ export const useProfileFunctions = (
         return true;
       }
 
+      // Ensure token is set before making API request
+      const token = localStorage.getItem('token');
+      if (token) {
+        apiService.setToken(token);
+      }
+
       // Use API service directly to update profile
       console.log("Calling apiService.updateProfile with:", user.id, updates);
       const response = await apiService.updateProfile(user.id, updates);
@@ -152,6 +158,12 @@ export const useProfileFunctions = (
           variant: "destructive"
         });
         return false;
+      }
+
+      // Ensure token is set before making API request
+      const token = localStorage.getItem('token');
+      if (token) {
+        apiService.setToken(token);
       }
 
       // Use apiService directly for password change
