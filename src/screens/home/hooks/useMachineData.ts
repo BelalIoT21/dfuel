@@ -66,6 +66,8 @@ export const useMachineData = (user, navigation) => {
       
       // Bypass cache by adding timestamp to request
       const timestamp = new Date().getTime();
+      
+      // First get all available machines to know which IDs exist in the database
       const machines = await machineService.getMachines(timestamp);
       
       if (!machines || machines.length === 0) {
@@ -77,11 +79,20 @@ export const useMachineData = (user, navigation) => {
       
       console.log("Fetched machines data:", machines.length, "items");
       
+      // Filter out machines with IDs 5 and 6 (safety cabinet and safety course)
+      const actualMachines = machines.filter(machine => {
+        const id = machine.id || machine._id;
+        const stringId = String(id);
+        return stringId !== '5' && stringId !== '6';
+      });
+      
+      console.log("Actual machines after filtering safety items:", actualMachines.length);
+      
       // Create an array to hold machines with their statuses
       const machinesWithStatus = [];
       
       // Load status for each machine individually to ensure fresh data
-      for (const machine of machines) {
+      for (const machine of actualMachines) {
         try {
           console.log("Loading status for machine:", machine.id);
           

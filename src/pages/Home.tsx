@@ -70,8 +70,21 @@ const Home = () => {
       try {
         setLoading(true);
         
+        // First fetch all available machines from the API
+        const availableMachines = await machineService.getMachines();
+        console.log("Available machines from API:", availableMachines);
+        
+        // Get the IDs of machines that still exist in the database
+        const existingMachineIds = availableMachines.map(m => m.id.toString());
+        console.log("Existing machine IDs:", existingMachineIds);
+        
+        // Filter our consistent machine data to only include machines that exist in the database
+        const filteredMachineData = MACHINE_DATA.filter(machine => 
+          existingMachineIds.includes(machine.id.toString())
+        );
+        
         // Use our consistent machine data but fetch statuses
-        const extendedMachines = await Promise.all(MACHINE_DATA.map(async (machine) => {
+        const extendedMachines = await Promise.all(filteredMachineData.map(async (machine) => {
           try {
             const status = await machineService.getMachineStatus(machine.id);
             return {
@@ -87,10 +100,9 @@ const Home = () => {
           }
         }));
         
-        // Only include machines 1-4
-        setMachineData(extendedMachines.filter(m => 
-          ['1', '2', '3', '4'].includes(m.id)
-        ));
+        // Only include machines that exist in the database
+        setMachineData(extendedMachines);
+        console.log("Filtered machine data:", extendedMachines);
       } catch (error) {
         console.error("Error loading machine data:", error);
         toast({
@@ -99,11 +111,24 @@ const Home = () => {
           variant: "destructive"
         });
         
-        // Fallback to static data with default 'available' status
-        setMachineData(MACHINE_DATA.map(machine => ({
-          ...machine,
-          status: 'available' as const
-        })));
+        // Try to fetch just the IDs of available machines as a fallback
+        try {
+          const availableMachines = await machineService.getMachines();
+          const existingMachineIds = availableMachines.map(m => m.id.toString());
+          
+          // Filter static data based on what exists in the database
+          const fallbackMachines = MACHINE_DATA.filter(machine => 
+            existingMachineIds.includes(machine.id)
+          ).map(machine => ({
+            ...machine,
+            status: 'available' as const
+          }));
+          
+          setMachineData(fallbackMachines);
+        } catch (fallbackError) {
+          console.error("Fallback error:", fallbackError);
+          setMachineData([]); // If all else fails, show no machines
+        }
       } finally {
         setLoading(false);
       }
@@ -150,6 +175,11 @@ const Home = () => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>
+          </div>
+        ) : machineData.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-purple-800 mb-2">No Machines Available</h2>
+            <p className="text-gray-600">There are currently no machines available in the system.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
