@@ -101,10 +101,10 @@ const PORT = process.env.PORT || 4000;
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   
-  // Check and seed machines if needed
+  // Check and seed machines if needed, ensuring all 6 machines exist
   checkAndSeedMachines()
-    .then(() => console.log('Machine check completed'))
-    .catch(err => console.error('Error during machine check:', err));
+    .then(() => console.log('Machine check and seeding completed'))
+    .catch(err => console.error('Error during machine check and seeding:', err));
 });
 
 // Handle unhandled promise rejections

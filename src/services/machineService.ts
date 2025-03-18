@@ -15,13 +15,14 @@ export class MachineService {
         return false;
       }
       
-      // Get auth token from localStorage and set it before making the request
+      // Get auth token from localStorage
       const token = localStorage.getItem('token');
       if (!token) {
         console.error("No authentication token available for updating machine status");
         return false;
       }
       
+      // Always set the token before making API requests
       apiService.setToken(token);
       
       // Use API to update machine status
@@ -30,7 +31,7 @@ export class MachineService {
         const response = await apiService.put(`machines/${machineId}/status`, { 
           status, 
           maintenanceNote: note 
-        }, true); // Set authRequired to true explicitly
+        }, true);
         
         console.log("API response:", response);
         return response.data?.success || false;
@@ -111,12 +112,6 @@ export class MachineService {
       try {
         const response = await apiService.get(`machines/${machineId}`);
         if (response.data) {
-          // Filter out machines 5 and 6
-          if (machineId === "5" || machineId === "6") {
-            console.log(`Machine ${machineId} is filtered out`);
-            return null;
-          }
-          
           return {
             ...response.data,
             id: response.data.id || response.data._id,
@@ -132,12 +127,6 @@ export class MachineService {
       const machine = machines.find(m => m.id === machineId);
       
       if (machine) {
-        // Filter out machines 5 and 6
-        if (machineId === "5" || machineId === "6") {
-          console.log(`Machine ${machineId} is filtered out`);
-          return null;
-        }
-        
         return {
           ...machine,
           status: 'available',
