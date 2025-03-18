@@ -111,7 +111,12 @@ class MongoDbService {
         const response = await apiService.get(`machines?t=${timestamp}`);
         if (response.data && Array.isArray(response.data)) {
           console.log(`API returned ${response.data.length} machines`);
-          return response.data;
+          // Filter out machines 5 and 6
+          const filteredMachines = response.data.filter(machine => {
+            const id = machine.id || machine._id;
+            return id !== '5' && id !== '6';
+          });
+          return filteredMachines;
         }
       } catch (error) {
         console.error("Error getting machines from API:", error);

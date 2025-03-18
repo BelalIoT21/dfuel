@@ -15,7 +15,6 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('');
   
   // Set default tab based on URL parameter
   const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
@@ -25,20 +24,16 @@ const Profile = () => {
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
-    setActiveTab(value);
   };
 
   useEffect(() => {
-    // Set initial active tab value
-    setActiveTab(defaultTab);
-    
     // Add a small delay to ensure auth state is loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 300);
     
     return () => clearTimeout(timer);
-  }, [defaultTab]);
+  }, []);
 
   // Show loading state
   if (isLoading) {
@@ -65,7 +60,7 @@ const Profile = () => {
         
         <h1 className="text-3xl font-bold mb-6 text-purple-800">Your Profile</h1>
         
-        <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs value={defaultTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="w-full mb-2 grid grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="certifications">Certifications</TabsTrigger>
@@ -77,7 +72,7 @@ const Profile = () => {
           </TabsContent>
           
           <TabsContent value="certifications">
-            <CertificationsCard activeTab={activeTab} />
+            <CertificationsCard />
           </TabsContent>
           
           <TabsContent value="bookings">

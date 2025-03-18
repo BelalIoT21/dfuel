@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -151,8 +150,12 @@ class MongoMachineService {
       const machines = await this.machinesCollection.find().toArray();
       console.log(`Retrieved ${machines.length} machines from MongoDB`);
       
-      // No longer filtering out machines 5 and 6
-      return machines;
+      // Filter out machines 5 and 6
+      const filteredMachines = machines.filter(machine => 
+        machine._id !== '5' && machine._id !== '6'
+      );
+      
+      return filteredMachines;
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
       return [];
@@ -304,26 +307,6 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Intermediate',
             imageUrl: '/machines/bambu-lab.jpg'
-          },
-          { 
-            _id: '5', 
-            name: 'Safety Cabinet', 
-            type: 'Safety Equipment', 
-            status: 'Available', 
-            description: 'Equipment storage and safety information.', 
-            requiresCertification: true,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-cabinet.jpg'
-          },
-          { 
-            _id: '6', 
-            name: 'Machine Safety Course', 
-            type: 'Training', 
-            status: 'Available', 
-            description: 'Required safety training for all machine users.', 
-            requiresCertification: true,
-            difficulty: 'Beginner',
-            imageUrl: '/machines/safety-course.jpg'
           }
         ];
         
@@ -352,9 +335,7 @@ class MongoMachineService {
         const updates = [
           { _id: '2', name: 'Ultimaker', type: '3D Printer' },
           { _id: '3', name: 'X1 E Carbon 3D Printer', type: '3D Printer' },
-          { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' },
-          { _id: '5', name: 'Safety Cabinet', type: 'Safety Equipment' },
-          { _id: '6', name: 'Machine Safety Course', type: 'Training' }
+          { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' }
         ];
         
         for (const update of updates) {
@@ -364,6 +345,10 @@ class MongoMachineService {
             { upsert: true }
           );
         }
+        
+        // Remove machines 5 and 6 if they exist (they're special machines not stored here)
+        await this.machinesCollection.deleteMany({ _id: { $in: ['5', '6'] } });
+        console.log("Updated machine names and removed safety machines if needed");
       }
 
       // Update Laser Cutter status to maintenance after seed
