@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { TextInput, Button } from 'react-native-paper';
 import { Text } from 'react-native';
 import { User } from '@/types/database';
+import { storage } from '@/utils/storage';
 
 interface ProfileInfoSectionProps {
   user: User;
@@ -31,8 +31,8 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
 
     setLoading(true);
     try {
-      // Get token from localStorage before making the request
-      const token = localStorage.getItem('token');
+      // Get token from storage before making the request
+      const token = await storage.getItem('token');
       if (!token) {
         Alert.alert('Error', 'Authentication token not found. Please log in again.');
         setLoading(false);

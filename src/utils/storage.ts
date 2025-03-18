@@ -1,13 +1,14 @@
-import { isWeb } from './platform';
+
+import { isWeb, isCapacitor } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we now allow localStorage usage for auth persistence
- * For native environments, we still use AsyncStorage for session persistence
+ * For web and Capacitor, we use localStorage for auth persistence
+ * For native environments, we use AsyncStorage for session persistence
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
-    if (isWeb) {
+    if (isWeb || isCapacitor()) {
       try {
         return localStorage.getItem(key);
       } catch (error) {
@@ -30,7 +31,7 @@ class StorageService {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    if (isWeb) {
+    if (isWeb || isCapacitor()) {
       try {
         localStorage.setItem(key, value);
       } catch (error) {
@@ -49,7 +50,7 @@ class StorageService {
   }
 
   async removeItem(key: string): Promise<void> {
-    if (isWeb) {
+    if (isWeb || isCapacitor()) {
       try {
         localStorage.removeItem(key);
       } catch (error) {
