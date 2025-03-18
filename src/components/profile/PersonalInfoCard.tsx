@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,10 +27,8 @@ const PersonalInfoCard = () => {
 
   if (!user) return null;
 
-  // Enhanced date formatting with better fallback handling
   const formatDate = (dateStr: string | Date | undefined) => {
     if (!dateStr) {
-      // Use updated fallback mechanism
       return user.createdAt 
         ? `Account created: ${new Date(user.createdAt).toLocaleDateString()}`
         : 'Recently joined';
@@ -40,7 +37,6 @@ const PersonalInfoCard = () => {
     try {
       const date = new Date(dateStr);
       
-      // Check if date is valid
       if (isNaN(date.getTime())) {
         return user.createdAt 
           ? `Account created: ${new Date(user.createdAt).toLocaleDateString()}`
@@ -111,7 +107,6 @@ const PersonalInfoCard = () => {
       console.log("Attempting to change password in PersonalInfoCard");
       const success = await changePassword(currentPassword, newPassword);
       if (success) {
-        // Close dialog and reset fields on success
         setIsPasswordDialogOpen(false);
         setCurrentPassword('');
         setNewPassword('');

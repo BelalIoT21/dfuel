@@ -13,6 +13,11 @@ export class UserService {
   // Find user by email
   async findUserByEmail(email: string): Promise<User | undefined> {
     try {
+      if (!email) {
+        console.error('Invalid email provided to findUserByEmail');
+        return undefined;
+      }
+      
       const user = await databaseService.findUserByEmail(email);
       return user || undefined;
     } catch (error) {
@@ -25,6 +30,11 @@ export class UserService {
   // Find user by ID
   async findUserById(id: string): Promise<User | undefined> {
     try {
+      if (!id) {
+        console.error('Invalid id provided to findUserById');
+        return undefined;
+      }
+      
       // First check databaseService
       const user = await databaseService.findUserById(id);
       if (user) return user;
@@ -54,40 +64,52 @@ export class UserService {
     try {
       console.log(`Attempting to update user profile in userService: ${userId}`, updates);
       
-      // Check if user exists first - try databaseService
-      let user = await databaseService.findUserById(userId);
+      if (!userId) {
+        console.error("Invalid userId provided to updateProfile");
+        return false;
+      }
       
-      // If not found in database, try localStorage
-      if (!user) {
-        console.log(`User ${userId} not found in database, checking localStorage`);
-        user = localStorageService.findUserById(userId);
-        
-        if (!user) {
-          console.error(`User ${userId} not found in userService.updateProfile`);
-          return false;
-        }
+      // First update the localStorage as a fallback mechanism
+      let localStorageUpdated = false;
+      try {
+        localStorageUpdated = localStorageService.updateUser(userId, updates);
+        console.log(`LocalStorage user update result: ${localStorageUpdated ? 'success' : 'failed'}`);
+      } catch (localError) {
+        console.error("Error updating localStorage user:", localError);
       }
       
       // Check if user is admin
-      if (user.isAdmin && updates.email) {
-        const { adminPassword } = getAdminCredentials();
-        // Update the admin email in our environment system
-        setAdminCredentials(updates.email, adminPassword);
+      let isAdmin = false;
+      try {
+        // Try to get user to check if admin
+        const user = await this.findUserById(userId);
+        isAdmin = user?.isAdmin || false;
+        
+        if (isAdmin && updates.email) {
+          console.log("Updating admin email in environment system");
+          const { adminPassword } = getAdminCredentials();
+          // Update the admin email in our environment system
+          setAdminCredentials(updates.email, adminPassword);
+        }
+      } catch (adminError) {
+        console.error("Error checking for admin status:", adminError);
       }
       
       // Call the database update method
       const success = await databaseService.updateUserProfile(userId, updates);
       
-      if (!success) {
-        // Try direct localStorage update as fallback
-        return localStorageService.updateUser(userId, updates);
-      }
-      
-      return success;
+      // If database update failed but localStorage update worked,
+      // still consider it a success for the user experience
+      return success || localStorageUpdated;
     } catch (error) {
       console.error('Error in userService.updateProfile:', error);
-      // Try direct localStorage update as fallback
-      return localStorageService.updateUser(userId, updates);
+      // Return true if localStorage update was successful as a fallback
+      try {
+        return localStorageService.updateUser(userId, updates);
+      } catch (localError) {
+        console.error("Error in localStorage fallback:", localError);
+        return false;
+      }
     }
   }
 
@@ -96,18 +118,23 @@ export class UserService {
     try {
       console.log(`Attempting to change password in userService: ${userId}`);
       
-      // Find the user first - try database
-      let user = await databaseService.findUserById(userId);
+      if (!userId || !currentPassword || !newPassword) {
+        console.error("Invalid parameters for changePassword");
+        throw new Error("Invalid parameters for password change");
+      }
       
-      // If not found in database, try localStorage
+      // Find the user first - try localStorage for simplicity
+      let user = localStorageService.findUserById(userId);
+      
+      // If not found in localStorage, try database
       if (!user) {
-        console.log(`User ${userId} not found in database, checking localStorage`);
-        user = localStorageService.findUserById(userId);
-        
-        if (!user) {
-          console.error(`User ${userId} not found in userService.changePassword`);
-          throw new Error("User not found");
-        }
+        console.log(`User ${userId} not found in localStorage, checking database`);
+        user = await databaseService.findUserById(userId);
+      }
+      
+      if (!user) {
+        console.error(`User ${userId} not found`);
+        throw new Error("User not found");
       }
       
       // Verify current password
@@ -122,23 +149,31 @@ export class UserService {
         throw new Error("Password must be at least 6 characters");
       }
       
-      // Update password - need to pass it as an object with password property
+      // Update password in localStorage as fallback
+      let localStorageUpdated = false;
+      try {
+        localStorageUpdated = localStorageService.updateUser(userId, { password: newPassword });
+        console.log(`LocalStorage password update result: ${localStorageUpdated ? 'success' : 'failed'}`);
+      } catch (localError) {
+        console.error("Error updating password in localStorage:", localError);
+      }
+      
+      // Update password in database - need to pass it as an object with password property
       const updates = { password: newPassword };
       let success = await databaseService.updateUserProfile(userId, updates);
       
-      if (!success) {
-        // Try direct localStorage update as fallback
-        success = localStorageService.updateUser(userId, { password: newPassword });
-      }
-      
       // If admin, update admin password in environment system
-      if (success && user.isAdmin) {
-        const { adminEmail } = getAdminCredentials();
-        setAdminCredentials(adminEmail, newPassword);
-        console.log(`Updated admin password for ${adminEmail} in environment system`);
+      if ((success || localStorageUpdated) && user.isAdmin) {
+        try {
+          const { adminEmail } = getAdminCredentials();
+          setAdminCredentials(adminEmail, newPassword);
+          console.log(`Updated admin password for ${adminEmail} in environment system`);
+        } catch (adminError) {
+          console.error("Error updating admin credentials:", adminError);
+        }
       }
       
-      return success;
+      return success || localStorageUpdated;
     } catch (error) {
       console.error('Error in userService.changePassword:', error);
       throw error;
