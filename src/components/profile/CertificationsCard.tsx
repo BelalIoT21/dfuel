@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -37,6 +36,7 @@ const CertificationsCard = () => {
   const { toast } = useToast();
   const [machineStatuses, setMachineStatuses] = useState({});
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
+  const [allCertifications, setAllCertifications] = useState<any[]>([]);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -48,31 +48,38 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Prepare the list of machines to consider - start with standard machines
-      let combinedMachineIds = [...STANDARD_MACHINE_IDS];
-      
-      // Fetch the current available machines to determine what exists in the database
+      // Fetch the current available machines directly from the database 
+      let dbMachines = [];
       try {
-        const allCurrentMachines = await machineService.getMachines();
-        console.log("All current machines:", allCurrentMachines.length);
+        dbMachines = await machineService.getMachines();
+        console.log("Machines fetched from database:", dbMachines.length);
         
-        // Extract IDs from current machines and add to our combined list
-        const currentMachineIds = allCurrentMachines.map(machine => 
+        // Extract machine IDs
+        const dbMachineIds = dbMachines.map(machine => 
           (machine.id || machine._id).toString()
         );
         
-        // Add API machines to our list (removes duplicates using Set)
-        combinedMachineIds = [...new Set([...combinedMachineIds, ...currentMachineIds])];
-        setAvailableMachineIds(combinedMachineIds);
-        console.log("Available machine IDs:", combinedMachineIds);
+        // Add the special machines that might not be in the database
+        SPECIAL_MACHINE_IDS.forEach(id => {
+          if (!dbMachineIds.includes(id)) {
+            dbMachineIds.push(id);
+          }
+        });
+        
+        setAvailableMachineIds(dbMachineIds);
+        console.log("Available machine IDs:", dbMachineIds);
       } catch (error) {
-        console.error("Error fetching available machines:", error);
-        // In case of error, use standard machines as fallback
+        console.error("Error fetching machines from database:", error);
+        // Fall back to standard machine IDs if database fetch fails
         setAvailableMachineIds(STANDARD_MACHINE_IDS);
       }
       
-      // Get the certification list from our service
-      const allCertifications = certificationService.getAllCertifications();
+      // Create a certification list from the available machine IDs
+      const certList = availableMachineIds.map(id => ({
+        id,
+        name: MACHINE_NAMES[id] || `Machine ${id}`
+      }));
+      setAllCertifications(certList);
       
       // Get fresh user certifications from the service
       let userCerts = [];
@@ -87,12 +94,10 @@ const CertificationsCard = () => {
         );
       }
       
-      console.log("User certifications in CertificationsCard:", userCerts);
-      
       // Fetch machine statuses
       const statuses = {};
-      for (const cert of allCertifications) {
-        const machineId = cert.id.toString();
+      for (const machine of dbMachines) {
+        const machineId = (machine.id || machine._id).toString();
         try {
           const status = await machineService.getMachineStatus(machineId);
           statuses[machineId] = status;
@@ -103,18 +108,17 @@ const CertificationsCard = () => {
       }
       setMachineStatuses(statuses);
       
-      // Format the machines for display with correct names
-      // Only filter out "cnc mill" by name, show all standard machines plus API machines
-      const formattedMachines = allCertifications
+      // Format the machines for display
+      const formattedMachines = certList
         .filter(machine => {
           const machineId = machine.id.toString();
           const machineName = MACHINE_NAMES[machineId] || machine.name;
           
-          // Check if the machine should be displayed
+          // Filter out CNC Mill but keep all other machines that exist in the database
+          // or are special machines (Safety Cabinet and Safety Course)
           return (machineName.toLowerCase() !== "cnc mill") && 
-                 (SPECIAL_MACHINE_IDS.includes(machineId) ||  // Always include safety cabinet and safety course
-                  STANDARD_MACHINE_IDS.includes(machineId) || // Include standard machines
-                  combinedMachineIds.includes(machineId));    // Include if it's available in the API
+                 (SPECIAL_MACHINE_IDS.includes(machineId) || 
+                  availableMachineIds.includes(machineId));
         })
         .map(machine => {
           const machineId = machine.id.toString();
@@ -158,19 +162,6 @@ const CertificationsCard = () => {
       navigate(`/booking/${machineId}`);
     } else {
       navigate(`/machine/${machineId}`);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'available':
-        return 'text-green-600';
-      case 'maintenance':
-        return 'text-red-600';
-      case 'in-use':
-        return 'text-blue-600';
-      default:
-        return 'text-gray-600';
     }
   };
 
