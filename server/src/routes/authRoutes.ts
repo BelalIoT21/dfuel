@@ -1,16 +1,18 @@
 
 import express from 'express';
 import {
-  register,
-  login,
+  registerUser as register,
+  loginUser as login,
   logout,
   getMe,
   updateProfile,
   resetPassword,
   verifyResetToken,
-  updatePassword
+  updatePassword,
+  getUserProfile,
+  getUserBookings,
+  deleteUserBooking
 } from '../controllers/auth/authController';
-import { getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
