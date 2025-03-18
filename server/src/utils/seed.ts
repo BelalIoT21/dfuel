@@ -29,7 +29,7 @@ export class SeedService {
         throw new Error('ADMIN_PASSWORD environment variable is not set');
       }
       
-      // Create machines
+      // Create machines with consistent IDs and names
       console.log('Creating machines...');
       const machines = [
         {
@@ -69,12 +69,12 @@ export class SeedService {
           _id: '4', // Provide a unique ID
           name: 'Bambu Lab X1 E',
           type: '3D Printer',
-          description: 'Next-generation 3D printing technology',
+          description: 'Next-generation 3D printing technology with advanced features.',
           status: 'Available',
           requiresCertification: true,
           difficulty: 'Advanced',
           imageUrl: '/machines/cnc-mill.jpg',
-          specifications: 'Work area: 40" x 20" x 25", Materials: Aluminum, Steel, Plastics',
+          specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
         },
         {
           _id: '5', // Safety cabinet

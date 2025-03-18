@@ -9,6 +9,26 @@ import { QuickActions } from '@/components/admin/QuickActions';
 import { PendingActions } from '@/components/admin/PendingActions';
 import { MachineStatus } from '@/components/admin/MachineStatus';
 
+// Define consistent machine data
+const MACHINE_TYPES = {
+  "1": "Laser Cutter",
+  "2": "3D Printer",
+  "3": "3D Printer",
+  "4": "3D Printer",
+  "5": "Safety Equipment",
+  "6": "Certification"
+};
+
+// Define consistent machine names
+const MACHINE_NAMES = {
+  "1": "Laser Cutter",
+  "2": "Ultimaker",
+  "3": "X1 E Carbon 3D Printer",
+  "4": "Bambu Lab X1 E",
+  "5": "Safety Cabinet",
+  "6": "Safety Course"
+};
+
 export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [machineData, setMachineData] = useState<any[]>([]);
@@ -33,13 +53,17 @@ export const DashboardContent = () => {
             console.log("Fetched machines:", machinesResponse.data.length);
             
             // Process machine data, ensuring each machine has a status field
-            // Filter out special machines (5 and 6) which are special machines used for certifications
-            const processedMachines = machinesResponse.data
-              .map(machine => ({
+            // with correct names and types
+            const processedMachines = machinesResponse.data.map(machine => {
+              const machineId = String(machine._id || machine.id);
+              return {
                 ...machine,
-                id: machine._id || machine.id, // Ensure id exists
+                id: machineId, // Ensure id exists
+                name: MACHINE_NAMES[machineId] || machine.name, // Use correct name
+                type: MACHINE_TYPES[machineId] || machine.type || "Machine", // Use correct type
                 status: machine.status?.toLowerCase() || 'available'
-              }));
+              };
+            });
             
             console.log("Number of processed machines:", processedMachines.length);
             // Log IDs to debug

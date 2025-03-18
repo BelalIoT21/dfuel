@@ -5,6 +5,26 @@ import { machineService } from '../../../services/machineService';
 import { certificationService } from '../../../services/certificationService';
 import mongoDbService from '../../../services/mongoDbService';
 
+// Define consistent machine data
+const MACHINE_TYPES = {
+  "1": "Laser Cutter",
+  "2": "3D Printer",
+  "3": "3D Printer",
+  "4": "3D Printer",
+  "5": "Safety Equipment",
+  "6": "Certification"
+};
+
+// Define consistent machine names
+const MACHINE_NAMES = {
+  "1": "Laser Cutter",
+  "2": "Ultimaker",
+  "3": "X1 E Carbon 3D Printer",
+  "4": "Bambu Lab X1 E",
+  "5": "Safety Cabinet",
+  "6": "Safety Course"
+};
+
 export const useMachineDetails = (machineId, user, navigation) => {
   const [machine, setMachine] = useState(null);
   const [machineStatus, setMachineStatus] = useState('available');
@@ -34,22 +54,12 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Handle machine types based on ID
-        if (machineId === "1") {
-          machineData.type = "Laser Cutter";
-        } else if (machineId === "2") {
-          machineData.type = "3D Printer";
-        } else if (machineId === "3") {
-          machineData.type = "X1 E Carbon 3D Printer";
-          machineData.type = "3D Printer";
-        } else if (machineId === "4") {
-          machineData.type = "Bambu Lab X1 E";
-          machineData.type = "3D Printer";
-        } else if (machineId === "5") {
-          machineData.type = "Safety Cabinet";
-        } else if (machineId === "6") {
-          machineData.type = "Safety Course";
-        }
+        // Set consistent machine types and names based on ID
+        const machineWithCorrectData = {
+          ...machineData,
+          name: MACHINE_NAMES[machineId] || machineData.name,
+          type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
+        };
         
         // Get machine status from MongoDB
         let status;
@@ -62,7 +72,7 @@ export const useMachineDetails = (machineId, user, navigation) => {
         }
         
         setMachineStatus(status);
-        setMachine(machineData);
+        setMachine(machineWithCorrectData);
         
         console.log("User ID for certification check:", user.id);
         

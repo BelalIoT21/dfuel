@@ -3,6 +3,26 @@ import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip } from 'react-native-paper';
 
+// Define consistent machine data
+const MACHINE_TYPES = {
+  "1": "Laser Cutter",
+  "2": "3D Printer",
+  "3": "3D Printer",
+  "4": "3D Printer",
+  "5": "Safety Equipment",
+  "6": "Certification"
+};
+
+// Define consistent machine names
+const MACHINE_NAMES = {
+  "1": "Laser Cutter",
+  "2": "Ultimaker",
+  "3": "X1 E Carbon 3D Printer",
+  "4": "Bambu Lab X1 E",
+  "5": "Safety Cabinet",
+  "6": "Safety Course"
+};
+
 const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   const getStatusColor = (status) => {
     switch(status) {
@@ -30,25 +50,10 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     }
   };
 
-  // Properly set machine types based on ID
-  let machineType = machine.type;
+  // Get the correct machine name and type based on ID
   const machineId = String(machine.id);
-  
-  if (machineId === "1") {
-    machineType = "Laser Cutter";
-  } else if (machineId === "2") {
-    machineType = "3D Printer";
-  } else if (machineId === "3") {
-    machineType = "X1 E Carbon 3D Printer";
-  } else if (machineId === "4") {
-    machineType = "Bambu Lab X1 E";
-  } else if (machineId === "5") {
-    machineType = "Safety Cabinet";
-  } else if (machineId === "6") {
-    machineType = "Safety Course";
-  } else if (!machineType || machineType.trim() === '') {
-    machineType = "Machine";
-  }
+  const machineName = MACHINE_NAMES[machineId] || machine.name;
+  const machineType = MACHINE_TYPES[machineId] || machine.type || "Machine";
   
   // Only display machineType chip if there's an actual value
   const showMachineType = machineType && machineType.trim() !== '';
@@ -61,20 +66,20 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Check if user is certified for this machine
   const isCertified = userCertsAsString.includes(String(machine.id));
 
-  console.log(`Machine ${machine.id} (${machine.name}) certification status:`, isCertified);
+  console.log(`Machine ${machine.id} (${machineName}) certification status:`, isCertified);
   console.log(`User certifications:`, userCertsAsString);
 
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('MachineDetail', { 
         machineId: machine.id,
-        name: machine.name 
+        name: machineName
       })}
     >
       <Card style={styles.card}>
         <Card.Cover source={{ uri: machine.image }} style={styles.cardImage} />
         <Card.Content>
-          <Title>{machine.name}</Title>
+          <Title>{machineName}</Title>
           <Paragraph numberOfLines={2} style={styles.description}>{machine.description}</Paragraph>
           <View style={styles.chipContainer}>
             <Chip 

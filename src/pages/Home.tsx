@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { machines } from '../utils/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,10 +12,41 @@ interface ExtendedMachine {
   name: string;
   description: string;
   image: string;
-  courseCompleted: boolean;
-  quizPassed: boolean;
+  type: string;
   status: 'available' | 'maintenance' | 'in-use';
 }
+
+// Define consistent machine data with corrected names
+const MACHINE_DATA = [
+  {
+    id: '1',
+    name: 'Laser Cutter',
+    description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.',
+    image: '/machines/laser-cutter.jpg',
+    type: 'Laser Cutter'
+  },
+  {
+    id: '2',
+    name: 'Ultimaker',
+    description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
+    image: '/machines/3d-printer.jpg',
+    type: '3D Printer'
+  },
+  {
+    id: '3',
+    name: 'X1 E Carbon 3D Printer',
+    description: 'High-speed multi-material 3D printer with exceptional print quality.',
+    image: '/machines/bambu-printer.jpg',
+    type: '3D Printer'
+  },
+  {
+    id: '4',
+    name: 'Bambu Lab X1 E',
+    description: 'Next-generation 3D printing technology with advanced features.',
+    image: '/machines/cnc-mill.jpg',
+    type: '3D Printer'
+  }
+];
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -39,9 +69,10 @@ const Home = () => {
     async function loadMachineData() {
       try {
         setLoading(true);
-        const extendedMachines = await Promise.all(machines.map(async (machine) => {
+        
+        // Use our consistent machine data but fetch statuses
+        const extendedMachines = await Promise.all(MACHINE_DATA.map(async (machine) => {
           try {
-            // Use machineService instead of userDatabase
             const status = await machineService.getMachineStatus(machine.id);
             return {
               ...machine,
@@ -55,7 +86,11 @@ const Home = () => {
             };
           }
         }));
-        setMachineData(extendedMachines);
+        
+        // Only include machines 1-4
+        setMachineData(extendedMachines.filter(m => 
+          ['1', '2', '3', '4'].includes(m.id)
+        ));
       } catch (error) {
         console.error("Error loading machine data:", error);
         toast({
@@ -63,7 +98,9 @@ const Home = () => {
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        setMachineData(machines.map(machine => ({
+        
+        // Fallback to static data with default 'available' status
+        setMachineData(MACHINE_DATA.map(machine => ({
           ...machine,
           status: 'available' as const
         })));
@@ -148,6 +185,11 @@ const Home = () => {
                                 ? 'Maintenance'
                                 : 'In Use'}
                           </span>
+                          {machine.type && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {machine.type}
+                            </span>
+                          )}
                           {user.certifications && user.certifications.includes(machine.id) && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               Certified
