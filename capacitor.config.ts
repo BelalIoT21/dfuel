@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'Learnit',
   webDir: 'dist',
   server: {
-    url: 'https://65989570-cd1d-40f5-b27e-214d8336aca9.lovableproject.com?forceHideBadge=true',
+    url: 'http://192.168.47.238:4000',
     cleartext: true
   },
   bundledWebRuntime: false,

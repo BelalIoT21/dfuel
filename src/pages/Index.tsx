@@ -6,23 +6,22 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 import { AnimatePresence, motion } from 'framer-motion';
 import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
-import { Check, WifiOff, Settings } from 'lucide-react';
+import { Check, WifiOff } from 'lucide-react';
 import { isAndroid, isCapacitor, isIOS } from '@/utils/platform';
-import { getEnv, setEnv, getLocalServerIP } from '@/utils/env';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { getEnv, loadEnv } from '@/utils/env';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [customServerIP, setCustomServerIP] = useState(getEnv('CUSTOM_SERVER_IP', ''));
-  const [showIPDialog, setShowIPDialog] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const { user, loading: authLoading, login, register } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    loadEnv();
+  }, []);
 
   useEffect(() => {
     const handleKeyboardShow = () => {
@@ -63,7 +62,7 @@ const Index = () => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        const serverIP = getLocalServerIP();
+        const serverIP = '192.168.47.238';
         const serverUrl = `http://${serverIP}:4000/api/health`;
         
         console.log(`Attempting to connect to server at: ${serverUrl}`);
@@ -85,13 +84,7 @@ const Index = () => {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         
-        let errorMessage = 'Could not connect to the backend server. Please ensure the server is running.';
-        
-        if (isAndroid() || isCapacitor()) {
-          errorMessage = 'Could not connect to the backend server. Make sure your server is running and the IP address is correct in settings.';
-        } else if (isIOS()) {
-          errorMessage = 'Could not connect to the backend server. iOS has stricter network security requirements. Make sure your server uses HTTPS or add a security exception.';
-        }
+        let errorMessage = `Could not connect to the backend server at 192.168.47.238:4000. Please ensure the server is running.`;
         
         toast({
           title: 'Server Connection Failed',
@@ -119,7 +112,7 @@ const Index = () => {
     const intervalId = setInterval(checkServer, 10000);
     
     return () => clearInterval(intervalId);
-  }, [customServerIP]);
+  }, []);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -141,18 +134,6 @@ const Index = () => {
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
-  };
-
-  const saveCustomIP = () => {
-    if (customServerIP) {
-      setEnv('CUSTOM_SERVER_IP', customServerIP);
-      toast({
-        title: 'Server IP Updated',
-        description: `Custom server IP set to: ${customServerIP}`,
-      });
-      window.location.reload();
-    }
-    setShowIPDialog(false);
   };
 
   console.log("Rendering Index component, auth loading:", authLoading);
@@ -197,24 +178,16 @@ const Index = () => {
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Server: Connected
+                  Server: Connected to 192.168.47.238:4000
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Server: Disconnected
+                  Server: Unable to connect to 192.168.47.238:4000
                 </>
               )}
             </div>
           )}
-          
-          <button 
-            onClick={() => setShowIPDialog(true)}
-            className="absolute right-0 top-0 p-2 text-gray-500 hover:text-purple-600"
-            aria-label="Server Settings"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -247,34 +220,6 @@ const Index = () => {
           )}
         </AnimatePresence>
       </div>
-      
-      <Dialog open={showIPDialog} onOpenChange={setShowIPDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Server Connection Settings</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <p className="text-sm text-gray-500">
-                Enter your server IP address below. For Android physical devices, use your computer's local network IP (e.g., 192.168.1.x).
-              </p>
-              <p className="text-xs text-gray-400">
-                Current platform: {isAndroid() ? 'Android' : isIOS() ? 'iOS' : 'Web'}
-                {isCapacitor() ? ' (Capacitor)' : ''}
-              </p>
-            </div>
-            <Input 
-              placeholder="Server IP address (e.g. 192.168.1.10)" 
-              value={customServerIP}
-              onChange={(e) => setCustomServerIP(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowIPDialog(false)}>Cancel</Button>
-            <Button onClick={saveCustomIP}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 /**
  * Environment variable management
  */
@@ -21,6 +20,9 @@ export const loadEnv = (): void => {
   // This function is a placeholder for loading environment variables
   // In a real application, this would load variables from various sources
   console.log('Environment variables loaded');
+  
+  // Set the default server IP
+  setEnv('CUSTOM_SERVER_IP', '192.168.47.238');
 };
 
 // Set environment variables with validation
@@ -41,6 +43,11 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
+  // For CUSTOM_SERVER_IP, always return the hardcoded value first
+  if (key === 'CUSTOM_SERVER_IP') {
+    return '192.168.47.238';
+  }
+  
   if (typeof window !== 'undefined' && (window as any).__ENV__) {
     return (window as any).__ENV__[key] || defaultValue;
   }
@@ -49,20 +56,8 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 
 // Get the local server IP for the device being used
 export const getLocalServerIP = (): string => {
-  // For Android emulator
-  if (isAndroid() && !isPhysicalDevice()) {
-    return '10.0.2.2'; // Special IP for Android emulator
-  }
-  
-  // For Android physical device or iOS
-  // User might need to set this manually based on their network
-  const customIP = getEnv('CUSTOM_SERVER_IP', '');
-  if (customIP) {
-    console.log(`Using custom server IP: ${customIP}`);
-    return customIP;
-  }
-  
-  return 'localhost'; // Default fallback
+  // Always return the fixed IP address
+  return '192.168.47.238';
 };
 
 // Check if the app is running on a physical device vs emulator
@@ -87,29 +82,9 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  const serverIP = getLocalServerIP();
-  console.log(`Using server IP for endpoints: ${serverIP}`);
-  
-  // For Android emulator or physical device
-  if (isAndroid() || isCapacitor()) {
-    return [
-      `http://${serverIP}:4000/api`,
-      `http://${serverIP}:8080/api`, // Try alternate port
-      '/api' // Relative fallback
-    ];
-  }
-  
-  // For iOS
-  if (isIOS()) {
-    return [
-      `http://${serverIP}:4000/api`,
-      '/api' // Relative fallback
-    ];
-  }
-  
-  // For web development
+  // Always use the hardcoded server IP
   return [
-    'http://localhost:4000/api',
+    `http://192.168.47.238:4000/api`,
     '/api' // Relative fallback
   ];
 };
