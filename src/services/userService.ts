@@ -1,6 +1,8 @@
+
 import { User, UserWithoutSensitiveInfo } from '../types/database';
 import databaseService from './databaseService';
 import { getAdminCredentials, setAdminCredentials } from '../utils/adminCredentials';
+import { localStorageService } from './localStorageService';
 
 export class UserService {
   // Get all users (for admin)
@@ -10,12 +12,31 @@ export class UserService {
   
   // Find user by email
   async findUserByEmail(email: string): Promise<User | undefined> {
-    return databaseService.findUserByEmail(email);
+    try {
+      const user = await databaseService.findUserByEmail(email);
+      return user || undefined;
+    } catch (error) {
+      console.error('Error in userService.findUserByEmail:', error);
+      // Fallback to localStorage
+      return localStorageService.findUserByEmail(email);
+    }
   }
   
   // Find user by ID
   async findUserById(id: string): Promise<User | undefined> {
-    return databaseService.findUserById(id);
+    try {
+      // First check databaseService
+      const user = await databaseService.findUserById(id);
+      if (user) return user;
+      
+      // If not found, check localStorage
+      const localUser = localStorageService.findUserById(id);
+      return localUser || undefined;
+    } catch (error) {
+      console.error('Error in userService.findUserById:', error);
+      // Fallback to localStorage
+      return localStorageService.findUserById(id);
+    }
   }
   
   // Authenticate user
@@ -31,11 +52,20 @@ export class UserService {
   // Update user profile
   async updateProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
     try {
-      // Check if user exists first
-      const user = await databaseService.findUserById(userId);
+      console.log(`Attempting to update user profile in userService: ${userId}`, updates);
+      
+      // Check if user exists first - try databaseService
+      let user = await databaseService.findUserById(userId);
+      
+      // If not found in database, try localStorage
       if (!user) {
-        console.error(`User ${userId} not found in userService.updateProfile`);
-        return false;
+        console.log(`User ${userId} not found in database, checking localStorage`);
+        user = localStorageService.findUserById(userId);
+        
+        if (!user) {
+          console.error(`User ${userId} not found in userService.updateProfile`);
+          return false;
+        }
       }
       
       // Check if user is admin
@@ -45,39 +75,61 @@ export class UserService {
         setAdminCredentials(updates.email, adminPassword);
       }
       
-      // Call the correct method in databaseService
-      return await databaseService.updateUserProfile(userId, updates);
+      // Call the database update method
+      const success = await databaseService.updateUserProfile(userId, updates);
+      
+      if (!success) {
+        // Try direct localStorage update as fallback
+        return localStorageService.updateUser(userId, updates);
+      }
+      
+      return success;
     } catch (error) {
       console.error('Error in userService.updateProfile:', error);
-      return false;
+      // Try direct localStorage update as fallback
+      return localStorageService.updateUser(userId, updates);
     }
   }
 
   // Change user password
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
     try {
-      // Find the user first
-      const user = await databaseService.findUserById(userId);
+      console.log(`Attempting to change password in userService: ${userId}`);
+      
+      // Find the user first - try database
+      let user = await databaseService.findUserById(userId);
+      
+      // If not found in database, try localStorage
       if (!user) {
-        console.error(`User ${userId} not found in userService.changePassword`);
-        return false;
+        console.log(`User ${userId} not found in database, checking localStorage`);
+        user = localStorageService.findUserById(userId);
+        
+        if (!user) {
+          console.error(`User ${userId} not found in userService.changePassword`);
+          throw new Error("User not found");
+        }
       }
       
       // Verify current password
       if (user.password !== currentPassword) {
         console.error("Current password is incorrect");
-        return false;
+        throw new Error("Current password is incorrect");
       }
       
       // Enforce password requirements
       if (newPassword.length < 6) {
         console.error("Password must be at least 6 characters");
-        return false;
+        throw new Error("Password must be at least 6 characters");
       }
       
       // Update password - need to pass it as an object with password property
       const updates = { password: newPassword };
-      const success = await databaseService.updateUserProfile(userId, updates);
+      let success = await databaseService.updateUserProfile(userId, updates);
+      
+      if (!success) {
+        // Try direct localStorage update as fallback
+        success = localStorageService.updateUser(userId, { password: newPassword });
+      }
       
       // If admin, update admin password in environment system
       if (success && user.isAdmin) {
@@ -89,7 +141,7 @@ export class UserService {
       return success;
     } catch (error) {
       console.error('Error in userService.changePassword:', error);
-      return false;
+      throw error;
     }
   }
 

@@ -1,4 +1,3 @@
-
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
@@ -75,6 +74,7 @@ class UserDatabase {
           id: user._id?.toString() || user.id?.toString() || '',
           name: user.name || '',
           email: user.email || '',
+          password: user.password,
           isAdmin: user.isAdmin || false,
           certifications: user.certifications || [],
           bookings: user.bookings || [],
@@ -107,33 +107,49 @@ class UserDatabase {
       }
       
       // Try API first
-      const response = await apiService.getUserById(userId);
-      if (response.data) {
-        console.log(`Found user ${userId} in API`);
-        
-        // Convert MongoDB format to client format
-        const user = response.data;
-        return {
-          id: user._id?.toString() || user.id?.toString() || '',
-          name: user.name || '',
-          email: user.email || '',
-          isAdmin: user.isAdmin || false,
-          certifications: user.certifications || [],
-          bookings: user.bookings || [],
-          lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
-        };
+      try {
+        const response = await apiService.getUserById(userId);
+        if (response.data) {
+          console.log(`Found user ${userId} in API`);
+          
+          // Convert MongoDB format to client format
+          const user = response.data;
+          return {
+            id: user._id?.toString() || user.id?.toString() || '',
+            name: user.name || '',
+            email: user.email || '',
+            password: user.password,
+            isAdmin: user.isAdmin || false,
+            certifications: user.certifications || [],
+            bookings: user.bookings || [],
+            lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+          };
+        }
+      } catch (apiError) {
+        console.error("API error in findUserById:", apiError);
       }
       
       // Try MongoDB next
-      const mongoUser = await mongoDbService.getUserById(userId);
-      if (mongoUser) {
-        console.log(`Found user ${userId} in MongoDB`);
-        return mongoUser;
+      try {
+        const mongoUser = await mongoDbService.getUserById(userId);
+        if (mongoUser) {
+          console.log(`Found user ${userId} in MongoDB`);
+          return mongoUser;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error in findUserById:", mongoError);
       }
       
-      // Last resort: try userService
-      console.log(`User ${userId} not found in API or MongoDB, trying userService`);
-      return await userService.findUserById(userId);
+      // Last resort: try localStorage
+      console.log(`User ${userId} not found in API or MongoDB, trying localStorage`);
+      const localUser = localStorageService.findUserById(userId);
+      if (localUser) {
+        console.log(`Found user ${userId} in localStorage`);
+        return localUser;
+      }
+      
+      console.error(`User ${userId} not found anywhere`);
+      return null;
     } catch (error) {
       console.error('Error in findUserById:', error);
       return null;
@@ -196,29 +212,26 @@ class UserDatabase {
       console.log("Using MongoDB directly for profile update...");
       
       // Get the user first to verify they exist
-      const user = await mongoDbService.getUserById(userId);
+      const user = await this.findUserById(userId);
       if (!user) {
-        console.error(`User ${userId} not found in MongoDB, cannot update profile`);
-        // Try to find in localStorage as a last resort
-        const localUser = await localStorageService.findUserById(userId);
-        if (!localUser) {
-          console.error(`User ${userId} not found in localStorage either`);
-          return false;
-        }
+        console.error(`User ${userId} not found in any data sources, cannot update profile`);
+        return false;
       }
       
-      // Update user in MongoDB
-      const mongoSuccess = await mongoDbService.updateUser(userId, updates);
-      
-      if (mongoSuccess) {
-        console.log("Successfully updated user profile in MongoDB");
-        return true;
+      // Try updating in MongoDB
+      try {
+        const mongoSuccess = await mongoDbService.updateUser(userId, updates);
+        if (mongoSuccess) {
+          console.log("Successfully updated user profile in MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error when updating profile:", mongoError);
       }
       
       // Last resort: try localStorage service
       console.log("Falling back to localStorage for profile update...");
       try {
-        // Make sure we use the localStorageService directly
         const localStorageSuccess = await localStorageService.updateUser(userId, updates);
         console.log(`LocalStorage update result: ${localStorageSuccess}`);
         return localStorageSuccess;
@@ -248,51 +261,36 @@ class UserDatabase {
         console.error("API error when changing password:", apiError);
       }
       
-      // Use MongoDB directly
-      console.log("Using MongoDB directly for password change...");
-      
-      // First verify current password
-      const user = await mongoDbService.getUserById(userId);
+      // First get and verify the user exists
+      const user = await this.findUserById(userId);
       if (!user) {
-        console.error("User not found in MongoDB");
-        
-        // Try localStorage as last resort
-        const localUser = await localStorageService.findUserById(userId);
-        if (!localUser) {
-          console.error("User not found in localStorage either");
-          throw new Error("User not found");
-        }
-        
-        // Verify password in localStorage
-        if (localUser.password !== currentPassword) {
-          console.error("Current password does not match for localStorage user");
-          throw new Error("Current password is incorrect");
-        }
-        
-        // Update in localStorage
-        const localSuccess = await localStorageService.updateUser(userId, { password: newPassword });
-        return localSuccess;
+        console.error(`User ${userId} not found in any data source`);
+        throw new Error("User not found");
       }
       
-      // Verify the current password matches for MongoDB user
+      // Verify the current password matches
       if (user.password !== currentPassword) {
         console.error("Current password does not match");
         throw new Error("Current password is incorrect");
       }
       
-      // Update password directly in MongoDB
-      const success = await mongoDbService.updateUser(userId, { 
-        password: newPassword 
-      });
-      
-      if (success) {
-        console.log("Successfully changed password in MongoDB");
-        return true;
+      // Update password in MongoDB first if possible
+      try {
+        const success = await mongoDbService.updateUser(userId, { 
+          password: newPassword 
+        });
+        
+        if (success) {
+          console.log("Successfully changed password in MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error when changing password:", mongoError);
       }
       
-      // Last resort: try userService
-      console.log("Falling back to userService for password change...");
-      return await userService.changePassword(userId, currentPassword, newPassword);
+      // Last resort: try localStorage
+      console.log("Falling back to localStorage for password change...");
+      return await localStorageService.updateUser(userId, { password: newPassword });
     } catch (error) {
       console.error('Error in changePassword:', error);
       throw error;

@@ -40,12 +40,19 @@ export const useProfileFunctions = (
   };
 
   const updateProfile = async (details: { name?: string; email?: string }): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not logged in",
+        variant: "destructive"
+      });
+      return false;
+    }
     
     try {
       console.log(`useProfileFunctions: Updating profile for user ${user.id}`, details);
       
-      // Validate input - ensure at least one field is provided
+      // Extra validation to ensure we have valid data
       if (!details.name && !details.email) {
         toast({
           title: "Error",
@@ -55,10 +62,29 @@ export const useProfileFunctions = (
         return false;
       }
       
+      if (details.name === '') {
+        toast({
+          title: "Error",
+          description: "Name cannot be empty.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       // Create updates object with only the fields that are provided
       const updates: { name?: string; email?: string } = {};
-      if (details.name) updates.name = details.name;
-      if (details.email) updates.email = details.email;
+      if (details.name) updates.name = details.name.trim();
+      if (details.email) updates.email = details.email.trim();
+      
+      // Skip update if nothing changed
+      if ((updates.name === user.name || updates.name === undefined) && 
+          (updates.email === user.email || updates.email === undefined)) {
+        toast({
+          title: "Info",
+          description: "No changes detected."
+        });
+        return true;
+      }
       
       const success = await userDatabase.updateUserProfile(user.id, updates);
       
@@ -97,7 +123,14 @@ export const useProfileFunctions = (
   };
 
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "User not logged in",
+        variant: "destructive"
+      });
+      return false;
+    }
     
     try {
       console.log(`useProfileFunctions: Changing password for user ${user.id}`);
@@ -120,6 +153,7 @@ export const useProfileFunctions = (
         return false;
       }
       
+      // Convert empty strings to undefined
       const success = await userDatabase.changePassword(user.id, currentPassword, newPassword);
       
       if (success) {
