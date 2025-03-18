@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">learnit-academy</string>
+    <string name="title_activity_main">learnit-academy</string>
+    <string name="package_name">com.lovable.learnitacademy</string>
+    <string name="custom_url_scheme">com.lovable.learnitacademy</string>
+</resources>
