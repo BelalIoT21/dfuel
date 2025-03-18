@@ -3,23 +3,18 @@ import { isWeb } from './platform';
 
 /**
  * Platform-agnostic storage implementation
- * For web, we explicitly block all localStorage usage except token since we're using MongoDB exclusively
+ * For web, we now allow localStorage usage for auth persistence
  * For native environments, we still use AsyncStorage for session persistence
  */
 class StorageService {
   async getItem(key: string): Promise<string | null> {
     if (isWeb) {
-      // Only allow token storage in localStorage for web
-      if (key === 'token') {
-        try {
-          return localStorage.getItem(key);
-        } catch (error) {
-          console.error('localStorage error in getItem:', error);
-          return null;
-        }
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        console.error('localStorage error in getItem:', error);
+        return null;
       }
-      console.log('Web environment - MongoDB only, localStorage access blocked for:', key);
-      return null;
     } else {
       try {
         // Use a safer approach to access AsyncStorage in native environments
@@ -37,16 +32,11 @@ class StorageService {
 
   async setItem(key: string, value: string): Promise<void> {
     if (isWeb) {
-      // Only allow token storage in localStorage for web
-      if (key === 'token') {
-        try {
-          localStorage.setItem(key, value);
-        } catch (error) {
-          console.error('localStorage error in setItem:', error);
-        }
-        return;
+      try {
+        localStorage.setItem(key, value);
+      } catch (error) {
+        console.error('localStorage error in setItem:', error);
       }
-      console.log('Web environment - MongoDB only, localStorage access blocked for:', key);
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -61,16 +51,11 @@ class StorageService {
 
   async removeItem(key: string): Promise<void> {
     if (isWeb) {
-      // Only allow token removal from localStorage for web
-      if (key === 'token') {
-        try {
-          localStorage.removeItem(key);
-        } catch (error) {
-          console.error('localStorage error in removeItem:', error);
-        }
-        return;
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.error('localStorage error in removeItem:', error);
       }
-      console.log('Web environment - MongoDB only, localStorage access blocked for:', key);
     } else {
       try {
         const AsyncStorage = this.getNativeStorage();
@@ -90,11 +75,15 @@ class StorageService {
     if (isWeb) {
       try {
         const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('learnit_user');
         localStorage.clear();
         if (token) {
           localStorage.setItem('token', token);
         }
-        console.log('Cleared all localStorage data except token');
+        if (userData) {
+          localStorage.setItem('learnit_user', userData);
+        }
+        console.log('Cleared all localStorage data except auth data');
       } catch (error) {
         console.error('Error clearing localStorage:', error);
       }
@@ -103,13 +92,15 @@ class StorageService {
         const AsyncStorage = this.getNativeStorage();
         if (AsyncStorage) {
           const token = await AsyncStorage.getItem('token');
-          // In a real implementation, we would need to get all keys and remove them except token
-          // For now, we'll just preserve the token
-          if (token) {
-            const allKeys = await AsyncStorage.getAllKeys();
-            const keysToRemove = allKeys.filter(key => key !== 'token');
-            await AsyncStorage.multiRemove(keysToRemove);
-          }
+          const userData = await AsyncStorage.getItem('learnit_user');
+          // In a real implementation, we would need to get all keys and remove them except auth data
+          const allKeys = await AsyncStorage.getAllKeys();
+          const keysToRemove = allKeys.filter(key => key !== 'token' && key !== 'learnit_user');
+          await AsyncStorage.multiRemove(keysToRemove);
+          
+          // Make sure auth data is preserved
+          if (token) await AsyncStorage.setItem('token', token);
+          if (userData) await AsyncStorage.setItem('learnit_user', userData);
         }
       } catch (error) {
         console.error('Error clearing AsyncStorage:', error);

@@ -1,5 +1,5 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Platform } from 'react-native';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
+        console.log('Checking authentication status...');
         // Check for token in localStorage first
         const token = localStorage.getItem('token');
         
@@ -55,8 +56,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           } catch (error) {
             console.error('Error getting current user with token:', error);
-            localStorage.removeItem('token');
-            apiService.setToken(null);
+            // Don't remove the token on first failure - could be temporary network issue
+            // Try one more time with a delay
+            setTimeout(async () => {
+              try {
+                const retryResponse = await apiService.getCurrentUser();
+                if (retryResponse.data) {
+                  console.log('Successfully retrieved user on retry');
+                  const userData = {
+                    ...retryResponse.data,
+                    id: retryResponse.data._id || retryResponse.data.id
+                  };
+                  setUser(userData);
+                } else {
+                  // Now we can remove the token after second failure
+                  localStorage.removeItem('token');
+                  apiService.setToken(null);
+                }
+              } catch (retryError) {
+                console.error('Retry failed, removing token:', retryError);
+                localStorage.removeItem('token');
+                apiService.setToken(null);
+              } finally {
+                setLoading(false);
+              }
+            }, 1000);
+            return; // Exit early to prevent setLoading(false) before retry completes
           }
         } else {
           // Try to get from storage as a backup
@@ -183,9 +208,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     loading,
-    login: loginFn,
-    register: registerFn,
-    logout: logoutFn,
+    login,
+    register,
+    logout,
     addCertification,
     updateProfile,
     changePassword,
@@ -195,7 +220,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

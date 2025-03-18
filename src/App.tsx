@@ -45,10 +45,14 @@ const App = () => {
 
   // Display toast message when app loads
   useEffect(() => {
-    toast({
-      title: "Welcome to Learnit",
-      description: "Please log in to continue",
-    });
+    const alreadyWelcomed = sessionStorage.getItem('welcomed');
+    if (!alreadyWelcomed) {
+      toast({
+        title: "Welcome to Learnit",
+        description: "Please log in to continue",
+      });
+      sessionStorage.setItem('welcomed', 'true');
+    }
   }, []);
 
   console.log("Rendering App component");

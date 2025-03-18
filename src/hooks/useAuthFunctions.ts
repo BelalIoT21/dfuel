@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
+import { storage } from '@/utils/storage';
 
 export const useAuthFunctions = (
   user: User | null,
@@ -54,14 +55,18 @@ export const useAuthFunctions = (
       const normalizedUser = {
         ...userData,
         id: String(userData._id), // Convert _id to string if necessary
+        certifications: userData.certifications || []
       };
   
       console.log("Setting user data in state:", normalizedUser);
   
-      // Save only the token in localStorage for auth persistence
+      // Save token in localStorage for auth persistence
       console.log("Saving token to localStorage");
       localStorage.setItem('token', token);
       apiService.setToken(token); // Set token in API service
+      
+      // Also save user data to storage for quick access
+      await storage.setItem('learnit_user', JSON.stringify(normalizedUser));
   
       setUser(normalizedUser as User); // Update the user state
   
@@ -137,7 +142,7 @@ export const useAuthFunctions = (
   
       // For normal registration, proceed with setting token and user
       if (token) {
-        // Save token only, no user data in localStorage
+        // Save token in localStorage for auth persistence
         localStorage.setItem('token', token);
         apiService.setToken(token);
       } else {
@@ -154,6 +159,9 @@ export const useAuthFunctions = (
       };
   
       console.log("Setting user data from MongoDB:", normalizedUser);
+      
+      // Also save user data to storage
+      await storage.setItem('learnit_user', JSON.stringify(normalizedUser));
       
       // Only set user in state if we're not in an admin adding a user context
       setUser(normalizedUser as User);
@@ -186,8 +194,9 @@ export const useAuthFunctions = (
     // Clear user state
     setUser(null);
 
-    // Remove token only - no other localStorage usage
+    // Remove auth data
     localStorage.removeItem('token');
+    storage.removeItem('learnit_user');
 
     // Clear the token from API service
     apiService.setToken(null);
