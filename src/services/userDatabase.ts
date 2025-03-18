@@ -221,6 +221,7 @@ class UserDatabase {
         throw apiError;
       }
       
+      // If we reached here, the API didn't explicitly succeed or fail
       return false;
     } catch (error) {
       console.error('Error in updateUserProfile:', error);

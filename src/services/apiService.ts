@@ -1,3 +1,4 @@
+
 import { getEnv } from '../utils/env';
 
 // Try to connect to local API first, but have a fallback to relative path
@@ -206,6 +207,7 @@ class ApiService {
   
   async updateProfile(userId: string, updates: any) {
     console.log(`Updating profile via API with:`, updates);
+    // Don't include userId in the URL as it comes from the token on server side
     return this.put<{ success: boolean, user: any }>(`auth/profile`, updates);
   }
   

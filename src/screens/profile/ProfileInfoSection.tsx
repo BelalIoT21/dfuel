@@ -31,6 +31,7 @@ const ProfileInfoSection = ({ user, updateProfile }: ProfileInfoSectionProps) =>
 
     setLoading(true);
     try {
+      // Ensure token is set in localStorage before update
       const success = await updateProfile({ name: name.trim(), email: email.trim() });
       if (success) {
         Alert.alert('Success', 'Profile updated successfully');

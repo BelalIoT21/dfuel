@@ -98,7 +98,14 @@ export const useProfileFunctions = (
       
       if (response.data && response.data.success) {
         // Create a new user object with the updated details for state update
-        const updatedUser = { ...user, ...updates };
+        // Using the returned user object from the API if available
+        const updatedUser = response.data.user ? 
+          { 
+            ...user, 
+            name: response.data.user.name || user.name,
+            email: response.data.user.email || user.email
+          } : 
+          { ...user, ...updates };
         
         // Update local state immediately for better UX
         setUser(updatedUser);
