@@ -397,29 +397,51 @@ class MongoDbService {
     }
   }
 
-  async updateUser(userId: string, updates: { name?: string, email?: string, password?: string }) {
+  async updateUser(userId: string, updates: { name?: string, email?: string, password?: string, currentPassword?: string }) {
     if (isWeb) {
-      console.log("MongoDB access attempted from web environment, using API fallback");
       try {
-        const token = localStorage.getItem('token');
-        apiService.setToken(token);
-        
-        // Use the put endpoint for user updates
-        let endpoint = 'auth/me';
-        if (updates.password) {
-          endpoint = 'auth/change-password';
-          const response = await apiService.post(endpoint, { 
-            currentPassword: updates.currentPassword || '', 
-            newPassword: updates.password 
+        // For password update
+        if (updates.password && updates.currentPassword) {
+          console.log("Sending password change request to MongoDB directly");
+          // Connect directly to MongoDB for the password change
+          const response = await fetch('http://localhost:4000/api/auth/change-password', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              currentPassword: updates.currentPassword || '',
+              newPassword: updates.password
+            })
           });
-          return response.data?.success || false;
-        } else {
-          // Regular profile update
-          const response = await apiService.put(endpoint, updates);
-          return response.data?.success || false;
+          
+          const data = await response.json();
+          console.log("MongoDB password change response:", data);
+          return data && data.success;
         }
+        
+        // For regular profile updates
+        const token = localStorage.getItem('token');
+        const endpoint = 'auth/profile';
+        console.log("Updating user profile via API:", endpoint);
+        
+        const response = await fetch(`http://localhost:4000/api/${endpoint}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            name: updates.name,
+            email: updates.email
+          })
+        });
+        
+        const data = await response.json();
+        return data && data.success;
       } catch (error) {
-        console.error(`Error updating user ${userId} via API:`, error);
+        console.error(`Error updating user ${userId} via MongoDB:`, error);
         return false;
       }
     }

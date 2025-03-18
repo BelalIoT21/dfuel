@@ -96,6 +96,48 @@ class UserDatabase {
     }
   }
 
+  async findUserById(userId: string) {
+    try {
+      console.log(`UserDatabase: Finding user by id: ${userId}`);
+      if (!userId) {
+        console.error("Invalid userId passed to findUserById");
+        return null;
+      }
+      
+      // Try API first
+      const response = await apiService.getUserById(userId);
+      if (response.data) {
+        console.log(`Found user ${userId} in API`);
+        
+        // Convert MongoDB format to client format
+        const user = response.data;
+        return {
+          id: user._id?.toString() || user.id?.toString() || '',
+          name: user.name || '',
+          email: user.email || '',
+          isAdmin: user.isAdmin || false,
+          certifications: user.certifications || [],
+          bookings: user.bookings || [],
+          lastLogin: user.lastLogin || user.updatedAt || new Date().toISOString()
+        };
+      }
+      
+      // Try MongoDB next
+      const mongoUser = await mongoDbService.getUserById(userId);
+      if (mongoUser) {
+        console.log(`Found user ${userId} in MongoDB`);
+        return mongoUser;
+      }
+      
+      // Last resort: try userService
+      console.log(`User ${userId} not found in API or MongoDB, trying userService`);
+      return await userService.findUserById(userId);
+    } catch (error) {
+      console.error('Error in findUserById:', error);
+      return null;
+    }
+  }
+
   async addCertification(userId: string, certificationId: string) {
     try {
       console.log(`UserDatabase: Adding certification ${certificationId} for user ${userId}`);
@@ -136,21 +178,9 @@ class UserDatabase {
     try {
       console.log(`UserDatabase: Updating profile for user ${userId}`, updates);
       
-      // Try API first
-      try {
-        const response = await apiService.updateProfile(updates);
-        if (response.data && response.data.success) {
-          console.log("Successfully updated user profile via API");
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error when updating profile:", apiError);
-      }
-      
-      // Fall back to MongoDB if API fails
+      // Try MongoDB directly for password changes
       if (updates.password) {
-        console.log("Update includes password change, trying MongoDB");
-        // If password is being updated, we need to use MongoDB
+        console.log("Update includes password change, using MongoDB directly");
         const mongoSuccess = await mongoDbService.updateUser(userId, updates);
         if (mongoSuccess) {
           console.log("Successfully updated user profile with password in MongoDB");
@@ -179,20 +209,8 @@ class UserDatabase {
     try {
       console.log(`UserDatabase: Changing password for user ${userId}`);
       
-      // Try API first
-      try {
-        console.log("Attempting API password change...");
-        const response = await apiService.changePassword(currentPassword, newPassword);
-        if (response.data && (response.data.success || response.data.message)) {
-          console.log("Successfully changed password via API");
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API error when changing password:", apiError);
-      }
-      
-      // Fall back to MongoDB
-      console.log("Falling back to MongoDB password change...");
+      // Use MongoDB directly
+      console.log("Using MongoDB directly for password change...");
       
       // First verify current password
       const user = await mongoDbService.getUserById(userId);
@@ -202,7 +220,11 @@ class UserDatabase {
       }
       
       // Update password directly in MongoDB
-      const success = await mongoDbService.updateUser(userId, { password: newPassword });
+      const success = await mongoDbService.updateUser(userId, { 
+        currentPassword,
+        password: newPassword 
+      });
+      
       if (success) {
         console.log("Successfully changed password in MongoDB");
         return true;

@@ -1,128 +1,60 @@
 
 import { Request, Response } from 'express';
-import User from '../../models/User';
+import { User } from '../../models/User';
 import bcrypt from 'bcryptjs';
 
-// @desc    Request password reset
-// @route   POST /api/auth/forgot-password
-// @access  Public
-export const forgotPassword = async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Generate reset code (6 digits)
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // Set expiry (1 hour from now)
-    const expiry = new Date();
-    expiry.setHours(expiry.getHours() + 1);
-
-    // Save reset code to user
-    user.resetCode = {
-      code: resetCode,
-      expiry: expiry,
-    };
-    await user.save();
-
-    // In a real app, we would send an email here
-    console.log(`Reset code for ${email}: ${resetCode}`);
-
-    res.json({ message: 'Password reset code sent to your email' });
-  } catch (error) {
-    console.error('Error in forgotPassword:', error);
-    res.status(500).json({ 
-      message: 'Server error', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
-  }
-};
-
-// @desc    Reset password with code
-// @route   POST /api/auth/reset-password
-// @access  Public
-export const resetPassword = async (req: Request, res: Response) => {
-  try {
-    const { email, resetCode, newPassword } = req.body;
-
-    // Validate input
-    if (!email || !resetCode || !newPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
-    }
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user || !user.resetCode) {
-      return res.status(400).json({ message: 'Invalid or expired reset code' });
-    }
-
-    // Check if code matches and is not expired
-    if (!user.resetCode?.code || !user.resetCode?.expiry || user.resetCode.code !== resetCode || new Date() > user.resetCode.expiry) {
-      return res.status(400).json({ message: 'Invalid or expired reset code' });
-    }
-
-    // Update password and clear reset code
-    user.password = newPassword;
-    user.resetCode = undefined;
-    await user.save();
-
-    res.json({ message: 'Password has been reset successfully' });
-  } catch (error) {
-    console.error('Error in resetPassword:', error);
-    res.status(500).json({ 
-      message: 'Server error', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
-  }
-};
-
-// @desc    Change password
-// @route   POST /api/auth/change-password
-// @access  Private
+/**
+ * Change user password
+ * @route POST /api/auth/change-password
+ * @access Private
+ */
 export const changePassword = async (req: Request, res: Response) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user?._id;
-
-    if (!userId || !currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
     }
-
-    // Validate new password
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: 'New password must be at least 6 characters' });
-    }
-
-    // Find user
-    const user = await User.findById(userId);
+    
+    // Get user from auth middleware
+    const user = await User.findById(req.user?.id).select('+password');
+    
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
-
-    // Verify current password
+    
+    // Check if current password matches
     const isMatch = await bcrypt.compare(currentPassword, user.password);
+    
     if (!isMatch) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
     }
-
-    // Update password
-    user.password = newPassword;
+    
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    
     await user.save();
-
-    res.json({ message: 'Password updated successfully' });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully'
+    });
   } catch (error) {
-    console.error('Error in changePassword:', error);
+    console.error('Error in changePassword controller:', error);
     res.status(500).json({
-      message: 'Server error',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      success: false,
+      message: 'Server error'
     });
   }
 };
