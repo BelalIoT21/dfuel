@@ -9,6 +9,7 @@ import { useProfileNavigation } from './hooks/useProfileNavigation';
 import ProfileHeader from './ProfileHeader';
 import ProfileInfoSection from './ProfileInfoSection';
 import SecuritySection from './SecuritySection';
+import CertificationsSection from './CertificationsSection';
 import LogoutButton from './LogoutButton';
 
 const ProfileScreen = ({ navigation }) => {
@@ -57,6 +58,8 @@ const ProfileScreen = ({ navigation }) => {
       />
 
       <Divider />
+
+      <CertificationsSection user={user} />
 
       <LogoutButton 
         onLogout={async () => {
