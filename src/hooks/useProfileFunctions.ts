@@ -108,6 +108,19 @@ export const useProfileFunctions = (
           title: "Profile updated",
           description: "Your profile has been updated successfully."
         });
+        
+        // For admin users, refresh page to ensure new values are applied
+        if (user.isAdmin) {
+          toast({
+            title: "Admin profile updated",
+            description: "Refreshing page to apply changes..."
+          });
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        }
+        
         return true;
       } else {
         console.log("Profile update failed");

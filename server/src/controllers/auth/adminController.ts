@@ -49,6 +49,14 @@ export const ensureAdminUser = async () => {
         console.log('Admin password updated successfully');
       }
       
+      // Always ensure admin email is in sync with .env
+      if (existingAdmin.email !== adminEmail) {
+        console.log(`Updating admin email from ${existingAdmin.email} to ${adminEmail}`);
+        existingAdmin.email = adminEmail;
+        await existingAdmin.save();
+        console.log('Admin email updated successfully');
+      }
+      
       // If admin exists but doesn't have all certifications, update them
       if (!existingAdmin.certifications || existingAdmin.certifications.length < 6) {
         existingAdmin.certifications = ['1', '2', '3', '4', '5', '6'];
