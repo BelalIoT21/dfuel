@@ -40,11 +40,9 @@ const Quiz = () => {
       try {
         setLoading(true);
         
-        // First, try to get quiz from API
         let quiz = null;
         
         try {
-          // Get quiz from API
           const response = await apiService.getQuiz(id || '');
           if (response.data) {
             quiz = response.data;
@@ -53,13 +51,10 @@ const Quiz = () => {
           console.error('Error fetching quiz from API:', apiError);
         }
         
-        // If API fails, fall back to static data
         if (!quiz) {
-          // Get quiz from static data
           quiz = quizzes[id || ''];
         }
         
-        // If no quiz found, use default quiz
         if (!quiz || !quiz.questions || quiz.questions.length === 0) {
           console.log('No quiz found, using default quiz');
           quiz = {
@@ -70,7 +65,6 @@ const Quiz = () => {
         }
         
         setQuizData(quiz);
-        // Initialize selected answers array with undefined values for each question
         setSelectedAnswers(new Array(quiz.questions.length).fill(undefined));
       } catch (error) {
         console.error('Error loading quiz:', error);
@@ -84,7 +78,11 @@ const Quiz = () => {
   }, [id, user, navigate]);
 
   useEffect(() => {
-    setCurrentSelectedAnswer(selectedAnswers[currentQuestion]);
+    if (selectedAnswers && selectedAnswers.length > currentQuestion) {
+      setCurrentSelectedAnswer(selectedAnswers[currentQuestion]);
+    } else {
+      setCurrentSelectedAnswer(undefined);
+    }
   }, [currentQuestion, selectedAnswers]);
 
   const handleSelectAnswer = (index: number) => {
@@ -103,7 +101,6 @@ const Quiz = () => {
     }
     
     setCurrentQuestion(prev => prev + 1);
-    setCurrentSelectedAnswer(selectedAnswers[currentQuestion + 1]);
   };
 
   const handlePrevious = () => {
@@ -114,7 +111,6 @@ const Quiz = () => {
     }
     
     setCurrentQuestion(prev => Math.max(0, prev - 1));
-    setCurrentSelectedAnswer(selectedAnswers[Math.max(0, currentQuestion - 1)]);
   };
 
   const handleSubmit = async () => {
@@ -132,7 +128,7 @@ const Quiz = () => {
     }
     
     const calculatedScore = Math.round((correctCount / quizData.questions.length) * 100);
-    const passed = calculatedScore >= 70; // 70% passing threshold
+    const passed = calculatedScore >= 70;
     
     setScore(calculatedScore);
     setIsPassing(passed);
@@ -375,7 +371,7 @@ const Quiz = () => {
               <h3 className="text-lg font-medium">{currentQuizQuestion?.question}</h3>
               
               <RadioGroup
-                value={currentSelectedAnswer !== undefined ? currentSelectedAnswer.toString() : undefined}
+                value={currentSelectedAnswer !== undefined ? currentSelectedAnswer.toString() : ""}
                 className="space-y-3"
                 onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
               >
