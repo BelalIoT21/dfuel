@@ -354,15 +354,15 @@ const Quiz = () => {
               <h3 className="text-lg font-medium">{currentQuizQuestion.question}</h3>
               
               <RadioGroup
-                value={selectedAnswers[currentQuestion]?.toString()}
+                value={selectedAnswers[currentQuestion] !== undefined ? selectedAnswers[currentQuestion].toString() : undefined}
                 className="space-y-3"
+                onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
               >
                 {currentQuizQuestion.options.map((option: string, index: number) => (
                   <div key={index} className="flex items-center space-x-2 rounded-lg border p-3 cursor-pointer hover:bg-gray-50">
                     <RadioGroupItem 
                       value={index.toString()} 
-                      id={`option-${index}`} 
-                      onClick={() => handleSelectAnswer(index)}
+                      id={`option-${index}`}
                     />
                     <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">{option}</Label>
                   </div>
