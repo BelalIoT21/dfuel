@@ -6,13 +6,11 @@ import {
   logout,
   getMe,
   updateProfile,
-  resetPassword,
-  verifyResetToken,
-  updatePassword,
   getUserProfile,
   getUserBookings,
   deleteUserBooking
 } from '../controllers/auth/authController';
+import { changePassword } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -24,10 +22,8 @@ router.post('/logout', logout);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 
-// Password reset
-router.post('/reset-password', resetPassword);
-router.post('/verify-reset-token', verifyResetToken);
-router.post('/update-password', updatePassword);
+// Password management
+router.post('/change-password', protect, changePassword);
 
 // Profile and bookings routes
 router.get('/profile', protect, getUserProfile);

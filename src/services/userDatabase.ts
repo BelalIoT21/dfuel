@@ -1,3 +1,4 @@
+
 import { userService } from './userService';
 import mongoDbService from './mongoDbService';
 import { certificationService } from './certificationService';
@@ -181,8 +182,9 @@ class UserDatabase {
       
       // Try API first
       try {
+        console.log("Attempting API password change...");
         const response = await apiService.changePassword(currentPassword, newPassword);
-        if (response.data && response.data.success) {
+        if (response.data && (response.data.success || response.data.message)) {
           console.log("Successfully changed password via API");
           return true;
         }
@@ -192,7 +194,7 @@ class UserDatabase {
       
       // Fall back to MongoDB
       try {
-        // MongoDB password change is handled through the API, but we'll add it here for completeness
+        console.log("Falling back to MongoDB password change...");
         const mongoSuccess = await mongoDbService.updateUser(userId, { password: newPassword });
         if (mongoSuccess) {
           console.log("Successfully changed password in MongoDB");
@@ -202,15 +204,21 @@ class UserDatabase {
         console.error("MongoDB error when changing password:", mongoError);
       }
       
-      // Last resort: userService (localStorage)
-      // First verify the current password
-      const user = await userService.findUserById(userId);
+      // Last resort: check if userService can verify current password
+      console.log("Falling back to localStorage verification");
+      const user = await userService.findUserByEmail("");
       if (user && user.password === currentPassword) {
-        const success = await userService.updateUser(userId, { password: newPassword });
-        console.log(`LocalStorage password change result: ${success}`);
-        return success;
+        try {
+          // Use updateUserProfile instead of updateUser
+          const success = await this.updateUserProfile(userId, { password: newPassword });
+          console.log(`LocalStorage password change result: ${success}`);
+          return success;
+        } catch (e) {
+          console.error("Error updating password in localStorage:", e);
+          return false;
+        }
       } else {
-        console.log("Current password verification failed in localStorage");
+        console.log("Current password verification failed");
         return false;
       }
     } catch (error) {
