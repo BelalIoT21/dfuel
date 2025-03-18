@@ -7,8 +7,10 @@ import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
+import { machineService } from '@/services/machineService';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import BookMachineButton from './BookMachineButton';
 
 // Define known machines with correct ID mappings
 const MACHINE_NAMES = {
@@ -27,6 +29,7 @@ const CertificationsCard = () => {
   const [machines, setMachines] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
+  const [machineStatuses, setMachineStatuses] = useState({});
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -56,6 +59,20 @@ const CertificationsCard = () => {
       
       console.log("User certifications in CertificationsCard:", userCerts);
       
+      // Fetch machine statuses
+      const statuses = {};
+      for (const cert of allCertifications) {
+        const machineId = cert.id.toString();
+        try {
+          const status = await machineService.getMachineStatus(machineId);
+          statuses[machineId] = status;
+        } catch (err) {
+          console.error("Error fetching machine status:", err);
+          statuses[machineId] = 'unknown';
+        }
+      }
+      setMachineStatuses(statuses);
+      
       // Format the machines for display with correct names
       const formattedMachines = allCertifications.map(machine => {
         const machineId = machine.id.toString();
@@ -71,7 +88,8 @@ const CertificationsCard = () => {
           name: machineName,
           certified: userCerts.includes(machineId),
           date: format(certDate, 'dd/MM/yyyy'),
-          bookable: machineId !== "5" && machineId !== "6" // Safety Cabinet and Safety Course aren't bookable
+          bookable: machineId !== "5" && machineId !== "6", // Safety Cabinet and Safety Course aren't bookable
+          status: statuses[machineId] || 'unknown'
         };
       });
       
@@ -98,6 +116,32 @@ const CertificationsCard = () => {
       navigate(`/booking/${machineId}`);
     } else {
       navigate(`/machine/${machineId}`);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'available':
+        return 'text-green-600';
+      case 'maintenance':
+        return 'text-red-600';
+      case 'in-use':
+        return 'text-blue-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'available':
+        return 'bg-green-100 text-green-800';
+      case 'maintenance':
+        return 'bg-red-100 text-red-800';
+      case 'in-use':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -137,7 +181,14 @@ const CertificationsCard = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {machines.map((machine) => (
               <div key={machine.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
-                <div className="font-medium text-purple-800">{machine.name}</div>
+                <div className="font-medium text-purple-800 flex justify-between items-center">
+                  <span>{machine.name}</span>
+                  {machine.status && (
+                    <span className={`text-xs px-2 py-1 rounded capitalize ${getStatusClass(machine.status)}`}>
+                      {machine.status.replace('-', ' ')}
+                    </span>
+                  )}
+                </div>
                 {machine.certified ? (
                   <>
                     <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
@@ -148,15 +199,23 @@ const CertificationsCard = () => {
                       Certified on: {machine.date}
                     </div>
                     {machine.bookable ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-1 border-purple-200 hover:bg-purple-100 flex items-center gap-1"
-                        onClick={() => handleAction(machine.id, true, machine.bookable)}
-                      >
-                        <Calendar className="h-3 w-3" />
-                        Book Now
-                      </Button>
+                      <div className="flex flex-col gap-2 mt-3">
+                        <BookMachineButton 
+                          machineId={machine.id}
+                          isCertified={machine.certified}
+                          machineStatus={machine.status}
+                          size="sm"
+                          className="w-full"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-1 border-purple-200 hover:bg-purple-100"
+                          onClick={() => navigate(`/machine/${machine.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
                     ) : (
                       <div className="text-sm text-purple-600 mt-2">
                         Certification Complete
