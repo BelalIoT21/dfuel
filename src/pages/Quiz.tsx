@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ const Quiz = () => {
   const [isPassing, setIsPassing] = useState(false);
   const [certificateAwarded, setCertificateAwarded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentSelectedAnswer, setCurrentSelectedAnswer] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (!user) {
@@ -83,26 +83,47 @@ const Quiz = () => {
     loadQuiz();
   }, [id, user, navigate]);
 
+  useEffect(() => {
+    setCurrentSelectedAnswer(selectedAnswers[currentQuestion]);
+  }, [currentQuestion, selectedAnswers]);
+
   const handleSelectAnswer = (index: number) => {
-    // Create a new array to avoid state mutation issues
+    setCurrentSelectedAnswer(index);
+    
     const newSelectedAnswers = [...selectedAnswers];
     newSelectedAnswers[currentQuestion] = index;
     setSelectedAnswers(newSelectedAnswers);
   };
 
   const handleNext = () => {
-    // Only proceed if an answer is selected
-    if (selectedAnswers[currentQuestion] !== undefined) {
-      setCurrentQuestion(prev => prev + 1);
+    if (currentSelectedAnswer !== undefined) {
+      const newSelectedAnswers = [...selectedAnswers];
+      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
+      setSelectedAnswers(newSelectedAnswers);
     }
+    
+    setCurrentQuestion(prev => prev + 1);
+    setCurrentSelectedAnswer(selectedAnswers[currentQuestion + 1]);
   };
 
   const handlePrevious = () => {
+    if (currentSelectedAnswer !== undefined) {
+      const newSelectedAnswers = [...selectedAnswers];
+      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
+      setSelectedAnswers(newSelectedAnswers);
+    }
+    
     setCurrentQuestion(prev => Math.max(0, prev - 1));
+    setCurrentSelectedAnswer(selectedAnswers[Math.max(0, currentQuestion - 1)]);
   };
 
   const handleSubmit = async () => {
-    // Calculate score
+    if (currentSelectedAnswer !== undefined) {
+      const newSelectedAnswers = [...selectedAnswers];
+      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
+      setSelectedAnswers(newSelectedAnswers);
+    }
+    
     let correctCount = 0;
     for (let i = 0; i < quizData.questions.length; i++) {
       if (selectedAnswers[i] === quizData.questions[i].correctAnswer) {
@@ -117,7 +138,6 @@ const Quiz = () => {
     setIsPassing(passed);
     setQuizCompleted(true);
     
-    // If passed, add certification
     if (passed && user) {
       try {
         const success = await certificationService.addCertification(user.id, id || '');
@@ -151,6 +171,7 @@ const Quiz = () => {
   const handleRetry = () => {
     setCurrentQuestion(0);
     setSelectedAnswers(new Array(quizData.questions.length).fill(undefined));
+    setCurrentSelectedAnswer(undefined);
     setQuizCompleted(false);
     setScore(0);
     setIsPassing(false);
@@ -313,7 +334,7 @@ const Quiz = () => {
     );
   }
 
-  const currentQuizQuestion = quizData.questions[currentQuestion];
+  const currentQuizQuestion = quizData?.questions[currentQuestion];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
@@ -331,49 +352,49 @@ const Quiz = () => {
           <CardHeader>
             <CardTitle>Safety Quiz</CardTitle>
             <CardDescription>
-              {quizData.title || `Quiz for Machine #${id}`}
+              {quizData?.title || `Quiz for Machine #${id}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-500">Question {currentQuestion + 1} of {quizData.questions.length}</span>
+                <span className="text-sm text-gray-500">Question {currentQuestion + 1} of {quizData?.questions.length}</span>
                 <span className="text-sm font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                  {Math.round(((currentQuestion + 1) / quizData.questions.length) * 100)}% Complete
+                  {Math.round(((currentQuestion + 1) / quizData?.questions.length) * 100)}% Complete
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="bg-purple-600 h-2 rounded-full" 
-                  style={{ width: `${((currentQuestion + 1) / quizData.questions.length) * 100}%` }}
+                  style={{ width: `${((currentQuestion + 1) / quizData?.questions.length) * 100}%` }}
                 ></div>
               </div>
             </div>
             
             <div className="space-y-6">
-              <h3 className="text-lg font-medium">{currentQuizQuestion.question}</h3>
+              <h3 className="text-lg font-medium">{currentQuizQuestion?.question}</h3>
               
               <RadioGroup
-                value={selectedAnswers[currentQuestion] !== undefined ? selectedAnswers[currentQuestion].toString() : undefined}
+                value={currentSelectedAnswer !== undefined ? currentSelectedAnswer.toString() : undefined}
                 className="space-y-3"
                 onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
               >
-                {currentQuizQuestion.options.map((option: string, index: number) => (
+                {currentQuizQuestion?.options.map((option: string, index: number) => (
                   <div 
                     key={index} 
                     className={`flex items-center space-x-2 rounded-lg border p-4 cursor-pointer transition-all duration-200 
-                      ${selectedAnswers[currentQuestion] === index 
+                      ${currentSelectedAnswer === index 
                         ? 'bg-purple-100 border-purple-300 shadow-sm' 
                         : 'hover:bg-gray-50 border-gray-200'}`}
                   >
                     <RadioGroupItem 
                       value={index.toString()} 
                       id={`option-${index}`}
-                      className={selectedAnswers[currentQuestion] === index ? 'text-purple-600' : ''}
+                      className={currentSelectedAnswer === index ? 'text-purple-600' : ''}
                     />
                     <Label 
                       htmlFor={`option-${index}`} 
-                      className={`flex-grow cursor-pointer font-medium ${selectedAnswers[currentQuestion] === index ? 'text-purple-900' : 'text-gray-700'}`}
+                      className={`flex-grow cursor-pointer font-medium ${currentSelectedAnswer === index ? 'text-purple-900' : 'text-gray-700'}`}
                     >
                       {option}
                     </Label>
@@ -391,10 +412,9 @@ const Quiz = () => {
               Previous
             </Button>
             <div>
-              {currentQuestion < quizData.questions.length - 1 ? (
+              {currentQuestion < quizData?.questions.length - 1 ? (
                 <Button 
                   onClick={handleNext}
-                  disabled={selectedAnswers[currentQuestion] === undefined}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   Next
@@ -402,7 +422,7 @@ const Quiz = () => {
               ) : (
                 <Button 
                   onClick={handleSubmit}
-                  disabled={selectedAnswers.some(answer => answer === undefined)}
+                  disabled={!selectedAnswers.every(answer => answer !== undefined)}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   Submit Quiz
