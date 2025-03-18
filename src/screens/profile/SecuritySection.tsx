@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { TextInput, Button, IconButton } from 'react-native-paper';
@@ -18,6 +17,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -62,7 +62,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             secureTextEntry={!showCurrentPassword}
             mode="outlined"
             style={styles.input}
-            right={currentPassword ? (
+            right={currentPassword.length > 0 ? (
               <TextInput.Icon 
                 icon={showCurrentPassword ? "eye-off" : "eye"} 
                 onPress={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -76,7 +76,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             secureTextEntry={!showNewPassword}
             mode="outlined"
             style={styles.input}
-            right={newPassword ? (
+            right={newPassword.length > 0 ? (
               <TextInput.Icon 
                 icon={showNewPassword ? "eye-off" : "eye"} 
                 onPress={() => setShowNewPassword(!showNewPassword)}
@@ -87,9 +87,15 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
             label="Confirm New Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            secureTextEntry={!showConfirmPassword}
             mode="outlined"
             style={styles.input}
+            right={confirmPassword.length > 0 ? (
+              <TextInput.Icon 
+                icon={showConfirmPassword ? "eye-off" : "eye"} 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
+            ) : null}
           />
           <View style={styles.buttonRow}>
             <Button 
