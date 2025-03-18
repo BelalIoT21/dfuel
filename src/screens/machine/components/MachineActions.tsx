@@ -16,7 +16,6 @@ interface MachineActionsProps {
   isAdmin?: boolean;
   hasMachineSafetyCert?: boolean;
   userId?: string;
-  machineId?: string;
 }
 
 const MachineActions = ({ 
@@ -29,17 +28,13 @@ const MachineActions = ({
   onBookMachine,
   isAdmin = false,
   hasMachineSafetyCert = false,
-  userId,
-  machineId
+  userId
 }: MachineActionsProps) => {
   const [certificationsChecked, setCertificationsChecked] = useState(false);
   const [certifiedState, setCertifiedState] = useState(isCertified);
   
-  // Define bookable machine IDs (1-4 are bookable)
-  const BOOKABLE_MACHINE_IDS = ['1', '2', '3', '4'];
-  
-  // Check if this machine is bookable based on ID
-  const isBookable = machineId ? BOOKABLE_MACHINE_IDS.includes(machineId) : false;
+  // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
+  const isBookable = machineType !== 'Safety Cabinet' && machineType !== 'Safety Course';
   
   // Determine if user can get certified (must have Safety Course certification - ID 6)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
@@ -48,7 +43,7 @@ const MachineActions = ({
   const isSpecialUser = false;
   
   // Is this the Safety Course itself? (ID 6)
-  const isSafetyCourse = machineId === '6' || machineType === 'Safety Course';
+  const isSafetyCourse = machineType === 'Safety Course';
 
   useEffect(() => {
     setCertifiedState(isCertified);
@@ -64,10 +59,9 @@ const MachineActions = ({
       canGetCertified,
       isAdmin,
       hasMachineSafetyCert,
-      userId,
-      machineId
+      userId
     });
-  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, machineId]);
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId]);
 
   const handleTakeCourse = () => {
     // If not Safety Course and user doesn't have Safety Course certification
@@ -135,7 +129,7 @@ const MachineActions = ({
         </Button>
       )}
       
-      {/* Show booking button for all machines 1-4 when certified */}
+      {/* Only show booking buttons for bookable machines */}
       {isBookable && (
         <>
           {/* Always show booking button for admins regardless of machine status or certification */}

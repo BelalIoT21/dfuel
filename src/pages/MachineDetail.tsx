@@ -9,7 +9,6 @@ import { AlertTriangle, Award, Book, Calendar, CheckCircle, ChevronLeft, Clipboa
 import { machines } from '../utils/data';
 import { apiService } from '../services/apiService';
 import { certificationService } from '../services/certificationService';
-import BookMachineButton from '@/components/profile/BookMachineButton';
 
 const MachineDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +23,6 @@ const MachineDetail = () => {
 
   // Safety course has ID 6
   const SAFETY_COURSE_ID = '6';
-
-  // Define bookable machine IDs (1-4 are bookable)
-  const BOOKABLE_MACHINE_IDS = ['1', '2', '3', '4'];
 
   useEffect(() => {
     if (!user) {
@@ -93,19 +89,13 @@ const MachineDetail = () => {
         if (user) {
           try {
             const isUserCertified = await certificationService.checkCertification(user.id, id || '');
-            console.log(`Machine ${id} certification check:`, isUserCertified);
             setIsCertified(isUserCertified);
           } catch (certError) {
             console.error('Error checking certification:', certError);
             
             // Fallback to user object if API fails
-            if (user.certifications && Array.isArray(user.certifications)) {
-              const certIds = user.certifications.map(cert => String(cert));
-              console.log("User certifications from user object:", certIds);
-              console.log("Machine ID to check:", id);
-              const hasCert = certIds.includes(String(id));
-              console.log("Certificate match result:", hasCert);
-              setIsCertified(hasCert);
+            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(id)) {
+              setIsCertified(true);
             }
           }
           
@@ -175,9 +165,7 @@ const MachineDetail = () => {
   }
 
   const isMaintenance = machineStatus === 'maintenance';
-  
-  // A machine is bookable if it's one of machines 1-4
-  const isBookable = BOOKABLE_MACHINE_IDS.includes(id || '');
+  const isBookable = !isMaintenance && isCertified && machine.id !== '5' && machine.id !== '6';
   
   // Check if the current machine is the safety course itself
   const isSafetyCourse = id === SAFETY_COURSE_ID;
@@ -294,7 +282,6 @@ const MachineDetail = () => {
           </Card>
         </div>
 
-        {/* Show booking button for all machines 1-4 when certified */}
         {isCertified && isBookable && (
           <Card>
             <CardHeader>
@@ -307,18 +294,26 @@ const MachineDetail = () => {
               <p className="mb-6">
                 You're certified to use this machine! Book a time slot to use it.
               </p>
-              <BookMachineButton 
-                machineId={id || ''} 
-                isCertified={isCertified} 
-                machineStatus={machineStatus}
-                className="w-full"
-              />
+              <Button 
+                onClick={handleBookMachine} 
+                className="w-full bg-purple-600 hover:bg-purple-700"
+                disabled={isMaintenance}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Book Now
+              </Button>
+              
+              {isMaintenance && (
+                <div className="mt-4 text-amber-600 text-sm flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Machine is currently under maintenance
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
         
-        {/* Show certification complete for machines that don't require booking but user is certified */}
-        {isCertified && (!isBookable || machineStatus !== 'available') && (
+        {isCertified && !isBookable && machine.id !== '5' && machine.id !== '6' && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -328,9 +323,7 @@ const MachineDetail = () => {
             </CardHeader>
             <CardContent>
               <p>
-                You're certified to use this equipment! 
-                {!isBookable ? " This specific machine doesn't require booking." : 
-                  machineStatus !== 'available' ? " This machine is currently unavailable for booking." : ""}
+                You're certified to use this equipment! This specific machine doesn't require booking.
               </p>
             </CardContent>
           </Card>

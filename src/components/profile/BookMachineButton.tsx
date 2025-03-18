@@ -28,8 +28,6 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
-  console.log(`BookMachineButton - Machine ${machineId}:`, { isCertified, machineStatus, isAvailable, canBook });
-
   return (
     <Button 
       onClick={handleBooking} 
