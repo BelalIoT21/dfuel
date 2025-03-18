@@ -18,7 +18,6 @@ export const useProfileFunctions = (
         // Update user context with new certification
         const updatedUser = { ...user, certifications: [...user.certifications, machineId] };
         setUser(updatedUser);
-        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       } else {
         toast({
@@ -96,7 +95,6 @@ export const useProfileFunctions = (
         
         // Update local state immediately for better UX
         setUser(updatedUser);
-        localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
         
         console.log("Profile update successful");
         toast({
@@ -163,13 +161,6 @@ export const useProfileFunctions = (
       });
       
       if (success) {
-        // Only update password in localStorage if MongoDB update was successful
-        const userData = JSON.parse(localStorage.getItem('learnit_user') || '{}');
-        if (userData && userData.id === user.id) {
-          userData.password = newPassword;
-          localStorage.setItem('learnit_user', JSON.stringify(userData));
-        }
-        
         toast({
           title: "Password changed",
           description: "Your password has been changed successfully."

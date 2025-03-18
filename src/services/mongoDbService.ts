@@ -400,62 +400,44 @@ class MongoDbService {
   async updateUser(userId: string, updates: { name?: string, email?: string, password?: string, currentPassword?: string }): Promise<boolean> {
     console.log(`MongoDbService: updateUser for user ${userId}`, updates);
     
-    if (isWeb) {
-      console.log("Using direct MongoDB connection");
-      
-      try {
-        if (!userId) {
-          console.error("Invalid userId passed to updateUser");
-          return false;
-        }
-        
-        // Use MongoDB service directly
-        console.log(`MongoDbService: Updating user ${userId} with:`, updates);
-        const success = await mongoUserService.updateUser(userId, updates);
-        console.log(`MongoDB update user result: ${success}`);
-        
-        // If successful and we're updating profile info, update the localStorage user
-        if (success && (updates.name || updates.email)) {
-          const currentUser = JSON.parse(localStorage.getItem('learnit_user') || '{}');
-          if (currentUser && currentUser.id === userId) {
-            const updatedUser = { ...currentUser };
-            if (updates.name) updatedUser.name = updates.name;
-            if (updates.email) updatedUser.email = updates.email;
-            localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
-          }
-        }
-        
-        return success;
-      } catch (error) {
-        console.error("Error in updateUser:", error);
-        return false;
-      }
-    }
-    
     try {
       if (!userId) {
         console.error("Invalid userId passed to updateUser");
         return false;
       }
       
-      // Only use MongoDB service
-      const success = await mongoUserService.updateUser(userId, updates);
-      console.log(`MongoDB update user result: ${success}`);
-      
-      // Update localStorage if success
-      if (success && (updates.name || updates.email)) {
-        const currentUser = JSON.parse(localStorage.getItem('learnit_user') || '{}');
-        if (currentUser && currentUser.id === userId) {
-          const updatedUser = { ...currentUser };
-          if (updates.name) updatedUser.name = updates.name;
-          if (updates.email) updatedUser.email = updates.email;
-          localStorage.setItem('learnit_user', JSON.stringify(updatedUser));
+      // For password changes, verify current password first
+      if (updates.password && updates.currentPassword) {
+        try {
+          // Get the current user to verify password
+          const user = await mongoUserService.getUserById(userId);
+          if (!user) {
+            console.error(`User ${userId} not found`);
+            return false;
+          }
+          
+          // Verify the current password matches
+          if (user.password !== updates.currentPassword) {
+            console.error("Current password is incorrect");
+            return false;
+          }
+          
+          // Password verified, proceed with update
+          console.log("Current password verified, updating to new password");
+        } catch (verifyError) {
+          console.error("Error verifying current password:", verifyError);
+          return false;
         }
       }
       
+      // Use MongoDB service directly
+      console.log(`MongoDbService: Updating user ${userId} with:`, updates);
+      const success = await mongoUserService.updateUser(userId, updates);
+      console.log(`MongoDB update user result: ${success}`);
+      
       return success;
     } catch (error) {
-      console.error(`Error updating user ${userId}:`, error);
+      console.error("Error in updateUser:", error);
       return false;
     }
   }

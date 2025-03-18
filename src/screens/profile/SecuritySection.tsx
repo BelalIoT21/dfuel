@@ -39,7 +39,7 @@ const SecuritySection = ({ user, changePassword }: SecuritySectionProps) => {
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        Alert.alert('Error', 'Failed to change password');
+        Alert.alert('Error', 'Failed to change password. Current password may be incorrect.');
       }
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong');
