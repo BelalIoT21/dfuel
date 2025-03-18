@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -13,26 +12,62 @@ import { getEnv, setEnv, getLocalServerIP } from '@/utils/env';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [customServerIP, setCustomServerIP] = useState(getEnv('CUSTOM_SERVER_IP', ''));
   const [showIPDialog, setShowIPDialog] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const { user, loading: authLoading, login, register } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
-  // Check server connection
+  useEffect(() => {
+    const handleKeyboardShow = () => {
+      console.log("Keyboard shown");
+      setKeyboardVisible(true);
+    };
+    
+    const handleKeyboardHide = () => {
+      console.log("Keyboard hidden");
+      setKeyboardVisible(false);
+    };
+    
+    if (isAndroid() || isIOS()) {
+      if (isAndroid()) {
+        window.addEventListener('resize', () => {
+          const isKeyboardVisible = window.innerHeight < window.outerHeight * 0.8;
+          setKeyboardVisible(isKeyboardVisible);
+        });
+      } else if (isIOS()) {
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', () => {
+            setKeyboardVisible(window.visualViewport!.height < window.innerHeight * 0.85);
+          });
+        }
+      }
+      
+      return () => {
+        if (isAndroid()) {
+          window.removeEventListener('resize', () => {});
+        } else if (isIOS() && window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', () => {});
+        }
+      };
+    }
+  }, []);
+
   useEffect(() => {
     const checkServer = async () => {
       try {
         console.log("Checking server health...");
-        // Use correct IP based on platform
         const serverIP = getLocalServerIP();
         const serverUrl = `http://${serverIP}:4000/api/health`;
         
         console.log(`Attempting to connect to server at: ${serverUrl}`);
-        const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+        const timestamp = new Date().getTime();
         const response = await fetch(`${serverUrl}?t=${timestamp}`);
         
         if (response.ok) {
@@ -50,7 +85,6 @@ const Index = () => {
         console.error("Server connection error:", error);
         setServerStatus('disconnected');
         
-        // Get platform-specific message
         let errorMessage = 'Could not connect to the backend server. Please ensure the server is running.';
         
         if (isAndroid() || isCapacitor()) {
@@ -65,7 +99,6 @@ const Index = () => {
           variant: 'destructive'
         });
         
-        // Try API service as fallback
         try {
           const apiResponse = await apiService.checkHealth();
           if (apiResponse.data && apiResponse.status === 200) {
@@ -83,13 +116,11 @@ const Index = () => {
     };
     
     checkServer();
-    // Set up an interval to periodically check server status
-    const intervalId = setInterval(checkServer, 10000); // Check every 10 seconds
+    const intervalId = setInterval(checkServer, 10000);
     
     return () => clearInterval(intervalId);
-  }, [customServerIP]); // Re-run when customServerIP changes
+  }, [customServerIP]);
 
-  // Redirect if user is already logged in
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
@@ -119,18 +150,15 @@ const Index = () => {
         title: 'Server IP Updated',
         description: `Custom server IP set to: ${customServerIP}`,
       });
-      // Force a reload to apply the new settings
       window.location.reload();
     }
     setShowIPDialog(false);
   };
 
-  // Debug rendering
   console.log("Rendering Index component, auth loading:", authLoading);
 
   const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
 
-  // Show loading spinner while auth is loading
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -139,7 +167,6 @@ const Index = () => {
     );
   }
 
-  // If user is already logged in, show loading until redirect happens
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -148,9 +175,16 @@ const Index = () => {
     );
   }
 
+  const containerStyle = keyboardVisible && isMobile
+    ? { minHeight: '100vh', paddingBottom: '40vh', transition: 'padding 0.3s ease' }
+    : { minHeight: '100vh', transition: 'padding 0.3s ease' };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
-      <div className="w-full max-w-md space-y-6 animate-fade-up">
+    <div 
+      className="flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      style={containerStyle}
+    >
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mb-auto' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
@@ -174,7 +208,6 @@ const Index = () => {
             </div>
           )}
           
-          {/* Settings button for custom server IP */}
           <button 
             onClick={() => setShowIPDialog(true)}
             className="absolute right-0 top-0 p-2 text-gray-500 hover:text-purple-600"
@@ -215,7 +248,6 @@ const Index = () => {
         </AnimatePresence>
       </div>
       
-      {/* Custom Server IP Dialog */}
       <Dialog open={showIPDialog} onOpenChange={setShowIPDialog}>
         <DialogContent>
           <DialogHeader>
