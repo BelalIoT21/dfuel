@@ -97,16 +97,22 @@ async function ensureMachineOrder() {
       
       // Reinsert in correct order
       for (const machine of sortedMachines) {
-        // Remove MongoDB-specific fields
-        delete machine.__v;
-        delete machine._id;
+        // Create a new machine object without MongoDB-specific fields
+        const machineData = {
+          _id: machine._id.toString(),
+          name: machine.name,
+          type: machine.type,
+          description: machine.description,
+          status: machine.status,
+          requiresCertification: machine.requiresCertification,
+          difficulty: machine.difficulty,
+          imageUrl: machine.imageUrl,
+          specifications: machine.specifications,
+          // Include any other fields that should be preserved
+        };
         
-        // Create a new machine with the original ID
-        const newMachine = new Machine({
-          ...machine,
-          _id: machine._id.toString()
-        });
-        
+        // Create a new machine with the filtered data
+        const newMachine = new Machine(machineData);
         await newMachine.save();
       }
       
