@@ -1,4 +1,3 @@
-
 import { getEnv, getApiEndpoints as getApiEndpointsFromEnv, formatApiEndpoint } from '../utils/env';
 import { isAndroid, isCapacitor } from '../utils/platform';
 
@@ -60,7 +59,8 @@ class ApiService {
       }
       
       const headers: HeadersInit = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       };
       
       if (authRequired && authToken) {
@@ -72,6 +72,7 @@ class ApiService {
         method,
         headers,
         credentials: 'include',
+        mode: 'cors',
       };
       
       if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
@@ -84,11 +85,25 @@ class ApiService {
       // Try with retry and endpoint switching logic
       let response;
       let retryCount = 0;
-      const maxRetries = API_ENDPOINTS.length;
+      const maxRetries = API_ENDPOINTS.length * 2; // Increase max retries
       
       while (retryCount < maxRetries) {
         try {
+          // Set a timeout to prevent hanging
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          
+          options.signal = controller.signal;
+          
           response = await fetch(url, options);
+          clearTimeout(timeoutId);
+          
+          console.log(`Response from ${url}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries([...response.headers.entries()])
+          });
+          
           break; // If successful, exit the retry loop
         } catch (fetchError) {
           console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
@@ -196,6 +211,75 @@ class ApiService {
   }
   
   async checkHealth() {
+    console.log("Checking API health directly");
+    
+    // Try multiple endpoints for health check
+    let healthResponse: ApiResponse<any> = {
+      data: null,
+      error: "Failed to connect to any health endpoints",
+      status: 500
+    };
+    
+    // Try each endpoint directly first
+    for (const baseEndpoint of API_ENDPOINTS) {
+      const healthUrl = baseEndpoint.endsWith('/') 
+        ? `${baseEndpoint}health` 
+        : `${baseEndpoint}/health`;
+      
+      console.log(`Trying health check at: ${healthUrl}`);
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          console.log(`Health check successful at ${healthUrl}`);
+          // We found a working endpoint, use it
+          BASE_URL = baseEndpoint;
+          console.log(`Switching to working endpoint: ${BASE_URL}`);
+          
+          // Try to get response data
+          try {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const text = await response.text();
+              const data = text ? JSON.parse(text) : null;
+              
+              return {
+                data: data || { status: 'ok', message: 'Server is available' },
+                error: null,
+                status: response.status
+              };
+            }
+          } catch (e) {
+            console.warn("Could not parse JSON from health check", e);
+          }
+          
+          // Return a success even if we couldn't parse JSON
+          return {
+            data: { status: 'ok', message: 'Server is available' },
+            error: null,
+            status: response.status
+          };
+        }
+      } catch (error) {
+        console.error(`Health check failed for ${healthUrl}:`, error);
+      }
+    }
+    
+    // Fall back to the standard API method
     return this.get<{ status: string, message: string }>(
       'health',
       false

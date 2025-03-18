@@ -9,8 +9,15 @@ export const healthCheck = async (req: Request, res: Response) => {
     
     // Add CORS headers explicitly for health check
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET');
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
+    console.log(`Health check requested from: ${req.ip}, User-Agent: ${req.headers['user-agent']}`);
     
     res.status(200).json({ 
       status: 'success',
@@ -24,11 +31,18 @@ export const healthCheck = async (req: Request, res: Response) => {
       },
       server: {
         port: process.env.PORT || 4000,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        ip: req.ip
       }
     });
   } catch (error) {
     console.error('Health check error:', error);
+    
+    // Add CORS headers for error response too
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     res.status(500).json({ 
       status: 'error',
       message: 'Error performing health check',
