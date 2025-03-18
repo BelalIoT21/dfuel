@@ -43,8 +43,9 @@ export const ensureAdminUser = async () => {
       if (forcePasswordUpdate) {
         console.log('Force admin password update is enabled, updating admin password');
         
-        // Update the admin password
-        existingAdmin.password = process.env.ADMIN_PASSWORD || 'admin123';
+        // Update the admin password - Fix for TypeScript error by providing a fallback value
+        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+        existingAdmin.password = adminPassword;
         await existingAdmin.save();
         console.log('Admin password updated successfully');
       }
