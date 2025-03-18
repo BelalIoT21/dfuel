@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,7 @@ const Index = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const prevServerStatusRef = useRef<string | null>(null);
+  const checkingRef = useRef<boolean>(false);
 
   useEffect(() => {
     loadEnv();
@@ -61,6 +63,11 @@ const Index = () => {
 
   useEffect(() => {
     const checkServer = async () => {
+      // Prevent multiple concurrent checks
+      if (checkingRef.current) return;
+      
+      checkingRef.current = true;
+      
       try {
         console.log("Checking server health...");
         const serverIP = '192.168.47.238';
@@ -68,76 +75,91 @@ const Index = () => {
         
         console.log(`Attempting to connect to server at: ${serverUrl}`);
         const timestamp = new Date().getTime();
-        const response = await fetch(`${serverUrl}?t=${timestamp}`);
         
-        if (response.ok) {
-          console.log("Server health check successful");
-          
-          // Only update status and show toast if status changed
-          if (serverStatus !== 'connected') {
-            setServerStatus('connected');
-            
-            // Only show toast if status changed from a different value
-            if (prevServerStatusRef.current !== 'connected') {
-              toast({
-                title: 'Server Connected',
-                description: `Successfully connected to the backend server at ${serverIP}:4000`,
-              });
-            }
-          }
-          
-          prevServerStatusRef.current = 'connected';
-        } else {
-          throw new Error(`Server returned ${response.status}`);
-        }
-      } catch (error) {
-        console.error("Server connection error:", error);
-        
-        // Only update status and show toast if status changed
-        if (serverStatus !== 'disconnected') {
-          setServerStatus('disconnected');
-          
-          // Only show toast if status changed from a different value
-          if (prevServerStatusRef.current !== 'disconnected') {
-            let errorMessage = `Could not connect to the backend server at 192.168.47.238:4000. Please ensure the server is running.`;
-            
-            toast({
-              title: 'Server Connection Failed',
-              description: errorMessage,
-              variant: 'destructive'
-            });
-          }
-        }
-        
-        prevServerStatusRef.current = 'disconnected';
+        // Set a timeout to prevent hanging on the fetch request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         
         try {
-          const apiResponse = await apiService.checkHealth();
-          if (apiResponse.data && apiResponse.status === 200) {
+          const response = await fetch(`${serverUrl}?t=${timestamp}`, {
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
+            console.log("Server health check successful");
             
             // Only update status and show toast if status changed
-            if (serverStatus !== 'connected via API') {
-              setServerStatus('connected via API');
+            if (serverStatus !== 'connected') {
+              setServerStatus('connected');
               
               // Only show toast if status changed from a different value
-              if (prevServerStatusRef.current !== 'connected via API') {
+              if (prevServerStatusRef.current !== 'connected') {
                 toast({
-                  title: 'API Server Connected',
-                  description: 'Connected via alternative API endpoint',
+                  title: 'Server Connected',
+                  description: `Successfully connected to the backend server at ${serverIP}:4000`,
                 });
               }
             }
             
-            prevServerStatusRef.current = 'connected via API';
+            prevServerStatusRef.current = 'connected';
+          } else {
+            throw new Error(`Server returned ${response.status}`);
           }
-        } catch (apiError) {
-          console.error("API service connection also failed:", apiError);
+        } catch (fetchError) {
+          console.error("Server connection error:", fetchError);
+          clearTimeout(timeoutId);
+          
+          // Only update status and show toast if status changed
+          if (serverStatus !== 'disconnected') {
+            setServerStatus('disconnected');
+            
+            // Only show toast if status changed from a different value
+            if (prevServerStatusRef.current !== 'disconnected') {
+              toast({
+                title: 'Server Connection Failed',
+                description: `Could not connect to the backend server at ${serverIP}:4000. Please ensure the server is running.`,
+                variant: 'destructive'
+              });
+            }
+          }
+          
+          prevServerStatusRef.current = 'disconnected';
+          
+          // Try alternative API endpoint
+          try {
+            const apiResponse = await apiService.checkHealth();
+            if (apiResponse.data && apiResponse.status === 200) {
+              
+              // Only update status and show toast if status changed
+              if (serverStatus !== 'connected via API') {
+                setServerStatus('connected via API');
+                
+                // Only show toast if status changed from a different value
+                if (prevServerStatusRef.current !== 'connected via API') {
+                  toast({
+                    title: 'API Server Connected',
+                    description: 'Connected via alternative API endpoint',
+                  });
+                }
+              }
+              
+              prevServerStatusRef.current = 'connected via API';
+            }
+          } catch (apiError) {
+            console.error("API service connection also failed:", apiError);
+          }
         }
+      } finally {
+        checkingRef.current = false;
       }
     };
     
+    // Initial check
     checkServer();
-    const intervalId = setInterval(checkServer, 10000);
+    
+    // Check server every 30 seconds instead of 10 seconds to reduce frequency
+    const intervalId = setInterval(checkServer, 30000);
     
     return () => clearInterval(intervalId);
   }, [serverStatus]);
