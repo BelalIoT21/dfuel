@@ -28,6 +28,9 @@ const MACHINE_NAMES = {
   "6": "Machine Safety Course"
 };
 
+// Refresh interval in milliseconds
+const REFRESH_INTERVAL = 10000; // 10 seconds
+
 const CertificationsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -41,6 +44,8 @@ const CertificationsCard = () => {
   const [userInitialized, setUserInitialized] = useState(false);
   // Add a ref to track if a refresh operation is in progress
   const isRefreshingRef = useRef(false);
+  // Add a ref for the interval timer
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // This will trigger when the user object changes (like after login)
   useEffect(() => {
@@ -48,8 +53,35 @@ const CertificationsCard = () => {
       console.log("User detected, initializing certifications card data");
       setUserInitialized(true);
       fetchMachinesAndCertifications();
+      
+      // Start the refresh interval after initial load
+      startRefreshInterval();
     }
+    
+    // Cleanup function to clear interval on unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [user]);
+
+  // Function to start the refresh interval
+  const startRefreshInterval = () => {
+    // Clear any existing interval first
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    // Set a new interval
+    intervalRef.current = setInterval(() => {
+      console.log("Auto-refreshing certifications data...");
+      fetchMachinesAndCertifications();
+    }, REFRESH_INTERVAL);
+    
+    console.log("Started automatic refresh interval");
+  };
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
