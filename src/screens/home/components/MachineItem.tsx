@@ -53,9 +53,13 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Only display machineType chip if there's an actual value
   const showMachineType = machineType && machineType.trim() !== '';
   
-  // Convert userCertifications to strings for comparison
-  const userCertsAsString = userCertifications.map(cert => cert.toString());
-  const isCertified = userCertsAsString.includes(machine.id.toString());
+  // Ensure userCertifications is an array and all elements are strings
+  const userCertsAsString = Array.isArray(userCertifications) 
+    ? userCertifications.map(cert => String(cert)) 
+    : [];
+    
+  // Check if user is certified for this machine
+  const isCertified = userCertsAsString.includes(String(machine.id));
 
   console.log(`Machine ${machine.id} (${machine.name}) certification status:`, isCertified);
   console.log(`User certifications:`, userCertsAsString);

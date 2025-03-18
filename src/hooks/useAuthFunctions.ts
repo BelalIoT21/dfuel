@@ -124,7 +124,7 @@ export const useAuthFunctions = (
         return false;
       }
   
-      // Normalize user data - explicitly set empty certifications array
+      // Normalize user data - EXPLICITLY set empty certifications array
       const normalizedUser = {
         id: String(userData._id),
         name: userData.name || name || 'User',
