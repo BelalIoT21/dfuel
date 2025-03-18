@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
 import { certificationDatabaseService } from '@/services/database/certificationService';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface UserCertificationManagerProps {
   user: any;
@@ -27,6 +29,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
   const [isClearing, setIsClearing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Get the userId in a consistent format
   const getUserId = () => {
@@ -192,59 +195,63 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             Add or remove certifications for this user.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <h4 className="text-sm font-medium mb-2">Certifications</h4>
-          <div className="grid grid-cols-1 gap-2">
-            {CERTIFICATIONS.map(certification => {
-              const isCertified = userCertifications.includes(certification.id);
-              return (
-                <div key={certification.id} className="flex justify-between items-center border p-2 rounded">
-                  <span>{certification.name}</span>
-                  <div>
-                    {isCertified ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRemoveCertification(certification.id)}
-                        disabled={loading === certification.id}
-                        className="bg-red-50 hover:bg-red-100 border-red-200"
-                      >
-                        {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Remove
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddCertification(certification.id)}
-                        disabled={loading === certification.id}
-                      >
-                        {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Add
-                      </Button>
-                    )}
+        
+        <ScrollArea className={isMobile ? "h-[50vh]" : "max-h-[70vh]"}>
+          <div className="py-4 px-1">
+            <h4 className="text-sm font-medium mb-2">Certifications</h4>
+            <div className="grid grid-cols-1 gap-2">
+              {CERTIFICATIONS.map(certification => {
+                const isCertified = userCertifications.includes(certification.id);
+                return (
+                  <div key={certification.id} className="flex justify-between items-center border p-2 rounded">
+                    <span>{certification.name}</span>
+                    <div>
+                      {isCertified ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveCertification(certification.id)}
+                          disabled={loading === certification.id}
+                          className="bg-red-50 hover:bg-red-100 border-red-200"
+                        >
+                          {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Remove
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddCertification(certification.id)}
+                          disabled={loading === certification.id}
+                        >
+                          {loading === certification.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Add
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {userCertifications.length > 0 && (
-            <div className="mt-4 border-t pt-4">
-              <Button 
-                variant="outline"
-                size="sm"
-                className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                onClick={handleClearAllCertifications}
-                disabled={isClearing}
-              >
-                {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Trash className="h-4 w-4 mr-2" />
-                Clear All Certifications
-              </Button>
+                );
+              })}
             </div>
-          )}
-        </div>
+
+            {userCertifications.length > 0 && (
+              <div className="mt-4 border-t pt-4">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-red-200 hover:bg-red-50 text-red-700"
+                  onClick={handleClearAllCertifications}
+                  disabled={isClearing}
+                >
+                  {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Trash className="h-4 w-4 mr-2" />
+                  Clear All Certifications
+                </Button>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+        
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
         </DialogFooter>
