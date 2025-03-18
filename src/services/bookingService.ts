@@ -89,11 +89,16 @@ class BookingService {
       if (isWeb) {
         try {
           console.log(`Sending API request with userId: ${userIdStr}, machineId: ${machineIdStr}, date: ${formattedDate}, time: ${time}`);
+          
+          // Note: The server should always set status to 'Pending'
           const response = await apiService.addBooking(userIdStr, machineIdStr, formattedDate, time);
           
           if (response.data) {
             console.log('Successfully created booking via API:', response.data);
-            // The API should set the status to 'Pending' for non-admin users
+            // Double-check API response has 'Pending' status as expected
+            if (response.data.status !== 'Pending') {
+              console.warn('API returned booking with unexpected status:', response.data.status);
+            }
             return true;
           } else {
             console.error('API booking failed:', response.data);

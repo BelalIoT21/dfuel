@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, Info } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking }) => {
   if (!bookings || bookings.length === 0) {
@@ -18,6 +19,26 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
     return booking.machine;
   };
 
+  const formatDate = (dateString) => {
+    try {
+      if (!dateString) return '';
+      
+      // Check if the date is already a string in YYYY-MM-DD format
+      if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+      }
+      
+      // Parse the date string to a Date object
+      const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
+      
+      // Format the date as YYYY-MM-DD
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
   return (
     <div className="space-y-4">
       {bookings.map((booking) => (
@@ -26,7 +47,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
             <p className="font-medium text-purple-800">
               {booking.machineName || getMachineName(getBookingMachineId(booking))}
             </p>
-            <p className="text-sm text-gray-500">{booking.date} at {booking.time}</p>
+            <p className="text-sm text-gray-500">{formatDate(booking.date)} at {booking.time}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-xs px-2 py-1 rounded ${
