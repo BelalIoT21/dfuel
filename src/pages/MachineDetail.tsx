@@ -239,7 +239,7 @@ const MachineDetail = () => {
               <Button 
                 onClick={handleTakeCourse} 
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
+                disabled={requiresSafetyCourse && !hasSafetyCourse}
               >
                 <Book className="mr-2 h-4 w-4" />
                 Take Course
@@ -266,7 +266,7 @@ const MachineDetail = () => {
               <Button 
                 onClick={handleTakeQuiz} 
                 className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isMaintenance || (requiresSafetyCourse && !hasSafetyCourse)}
+                disabled={requiresSafetyCourse && !hasSafetyCourse}
               >
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Take Quiz
