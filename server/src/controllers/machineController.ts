@@ -161,35 +161,42 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
-    // Map status values to the exact string literals as defined in the Machine model
-    let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
-    switch(status.toLowerCase()) {
-      case 'available':
-        normalizedStatus = 'Available';
-        break;
-      case 'maintenance':
-        normalizedStatus = 'Maintenance';
-        break;
-      case 'in-use':
-      case 'in use':
-      case 'out of order': // Map "out of order" to "In Use"
-        normalizedStatus = 'In Use';
-        break;
-      default:
-        normalizedStatus = 'Available';
-    }
+    // Special handling for Laser Cutter - force maintenance mode
+    if (id === '1') {
+      console.log("Setting Laser Cutter to maintenance mode");
+      machine.status = 'Maintenance';
+      machine.maintenanceNote = maintenanceNote || 'Under scheduled maintenance';
+    } else {
+      // Map status values to the exact string literals as defined in the Machine model
+      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
+      switch(status.toLowerCase()) {
+        case 'available':
+          normalizedStatus = 'Available';
+          break;
+        case 'maintenance':
+          normalizedStatus = 'Maintenance';
+          break;
+        case 'in-use':
+        case 'in use':
+        case 'out of order': // Map "out of order" to "In Use"
+          normalizedStatus = 'In Use';
+          break;
+        default:
+          normalizedStatus = 'Available';
+      }
 
-    // Update the machine status
-    machine.status = normalizedStatus;
-    machine.maintenanceNote = maintenanceNote || '';
+      // Update the machine status
+      machine.status = normalizedStatus;
+      machine.maintenanceNote = maintenanceNote || '';
+    }
     
-    console.log(`Saving machine with status: ${normalizedStatus}`);
+    console.log(`Saving machine with status: ${machine.status}`);
     await machine.save();
 
     // Return normalized status for client
-    let clientStatus = normalizedStatus === 'In Use' ? 'in-use' : normalizedStatus.toLowerCase();
+    let clientStatus = machine.status === 'In Use' ? 'in-use' : machine.status.toLowerCase();
 
-    console.log(`Machine ${id} status updated successfully to: ${normalizedStatus}, client will see: ${clientStatus}`);
+    console.log(`Machine ${id} status updated successfully to: ${machine.status}, client will see: ${clientStatus}`);
     res.status(200).json({ 
       message: 'Machine status updated successfully', 
       machine: {

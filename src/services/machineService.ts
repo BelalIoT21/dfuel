@@ -213,3 +213,17 @@ export class MachineService {
 
 // Create a singleton instance
 export const machineService = new MachineService();
+
+// Set Laser Cutter to maintenance mode when the application starts
+(async function initializeMachineStatus() {
+  try {
+    console.log("Setting Laser Cutter (ID: 1) to maintenance mode...");
+    // Add a small delay to ensure services are initialized
+    setTimeout(async () => {
+      await machineService.updateMachineStatus("1", "maintenance", "Under scheduled maintenance");
+      console.log("Laser Cutter status set to maintenance");
+    }, 1000);
+  } catch (error) {
+    console.error("Failed to set initial machine status:", error);
+  }
+})();
