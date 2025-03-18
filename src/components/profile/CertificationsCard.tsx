@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,11 @@ const MACHINE_NAMES = {
   "6": "Machine Safety Course"
 };
 
-const CertificationsCard = () => {
+interface CertificationsCardProps {
+  activeTab?: string;
+}
+
+const CertificationsCard = ({ activeTab }: CertificationsCardProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -153,9 +158,19 @@ const CertificationsCard = () => {
     }
   };
 
+  // Load machines when component mounts or when activeTab changes to 'certifications'
   useEffect(() => {
-    fetchMachinesAndCertifications();
-  }, [user]);
+    if (activeTab === 'certifications') {
+      fetchMachinesAndCertifications();
+    }
+  }, [user, activeTab]);
+  
+  // Make sure we have standard machine IDs if nothing is set yet
+  useEffect(() => {
+    if (availableMachineIds.length === 0) {
+      setAvailableMachineIds(STANDARD_MACHINE_IDS);
+    }
+  }, []);
 
   const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
     if (isCertified && isBookable) {
@@ -212,64 +227,78 @@ const CertificationsCard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {machines.map((machine) => (
-              <div key={machine.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
-                <div className="font-medium text-purple-800 flex justify-between items-center">
-                  <span>{machine.name}</span>
-                  {machine.status && (
-                    <span className={`text-xs px-2 py-1 rounded capitalize ${getStatusClass(machine.status)}`}>
-                      {machine.status.replace('-', ' ')}
-                    </span>
+            {machines.length > 0 ? (
+              machines.map((machine) => (
+                <div key={machine.id} className="border border-purple-100 rounded-lg p-4 hover:bg-purple-50 transition-colors">
+                  <div className="font-medium text-purple-800 flex justify-between items-center">
+                    <span>{machine.name}</span>
+                    {machine.status && (
+                      <span className={`text-xs px-2 py-1 rounded capitalize ${getStatusClass(machine.status)}`}>
+                        {machine.status.replace('-', ' ')}
+                      </span>
+                    )}
+                  </div>
+                  {machine.certified ? (
+                    <>
+                      <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
+                        <Award className="h-3 w-3" />
+                        Certified
+                      </div>
+                      <div className="text-xs text-gray-500 mb-2">
+                        Certified on: {machine.date}
+                      </div>
+                      {machine.bookable ? (
+                        <div className="flex flex-col gap-2 mt-3">
+                          <BookMachineButton 
+                            machineId={machine.id}
+                            isCertified={machine.certified}
+                            machineStatus={machine.status}
+                            size="sm"
+                            className="w-full"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-1 border-purple-200 hover:bg-purple-100"
+                            onClick={() => navigate(`/machine/${machine.id}`)}
+                          >
+                            View Details
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-purple-600 mt-2">
+                          Certification Complete
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-sm text-red-500 mb-1">Not certified</div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2 border-red-200 hover:bg-red-100 text-red-600"
+                        onClick={() => handleAction(machine.id, false, machine.bookable)}
+                      >
+                        Get Certified
+                      </Button>
+                    </>
                   )}
                 </div>
-                {machine.certified ? (
-                  <>
-                    <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
-                      <Award className="h-3 w-3" />
-                      Certified
-                    </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      Certified on: {machine.date}
-                    </div>
-                    {machine.bookable ? (
-                      <div className="flex flex-col gap-2 mt-3">
-                        <BookMachineButton 
-                          machineId={machine.id}
-                          isCertified={machine.certified}
-                          machineStatus={machine.status}
-                          size="sm"
-                          className="w-full"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-1 border-purple-200 hover:bg-purple-100"
-                          onClick={() => navigate(`/machine/${machine.id}`)}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-purple-600 mt-2">
-                        Certification Complete
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="text-sm text-red-500 mb-1">Not certified</div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-2 border-red-200 hover:bg-red-100 text-red-600"
-                      onClick={() => handleAction(machine.id, false, machine.bookable)}
-                    >
-                      Get Certified
-                    </Button>
-                  </>
-                )}
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-8 border border-dashed border-gray-300 rounded-lg">
+                <div className="text-gray-500">No machines available</div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefresh} 
+                  className="mt-3"
+                >
+                  Try Again
+                </Button>
               </div>
-            ))}
+            )}
           </div>
         )}
       </CardContent>
