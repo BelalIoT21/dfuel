@@ -359,12 +359,24 @@ const Quiz = () => {
                 onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
               >
                 {currentQuizQuestion.options.map((option: string, index: number) => (
-                  <div key={index} className="flex items-center space-x-2 rounded-lg border p-3 cursor-pointer hover:bg-gray-50">
+                  <div 
+                    key={index} 
+                    className={`flex items-center space-x-2 rounded-lg border p-4 cursor-pointer transition-all duration-200 
+                      ${selectedAnswers[currentQuestion] === index 
+                        ? 'bg-purple-100 border-purple-300 shadow-sm' 
+                        : 'hover:bg-gray-50 border-gray-200'}`}
+                  >
                     <RadioGroupItem 
                       value={index.toString()} 
                       id={`option-${index}`}
+                      className={selectedAnswers[currentQuestion] === index ? 'text-purple-600' : ''}
                     />
-                    <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">{option}</Label>
+                    <Label 
+                      htmlFor={`option-${index}`} 
+                      className={`flex-grow cursor-pointer font-medium ${selectedAnswers[currentQuestion] === index ? 'text-purple-900' : 'text-gray-700'}`}
+                    >
+                      {option}
+                    </Label>
                   </div>
                 ))}
               </RadioGroup>
