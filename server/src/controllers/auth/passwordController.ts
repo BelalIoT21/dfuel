@@ -2,6 +2,9 @@
 import { Request, Response } from 'express';
 import User from '../../models/User';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 
 /**
  * Change user password
@@ -49,9 +52,23 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     }
     
-    // Don't hash the password here - User model will handle hashing in the pre-save hook
-    user.password = newPassword;
+    // Special handling for admin user
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (user.email === adminEmail) {
+      console.log('Updating admin password in .env file');
+      
+      // Update the admin password in the environment variables
+      process.env.ADMIN_PASSWORD = newPassword;
+      
+      // Update the .env file
+      updateEnvFile('ADMIN_PASSWORD', newPassword);
+      
+      // Also set flag to false since admin is manually updating password
+      updateEnvFile('FORCE_ADMIN_PASSWORD_UPDATE', 'false');
+    }
     
+    // Update user's password in the database (will be hashed by pre-save hook)
+    user.password = newPassword;
     await user.save();
     
     res.status(200).json({
@@ -64,5 +81,36 @@ export const changePassword = async (req: Request, res: Response) => {
       success: false,
       message: 'Server error'
     });
+  }
+};
+
+/**
+ * Helper function to update .env file
+ */
+const updateEnvFile = (key: string, value: string) => {
+  try {
+    const envPath = path.resolve(process.cwd(), '.env');
+    
+    if (fs.existsSync(envPath)) {
+      let envContent = fs.readFileSync(envPath, 'utf8');
+      
+      // Check if key exists in .env
+      const regex = new RegExp(`^${key}=.*`, 'm');
+      
+      if (regex.test(envContent)) {
+        // Replace existing key
+        envContent = envContent.replace(regex, `${key}=${value}`);
+      } else {
+        // Add new key
+        envContent += `\n${key}=${value}`;
+      }
+      
+      fs.writeFileSync(envPath, envContent);
+      console.log(`Updated ${key} in .env file`);
+    } else {
+      console.error('.env file not found');
+    }
+  } catch (error) {
+    console.error('Error updating .env file:', error);
   }
 };

@@ -166,7 +166,6 @@ export const useProfileFunctions = (
         apiService.setToken(token);
       }
 
-      // Send raw passwords to API - they will be handled properly by MongoDB's pre-save hook
       console.log("Calling apiService.changePassword");
       const response = await apiService.changePassword(currentPassword, newPassword);
       
@@ -175,6 +174,14 @@ export const useProfileFunctions = (
           title: "Password changed",
           description: "Your password has been changed successfully."
         });
+        
+        // For admin users, refresh page to ensure new password is applied
+        if (user.isAdmin) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
+        
         return true;
       } else {
         const errorMessage = response.error || "Failed to change password. Current password may be incorrect.";

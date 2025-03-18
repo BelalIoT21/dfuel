@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
 import { errorHandler, notFound } from './middleware/errorMiddleware';
 import { SeedService } from './utils/seed';
-import { createAdminUser } from './controllers/adminController'; // Ensure this import is correct
+import { ensureAdminUser } from './controllers/auth/adminController';
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -26,7 +26,7 @@ connectDB().then(async () => {
   // Ensure admin user exists
   console.log('Ensuring admin user exists...');
   try {
-    await createAdminUser();
+    await ensureAdminUser();
     console.log('Admin user seeding completed.');
   } catch (err) {
     console.error('Error seeding admin user:', err);
