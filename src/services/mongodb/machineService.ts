@@ -1,14 +1,12 @@
+import mongoConnectionService from './connectionService';
 
-import { connectionService } from './connectionService';
-import { Machine, MachineInput } from './types';
-
-export class MongoDbMachineService {
+export class MongoMachineService {
   /**
    * Get all machines from MongoDB
    */
   async getAllMachines(): Promise<Machine[]> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       const { data } = await connection.get('/machines');
       
       if (Array.isArray(data)) {
@@ -38,7 +36,7 @@ export class MongoDbMachineService {
    */
   async getMachineById(machineId: string): Promise<Machine | null> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       const { data } = await connection.get(`/machines/${machineId}`);
       
       if (!data) return null;
@@ -66,7 +64,7 @@ export class MongoDbMachineService {
    */
   async createMachine(machine: MachineInput): Promise<Machine | null> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       const { data } = await connection.post('/machines', machine);
       
       if (!data) return null;
@@ -94,7 +92,7 @@ export class MongoDbMachineService {
    */
   async updateMachine(machineId: string, updates: Partial<MachineInput>): Promise<Machine | null> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       const { data } = await connection.put(`/machines/${machineId}`, updates);
       
       if (!data || !data.machine) return null;
@@ -122,7 +120,7 @@ export class MongoDbMachineService {
    */
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       
       console.log(`MongoDB: Updating machine ${machineId} status to ${status} with note: ${note}`);
       
@@ -169,7 +167,7 @@ export class MongoDbMachineService {
    */
   async deleteMachine(machineId: string): Promise<boolean> {
     try {
-      const connection = await connectionService.getConnection();
+      const connection = await mongoConnectionService.getConnection();
       const { data } = await connection.delete(`/machines/${machineId}`);
       
       return data && data.message === 'Machine deleted successfully';
@@ -221,5 +219,5 @@ export class MongoDbMachineService {
   }
 }
 
-// Create a singleton instance
-export const mongoDbMachineService = new MongoDbMachineService();
+const mongoMachineService = new MongoMachineService();
+export default mongoMachineService;

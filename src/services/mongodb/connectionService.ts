@@ -1,3 +1,4 @@
+
 import { isWeb } from '../../utils/platform';
 import mongoMachineService from './machineService';
 import mongoSeedService from './seedService';
@@ -167,5 +168,8 @@ class MongoConnectionService {
   }
 }
 
+// Export the singleton instance
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;
+// Also export the class name for those who need type information
+export { MongoConnectionService };
