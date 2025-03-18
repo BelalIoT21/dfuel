@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
@@ -7,12 +6,12 @@ import { UsersTable } from '../components/admin/users/UsersTable';
 import { UserWithoutSensitiveInfo } from '../types/database';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { StatsOverview } from '@/components/admin/StatsOverview';
-import { machines } from '@/utils/data';
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '@/services/apiService';
+import { machineDatabaseService } from '@/services/database/machineService';
 
 const AdminUsers = () => {
   const { toast } = useToast();
@@ -21,16 +20,14 @@ const AdminUsers = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [machines, setMachines] = useState<any[]>([]);
   const navigate = useNavigate();
   
-  // Helper function to clear localStorage data except token
   const clearLocalStorageExceptToken = () => {
     const token = localStorage.getItem('token');
     
-    // Clear all localStorage items
     localStorage.clear();
     
-    // Restore token if it existed
     if (token) {
       localStorage.setItem('token', token);
     }
@@ -38,20 +35,34 @@ const AdminUsers = () => {
     console.log("Cleared all localStorage data except auth token");
   };
   
+  const fetchMachines = async () => {
+    try {
+      console.log("Fetching machines for stats display");
+      const fetchedMachines = await machineDatabaseService.getAllMachines();
+      if (fetchedMachines && Array.isArray(fetchedMachines) && fetchedMachines.length > 0) {
+        setMachines(fetchedMachines);
+        console.log(`Retrieved ${fetchedMachines.length} machines from database`);
+      } else {
+        console.log("No machines returned from database, using empty array");
+        setMachines([]);
+      }
+    } catch (error) {
+      console.error("Error fetching machines:", error);
+      setMachines([]);
+    }
+  };
+  
   const fetchUsers = async () => {
     setRefreshing(true);
     try {
       console.log("Fetching all users for admin dashboard");
       
-      // Clear localStorage first to ensure we're getting fresh data
       clearLocalStorageExceptToken();
       
-      // Try API first
       const response = await apiService.getAllUsers();
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
         console.log(`API returned ${response.data.length} users`);
         
-        // Convert API response to client format
         const formattedUsers = response.data.map(user => ({
           id: user._id?.toString() || user.id?.toString() || '',
           name: user.name || '',
@@ -68,7 +79,6 @@ const AdminUsers = () => {
       }
       
       console.log("API failed to return users, trying alternative method");
-      // If no users from API, try to get at least the current user
       if (user) {
         setUsers([{
           id: user.id,
@@ -92,7 +102,6 @@ const AdminUsers = () => {
         variant: "destructive"
       });
       
-      // Fallback to at least show current user
       if (user) {
         console.log("Fallback: Using current user only");
         setUsers([{
@@ -114,13 +123,13 @@ const AdminUsers = () => {
   };
   
   useEffect(() => {
-    // Redirect non-authenticated users to login page
     if (!user) {
       navigate('/');
       return;
     }
     
     fetchUsers();
+    fetchMachines();
   }, [toast, user, navigate]);
 
   if (loading) {
@@ -134,18 +143,14 @@ const AdminUsers = () => {
   const handleUserAdded = (data: any) => {
     console.log("User added, refreshing user list");
     
-    // Clear localStorage to ensure we get fresh data
     clearLocalStorageExceptToken();
     
-    // Immediate fetch to get the latest data from MongoDB
     fetchUsers();
   };
   
   const handleUserDeleted = () => {
-    // Clear localStorage to ensure we get fresh data
     clearLocalStorageExceptToken();
     
-    // Refresh the users list after a user is deleted
     console.log("User deleted, refreshing user list");
     fetchUsers();
   };
@@ -161,7 +166,6 @@ const AdminUsers = () => {
           <h1 className="text-3xl font-bold">User Management</h1>
         </div>
         
-        {/* Add Stats Overview with user count */}
         <div className="mb-6">
           <StatsOverview allUsers={users} machines={machines} />
         </div>
@@ -185,16 +189,18 @@ const AdminUsers = () => {
               onUserDeleted={handleUserDeleted}
             />
             
-            {/* Moved refresh button below the users table */}
             <div className="mt-6 flex justify-end">
               <Button 
-                onClick={fetchUsers} 
+                onClick={() => {
+                  fetchUsers();
+                  fetchMachines();
+                }} 
                 variant="outline" 
                 disabled={refreshing}
                 className="flex items-center gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh Users'}
+                {refreshing ? 'Refreshing...' : 'Refresh Data'}
               </Button>
             </div>
           </CardContent>
