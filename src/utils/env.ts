@@ -1,4 +1,3 @@
-
 /**
  * Environment variable management
  */
@@ -19,12 +18,11 @@ export const getEnvironment = (): Environment => {
 // Load environment variables into the application
 export const loadEnv = (): void => {
   // This function is a placeholder for loading environment variables
+  // In a real application, this would load variables from various sources
   console.log('Environment variables loaded');
   
-  // Set the default server IP - Based on platform
-  const pcIP = '192.168.47.238'; // Store PC IP for Android
-  setEnv('CUSTOM_SERVER_IP', pcIP);
-  console.log('Server IP set to:', getEnv('CUSTOM_SERVER_IP'));
+  // Set the default server IP
+  setEnv('CUSTOM_SERVER_IP', '192.168.47.238');
 };
 
 // Set environment variables with validation
@@ -40,21 +38,14 @@ export const setEnv = (key: string, value: string): void => {
     (window as any).__ENV__[key] = value;
   }
   
-  console.log(`Environment variable set: ${key}=${value}`);
+  console.log(`Environment variable set: ${key}`);
 };
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // For Android, use the PC IP
+  // For CUSTOM_SERVER_IP, always return the hardcoded value first
   if (key === 'CUSTOM_SERVER_IP') {
-    if (isAndroid()) {
-      return '192.168.47.238'; // PC's IP for Android
-    }
-    
-    // For web or iOS, prefer localhost
-    if (!isCapacitor()) {
-      return 'localhost';
-    }
+    return '192.168.47.238';
   }
   
   if (typeof window !== 'undefined' && (window as any).__ENV__) {
@@ -65,16 +56,12 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 
 // Get the local server IP for the device being used
 export const getLocalServerIP = (): string => {
-  // Return the appropriate IP based on platform
-  if (isAndroid()) {
-    return '192.168.47.238'; // PC's IP for Android
-  }
-  
-  // For web or iOS, prefer localhost
-  return 'localhost';
+  // Always return the fixed IP address
+  return '192.168.47.238';
 };
 
 // Check if the app is running on a physical device vs emulator
+// This is a best-guess approach and might need refinement
 export const isPhysicalDevice = (): boolean => {
   // If using Capacitor, assume physical device when not in dev mode
   if (isCapacitor() && getEnvironment() === 'production') {
@@ -95,21 +82,9 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  // Get the appropriate server IP based on platform
-  const serverIP = getLocalServerIP();
-  
-  if (isAndroid()) {
-    // Android should use PC's IP address
-    return [
-      `http://192.168.47.238:4000/api`,
-      '/api' // Relative fallback
-    ];
-  }
-  
-  // Web and iOS should use localhost first
+  // Always use the hardcoded server IP
   return [
-    `http://localhost:4000/api`,
-    `http://127.0.0.1:4000/api`,
+    `http://192.168.47.238:4000/api`,
     '/api' // Relative fallback
   ];
 };
@@ -119,7 +94,9 @@ export const getApiUrl = (): string => {
   const env = getEnvironment();
   
   // In a production environment, this would use environment variables
+  // or a configuration specific to your hosting platform
   if (env === 'production') {
+    // Get from environment or use default production URL
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +8,7 @@ import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { Check, WifiOff } from 'lucide-react';
 import { isAndroid, isCapacitor, isIOS } from '@/utils/platform';
-import { getEnv, loadEnv, getApiEndpoints, getLocalServerIP } from '@/utils/env';
+import { getEnv, loadEnv } from '@/utils/env';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -20,204 +19,125 @@ const Index = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const prevServerStatusRef = useRef<string | null>(null);
-  const checkingRef = useRef<boolean>(false);
-  const attemptedEndpointsRef = useRef<string[]>([]);
-  const originalHeightRef = useRef<number>(0);
 
   useEffect(() => {
     loadEnv();
-    console.log("Environment loaded");
-    
-    // Log available endpoints for debugging
-    const endpoints = getApiEndpoints();
-    console.log("Available API endpoints:", endpoints);
-    
-    // Store initial window height
-    originalHeightRef.current = window.innerHeight;
-    console.log("Original window height:", originalHeightRef.current);
   }, []);
 
   useEffect(() => {
-    // Enhanced keyboard detection
-    const handleKeyboardVisibility = () => {
-      if (isAndroid() || isIOS()) {
-        const currentHeight = window.innerHeight;
-        const threshold = originalHeightRef.current * 0.75;
-        const isKeyboardOpen = currentHeight < threshold;
-        
-        console.log(`Keyboard detection: height ${currentHeight}/${originalHeightRef.current}, threshold: ${threshold}`);
-        
-        if (isKeyboardOpen !== keyboardVisible) {
-          console.log(`Keyboard ${isKeyboardOpen ? 'shown' : 'hidden'}`);
-          setKeyboardVisible(isKeyboardOpen);
-        }
-      }
+    const handleKeyboardShow = () => {
+      console.log("Keyboard shown");
+      setKeyboardVisible(true);
     };
     
-    // Set up event listeners based on platform
+    const handleKeyboardHide = () => {
+      console.log("Keyboard hidden");
+      setKeyboardVisible(false);
+    };
+    
     if (isAndroid() || isIOS()) {
-      if (window.visualViewport) {
-        // More precise keyboard detection for modern browsers
-        window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
-        return () => {
-          window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
-        };
-      } else {
-        // Fallback for browsers without visualViewport API
-        window.addEventListener('resize', handleKeyboardVisibility);
-        return () => {
-          window.removeEventListener('resize', handleKeyboardVisibility);
-        };
+      if (isAndroid()) {
+        window.addEventListener('resize', () => {
+          const isKeyboardVisible = window.innerHeight < window.outerHeight * 0.8;
+          setKeyboardVisible(isKeyboardVisible);
+        });
+      } else if (isIOS()) {
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', () => {
+            setKeyboardVisible(window.visualViewport!.height < window.innerHeight * 0.85);
+          });
+        }
       }
+      
+      return () => {
+        if (isAndroid()) {
+          window.removeEventListener('resize', () => {});
+        } else if (isIOS() && window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', () => {});
+        }
+      };
     }
-  }, [keyboardVisible]);
+  }, []);
 
   useEffect(() => {
     const checkServer = async () => {
-      // Prevent multiple concurrent checks
-      if (checkingRef.current) {
-        console.log("Server check already in progress, skipping");
-        return;
-      }
-      
-      checkingRef.current = true;
-      
       try {
         console.log("Checking server health...");
-        const serverIP = getEnv('CUSTOM_SERVER_IP');
-        console.log(`Using server IP: ${serverIP}`);
+        const serverIP = '192.168.47.238';
+        const serverUrl = `http://${serverIP}:4000/api/health`;
         
-        // Try multiple endpoints
-        const endpoints = [
-          `http://${serverIP}:4000/api/health`,
-          'http://localhost:4000/api/health',
-          `/api/health`
-        ];
+        console.log(`Attempting to connect to server at: ${serverUrl}`);
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${serverUrl}?t=${timestamp}`);
         
-        attemptedEndpointsRef.current = [];
-        let connected = false;
-        
-        for (const endpoint of endpoints) {
-          if (connected) break;
-          
-          const timestamp = new Date().getTime();
-          const url = `${endpoint}?t=${timestamp}`;
-          console.log(`Attempting to connect to: ${url}`);
-          
-          attemptedEndpointsRef.current.push(url);
-          
-          // Set a timeout to prevent hanging on the fetch request
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased timeout
-          
-          try {
-            const response = await fetch(url, {
-              signal: controller.signal,
-              mode: 'cors',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-            });
-            clearTimeout(timeoutId);
-            
-            // Log the complete response for debugging
-            console.log(`Response from ${url}:`, {
-              status: response.status,
-              statusText: response.statusText,
-              headers: Object.fromEntries([...response.headers.entries()])
-            });
-            
-            if (response.ok) {
-              console.log("Server health check successful");
-              
-              // Only update status and show toast if status changed
-              if (serverStatus !== 'connected') {
-                setServerStatus('connected');
-                
-                // Only show toast if status changed from a different value
-                if (prevServerStatusRef.current !== 'connected') {
-                  toast({
-                    title: 'Connected',
-                    description: 'Successfully connected to the server',
-                  });
-                }
-              }
-              
-              prevServerStatusRef.current = 'connected';
-              connected = true;
-              break;
-            } else {
-              console.log(`Server returned ${response.status} for ${url}`);
-              throw new Error(`Server returned ${response.status}`);
-            }
-          } catch (fetchError) {
-            clearTimeout(timeoutId);
-            console.error(`Connection error for ${url}:`, fetchError);
-          }
-        }
-        
-        // If we couldn't connect with any direct endpoint, try the apiService
-        if (!connected) {
-          console.log("Trying API service health check as fallback");
-          try {
-            const apiResponse = await apiService.checkHealth();
-            console.log("API health check response:", apiResponse);
-            
-            if (apiResponse.data && apiResponse.status === 200) {
-              // Only update status and show toast if status changed
-              if (serverStatus !== 'connected') {
-                setServerStatus('connected');
-                
-                // Only show toast if status changed from a different value
-                if (prevServerStatusRef.current !== 'connected') {
-                  toast({
-                    title: 'Connected',
-                    description: 'Successfully connected to the server',
-                  });
-                }
-              }
-              
-              prevServerStatusRef.current = 'connected';
-              connected = true;
-            }
-          } catch (apiError) {
-            console.error("API service connection also failed:", apiError);
-          }
-        }
-        
-        // If we still couldn't connect, set status to disconnected
-        if (!connected) {
-          console.log("All connection attempts failed");
+        if (response.ok) {
+          console.log("Server health check successful");
           
           // Only update status and show toast if status changed
-          if (serverStatus !== 'disconnected') {
-            setServerStatus('disconnected');
+          if (serverStatus !== 'connected') {
+            setServerStatus('connected');
             
             // Only show toast if status changed from a different value
-            if (prevServerStatusRef.current !== 'disconnected') {
+            if (prevServerStatusRef.current !== 'connected') {
               toast({
-                title: 'Disconnected',
-                description: 'Could not connect to the server',
-                variant: 'destructive'
+                title: 'Server Connected',
+                description: `Successfully connected to the backend server at ${serverIP}:4000`,
               });
             }
           }
           
-          prevServerStatusRef.current = 'disconnected';
+          prevServerStatusRef.current = 'connected';
+        } else {
+          throw new Error(`Server returned ${response.status}`);
         }
-      } finally {
-        checkingRef.current = false;
+      } catch (error) {
+        console.error("Server connection error:", error);
+        
+        // Only update status and show toast if status changed
+        if (serverStatus !== 'disconnected') {
+          setServerStatus('disconnected');
+          
+          // Only show toast if status changed from a different value
+          if (prevServerStatusRef.current !== 'disconnected') {
+            let errorMessage = `Could not connect to the backend server at 192.168.47.238:4000. Please ensure the server is running.`;
+            
+            toast({
+              title: 'Server Connection Failed',
+              description: errorMessage,
+              variant: 'destructive'
+            });
+          }
+        }
+        
+        prevServerStatusRef.current = 'disconnected';
+        
+        try {
+          const apiResponse = await apiService.checkHealth();
+          if (apiResponse.data && apiResponse.status === 200) {
+            
+            // Only update status and show toast if status changed
+            if (serverStatus !== 'connected via API') {
+              setServerStatus('connected via API');
+              
+              // Only show toast if status changed from a different value
+              if (prevServerStatusRef.current !== 'connected via API') {
+                toast({
+                  title: 'API Server Connected',
+                  description: 'Connected via alternative API endpoint',
+                });
+              }
+            }
+            
+            prevServerStatusRef.current = 'connected via API';
+          }
+        } catch (apiError) {
+          console.error("API service connection also failed:", apiError);
+        }
       }
     };
     
-    // Initial check with a short delay to let the app initialize
-    setTimeout(() => {
-      checkServer();
-    }, 1000);
-    
-    // Check server at a reduced frequency (45 seconds)
-    const intervalId = setInterval(checkServer, 45000);
+    checkServer();
+    const intervalId = setInterval(checkServer, 10000);
     
     return () => clearInterval(intervalId);
   }, [serverStatus]);
@@ -246,7 +166,7 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoading);
 
-  const isConnected = serverStatus === 'connected';
+  const isConnected = serverStatus === 'connected' || serverStatus === 'connected via API';
 
   if (authLoading) {
     return (
@@ -264,47 +184,34 @@ const Index = () => {
     );
   }
 
-  // Enhanced keyboard handling with stronger transform
   const containerStyle = keyboardVisible && isMobile
-    ? { 
-        minHeight: '100vh', 
-        paddingBottom: '0', 
-        display: 'flex', 
-        flexDirection: 'column',
-        justifyContent: 'flex-start', 
-        transition: 'all 0.3s ease',
-        transform: 'translateY(-40vh)'  // Increased transform to move content up more
-      } 
-    : { 
-        minHeight: '100vh', 
-        transition: 'all 0.3s ease',
-        transform: 'translateY(0)'
-      };
+    ? { minHeight: '100vh', paddingBottom: '40vh', transition: 'padding 0.3s ease' }
+    : { minHeight: '100vh', transition: 'padding 0.3s ease' };
 
   return (
     <div 
-      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      className="flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mb-auto' : 'my-auto'}`}>
         <div className="text-center relative">
           <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Learnit</h1>
           <p className="mt-2 text-md md:text-lg text-gray-600">
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </p>
-          {serverStatus && !keyboardVisible && (
+          {serverStatus && (
             <div className={isConnected
               ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
               : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
               {isConnected ? (
                 <>
                   <Check className="h-4 w-4 mr-1" />
-                  Server: Connected
+                  Server: Connected to 192.168.47.238:4000
                 </>
               ) : (
                 <>
                   <WifiOff className="h-4 w-4 mr-1" />
-                  Server: Disconnected
+                  Server: Unable to connect to 192.168.47.238:4000
                 </>
               )}
             </div>
