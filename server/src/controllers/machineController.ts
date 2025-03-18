@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -161,34 +160,27 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
-    // Special handling for Laser Cutter - force maintenance mode
-    if (id === '1') {
-      console.log("Setting Laser Cutter to maintenance mode");
-      machine.status = 'Maintenance';
-      machine.maintenanceNote = maintenanceNote || 'Under scheduled maintenance';
-    } else {
-      // Map status values to the exact string literals as defined in the Machine model
-      let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
-      switch(status.toLowerCase()) {
-        case 'available':
-          normalizedStatus = 'Available';
-          break;
-        case 'maintenance':
-          normalizedStatus = 'Maintenance';
-          break;
-        case 'in-use':
-        case 'in use':
-        case 'out of order': // Map "out of order" to "In Use"
-          normalizedStatus = 'In Use';
-          break;
-        default:
-          normalizedStatus = 'Available';
-      }
-
-      // Update the machine status
-      machine.status = normalizedStatus;
-      machine.maintenanceNote = maintenanceNote || '';
+    // Map status values to the exact string literals as defined in the Machine model
+    let normalizedStatus: 'Available' | 'Maintenance' | 'In Use';
+    switch(status.toLowerCase()) {
+      case 'available':
+        normalizedStatus = 'Available';
+        break;
+      case 'maintenance':
+        normalizedStatus = 'Maintenance';
+        break;
+      case 'in-use':
+      case 'in use':
+      case 'out of order': // Map "out of order" to "In Use"
+        normalizedStatus = 'In Use';
+        break;
+      default:
+        normalizedStatus = 'Available';
     }
+
+    // Update the machine status
+    machine.status = normalizedStatus;
+    machine.maintenanceNote = maintenanceNote || '';
     
     console.log(`Saving machine with status: ${machine.status}`);
     await machine.save();

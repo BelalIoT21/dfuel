@@ -1,4 +1,3 @@
-
 import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
 import { isWeb } from '../utils/platform';
@@ -13,13 +12,6 @@ export class MachineService {
       if (!machineId || !status) {
         console.error("Invalid machineId or status passed to updateMachineStatus");
         return false;
-      }
-      
-      // Check if it's a safety cabinet - always available, no status updates needed
-      const isSafetyCabinet = machineId === "5";
-      if (isSafetyCabinet) {
-        console.log("Safety Cabinet is always available, not updating status");
-        return true;
       }
       
       // Get auth token from localStorage
@@ -53,12 +45,6 @@ export class MachineService {
         console.error("Invalid machineId passed to getMachineStatus");
         return 'available';
       }
-      
-      // Check if it's a safety cabinet - always available
-      if (machineId === "5") {
-        console.log("Safety Cabinet is always available");
-        return 'available';
-      }
 
       // Use API to get machine status
       try {
@@ -85,11 +71,6 @@ export class MachineService {
     try {
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineMaintenanceNote");
-        return undefined;
-      }
-      
-      // Check if it's a safety cabinet - no maintenance notes
-      if (machineId === "5") {
         return undefined;
       }
 
@@ -132,7 +113,7 @@ export class MachineService {
           
           return {
             ...response.data,
-            id: response.data._id || response.data.id,
+            id: response.data.id || response.data._id,
             status: response.data.status?.toLowerCase() || 'available',
             type: response.data.type || "Machine"
           };
@@ -211,17 +192,3 @@ export class MachineService {
 
 // Create a singleton instance
 export const machineService = new MachineService();
-
-// Set Laser Cutter to maintenance mode when the application starts
-(async function initializeMachineStatus() {
-  try {
-    console.log("Setting Laser Cutter (ID: 1) to maintenance mode...");
-    // Add a small delay to ensure services are initialized
-    setTimeout(async () => {
-      await machineService.updateMachineStatus("1", "maintenance", "Under scheduled maintenance");
-      console.log("Laser Cutter status set to maintenance");
-    }, 1000);
-  } catch (error) {
-    console.error("Failed to set initial machine status:", error);
-  }
-})();
