@@ -45,22 +45,22 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
         setLoading(true);
         console.log(`Loading machine details for ID: ${machineId}, force refresh: ${forceRefresh}`);
         
-        // Fetch machine directly from MongoDB through API
+        // Fetch machine from API
         let machineData;
         try {
-          console.log('Fetching machine directly from MongoDB through machineService');
+          console.log('Fetching machine directly from API');
           machineData = await machineService.getMachineById(machineId);
           
           if (!machineData) {
-            console.error(`MongoDB: Machine not found for ID ${machineId}`);
+            console.error(`Machine not found for ID ${machineId}`);
             Alert.alert('Error', 'Machine not found');
             navigation.goBack();
             return;
           }
           
-          console.log('Successfully retrieved machine data from MongoDB:', machineData);
+          console.log('Successfully retrieved machine data:', machineData);
         } catch (error) {
-          console.error('Error fetching machine from MongoDB:', error);
+          console.error('Error fetching machine:', error);
           Alert.alert('Error', 'Failed to load machine details');
           navigation.goBack();
           return;
@@ -73,14 +73,14 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Get fresh machine status directly from MongoDB API
+        // Get fresh machine status from API
         let status;
         try {
-          console.log(`Fetching latest status for machine ${machineId} from MongoDB`);
+          console.log(`Fetching latest status for machine ${machineId}`);
           status = await machineService.getMachineStatus(machineId);
           console.log(`Latest status for machine ${machineId}: ${status}`);
         } catch (error) {
-          console.error('Error getting machine status from MongoDB:', error);
+          console.error('Error getting machine status:', error);
           status = 'available';
         }
         
@@ -89,25 +89,25 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
         
         console.log("User ID for certification check:", user.id);
         
-        // Get fresh certification data from MongoDB API
+        // Get fresh certification data from API
         try {
-          console.log(`Checking certification directly from MongoDB for user ${user.id} and machine ${machineId}`);
+          console.log(`Checking certification directly for user ${user.id} and machine ${machineId}`);
           const isUserCertified = await certificationService.checkCertification(user.id, machineId);
-          console.log("User certification check result from MongoDB:", isUserCertified);
+          console.log("User certification check result:", isUserCertified);
           setIsCertified(isUserCertified);
         } catch (certError) {
-          console.error("Error checking certification from MongoDB:", certError);
+          console.error("Error checking certification:", certError);
           setIsCertified(false);
         }
         
-        // Check for safety course certification from MongoDB API
+        // Check for safety course certification
         try {
-          console.log(`Checking safety certification from MongoDB for user ${user.id}`);
+          console.log(`Checking safety certification for user ${user.id}`);
           const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
-          console.log("User safety certification check result from MongoDB:", hasSafetyCert);
+          console.log("User safety certification check result:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
-          console.error("Error checking safety certification from MongoDB:", safetyCertError);
+          console.error("Error checking safety certification:", safetyCertError);
           setHasMachineSafetyCert(false);
         }
       } catch (error) {

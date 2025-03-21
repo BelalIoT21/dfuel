@@ -4,7 +4,7 @@ import { apiService } from './apiService';
 class CertificationService {
   async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Checking certification for user ${userId} and machine ${machineId} from MongoDB API`);
+      console.log(`Checking certification for user ${userId} and machine ${machineId} from API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to checkCertification');
@@ -22,6 +22,21 @@ class CertificationService {
         }
       } catch (apiError) {
         console.error('API error checking certification:', apiError);
+        
+        // For development and testing - Check user object directly if it's passed
+        const userFromStorage = localStorage.getItem('user');
+        if (userFromStorage) {
+          try {
+            const userData = JSON.parse(userFromStorage);
+            if (userData?.certifications && Array.isArray(userData.certifications)) {
+              const isCertified = userData.certifications.includes(machineId);
+              console.log(`Fallback certification check from user object: ${isCertified}`);
+              return isCertified;
+            }
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
       }
       
       console.log(`No certification found for user ${userId} and machine ${machineId}`);
@@ -34,7 +49,7 @@ class CertificationService {
 
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      console.log(`Getting certifications for user ${userId} from MongoDB API`);
+      console.log(`Getting certifications for user ${userId} from API`);
       
       if (!userId) {
         console.error('Invalid userId passed to getUserCertifications');
@@ -52,6 +67,20 @@ class CertificationService {
         }
       } catch (apiError) {
         console.error('API error getting user certifications:', apiError);
+        
+        // For development and testing - Check user object directly if it's passed
+        const userFromStorage = localStorage.getItem('user');
+        if (userFromStorage) {
+          try {
+            const userData = JSON.parse(userFromStorage);
+            if (userData?.certifications && Array.isArray(userData.certifications)) {
+              console.log(`Fallback certification check from user object: ${userData.certifications.length} certifications`);
+              return userData.certifications.map(cert => typeof cert === 'string' ? cert : cert.toString());
+            }
+          } catch (e) {
+            console.error('Error parsing user data:', e);
+          }
+        }
       }
       
       console.log(`No certifications found for user ${userId}`);
@@ -64,7 +93,7 @@ class CertificationService {
 
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Adding certification for user ${userId} and machine ${machineId} via MongoDB API`);
+      console.log(`Adding certification for user ${userId} and machine ${machineId} via API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to addCertification');
@@ -94,7 +123,7 @@ class CertificationService {
 
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Removing certification for user ${userId} and machine ${machineId} via MongoDB API`);
+      console.log(`Removing certification for user ${userId} and machine ${machineId} via API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to removeCertification');
