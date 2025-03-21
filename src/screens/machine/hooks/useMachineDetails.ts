@@ -25,7 +25,7 @@ const MACHINE_NAMES = {
   "6": "Safety Course"
 };
 
-export const useMachineDetails = (machineId, user, navigation) => {
+export const useMachineDetails = (machineId, user, navigation, forceRefresh = false) => {
   const [machine, setMachine] = useState(null);
   const [machineStatus, setMachineStatus] = useState('available');
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
       try {
         setLoading(true);
         
-        // Get machine from MongoDB through machineService
+        // Always get fresh machine data from MongoDB through machineService
+        console.log(`Loading machine details for ID: ${machineId}, force refresh: ${forceRefresh}`);
         const machineData = await machineService.getMachineById(machineId);
         
         if (!machineData) {
@@ -61,11 +62,13 @@ export const useMachineDetails = (machineId, user, navigation) => {
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Get machine status from MongoDB
+        // Always get fresh machine status from MongoDB
         let status;
         try {
+          console.log(`Fetching latest status for machine ${machineId}`);
           const statusData = await mongoDbService.getMachineStatus(machineId);
           status = statusData ? statusData.status : 'available';
+          console.log(`Latest status for machine ${machineId}: ${status}`);
         } catch (error) {
           console.error('Error getting machine status:', error);
           status = 'available';
@@ -76,8 +79,9 @@ export const useMachineDetails = (machineId, user, navigation) => {
         
         console.log("User ID for certification check:", user.id);
         
-        // Check if user is certified for this machine using API
+        // Always get fresh certification data from API
         try {
+          console.log(`Checking certification for user ${user.id} and machine ${machineId}`);
           const isUserCertified = await certificationService.checkCertification(user.id, machineId);
           console.log("User certification check result:", isUserCertified);
           setIsCertified(isUserCertified);
@@ -91,8 +95,9 @@ export const useMachineDetails = (machineId, user, navigation) => {
           }
         }
         
-        // Check if user has completed Safety Course (ID 6)
+        // Always check for fresh safety course certification
         try {
+          console.log(`Checking safety certification for user ${user.id}`);
           const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
           console.log("User safety certification check result:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
@@ -114,7 +119,7 @@ export const useMachineDetails = (machineId, user, navigation) => {
     };
     
     loadMachineDetails();
-  }, [machineId, user, navigation]);
+  }, [machineId, user, navigation, forceRefresh]);
 
   return {
     machine,
@@ -123,6 +128,10 @@ export const useMachineDetails = (machineId, user, navigation) => {
     isCertified,
     hasMachineSafetyCert,
     setIsCertified,
-    userId: user?.id
+    userId: user?.id,
+    refreshData: () => {
+      setLoading(true);
+      // This will trigger the useEffect to run again with a new forceRefresh value
+    }
   };
 };
