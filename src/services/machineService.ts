@@ -1,11 +1,9 @@
 
-import mongoDbService from './mongoDbService';
 import { machines } from '../utils/data';
-import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
 
 export class MachineService {
-  // Update machine status - prioritize MongoDB
+  // Update machine status - always use MongoDB API
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
       console.log(`Updating machine status: ID=${machineId}, status=${status}`);
@@ -22,9 +20,9 @@ export class MachineService {
         return true;
       }
       
-      // Always use API to update machine status, no fallbacks
+      // Always use API to update machine status
       try {
-        // Get auth token from localStorage
+        // Get auth token
         const token = localStorage.getItem('token');
         apiService.setToken(token);
         
@@ -46,7 +44,7 @@ export class MachineService {
     }
   }
 
-  // Get machine status - always from MongoDB/API
+  // Get machine status - always from MongoDB API
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       if (!machineId) {
@@ -60,7 +58,7 @@ export class MachineService {
         return 'available';
       }
 
-      // Always attempt to get fresh status from API first
+      // Get status from API
       try {
         console.log(`Fetching fresh status for machine ${machineId} via API`);
         const response = await apiService.get(`machines/${machineId}`);
@@ -73,18 +71,6 @@ export class MachineService {
         console.error("API error getting machine status:", error);
       }
       
-      // If API fails, try mongoDbService directly as a fallback
-      try {
-        console.log(`API failed, trying MongoDB directly for machine ${machineId} status`);
-        const statusData = await mongoDbService.getMachineStatus(machineId);
-        if (statusData && statusData.status) {
-          console.log(`Got status from MongoDB directly: ${statusData.status}`);
-          return statusData.status.toLowerCase();
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error getting machine status:", mongoError);
-      }
-      
       console.log(`No status found for machine ${machineId}, using default 'available'`);
       return 'available'; // Default status if none found
     } catch (error) {
@@ -93,7 +79,7 @@ export class MachineService {
     }
   }
   
-  // Get machine maintenance note - directly from API/MongoDB
+  // Get machine maintenance note - directly from API
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
     try {
       if (!machineId) {
@@ -106,7 +92,7 @@ export class MachineService {
         return undefined;
       }
 
-      // Always try API first for fresh data
+      // Get maintenance note from API
       try {
         console.log(`Fetching fresh maintenance note for machine ${machineId} via API`);
         const response = await apiService.get(`machines/${machineId}`);
@@ -118,18 +104,6 @@ export class MachineService {
         console.error("API error getting machine maintenance note:", error);
       }
       
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`Trying MongoDB directly for machine ${machineId} maintenance note`);
-        const machine = await mongoDbService.getMachineById(machineId);
-        if (machine && machine.maintenanceNote) {
-          console.log(`Got maintenance note from MongoDB: ${machine.maintenanceNote}`);
-          return machine.maintenanceNote;
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error getting machine maintenance note:", mongoError);
-      }
-      
       return undefined;
     } catch (error) {
       console.error("Error getting machine maintenance note:", error);
@@ -137,10 +111,10 @@ export class MachineService {
     }
   }
   
-  // Get machine by ID - always from MongoDB/API
+  // Get machine by ID - always from MongoDB API
   async getMachineById(machineId: string): Promise<any | null> {
     try {
-      console.log(`Getting machine by ID: ${machineId} - using MongoDB first`);
+      console.log(`Getting machine by ID: ${machineId} via MongoDB API`);
       
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineById");
@@ -153,7 +127,7 @@ export class MachineService {
         return null;
       }
       
-      // Always try API first for fresh data
+      // Get machine data from API
       try {
         console.log(`Fetching fresh machine data for machine ${machineId} via API`);
         const response = await apiService.get(`machines/${machineId}`);
@@ -170,25 +144,8 @@ export class MachineService {
         console.error("API error getting machine by ID:", error);
       }
       
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`API failed, trying MongoDB directly for machine ${machineId}`);
-        const machine = await mongoDbService.getMachineById(machineId);
-        if (machine) {
-          console.log(`Got machine data from MongoDB for ${machineId}`);
-          return {
-            ...machine,
-            id: machine._id || machine.id,
-            status: machine.status?.toLowerCase() || 'available',
-            type: machine.type || "Machine"
-          };
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error getting machine by ID:", mongoError);
-      }
-      
-      // Final fallback to static data, but only if all else fails
-      console.log(`All DB methods failed, falling back to static data for machine ${machineId}`);
+      // Final fallback to static data, but only if API fails
+      console.log(`API failed, falling back to static data for machine ${machineId}`);
       const machine = machines.find(m => m.id === machineId);
       
       if (machine) {
@@ -207,12 +164,12 @@ export class MachineService {
     }
   }
   
-  // Helper method to get machines - always from MongoDB/API
+  // Helper method to get machines - always from MongoDB API
   async getMachines(timestamp?: number): Promise<any[]> {
     try {
-      console.log("Getting machines with timestamp:", timestamp || "none", "- using MongoDB first");
+      console.log("Getting machines with timestamp:", timestamp || "none", "via MongoDB API");
       
-      // Always try API first for fresh data
+      // Get machines from API
       try {
         const endpoint = timestamp ? `machines?t=${timestamp}` : 'machines';
         console.log(`Fetching fresh machine list via API: ${endpoint}`);
@@ -235,26 +192,8 @@ export class MachineService {
         console.error("API error getting machines:", error);
       }
       
-      // Try mongoDbService directly as fallback
-      try {
-        console.log("API failed, trying MongoDB directly for machine list");
-        const machines = await mongoDbService.getMachines();
-        if (machines && Array.isArray(machines)) {
-          console.log(`Retrieved ${machines.length} machines from MongoDB directly`);
-          
-          return machines.map(machine => ({
-            ...machine,
-            id: machine.id || machine._id,
-            type: machine.type || "Machine",
-            status: machine.status?.toLowerCase() || 'available'
-          }));
-        }
-      } catch (mongoError) {
-        console.error("MongoDB error getting machines:", mongoError);
-      }
-      
-      // Final fallback to static data, but only if all else fails
-      console.log("All DB methods failed, falling back to static machines data");
+      // Final fallback to static data, but only if API fails
+      console.log("API failed, falling back to static machines data");
       return machines.map(machine => ({
         ...machine,
         type: machine.type || "Machine" 

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
 import { certificationService } from '../../../services/certificationService';
-import mongoDbService from '../../../services/mongoDbService';
 
 // Define consistent machine data
 const MACHINE_TYPES = {
@@ -46,7 +45,7 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
         setLoading(true);
         console.log(`Loading machine details for ID: ${machineId}, force refresh: ${forceRefresh}`);
         
-        // ALWAYS fetch from MongoDB first, never fallback to localStorage
+        // Fetch machine directly from MongoDB through API
         let machineData;
         try {
           console.log('Fetching machine directly from MongoDB through machineService');
@@ -74,12 +73,11 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Always get fresh machine status directly from MongoDB
+        // Get fresh machine status directly from MongoDB API
         let status;
         try {
           console.log(`Fetching latest status for machine ${machineId} from MongoDB`);
-          const statusData = await mongoDbService.getMachineStatus(machineId);
-          status = statusData ? statusData.status : 'available';
+          status = await machineService.getMachineStatus(machineId);
           console.log(`Latest status for machine ${machineId}: ${status}`);
         } catch (error) {
           console.error('Error getting machine status from MongoDB:', error);
@@ -91,7 +89,7 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
         
         console.log("User ID for certification check:", user.id);
         
-        // Always get fresh certification data directly from MongoDB
+        // Get fresh certification data from MongoDB API
         try {
           console.log(`Checking certification directly from MongoDB for user ${user.id} and machine ${machineId}`);
           const isUserCertified = await certificationService.checkCertification(user.id, machineId);
@@ -102,7 +100,7 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
           setIsCertified(false);
         }
         
-        // Always check for fresh safety course certification from MongoDB
+        // Check for safety course certification from MongoDB API
         try {
           console.log(`Checking safety certification from MongoDB for user ${user.id}`);
           const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);

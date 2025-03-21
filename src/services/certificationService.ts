@@ -1,21 +1,19 @@
 
-import { isWeb } from '../utils/platform';
 import { apiService } from './apiService';
-import mongoDbService from './mongoDbService';
 
 class CertificationService {
   async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Checking certification for user ${userId} and machine ${machineId} - always from MongoDB`);
+      console.log(`Checking certification for user ${userId} and machine ${machineId} from MongoDB API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to checkCertification');
         return false;
       }
       
-      // Always try API first for fresh data
+      // Get certification data from API
       try {
-        console.log(`Fetching fresh certification data from API for user ${userId}, machine ${machineId}`);
+        console.log(`Fetching certification data from API for user ${userId}, machine ${machineId}`);
         const response = await apiService.get(`certifications/${userId}/${machineId}`);
         
         if (response.data) {
@@ -24,24 +22,6 @@ class CertificationService {
         }
       } catch (apiError) {
         console.error('API error checking certification:', apiError);
-      }
-      
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`API failed, trying MongoDB directly for certification check`);
-        const user = await mongoDbService.getUserById(userId);
-        
-        if (user && user.certifications) {
-          const certifications = Array.isArray(user.certifications) 
-            ? user.certifications 
-            : [String(user.certifications)];
-          
-          const isCertified = certifications.includes(machineId);
-          console.log(`MongoDB direct certification check result: ${isCertified}`);
-          return isCertified;
-        }
-      } catch (mongoError) {
-        console.error('MongoDB error checking certification:', mongoError);
       }
       
       console.log(`No certification found for user ${userId} and machine ${machineId}`);
@@ -54,16 +34,16 @@ class CertificationService {
 
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      console.log(`Getting certifications for user ${userId} - always from MongoDB`);
+      console.log(`Getting certifications for user ${userId} from MongoDB API`);
       
       if (!userId) {
         console.error('Invalid userId passed to getUserCertifications');
         return [];
       }
       
-      // Always try API first for fresh data
+      // Get certification list from API
       try {
-        console.log(`Fetching fresh certification list from API for user ${userId}`);
+        console.log(`Fetching certification list from API for user ${userId}`);
         const response = await apiService.get(`certifications/${userId}`);
         
         if (response.data && Array.isArray(response.data)) {
@@ -72,23 +52,6 @@ class CertificationService {
         }
       } catch (apiError) {
         console.error('API error getting user certifications:', apiError);
-      }
-      
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`API failed, trying MongoDB directly for certifications`);
-        const user = await mongoDbService.getUserById(userId);
-        
-        if (user && user.certifications) {
-          const certifications = Array.isArray(user.certifications) 
-            ? user.certifications 
-            : [String(user.certifications)];
-          
-          console.log(`MongoDB direct returned ${certifications.length} certifications`);
-          return certifications;
-        }
-      } catch (mongoError) {
-        console.error('MongoDB error getting user certifications:', mongoError);
       }
       
       console.log(`No certifications found for user ${userId}`);
@@ -101,14 +64,14 @@ class CertificationService {
 
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Adding certification for user ${userId} and machine ${machineId} - direct to MongoDB`);
+      console.log(`Adding certification for user ${userId} and machine ${machineId} via MongoDB API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to addCertification');
         return false;
       }
       
-      // Always use API for certification updates
+      // Add certification via API
       try {
         console.log(`Using API to add certification: user=${userId}, machine=${machineId}`);
         const response = await apiService.post('certifications', { userId, machineId });
@@ -121,19 +84,6 @@ class CertificationService {
         console.error('API error adding certification:', apiError);
       }
       
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`API failed, trying MongoDB directly to add certification`);
-        const success = await mongoDbService.updateUserCertifications(userId, machineId);
-        
-        if (success) {
-          console.log('MongoDB direct certification addition successful');
-          return true;
-        }
-      } catch (mongoError) {
-        console.error('MongoDB error adding certification:', mongoError);
-      }
-      
       console.log(`Failed to add certification for user ${userId} and machine ${machineId}`);
       return false;
     } catch (error) {
@@ -144,14 +94,14 @@ class CertificationService {
 
   async removeCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      console.log(`Removing certification for user ${userId} and machine ${machineId} - direct to MongoDB`);
+      console.log(`Removing certification for user ${userId} and machine ${machineId} via MongoDB API`);
       
       if (!userId || !machineId) {
         console.error('Invalid userId or machineId passed to removeCertification');
         return false;
       }
       
-      // Always use API for certification updates
+      // Remove certification via API
       try {
         console.log(`Using API to remove certification: user=${userId}, machine=${machineId}`);
         const response = await apiService.delete(`certifications/${userId}/${machineId}`);
@@ -162,19 +112,6 @@ class CertificationService {
         }
       } catch (apiError) {
         console.error('API error removing certification:', apiError);
-      }
-      
-      // Try mongoDbService directly as fallback
-      try {
-        console.log(`API failed, trying MongoDB directly to remove certification`);
-        const success = await mongoDbService.removeUserCertification(userId, machineId);
-        
-        if (success) {
-          console.log('MongoDB direct certification removal successful');
-          return true;
-        }
-      } catch (mongoError) {
-        console.error('MongoDB error removing certification:', mongoError);
       }
       
       console.log(`Failed to remove certification for user ${userId} and machine ${machineId}`);
