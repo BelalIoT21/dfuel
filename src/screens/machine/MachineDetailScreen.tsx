@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ScrollView, View, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useMachineDetails } from './hooks/useMachineDetails';
@@ -13,28 +13,7 @@ import ErrorState from './components/ErrorState';
 const MachineDetailScreen = ({ route, navigation }) => {
   const { machineId } = route.params;
   const { user, addCertification } = useAuth();
-  const [forceRefresh, setForceRefresh] = useState(0);
-  
-  // Pass forceRefresh to useMachineDetails to ensure we always get fresh data
-  const { 
-    machine, 
-    machineStatus, 
-    loading, 
-    isCertified, 
-    setIsCertified, 
-    hasMachineSafetyCert, 
-    userId 
-  } = useMachineDetails(machineId, user, navigation, forceRefresh);
-
-  // Force refresh data when the screen is focused
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      console.log('Machine screen focused - forcing data refresh');
-      setForceRefresh(prev => prev + 1); // This will trigger a reload of all data
-    });
-
-    return unsubscribe;
-  }, [navigation]);
+  const { machine, machineStatus, loading, isCertified, setIsCertified, hasMachineSafetyCert, userId } = useMachineDetails(machineId, user, navigation);
 
   const handleTakeCourse = () => {
     // Make sure we're passing the correct parameter name (machineId)

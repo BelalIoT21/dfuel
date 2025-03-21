@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
 import { certificationService } from '../../../services/certificationService';
+import mongoDbService from '../../../services/mongoDbService';
 
 // Define consistent machine data
 const MACHINE_TYPES = {
@@ -24,7 +25,7 @@ const MACHINE_NAMES = {
   "6": "Safety Course"
 };
 
-export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0) => {
+export const useMachineDetails = (machineId, user, navigation) => {
   const [machine, setMachine] = useState(null);
   const [machineStatus, setMachineStatus] = useState('available');
   const [loading, setLoading] = useState(true);
@@ -43,25 +44,12 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
     const loadMachineDetails = async () => {
       try {
         setLoading(true);
-        console.log(`Loading machine details for ID: ${machineId}, force refresh: ${forceRefresh}`);
         
-        // Fetch machine from API
-        let machineData;
-        try {
-          console.log('Fetching machine directly from API');
-          machineData = await machineService.getMachineById(machineId);
-          
-          if (!machineData) {
-            console.error(`Machine not found for ID ${machineId}`);
-            Alert.alert('Error', 'Machine not found');
-            navigation.goBack();
-            return;
-          }
-          
-          console.log('Successfully retrieved machine data:', machineData);
-        } catch (error) {
-          console.error('Error fetching machine:', error);
-          Alert.alert('Error', 'Failed to load machine details');
+        // Get machine from MongoDB through machineService
+        const machineData = await machineService.getMachineById(machineId);
+        
+        if (!machineData) {
+          Alert.alert('Error', 'Machine not found');
           navigation.goBack();
           return;
         }
@@ -73,12 +61,11 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Get fresh machine status from API
+        // Get machine status from MongoDB
         let status;
         try {
-          console.log(`Fetching latest status for machine ${machineId}`);
-          status = await machineService.getMachineStatus(machineId);
-          console.log(`Latest status for machine ${machineId}: ${status}`);
+          const statusData = await mongoDbService.getMachineStatus(machineId);
+          status = statusData ? statusData.status : 'available';
         } catch (error) {
           console.error('Error getting machine status:', error);
           status = 'available';
@@ -89,26 +76,34 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
         
         console.log("User ID for certification check:", user.id);
         
-        // Get fresh certification data from API
+        // Check if user is certified for this machine using API
         try {
-          console.log(`Checking certification directly for user ${user.id} and machine ${machineId}`);
           const isUserCertified = await certificationService.checkCertification(user.id, machineId);
           console.log("User certification check result:", isUserCertified);
           setIsCertified(isUserCertified);
         } catch (certError) {
           console.error("Error checking certification:", certError);
-          setIsCertified(false);
+          // Fallback to user object if API fails
+          if (user.certifications && user.certifications.includes(machineId)) {
+            setIsCertified(true);
+          } else {
+            setIsCertified(false);
+          }
         }
         
-        // Check for safety course certification
+        // Check if user has completed Safety Course (ID 6)
         try {
-          console.log(`Checking safety certification for user ${user.id}`);
           const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
           console.log("User safety certification check result:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
           console.error("Error checking safety certification:", safetyCertError);
-          setHasMachineSafetyCert(false);
+          // Fallback to user object if API fails
+          if (user.certifications && user.certifications.includes(SAFETY_COURSE_ID)) {
+            setHasMachineSafetyCert(true);
+          } else {
+            setHasMachineSafetyCert(false);
+          }
         }
       } catch (error) {
         console.error('Error loading machine details:', error);
@@ -119,7 +114,7 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
     };
     
     loadMachineDetails();
-  }, [machineId, user, navigation, forceRefresh]);
+  }, [machineId, user, navigation]);
 
   return {
     machine,
@@ -128,10 +123,6 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0)
     isCertified,
     hasMachineSafetyCert,
     setIsCertified,
-    userId: user?.id,
-    refreshData: () => {
-      setLoading(true);
-      // This will trigger the useEffect to run again with a new forceRefresh value
-    }
+    userId: user?.id
   };
 };

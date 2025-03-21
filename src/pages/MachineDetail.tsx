@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -5,6 +6,7 @@ import { useToast } from '../hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, Award, Book, Calendar, CheckCircle, ChevronLeft, ClipboardCheck, HelpCircle, Lock } from 'lucide-react';
+import { machines } from '../utils/data';
 import { apiService } from '../services/apiService';
 import { certificationService } from '../services/certificationService';
 
@@ -18,27 +20,9 @@ const MachineDetail = () => {
   const [machineStatus, setMachineStatus] = useState('available');
   const [isCertified, setIsCertified] = useState(false);
   const [hasSafetyCourse, setHasSafetyCourse] = useState(false);
-  const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Safety course has ID 6
   const SAFETY_COURSE_ID = '6';
-
-  // Always reload data when returning to this page
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('MachineDetail page gained focus - forcing data refresh');
-      setRefreshCounter(prev => prev + 1);
-    };
-
-    // Check if we're in a browser environment with window.addEventListener
-    if (typeof window !== 'undefined') {
-      window.addEventListener('focus', handleFocus);
-      
-      return () => {
-        window.removeEventListener('focus', handleFocus);
-      };
-    }
-  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -50,10 +34,9 @@ const MachineDetail = () => {
       try {
         setLoading(true);
         
-        // Always fetch fresh data from API
+        // Try to get machine from API first
         let machineData;
         try {
-          console.log(`Fetching fresh machine data for machine ${id}`);
           const response = await apiService.getMachineById(id || '');
           if (response.data) {
             machineData = response.data;
@@ -64,7 +47,10 @@ const MachineDetail = () => {
 
         // If API fails, fall back to static data
         if (!machineData) {
-          console.error(`No machine data found for ID: ${id}`);
+          machineData = machines.find(m => m.id === id);
+        }
+        
+        if (!machineData) {
           toast({
             title: 'Error',
             description: 'Machine not found',
@@ -77,7 +63,6 @@ const MachineDetail = () => {
         // Get machine status - make sure to fetch it directly to get the latest status
         try {
           // Using specific endpoint for machine status to ensure we get the freshest data
-          console.log(`Fetching fresh status for machine ${id}`);
           const statusResponse = await apiService.getMachineStatus(id || '');
           if (statusResponse.data && statusResponse.data.status) {
             console.log(`Fetched machine status from API: ${statusResponse.data.status}`);
@@ -100,12 +85,10 @@ const MachineDetail = () => {
         
         setMachine(machineData);
         
-        // Check if user is certified for this machine - always get fresh data
+        // Check if user is certified for this machine
         if (user) {
           try {
-            console.log(`Checking fresh certification data for user ${user.id} and machine ${id}`);
             const isUserCertified = await certificationService.checkCertification(user.id, id || '');
-            console.log(`Fresh certification check result: ${isUserCertified}`);
             setIsCertified(isUserCertified);
           } catch (certError) {
             console.error('Error checking certification:', certError);
@@ -113,16 +96,12 @@ const MachineDetail = () => {
             // Fallback to user object if API fails
             if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(id)) {
               setIsCertified(true);
-            } else {
-              setIsCertified(false);
             }
           }
           
-          // Check if user has safety course certification (ID 6) - always get fresh data
+          // Check if user has safety course certification (ID 6)
           try {
-            console.log(`Checking fresh safety certification for user ${user.id}`);
             const hasSafety = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
-            console.log(`Fresh safety certification check result: ${hasSafety}`);
             setHasSafetyCourse(hasSafety);
           } catch (safetyCertError) {
             console.error('Error checking safety certification:', safetyCertError);
@@ -130,8 +109,6 @@ const MachineDetail = () => {
             // Fallback to user object
             if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(SAFETY_COURSE_ID)) {
               setHasSafetyCourse(true);
-            } else {
-              setHasSafetyCourse(false);
             }
           }
         }
@@ -148,7 +125,7 @@ const MachineDetail = () => {
     };
 
     loadMachineDetails();
-  }, [id, user, navigate, toast, refreshCounter]);
+  }, [id, user, navigate, toast]);
 
   const handleTakeCourse = () => {
     navigate(`/course/${id}`);
