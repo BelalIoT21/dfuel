@@ -25,7 +25,7 @@ const MACHINE_NAMES = {
   "6": "Safety Course"
 };
 
-export const useMachineDetails = (machineId, user, navigation, forceRefresh = false) => {
+export const useMachineDetails = (machineId, user, navigation, forceRefresh = 0) => {
   const [machine, setMachine] = useState(null);
   const [machineStatus, setMachineStatus] = useState('available');
   const [loading, setLoading] = useState(true);
@@ -44,13 +44,25 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = fa
     const loadMachineDetails = async () => {
       try {
         setLoading(true);
-        
-        // Always get fresh machine data from MongoDB through machineService
         console.log(`Loading machine details for ID: ${machineId}, force refresh: ${forceRefresh}`);
-        const machineData = await machineService.getMachineById(machineId);
         
-        if (!machineData) {
-          Alert.alert('Error', 'Machine not found');
+        // ALWAYS fetch from MongoDB first, never fallback to localStorage
+        let machineData;
+        try {
+          console.log('Fetching machine directly from MongoDB through machineService');
+          machineData = await machineService.getMachineById(machineId);
+          
+          if (!machineData) {
+            console.error(`MongoDB: Machine not found for ID ${machineId}`);
+            Alert.alert('Error', 'Machine not found');
+            navigation.goBack();
+            return;
+          }
+          
+          console.log('Successfully retrieved machine data from MongoDB:', machineData);
+        } catch (error) {
+          console.error('Error fetching machine from MongoDB:', error);
+          Alert.alert('Error', 'Failed to load machine details');
           navigation.goBack();
           return;
         }
@@ -62,15 +74,15 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = fa
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Always get fresh machine status from MongoDB
+        // Always get fresh machine status directly from MongoDB
         let status;
         try {
-          console.log(`Fetching latest status for machine ${machineId}`);
+          console.log(`Fetching latest status for machine ${machineId} from MongoDB`);
           const statusData = await mongoDbService.getMachineStatus(machineId);
           status = statusData ? statusData.status : 'available';
           console.log(`Latest status for machine ${machineId}: ${status}`);
         } catch (error) {
-          console.error('Error getting machine status:', error);
+          console.error('Error getting machine status from MongoDB:', error);
           status = 'available';
         }
         
@@ -79,36 +91,26 @@ export const useMachineDetails = (machineId, user, navigation, forceRefresh = fa
         
         console.log("User ID for certification check:", user.id);
         
-        // Always get fresh certification data from API
+        // Always get fresh certification data directly from MongoDB
         try {
-          console.log(`Checking certification for user ${user.id} and machine ${machineId}`);
+          console.log(`Checking certification directly from MongoDB for user ${user.id} and machine ${machineId}`);
           const isUserCertified = await certificationService.checkCertification(user.id, machineId);
-          console.log("User certification check result:", isUserCertified);
+          console.log("User certification check result from MongoDB:", isUserCertified);
           setIsCertified(isUserCertified);
         } catch (certError) {
-          console.error("Error checking certification:", certError);
-          // Fallback to user object if API fails
-          if (user.certifications && user.certifications.includes(machineId)) {
-            setIsCertified(true);
-          } else {
-            setIsCertified(false);
-          }
+          console.error("Error checking certification from MongoDB:", certError);
+          setIsCertified(false);
         }
         
-        // Always check for fresh safety course certification
+        // Always check for fresh safety course certification from MongoDB
         try {
-          console.log(`Checking safety certification for user ${user.id}`);
+          console.log(`Checking safety certification from MongoDB for user ${user.id}`);
           const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
-          console.log("User safety certification check result:", hasSafetyCert);
+          console.log("User safety certification check result from MongoDB:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
-          console.error("Error checking safety certification:", safetyCertError);
-          // Fallback to user object if API fails
-          if (user.certifications && user.certifications.includes(SAFETY_COURSE_ID)) {
-            setHasMachineSafetyCert(true);
-          } else {
-            setHasMachineSafetyCert(false);
-          }
+          console.error("Error checking safety certification from MongoDB:", safetyCertError);
+          setHasMachineSafetyCert(false);
         }
       } catch (error) {
         console.error('Error loading machine details:', error);
