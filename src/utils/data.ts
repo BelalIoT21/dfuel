@@ -261,55 +261,10 @@ export const courses: Record<string, CourseContent> = {
   '3': {
     id: '3',
     machineId: '3',
-    title: 'CNC Router Safety Course',
+    title: 'X1 E Carbon 3D Printer Safety Course',
     content: `
-      <h1>Welcome to the CNC Router Safety Course</h1>
-      <p>This course will teach you how to safely operate our CNC Router for woodworking and fabrication.</p>
-      <h2>Course Outline</h2>
-      <ul>
-        <li>Introduction to CNC Routing</li>
-        <li>Safety Precautions</li>
-        <li>Workpiece Setup</li>
-        <li>Tool Selection</li>
-        <li>Operational Procedures</li>
-      </ul>
-    `,
-    duration: '90 minutes',
-    slides: [
-      {
-        title: 'Introduction to CNC Routing',
-        content: 'CNC routing is a computer-controlled cutting process used for cutting various materials like wood, composites, aluminum, and plastics. It uses a rotating cutting tool to remove material from a workpiece.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Safety Equipment Requirements',
-        content: 'Always wear safety glasses, hearing protection, and dust mask when operating the CNC router. Keep loose clothing, hair, and jewelry away from the machine at all times.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Workpiece Preparation',
-        content: 'Ensure your material is properly secured to the bed using clamps or vacuum hold-downs. Never try to hold material by hand. Double-check that all clamps are clear of the cutting path.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Tool Selection and Setup',
-        content: 'Different materials require specific cutting tools. Always use the appropriate bit for your material. Ensure the tool is properly seated and tightened in the collet.',
-        image: '/placeholder.svg'
-      },
-      {
-        title: 'Emergency Procedures',
-        content: 'Know the location of emergency stop buttons. In case of any issues like unusual sounds, vibrations, or tool breakage, immediately press the emergency stop button and notify staff.',
-        image: '/placeholder.svg'
-      }
-    ]
-  },
-  '4': {
-    id: '4',
-    machineId: '4',
-    title: 'X1 E Carbon 3D Printer Course',
-    content: `
-      <h1>Welcome to the X1 E Carbon 3D Printer Course</h1>
-      <p>This course will teach you how to safely operate the X1 E Carbon 3D Printer.</p>
+      <h1>Welcome to the X1 E Carbon 3D Printer Safety Course</h1>
+      <p>This course will teach you how to safely operate our X1 E Carbon 3D Printer for carbon fiber printing.</p>
       <h2>Course Outline</h2>
       <ul>
         <li>Introduction to Carbon Fiber 3D Printing</li>
@@ -348,16 +303,16 @@ export const courses: Record<string, CourseContent> = {
       }
     ]
   },
-  '5': {
-    id: '5',
-    machineId: '5',
-    title: 'Bambu Lab X1 E Course',
+  '4': {
+    id: '4',
+    machineId: '4',
+    title: 'Bambu Lab X1 E Safety Course',
     content: `
-      <h1>Welcome to the Bambu Lab X1 E Course</h1>
-      <p>This course will teach you how to safely operate the Bambu Lab X1 E.</p>
+      <h1>Welcome to the Bambu Lab X1 E Safety Course</h1>
+      <p>This course will teach you how to safely operate the Bambu Lab X1 E 3D printer.</p>
       <h2>Course Outline</h2>
       <ul>
-        <li>Introduction to 3D Printing</li>
+        <li>Introduction to the Bambu Lab X1 E</li>
         <li>Safety Precautions</li>
         <li>Operating Procedures</li>
         <li>Maintenance</li>
@@ -383,6 +338,51 @@ export const courses: Record<string, CourseContent> = {
       {
         title: 'Maintenance',
         content: 'Clean the build plate before each print. Check and clean the nozzle regularly. Update firmware when prompted.',
+        image: '/placeholder.svg'
+      }
+    ]
+  },
+  '5': {
+    id: '5',
+    machineId: '5',
+    title: 'CNC Router Safety Course',
+    content: `
+      <h1>Welcome to the CNC Router Safety Course</h1>
+      <p>This course will teach you how to safely operate our CNC Router for woodworking and fabrication.</p>
+      <h2>Course Outline</h2>
+      <ul>
+        <li>Introduction to CNC Routing</li>
+        <li>Safety Precautions</li>
+        <li>Workpiece Setup</li>
+        <li>Tool Selection</li>
+        <li>Operational Procedures</li>
+      </ul>
+    `,
+    duration: '90 minutes',
+    slides: [
+      {
+        title: 'Introduction to CNC Routing',
+        content: 'CNC routing is a computer-controlled cutting process used for cutting various materials like wood, composites, aluminum, and plastics. It uses a rotating cutting tool to remove material from a workpiece.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Safety Equipment Requirements',
+        content: 'Always wear safety glasses, hearing protection, and dust mask when operating the CNC router. Keep loose clothing, hair, and jewelry away from the machine at all times.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Workpiece Preparation',
+        content: 'Ensure your material is properly secured to the bed using clamps or vacuum hold-downs. Never try to hold material by hand. Double-check that all clamps are clear of the cutting path.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Tool Selection and Setup',
+        content: 'Different materials require specific cutting tools. Always use the appropriate bit for your material. Ensure the tool is properly seated and tightened in the collet.',
+        image: '/placeholder.svg'
+      },
+      {
+        title: 'Emergency Procedures',
+        content: 'Know the location of emergency stop buttons. In case of any issues like unusual sounds, vibrations, or tool breakage, immediately press the emergency stop button and notify staff.',
         image: '/placeholder.svg'
       }
     ]

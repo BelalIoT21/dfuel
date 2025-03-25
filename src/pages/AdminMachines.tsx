@@ -10,6 +10,7 @@ import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
+import { Building2, Plus, Edit } from 'lucide-react';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -132,7 +133,15 @@ const AdminMachines = () => {
           <BackToAdminButton />
         </div>
         
-        <h1 className="text-3xl font-bold mb-6">Machine Management</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Machine Management</h1>
+          <Button asChild className="bg-purple-600 hover:bg-purple-700">
+            <Link to="/admin/machines/new" className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Machine
+            </Link>
+          </Button>
+        </div>
         
         <Card className="mb-6">
           <CardContent className="p-6">
@@ -205,6 +214,17 @@ const AdminMachines = () => {
                       <div className="flex gap-2 mt-4">
                         <Button size="sm" variant="outline" asChild>
                           <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          asChild
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          <Link to={`/admin/machines/edit/${machine.id || machine._id}`} className="flex items-center">
+                            <Edit className="mr-1 h-4 w-4" />
+                            Edit
+                          </Link>
                         </Button>
                         <Button 
                           size="sm" 
