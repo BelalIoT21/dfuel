@@ -19,7 +19,7 @@ export const createAdminUser = async () => {
       return;
     }
 
-    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+    const adminPassword = process.env.ADMIN_PASSWORD;
     if (!adminPassword) {
       throw new Error('ADMIN_PASSWORD is not defined in environment variables');
     }
