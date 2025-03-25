@@ -83,12 +83,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           setIsCertified(isUserCertified);
         } catch (certError) {
           console.error("Error checking certification:", certError);
-          // Fallback to user object if API fails
-          if (user.certifications && user.certifications.includes(machineId)) {
-            setIsCertified(true);
-          } else {
-            setIsCertified(false);
-          }
+          // Use user object as fallback 
+          setIsCertified(user.certifications && user.certifications.includes(machineId));
         }
         
         // Check if user has completed Safety Course (ID 6)
@@ -98,12 +94,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
           console.error("Error checking safety certification:", safetyCertError);
-          // Fallback to user object if API fails
-          if (user.certifications && user.certifications.includes(SAFETY_COURSE_ID)) {
-            setHasMachineSafetyCert(true);
-          } else {
-            setHasMachineSafetyCert(false);
-          }
+          // Use user object as fallback
+          setHasMachineSafetyCert(user.certifications && user.certifications.includes(SAFETY_COURSE_ID));
         }
       } catch (error) {
         console.error('Error loading machine details:', error);

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
-import { storage } from '@/utils/storage';
 
 export const useAuthFunctions = (
   user: User | null,
@@ -20,7 +19,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // MongoDB-only login via API
+      // MongoDB login via API
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
       console.log("API login response:", JSON.stringify(apiResponse, null, 2));
@@ -74,11 +73,6 @@ export const useAuthFunctions = (
       console.log("Saving token to localStorage");
       localStorage.setItem('token', token);
       apiService.setToken(token); // Set token in API service
-      
-      // Also save user data to storage for quick access
-      const stringifiedUser = JSON.stringify(normalizedUser);
-      console.log("Saving user data to storage:", stringifiedUser);
-      await storage.setItem('learnit_user', stringifiedUser);
   
       setUser(normalizedUser as User); // Update the user state
   
@@ -110,7 +104,7 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Registration attempt for:", email);
   
-      // MongoDB-only registration via API
+      // MongoDB registration via API
       const apiResponse = await apiService.register({ email, password, name });
       console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
   
@@ -172,9 +166,6 @@ export const useAuthFunctions = (
   
       console.log("Setting user data from MongoDB:", normalizedUser);
       
-      // Also save user data to storage
-      await storage.setItem('learnit_user', JSON.stringify(normalizedUser));
-      
       // Only set user in state if we're not in an admin adding a user context
       setUser(normalizedUser as User);
   
@@ -208,7 +199,6 @@ export const useAuthFunctions = (
 
     // Remove auth data
     localStorage.removeItem('token');
-    storage.removeItem('learnit_user');
 
     // Clear the token from API service
     apiService.setToken(null);

@@ -49,18 +49,6 @@ export const UserSearch = ({
       password: ''
     });
   };
-
-  const clearLocalStorageExceptToken = () => {
-    const token = localStorage.getItem('token');
-    
-    localStorage.clear();
-    
-    if (token) {
-      localStorage.setItem('token', token);
-    }
-    
-    console.log("Cleared all localStorage data except auth token");
-  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,63 +83,52 @@ export const UserSearch = ({
     setIsAdding(true);
     
     try {
-      console.log("Attempting to register new user:", newUser.email);
-      
       const success = await register(newUser.email, newUser.password, newUser.name);
       
       if (success) {
-        clearLocalStorageExceptToken();
-        
         toast({
           title: "User Added",
-          description: `${newUser.name} has been added successfully.`
+          description: `${newUser.name} has been added successfully`,
         });
         
-        onUserAdded({ 
-          refresh: true,
-          newUser: {
-            name: newUser.name,
-            email: newUser.email
-          }
+        onUserAdded({
+          email: newUser.email,
+          name: newUser.name,
+          id: Date.now().toString() // Temporary ID for UI update, will be replaced by server-generated ID
         });
         
         setDialogOpen(false);
         resetForm();
-      } else {
-        toast({
-          title: "Error",
-          description: "This email may already be registered.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
-      console.error('Error adding user:', error);
       toast({
         title: "Error",
-        description: "Failed to add user. Please try again.",
+        description: "Could not add user. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsAdding(false);
     }
   };
-  
+
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              className="pl-10"
-              placeholder="Search users by name or email"
+              type="search"
+              placeholder="Search users..."
+              className="pl-8"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
+          
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="whitespace-nowrap">
+              <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Add User
               </Button>
@@ -160,52 +137,61 @@ export const UserSearch = ({
               <DialogHeader>
                 <DialogTitle>Add New User</DialogTitle>
                 <DialogDescription>
-                  Create a new user account. They will be able to login with these credentials.
+                  Create a new user account. The user will be able to log in with these credentials.
                 </DialogDescription>
               </DialogHeader>
+              
               <form onSubmit={handleSubmit}>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">Full Name</label>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="name">Full Name</label>
                     <Input
                       id="name"
-                      placeholder="John Doe"
                       value={newUser.name}
-                      onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                      disabled={isAdding}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                      placeholder="John Doe"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  
+                  <div className="grid gap-2">
+                    <label htmlFor="email">Email</label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="john@example.com"
                       value={newUser.email}
-                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                      disabled={isAdding}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      placeholder="john@example.com"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="text-sm font-medium">Password</label>
+                  
+                  <div className="grid gap-2">
+                    <label htmlFor="password">Password</label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="••••••"
                       value={newUser.password}
-                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      disabled={isAdding}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="••••••••"
                     />
-                    <p className="text-xs text-gray-500">Must be at least 6 characters.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 6 characters
+                    </p>
                   </div>
                 </div>
+                
                 <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => setDialogOpen(false)} disabled={isAdding}>
+                  <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isAdding}>
-                    {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isAdding ? 'Adding...' : 'Add User'}
+                    {isAdding ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      "Add User"
+                    )}
                   </Button>
                 </DialogFooter>
               </form>

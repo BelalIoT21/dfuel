@@ -1,8 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
 import userDatabase from '@/services/userDatabase';
-import { storage } from '@/utils/storage';
 import { apiService } from '@/services/apiService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { certificationService } from '@/services/certificationService';
@@ -56,123 +56,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
               }
               
-              await storage.setItem('learnit_user', JSON.stringify(userData));
               setUser(userData);
             } else {
               console.log('Token might be invalid, removing it');
               localStorage.removeItem('token');
               apiService.setToken(null);
-              
-              const storedUser = await storage.getItem('learnit_user');
-              if (storedUser) {
-                console.log('Retrieved user data from storage');
-                const parsedUser = JSON.parse(storedUser);
-                
-                if (!parsedUser.certifications) {
-                  parsedUser.certifications = [];
-                } else if (!Array.isArray(parsedUser.certifications)) {
-                  parsedUser.certifications = [String(parsedUser.certifications)];
-                }
-                
-                setUser(parsedUser);
-              }
             }
           } catch (error) {
             console.error('Error getting current user with token:', error);
-            setTimeout(async () => {
-              try {
-                const retryResponse = await apiService.getCurrentUser();
-                if (retryResponse.data) {
-                  console.log('Successfully retrieved user on retry');
-                  const userData = {
-                    ...retryResponse.data,
-                    id: retryResponse.data._id || retryResponse.data.id
-                  };
-                  
-                  if (!userData.certifications) {
-                    userData.certifications = [];
-                  } else if (!Array.isArray(userData.certifications)) {
-                    userData.certifications = [String(userData.certifications)];
-                  }
-                  
-                  await storage.setItem('learnit_user', JSON.stringify(userData));
-                  setUser(userData);
-                } else {
-                  localStorage.removeItem('token');
-                  apiService.setToken(null);
-                  
-                  const storedUser = await storage.getItem('learnit_user');
-                  if (storedUser) {
-                    try {
-                      const parsedUser = JSON.parse(storedUser);
-                      
-                      if (!parsedUser.certifications) {
-                        parsedUser.certifications = [];
-                      } else if (!Array.isArray(parsedUser.certifications)) {
-                        parsedUser.certifications = [String(parsedUser.certifications)];
-                      }
-                      
-                      setUser(parsedUser);
-                    } catch (parseError) {
-                      console.error('Error parsing stored user:', parseError);
-                    }
-                  }
-                }
-              } catch (retryError) {
-                console.error('Retry failed, removing token:', retryError);
-                localStorage.removeItem('token');
-                apiService.setToken(null);
-                
-                const storedUser = await storage.getItem('learnit_user');
-                if (storedUser) {
-                  try {
-                    setUser(JSON.parse(storedUser));
-                  } catch (parseError) {
-                    console.error('Error parsing stored user:', parseError);
-                  }
-                }
-              } finally {
-                setLoading(false);
-              }
-            }, 1000);
-            return;
-          }
-        } else {
-          const storedUser = await storage.getItem('learnit_user');
-          if (storedUser) {
-            console.log('Retrieved user data from storage');
-            try {
-              const parsedUser = JSON.parse(storedUser);
-              
-              if (!parsedUser.certifications) {
-                parsedUser.certifications = [];
-              } else if (!Array.isArray(parsedUser.certifications)) {
-                parsedUser.certifications = [String(parsedUser.certifications)];
-              }
-              
-              if (parsedUser.id && parsedUser.certifications.length === 0) {
-                try {
-                  console.log('Fetching certifications separately for stored user...');
-                  const certifications = await certificationService.getUserCertifications(parsedUser.id);
-                  if (Array.isArray(certifications) && certifications.length > 0) {
-                    console.log('Found certifications for stored user:', certifications);
-                    parsedUser.certifications = certifications;
-                    
-                    await storage.setItem('learnit_user', JSON.stringify(parsedUser));
-                  }
-                } catch (certErr) {
-                  console.error('Error fetching certifications for stored user:', certErr);
-                }
-              }
-              
-              setUser(parsedUser);
-            } catch (parseError) {
-              console.error('Error parsing stored user:', parseError);
-            }
+            localStorage.removeItem('token');
+            apiService.setToken(null);
           }
         }
       } catch (error) {
-        console.error('Error loading user from storage:', error);
+        console.error('Error loading user:', error);
       } finally {
         setLoading(false);
       }
@@ -206,7 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         
         setUser(updatedUser);
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       
@@ -228,7 +124,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Profile update successful, updating user state");
         const updatedUser = { ...user, ...updates };
         setUser(updatedUser);
-        await storage.setItem('learnit_user', JSON.stringify(updatedUser));
         return true;
       }
       

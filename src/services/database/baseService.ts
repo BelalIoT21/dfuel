@@ -1,15 +1,13 @@
 
 import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 
 /**
  * Base class for database services that provides common functionality
- * and fallback mechanisms.
+ * and uses MongoDB API exclusively.
  */
 export class BaseService {
   protected async apiRequest<T>(
     apiCall: () => Promise<{ data: T | null; error: string | null; status: number }>,
-    fallbackCall: () => T | null | undefined,
     errorMessage: string
   ): Promise<T | null | undefined> {
     try {
@@ -17,11 +15,11 @@ export class BaseService {
       if (response.data) {
         return response.data;
       }
+      console.error(`${errorMessage}: ${response.error || 'Unknown error'}`);
+      return null;
     } catch (error) {
-      console.error(`${errorMessage}, falling back to localStorage:`, error);
+      console.error(`${errorMessage}:`, error);
+      return null;
     }
-    
-    // Fallback to localStorage
-    return fallbackCall();
   }
 }

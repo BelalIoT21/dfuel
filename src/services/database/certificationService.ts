@@ -1,6 +1,6 @@
+
 import { BaseService } from './baseService';
 import { apiService } from '../apiService';
-import { localStorageService } from '../localStorageService';
 
 /**
  * Service that handles all certification-related database operations.
@@ -27,28 +27,10 @@ export class CertificationDatabaseService extends BaseService {
         return processedCertifications;
       }
       
-      // Fallback to local storage if API fails or returns invalid data
-      const user = await localStorageService.findUserById(userId);
-      if (user && Array.isArray(user.certifications)) {
-        console.log("Using local storage fallback for certifications:", user.certifications);
-        return user.certifications.map(String);
-      }
-      
+      console.error("Invalid certification data format or API error");
       return [];
     } catch (error) {
       console.error("API error fetching certifications:", error);
-      
-      // Fallback to local storage if API fails
-      try {
-        const user = await localStorageService.findUserById(userId);
-        if (user && Array.isArray(user.certifications)) {
-          console.log("Using local storage fallback for certifications after error:", user.certifications);
-          return user.certifications.map(String);
-        }
-      } catch (fallbackError) {
-        console.error("Local storage fallback also failed:", fallbackError);
-      }
-      
       return [];
     }
   }
@@ -57,7 +39,6 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.addCertification: userId=${userId}, machineId=${machineId}`);
       
-      // Try API first
       console.log(`Calling API to add certification: userId=${userId}, machineId=${machineId}`);
       const response = await apiService.addCertification(userId, machineId);
       
@@ -68,23 +49,7 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      if (response.error) {
-        console.error("API error adding certification:", response.error);
-        
-        // Try localStorage fallback
-        console.log("Falling back to localStorage for adding certification");
-        const user = await localStorageService.findUserById(userId);
-        
-        if (user) {
-          // Check if certification already exists
-          if (!user.certifications.includes(machineId)) {
-            user.certifications.push(machineId);
-            return await localStorageService.updateUser(userId, { certifications: user.certifications });
-          }
-          return true; // Certification already exists in local storage
-        }
-      }
-      
+      console.error("API error adding certification:", response.error);
       return false;
     } catch (error) {
       console.error("Error in addCertification:", error);
@@ -106,7 +71,6 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.removeCertification: userId=${userId}, machineId=${machineId}`);
       
-      // Try API first - using the removeCertification method from apiService
       console.log(`Calling API to remove certification: userId=${userId}, machineId=${machineId}`);
       const response = await apiService.removeCertification(userId, machineId);
       
@@ -117,19 +81,7 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      if (response.error) {
-        console.error("API error removing certification:", response.error);
-        
-        // Try localStorage fallback
-        console.log("Falling back to localStorage for removing certification");
-        const user = await localStorageService.findUserById(userId);
-        
-        if (user) {
-          user.certifications = user.certifications.filter(id => id !== machineId);
-          return await localStorageService.updateUser(userId, { certifications: user.certifications });
-        }
-      }
-      
+      console.error("API error removing certification:", response.error);
       return false;
     } catch (error) {
       console.error("Error in removeCertification:", error);
@@ -141,7 +93,6 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.clearUserCertifications: userId=${userId}`);
       
-      // Try API first with the correct route
       console.log(`Calling API to clear certifications: userId=${userId}`);
       const response = await apiService.clearCertifications(userId);
       
@@ -152,18 +103,7 @@ export class CertificationDatabaseService extends BaseService {
         return true;
       }
       
-      if (response.error) {
-        console.error("API error clearing certifications:", response.error);
-        
-        // Try localStorage fallback
-        console.log("Falling back to localStorage for clearing certifications");
-        const user = await localStorageService.findUserById(userId);
-        
-        if (user) {
-          return await localStorageService.updateUser(userId, { certifications: [] });
-        }
-      }
-      
+      console.error("API error clearing certifications:", response.error);
       return false;
     } catch (error) {
       console.error("Error in clearUserCertifications:", error);
@@ -175,7 +115,6 @@ export class CertificationDatabaseService extends BaseService {
     try {
       console.log(`CertificationDatabaseService.checkCertification: userId=${userId}, machineId=${machineId}`);
       
-      // Try API first
       console.log(`Calling API to check certification: userId=${userId}, machineId=${machineId}`);
       const response = await apiService.checkCertification(userId, machineId);
       
@@ -185,20 +124,11 @@ export class CertificationDatabaseService extends BaseService {
         return !!response.data;
       }
       
-      // Fallback to getting user certifications and checking manually
-      const certifications = await this.getUserCertifications(userId);
-      return certifications.includes(machineId);
+      console.error("API error checking certification");
+      return false;
     } catch (error) {
       console.error("Error in checkCertification:", error);
-      
-      // Final fallback to localStorage
-      try {
-        const user = await localStorageService.findUserById(userId);
-        return user?.certifications?.includes(machineId) || false;
-      } catch (fallbackError) {
-        console.error("Local storage fallback also failed:", fallbackError);
-        return false;
-      }
+      return false;
     }
   }
 }
