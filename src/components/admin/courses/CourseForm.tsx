@@ -221,14 +221,14 @@ const CourseForm: React.FC<CourseFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="quizId">Related Quiz</Label>
                   <Select
-                    value={formData.quizId || ''}
-                    onValueChange={(value) => handleSelectChange('quizId', value)}
+                    value={formData.quizId || "none"}
+                    onValueChange={(value) => handleSelectChange('quizId', value === "none" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a quiz (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {quizzes.map((quiz) => (
                         <SelectItem key={quiz._id || quiz.id} value={quiz._id || quiz.id}>
                           {quiz.title}

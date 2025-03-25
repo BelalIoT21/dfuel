@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -435,14 +434,14 @@ const QuizForm: React.FC<QuizFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="relatedCourseId">Related Course</Label>
                   <Select
-                    value={formData.relatedCourseId || ''}
-                    onValueChange={(value) => handleSelectChange('relatedCourseId', value)}
+                    value={formData.relatedCourseId || "none"}
+                    onValueChange={(value) => handleSelectChange('relatedCourseId', value === "none" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a course (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {courses.map((course) => (
                         <SelectItem key={course._id || course.id} value={course._id || course.id}>
                           {course.title}
