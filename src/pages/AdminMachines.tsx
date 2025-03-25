@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,12 +23,14 @@ const AdminMachines = () => {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
+        const timestamp = new Date().getTime();
         const fetchedMachines = await machineDatabaseService.getAllMachines();
         if (fetchedMachines && fetchedMachines.length > 0) {
           const filteredMachines = fetchedMachines.filter(machine => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
           });
+          console.log("Filtered machines:", filteredMachines);
           setMachinesList(filteredMachines);
         } else {
           const filteredDefaultMachines = machines.filter(machine => 
@@ -188,7 +189,7 @@ const AdminMachines = () => {
                       
                       <div className="flex flex-wrap gap-2 mt-3">
                         <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Type: Machine
+                          Type: {machine.type || 'Machine'}
                         </div>
                         <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
                           Difficulty: {machine.difficulty || 'Beginner'}

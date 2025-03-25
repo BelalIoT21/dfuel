@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -154,6 +153,8 @@ export const createMachine = async (req: Request, res: Response) => {
         nextId = String(Number(highestId) + 1);
       }
     }
+    
+    console.log(`Creating new machine with ID: ${nextId}`);
     
     // Create new machine with the generated ID
     const machine = new Machine({

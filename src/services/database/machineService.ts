@@ -78,7 +78,9 @@ export class MachineDatabaseService extends BaseService {
 
   async getAllMachines(): Promise<any[]> {
     try {
-      const response = await apiService.getAllMachines();
+      // Use a timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await apiService.request(`machines?t=${timestamp}`, 'GET', undefined, true);
       console.log("Machine response in service:", response);
       return response.data || [];
     } catch (error) {

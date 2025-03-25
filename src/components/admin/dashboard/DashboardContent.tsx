@@ -63,9 +63,10 @@ export const DashboardContent = () => {
           }
         }
         
-        // Get machines directly from API
+        // Get machines directly from API with timestamp to prevent caching
         try {
-          const machinesResponse = await apiService.getAllMachines();
+          const timestamp = new Date().getTime();
+          const machinesResponse = await apiService.request(`machines?t=${timestamp}`, 'GET');
           if (machinesResponse.data && Array.isArray(machinesResponse.data)) {
             console.log("Fetched machines:", machinesResponse.data.length);
             
