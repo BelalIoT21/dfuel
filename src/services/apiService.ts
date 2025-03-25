@@ -132,6 +132,26 @@ class ApiService {
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
   }
+
+  // User functions
+  async getAllUsers(): Promise<any> {
+    return this.request('users', 'GET', undefined, true);
+  }
+
+  // Get all machines
+  async getAllMachines(): Promise<any> {
+    return this.request('machines', 'GET');
+  }
+
+  // Get all bookings
+  async getAllBookings(): Promise<any> {
+    return this.request('bookings', 'GET', undefined, true);
+  }
+
+  // Get admin dashboard data
+  async getAdminDashboard(): Promise<any> {
+    return this.request('admin/dashboard', 'GET', undefined, true);
+  }
   
   // Generic REST methods
   async get(endpoint: string): Promise<any> {

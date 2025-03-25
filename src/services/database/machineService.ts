@@ -48,6 +48,7 @@ export class MachineDatabaseService extends BaseService {
   async createMachine(machineData: MachineData): Promise<any> {
     try {
       const response = await apiService.request('machines', 'POST', machineData, true);
+      console.log("Create machine response:", response);
       return response.data;
     } catch (error) {
       console.error("API error, could not create machine:", error);
@@ -77,7 +78,8 @@ export class MachineDatabaseService extends BaseService {
 
   async getAllMachines(): Promise<any[]> {
     try {
-      const response = await apiService.request('machines', 'GET', undefined, true);
+      const response = await apiService.getAllMachines();
+      console.log("Machine response in service:", response);
       return response.data || [];
     } catch (error) {
       console.error("API error, could not get all machines:", error);

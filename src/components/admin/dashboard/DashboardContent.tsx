@@ -40,10 +40,27 @@ export const DashboardContent = () => {
       try {
         setLoading(true);
         
-        // Get all users using our API service
-        const response = await apiService.getAllUsers();
-        if (response.data) {
-          setAllUsers(response.data);
+        // First try to get dashboard data from admin API
+        try {
+          const dashboardResponse = await apiService.getAdminDashboard();
+          console.log("Dashboard response:", dashboardResponse);
+          
+          if (dashboardResponse.data) {
+            // Set users from dashboard data
+            if (dashboardResponse.data.recentUsers) {
+              setAllUsers(dashboardResponse.data.recentUsers);
+            }
+          }
+        } catch (dashboardError) {
+          console.error("Error fetching dashboard data:", dashboardError);
+        }
+        
+        // Fallback: Get all users directly if dashboard didn't provide them
+        if (allUsers.length === 0) {
+          const response = await apiService.getAllUsers();
+          if (response.data) {
+            setAllUsers(response.data);
+          }
         }
         
         // Get machines directly from API

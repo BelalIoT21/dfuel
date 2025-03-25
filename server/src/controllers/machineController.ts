@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -140,8 +141,23 @@ export const createMachine = async (req: Request, res: Response) => {
       details = ''
     } = req.body;
 
-    // Create new machine
+    // Generate the next available ID (starting from 7)
+    // Find the highest current machine ID
+    const machines = await Machine.find({}, { _id: 1 }).sort({ _id: -1 });
+    let nextId = '7'; // Default start if no machines exist
+    
+    if (machines.length > 0) {
+      // Get the highest existing ID
+      const highestId = machines[0]._id;
+      if (!isNaN(Number(highestId))) {
+        // Convert to number, increment, then back to string
+        nextId = String(Number(highestId) + 1);
+      }
+    }
+    
+    // Create new machine with the generated ID
     const machine = new Machine({
+      _id: nextId,
       name,
       type,
       description,
