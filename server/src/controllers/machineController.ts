@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -85,6 +84,43 @@ export const getMachineById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error in getMachineById:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Get machine status
+export const getMachineStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Handle string IDs properly
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+
+    if (!machine) {
+      return res.status(404).json({ message: 'Machine not found' });
+    }
+    
+    // Convert machine status to normalized format for client
+    let clientStatus = 'available'; // Default
+    if (machine.status) {
+      if (machine.status === 'In Use') {
+        clientStatus = 'in-use'; // Map "In Use" to "in-use" for frontend
+      } else {
+        clientStatus = machine.status.toLowerCase();
+      }
+    }
+
+    res.status(200).json({
+      status: clientStatus,
+      maintenanceNote: machine.maintenanceNote || ''
+    });
+  } catch (error) {
+    console.error('Error in getMachineStatus:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };

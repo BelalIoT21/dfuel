@@ -45,7 +45,7 @@ export class MachineService {
     }
   }
 
-  // Get machine status
+  // Get machine status - now uses the dedicated status endpoint
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       if (!machineId) {
@@ -59,16 +59,25 @@ export class MachineService {
         return 'available';
       }
 
-      // Use API to get machine status
+      // Use the dedicated status endpoint
       try {
-        const response = await apiService.get(`machines/${machineId}`);
+        const response = await apiService.get(`machines/${machineId}/status`);
         if (response.data && response.data.status) {
-          const status = response.data.status.toLowerCase();
-          console.log(`Found status for machine ${machineId}: ${status}`);
-          return status;
+          console.log(`Found status for machine ${machineId}: ${response.data.status}`);
+          return response.data.status;
         }
       } catch (error) {
         console.error("API error getting machine status:", error);
+        
+        // Fallback to getting the full machine and checking status
+        try {
+          const machineResponse = await apiService.get(`machines/${machineId}`);
+          if (machineResponse.data && machineResponse.data.status) {
+            return machineResponse.data.status.toLowerCase();
+          }
+        } catch (fallbackError) {
+          console.error("Fallback error getting machine status:", fallbackError);
+        }
       }
       
       console.log(`No status found for machine ${machineId}, using default 'available'`);
@@ -92,7 +101,17 @@ export class MachineService {
         return undefined;
       }
 
-      // Use API to get machine maintenance note
+      // Try status endpoint first
+      try {
+        const response = await apiService.get(`machines/${machineId}/status`);
+        if (response.data && response.data.maintenanceNote) {
+          return response.data.maintenanceNote;
+        }
+      } catch (error) {
+        console.error("API error getting machine status for maintenance note:", error);
+      }
+
+      // Fallback to getting the full machine
       try {
         const response = await apiService.get(`machines/${machineId}`);
         if (response.data) {
@@ -109,7 +128,7 @@ export class MachineService {
     }
   }
   
-  // Get machine by ID
+  // Get machine by ID - unchanged
   async getMachineById(machineId: string): Promise<any | null> {
     try {
       console.log(`Getting machine by ID: ${machineId}`);
@@ -165,7 +184,7 @@ export class MachineService {
     }
   }
   
-  // Helper method to get machines
+  // Helper method to get machines - unchanged
   async getMachines(timestamp?: number): Promise<any[]> {
     try {
       console.log("Getting machines, timestamp:", timestamp || "none");

@@ -61,18 +61,20 @@ export const useMachineDetails = (machineId, user, navigation) => {
           type: MACHINE_TYPES[machineId] || machineData.type || "Machine"
         };
         
-        // Get machine status from MongoDB
+        setMachine(machineWithCorrectData);
+        
+        // Get machine status from the dedicated endpoint or use the status from machine data
         let status;
         try {
-          const statusData = await mongoDbService.getMachineStatus(machineId);
-          status = statusData ? statusData.status : 'available';
-        } catch (error) {
-          console.error('Error getting machine status:', error);
-          status = 'available';
+          status = await machineService.getMachineStatus(machineId);
+        } catch (statusError) {
+          console.error('Error getting machine status:', statusError);
+          // Use status from machine data as fallback
+          console.log('Using status from machine data:', machineWithCorrectData.status);
+          status = machineWithCorrectData.status || 'available';
         }
         
         setMachineStatus(status);
-        setMachine(machineWithCorrectData);
         
         console.log("User ID for certification check:", user.id);
         

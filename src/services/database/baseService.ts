@@ -12,13 +12,30 @@ export class BaseService {
   ): Promise<T | null | undefined> {
     try {
       const response = await apiCall();
+      
       if (response.data) {
         return response.data;
       }
-      console.error(`${errorMessage}: ${response.error || 'Unknown error'}`);
+      
+      // For 404 errors, don't log as errors since these might be expected in some cases
+      if (response.status === 404) {
+        console.log(`${errorMessage}: Endpoint not found (404)`);
+      } else {
+        console.error(`${errorMessage}: ${response.error || 'Unknown error'}`);
+      }
+      
       return null;
     } catch (error) {
-      console.error(`${errorMessage}:`, error);
+      // Check if this is a "not found" error, which might be expected
+      const isNotFoundError = error instanceof Error && 
+        (error.message.includes('404') || error.message.includes('not found'));
+      
+      if (isNotFoundError) {
+        console.log(`${errorMessage}: Resource not found`);
+      } else {
+        console.error(`${errorMessage}:`, error);
+      }
+      
       return null;
     }
   }

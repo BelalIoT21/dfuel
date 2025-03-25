@@ -6,7 +6,8 @@ import {
   getMachineById, 
   updateMachine, 
   deleteMachine, 
-  updateMachineStatus 
+  updateMachineStatus,
+  getMachineStatus 
 } from '../controllers/machineController';
 import { protect, admin } from '../middleware/authMiddleware';
 import rateLimit from 'express-rate-limit';
@@ -31,6 +32,9 @@ router.get('/', getMachines);
 
 // Get machine by ID
 router.get('/:id', getMachineById);
+
+// Get machine status
+router.get('/:id/status', getMachineStatus);
 
 // Update machine (admin only)
 router.put(
