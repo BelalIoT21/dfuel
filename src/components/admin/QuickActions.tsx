@@ -5,9 +5,9 @@ import { Link } from "react-router-dom";
 
 export function QuickActions() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-xl font-semibold">Quick Actions</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/users">
             <Users className="mr-3 h-5 w-5" />

@@ -24,6 +24,7 @@ export interface MachineFormData {
   certificationInstructions?: string;
   linkedCourseId?: string;
   linkedQuizId?: string;
+  _id?: string;
 }
 
 interface MachineFormProps {
@@ -98,9 +99,43 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   // Find the matching course for this machine based on ID
-  const suggestedCourse = formData._id && courses.find(course => course._id === formData._id);
+  const getRecommendedCourse = () => {
+    if (!formData._id) return null;
+    
+    // Direct mapping for machines 1-4
+    if (formData._id === "1") {
+      return courses.find(course => course._id === "1");
+    } else if (formData._id === "2") {
+      return courses.find(course => course._id === "2");
+    } else if (formData._id === "3") {
+      return courses.find(course => course._id === "3");
+    } else if (formData._id === "4") {
+      return courses.find(course => course._id === "4");
+    }
+    
+    return null;
+  };
+
   // Find the matching quiz for this machine based on ID
-  const suggestedQuiz = formData._id && quizzes.find(quiz => quiz._id === formData._id);
+  const getRecommendedQuiz = () => {
+    if (!formData._id) return null;
+    
+    // Direct mapping for machines 1-4
+    if (formData._id === "1") {
+      return quizzes.find(quiz => quiz._id === "1");
+    } else if (formData._id === "2") {
+      return quizzes.find(quiz => quiz._id === "2");
+    } else if (formData._id === "3") {
+      return quizzes.find(quiz => quiz._id === "3");
+    } else if (formData._id === "4") {
+      return quizzes.find(quiz => quiz._id === "4");
+    }
+    
+    return null;
+  };
+
+  const suggestedCourse = getRecommendedCourse();
+  const suggestedQuiz = getRecommendedQuiz();
 
   return (
     <Card className="mb-6">
@@ -275,10 +310,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
-                    {suggestedCourse && !formData.linkedCourseId && 
-                     `Recommended course: ${suggestedCourse.title}`}
-                  </p>
+                  {suggestedCourse && !formData.linkedCourseId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recommended course: {suggestedCourse.title}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -300,10 +336,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">
-                    {suggestedQuiz && !formData.linkedQuizId && 
-                     `Recommended quiz: ${suggestedQuiz.title}`}
-                  </p>
+                  {suggestedQuiz && !formData.linkedQuizId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recommended quiz: {suggestedQuiz.title}
+                    </p>
+                  )}
                 </div>
               </>
             )}
