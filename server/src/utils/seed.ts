@@ -2,6 +2,8 @@
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
+import { Course } from '../models/Course';
+import { Quiz } from '../models/Quiz';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,6 +17,8 @@ export class SeedService {
       const userCount = await User.countDocuments();
       const machineCount = await Machine.countDocuments();
       const bookingCount = await Booking.countDocuments();
+      const courseCount = await Course.countDocuments();
+      const quizCount = await Quiz.countDocuments();
 
       // Get existing machine IDs
       const existingMachines = await Machine.find({}, '_id');
@@ -34,35 +38,195 @@ export class SeedService {
         
         // After seeding, we need to ensure proper order
         await ensureMachineOrder();
-        return;
       }
 
-      if (userCount > 0 && machineCount > 0 && bookingCount > 0) {
-        console.log('Database already seeded. All expected machines present. Checking order...');
+      // Check if we need to seed courses
+      if (courseCount === 0) {
+        console.log('No courses found. Seeding courses...');
+        await seedCourses();
+      }
+
+      // Check if we need to seed quizzes
+      if (quizCount === 0) {
+        console.log('No quizzes found. Seeding quizzes...');
+        await seedQuizzes();
+      }
+
+      if (userCount > 0 && machineCount > 0 && bookingCount > 0 && courseCount > 0 && quizCount > 0) {
+        console.log('Database already seeded. All expected entities present. Checking order...');
         // Always check and fix order even if all machines exist
         await ensureMachineOrder();
         return;
       }
 
-      // Clear existing data
-      console.log('Clearing existing data...');
-      await Machine.deleteMany({});
-
-      if (!process.env.ADMIN_PASSWORD) {
-        throw new Error('ADMIN_PASSWORD environment variable is not set');
-      }
-      
-      // Create all machines with consistent IDs and names
-      console.log('Creating all machines...');
-      await seedAllMachines();
+      // If we reach here, something may be missing, ensure it's created
       console.log('Database seeded successfully!');
-      
-      // Ensure proper order
-      await ensureMachineOrder();
     } catch (error) {
       console.error('Error seeding database:', error);
       throw error;
     }
+  }
+}
+
+// New function to seed courses
+async function seedCourses() {
+  try {
+    const courses = [
+      {
+        _id: '1',
+        title: 'Laser Cutting Basics',
+        description: 'Learn the fundamentals of laser cutting technology.',
+        category: 'Fabrication',
+        content: '# Laser Cutting Basics\n\nWelcome to the Laser Cutting Basics course. This course will introduce you to the fundamental concepts of laser cutting.\n\n## Safety First\n\nBefore operating any laser cutting equipment, it\'s essential to understand the safety procedures.\n\n## Materials\n\nDifferent materials react differently to laser cutting. In this section, we\'ll explore various materials and their properties.',
+        imageUrl: '/courses/laser-cutting.jpg',
+        relatedMachineIds: ['1'],
+        quizId: '1',
+        difficulty: 'Beginner'
+      },
+      {
+        _id: '2',
+        title: '3D Printing Fundamentals',
+        description: 'Get started with 3D printing technology.',
+        category: 'Fabrication',
+        content: '# 3D Printing Fundamentals\n\nWelcome to the 3D Printing Fundamentals course. This course will introduce you to the exciting world of 3D printing.\n\n## What is 3D Printing?\n\n3D printing, also known as additive manufacturing, is a process of making three dimensional solid objects from a digital file.\n\n## Common Technologies\n\nThere are several technologies used in 3D printing, including FDM, SLA, and SLS.',
+        imageUrl: '/courses/3d-printing.jpg',
+        relatedMachineIds: ['2', '3', '4'],
+        quizId: '2',
+        difficulty: 'Beginner'
+      },
+      {
+        _id: '3',
+        title: 'Makerspace Safety',
+        description: 'Essential safety protocols for makerspace environments.',
+        category: 'Safety',
+        content: '# Makerspace Safety\n\nWelcome to the Makerspace Safety course. This course covers essential safety protocols that all makerspace users must follow.\n\n## General Safety Guidelines\n\nAlways wear appropriate personal protective equipment (PPE) when working with machinery or chemicals.\n\n## Emergency Procedures\n\nKnow the location of fire extinguishers, first aid kits, and emergency exits.',
+        imageUrl: '/courses/safety.jpg',
+        relatedMachineIds: ['5', '6'],
+        quizId: '3',
+        difficulty: 'Beginner'
+      }
+    ];
+
+    for (const course of courses) {
+      const newCourse = new Course(course);
+      await newCourse.save();
+      console.log(`Created course: ${course.title}`);
+    }
+
+    console.log(`Created ${courses.length} courses successfully`);
+  } catch (error) {
+    console.error('Error seeding courses:', error);
+  }
+}
+
+// New function to seed quizzes
+async function seedQuizzes() {
+  try {
+    const quizzes = [
+      {
+        _id: '1',
+        title: 'Laser Cutter Certification Quiz',
+        description: 'Test your knowledge of laser cutting safety and operation.',
+        category: 'Fabrication',
+        imageUrl: '/quizzes/laser-quiz.jpg',
+        questions: [
+          {
+            question: 'What should you NEVER put in a laser cutter?',
+            options: ['Acrylic', 'Wood', 'PVC', 'Paper'],
+            correctAnswer: 2,
+            explanation: 'PVC releases chlorine gas when cut which is harmful to humans and damages the machine.'
+          },
+          {
+            question: 'What is the primary safety concern when operating a laser cutter?',
+            options: ['Fire hazard', 'Electrical shock', 'Noise level', 'Water damage'],
+            correctAnswer: 0,
+            explanation: 'Fire is the primary safety concern when operating a laser cutter.'
+          },
+          {
+            question: 'What should you do before starting a laser cutting job?',
+            options: ['Leave the room', 'Close the lid/door', 'Remove the exhaust hose', 'Turn off the air assist'],
+            correctAnswer: 1,
+            explanation: 'Always close the lid/door before starting a laser cutting job to contain the laser beam.'
+          }
+        ],
+        passingScore: 70,
+        relatedMachineIds: ['1'],
+        relatedCourseId: '1',
+        difficulty: 'Intermediate'
+      },
+      {
+        _id: '2',
+        title: '3D Printing Knowledge Check',
+        description: 'Verify your understanding of 3D printing concepts and best practices.',
+        category: 'Fabrication',
+        imageUrl: '/quizzes/3d-printing-quiz.jpg',
+        questions: [
+          {
+            question: 'What does FDM stand for in 3D printing?',
+            options: ['Fast Deposition Method', 'Fused Deposition Modeling', 'Filament Direct Manufacturing', 'Final Design Model'],
+            correctAnswer: 1,
+            explanation: 'FDM stands for Fused Deposition Modeling, which is a common 3D printing technology.'
+          },
+          {
+            question: 'Which material is most commonly used in FDM 3D printing?',
+            options: ['Resin', 'Metal powder', 'PLA/ABS filament', 'Clay'],
+            correctAnswer: 2,
+            explanation: 'PLA and ABS filaments are the most commonly used materials in FDM 3D printing.'
+          },
+          {
+            question: 'What is the purpose of a heated bed on a 3D printer?',
+            options: ['To speed up printing', 'To prevent warping', 'To melt the filament', 'To sterilize the print area'],
+            correctAnswer: 1,
+            explanation: 'A heated bed helps prevent warping by keeping the first layers of a print warm during the printing process.'
+          }
+        ],
+        passingScore: 70,
+        relatedMachineIds: ['2', '3', '4'],
+        relatedCourseId: '2',
+        difficulty: 'Intermediate'
+      },
+      {
+        _id: '3',
+        title: 'General Safety Quiz',
+        description: 'Test your knowledge of general makerspace safety.',
+        category: 'Safety',
+        imageUrl: '/quizzes/safety-quiz.jpg',
+        questions: [
+          {
+            question: 'What should you do if you witness an accident in the makerspace?',
+            options: ['Ignore it if it\'s minor', 'Take a photo first', 'Alert staff immediately', 'Try to fix the problem yourself'],
+            correctAnswer: 2,
+            explanation: 'Always alert staff immediately if you witness an accident, regardless of severity.'
+          },
+          {
+            question: 'When is it acceptable to wear loose clothing while operating machinery?',
+            options: ['When it\'s hot in the makerspace', 'When you\'re careful', 'When using non-rotating equipment only', 'Never'],
+            correctAnswer: 3,
+            explanation: 'It is never acceptable to wear loose clothing when operating machinery as it can get caught in moving parts.'
+          },
+          {
+            question: 'What is the first step when using a new piece of equipment?',
+            options: ['Ask for training from staff', 'Read the manual online', 'Watch YouTube tutorials', 'Try it out carefully'],
+            correctAnswer: 0,
+            explanation: 'Always ask for proper training from staff before using any new equipment.'
+          }
+        ],
+        passingScore: 100, // Safety quiz requires perfect score
+        relatedMachineIds: ['5', '6'],
+        relatedCourseId: '3',
+        difficulty: 'Beginner'
+      }
+    ];
+
+    for (const quiz of quizzes) {
+      const newQuiz = new Quiz(quiz);
+      await newQuiz.save();
+      console.log(`Created quiz: ${quiz.title}`);
+    }
+
+    console.log(`Created ${quizzes.length} quizzes successfully`);
+  } catch (error) {
+    console.error('Error seeding quizzes:', error);
   }
 }
 

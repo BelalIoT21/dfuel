@@ -57,3 +57,39 @@ export interface MongoBooking {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface MongoCourse {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  content: string;
+  imageUrl?: string;
+  relatedMachineIds?: string[];
+  quizId?: string;
+  difficulty: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface MongoQuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation?: string;
+}
+
+export interface MongoQuiz {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl?: string;
+  questions: MongoQuizQuestion[];
+  passingScore: number;
+  relatedMachineIds?: string[];
+  relatedCourseId?: string;
+  difficulty: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

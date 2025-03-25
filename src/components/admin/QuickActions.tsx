@@ -1,27 +1,50 @@
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Building2, GraduationCap, CheckSquare, Users, BookOpen, Cog } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export const QuickActions = () => {
+export function QuickActions() {
   return (
-    <Card className="border-purple-100">
-      <CardHeader className="p-4 md:p-6">
-        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-          <BookOpen className="h-5 w-5 text-purple-600" />
-          Quick Actions
-        </CardTitle>
-        <CardDescription>Common administrative tasks</CardDescription>
-      </CardHeader>
-      <CardContent className="p-4 md:p-6 pt-0 space-y-3">
-        <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-sm" asChild>
-          <Link to="/admin/users">Manage Users</Link>
+    <div className="space-y-2">
+      <h2 className="text-xl font-semibold">Quick Actions</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/users">
+            <Users className="mr-2 h-4 w-4" />
+            Manage Users
+          </Link>
         </Button>
-        <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-sm" asChild>
-          <Link to="/admin/machines">Manage Machines</Link>
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/machines">
+            <Building2 className="mr-2 h-4 w-4" />
+            Manage Machines
+          </Link>
         </Button>
-      </CardContent>
-    </Card>
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/courses">
+            <BookOpen className="mr-2 h-4 w-4" />
+            Manage Courses
+          </Link>
+        </Button>
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/quizzes">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Manage Quizzes
+          </Link>
+        </Button>
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/machines/new">
+            <Cog className="mr-2 h-4 w-4" />
+            Add Machine
+          </Link>
+        </Button>
+        <Button variant="outline" asChild className="justify-start">
+          <Link to="/admin/courses/new">
+            <GraduationCap className="mr-2 h-4 w-4" />
+            Add Course
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
-};
+}

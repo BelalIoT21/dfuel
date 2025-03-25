@@ -1,105 +1,87 @@
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import helmet from 'helmet';
 import morgan from 'morgan';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { connectDB } from './config/db';
-import { errorHandler, notFound } from './middleware/errorMiddleware';
-import { SeedService } from './utils/seed';
-import { ensureAdminUser } from './controllers/auth/adminController';
-
-// Routes
+import connectDB from './config/db';
+import { notFound, errorHandler } from './middleware/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import machineRoutes from './routes/machineRoutes';
-import bookingRoutes from './routes/bookingRoutes';
-import certificationRoutes from './routes/certificationRoutes';
 import adminRoutes from './routes/adminRoutes';
 import healthRoutes from './routes/healthRoutes';
+import bookingRoutes from './routes/bookingRoutes';
+import certificationRoutes from './routes/certificationRoutes';
+import courseRoutes from './routes/courseRoutes';
+import quizRoutes from './routes/quizRoutes';
+import { SeedService } from './utils/seed';
 
-// Load environment variables
 dotenv.config();
 
 // Connect to MongoDB
-connectDB().then(async () => {
-  // Ensure admin user exists
-  console.log('Ensuring admin user exists...');
-  try {
-    await ensureAdminUser();
-    console.log('Admin user seeding completed.');
-  } catch (err) {
-    console.error('Error seeding admin user:', err);
-  }
-
-  // Seed the database after connection (only in development)
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('Checking if database needs seeding...');
-    try {
-      await SeedService.seedDatabase();
-      console.log('Database seeding completed (if needed)');
-    } catch (err) {
-      console.error('Error seeding database:', err);
-    }
-  }
-});
+connectDB();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Enhanced CORS configuration
-app.use(cors({
-  origin: function(origin, callback) {
-    // Allow any origin
-    console.log('Request origin:', origin);
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for development
-}));
-app.use(morgan('dev'));
 app.use(cookieParser());
 
-// Log all incoming requests for debugging
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} from ${req.ip}`);
-  if (req.method !== 'GET') {
-    console.log('Body:', JSON.stringify(req.body));
-  }
-  next();
-});
+// Development logging
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
-// API Routes
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+
+// CORS setup
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('Request allowed without origin (like mobile app, curl, etc.)');
+      return callback(null, true);
+    }
+    
+    // Allow any origin for development
+    console.log(`Request origin: ${origin}`);
+    callback(null, true);
+  },
+  credentials: true
+}));
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/machines', machineRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/certifications', certificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/health', healthRoutes);
-
-// Health check endpoint (root level)
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Server is running' });
-});
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/certifications', certificationRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/quizzes', quizRoutes);
 
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`API available at http://localhost:${PORT}/api`);
-});
+// Seed the database
+SeedService.seedDatabase()
+  .then(() => {
+    console.log('Database seeding complete');
+  })
+  .catch((error) => {
+    console.error('Error seeding database:', error);
+  });
 
-export default app;
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
