@@ -4,6 +4,7 @@ import { body } from 'express-validator';
 import { 
   getMachines, 
   getMachineById, 
+  createMachine,
   updateMachine, 
   deleteMachine, 
   updateMachineStatus,
@@ -29,6 +30,19 @@ const updateLimiter = rateLimit({
 
 // Get all machines
 router.get('/', getMachines);
+
+// Create new machine (admin only)
+router.post(
+  '/',
+  protect,
+  admin,
+  [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('type').notEmpty().withMessage('Type is required'),
+    body('description').notEmpty().withMessage('Description is required'),
+  ],
+  createMachine
+);
 
 // Get machine by ID
 router.get('/:id', getMachineById);

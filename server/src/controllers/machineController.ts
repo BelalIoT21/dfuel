@@ -125,6 +125,48 @@ export const getMachineStatus = async (req: Request, res: Response) => {
   }
 };
 
+// Create a new machine (admin only)
+export const createMachine = async (req: Request, res: Response) => {
+  try {
+    const { 
+      name, 
+      type, 
+      description, 
+      status = 'Available', 
+      requiresCertification = false,
+      difficulty = 'Beginner',
+      imageUrl = '',
+      specifications = '',
+      details = ''
+    } = req.body;
+
+    // Create new machine
+    const machine = new Machine({
+      name,
+      type,
+      description,
+      status,
+      requiresCertification,
+      difficulty,
+      imageUrl,
+      specifications,
+      details,
+      bookedTimeSlots: []
+    });
+
+    const createdMachine = await machine.save();
+    console.log(`Created new machine: ${name} with ID: ${createdMachine._id}`);
+
+    res.status(201).json(createdMachine);
+  } catch (error) {
+    console.error('Error in createMachine:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
 // Update machine (admin only)
 export const updateMachine = async (req: Request, res: Response) => {
   try {

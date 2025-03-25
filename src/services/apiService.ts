@@ -1,457 +1,155 @@
-import { getEnv, getApiEndpoints as getApiEndpointsFromEnv, formatApiEndpoint } from '../utils/env';
-import { isAndroid, isCapacitor } from '../utils/platform';
 
-// Determine API endpoints based on environment
-const getAvailableEndpoints = () => {
-  // Get all possible endpoints
-  const endpoints = getApiEndpointsFromEnv();
-  
-  console.log('API service initialized with endpoints:', endpoints);
-  return endpoints;
-};
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { getApiEndpoints } from '../utils/env';
 
-const API_ENDPOINTS = getAvailableEndpoints();
-let currentEndpointIndex = 0;
-let BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-
-console.log('API service initialized with endpoints:', API_ENDPOINTS);
-console.log('Using primary endpoint:', BASE_URL);
-
-interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  status: number; 
-}
-
+// Main API service to handle all API requests
 class ApiService {
+  private api: AxiosInstance;
+  private endpoints: string[];
+  private currentEndpointIndex: number = 0;
   private token: string | null = null;
-
-  setToken(token: string | null) {
-    this.token = token;
-  }
-
-  private async switchEndpoint() {
-    currentEndpointIndex = (currentEndpointIndex + 1) % API_ENDPOINTS.length;
-    BASE_URL = API_ENDPOINTS[currentEndpointIndex];
-    console.log(`Switching to API endpoint: ${BASE_URL}`);
-  }
-
-  private async request<T>(
-    endpoint: string, 
-    method: string = 'GET', 
-    data?: any,
-    authRequired: boolean = true
-  ): Promise<ApiResponse<T>> {
-    try {
-      // Handle full URLs vs relative endpoints
-      const url = endpoint.startsWith('http') 
-        ? endpoint 
-        : `${BASE_URL}/${endpoint}`;
-      
-      console.log(`API request to: ${url} (method: ${method})`);
-      
-      // Get token in this specific order of precedence:
-      // 1. Use the token set via setToken
-      // 2. Try to get it from localStorage
-      let authToken = this.token;
-      if (!authToken) {
-        authToken = localStorage.getItem('token');
-      }
-      
-      const headers: HeadersInit = {
+  
+  constructor() {
+    this.endpoints = getApiEndpoints();
+    console.log("Available API endpoints:", this.endpoints);
+    
+    // Create axios instance with initial base URL
+    this.api = axios.create({
+      baseURL: this.endpoints[this.currentEndpointIndex],
+      headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      };
-      
-      if (authRequired && authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-        console.log("Using token for authorization:", authToken ? 'token-present' : 'no-token');
+      }
+    });
+    
+    // Intercept responses to handle errors consistently
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        console.error(`API error: ${error}`);
+        return Promise.reject(error);
+      }
+    );
+  }
+  
+  // Set authorization token for subsequent requests
+  setToken(token: string | null): void {
+    this.token = token;
+    if (token) {
+      this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete this.api.defaults.headers.common['Authorization'];
+    }
+  }
+  
+  // Get the current user profile when logged in
+  async getCurrentUser(): Promise<any> {
+    return this.request('auth/me', 'GET', undefined, true);
+  }
+  
+  // Generic request method for all API calls
+  async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
+    try {
+      // Add authentication header if required and available
+      if (requiresAuth && !this.token) {
+        console.log("Auth required but no token available");
       }
       
-      const options: RequestInit = {
-        method,
-        headers,
-        credentials: 'include',
-        mode: 'cors',
-      };
-      
-      if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
-        options.body = JSON.stringify(data);
+      // Log the request for debugging
+      console.log(`API request to: ${this.api.defaults.baseURL}${endpoint} (method: ${method})`);
+      if (this.token) {
+        console.log(`Using token for authorization: token-present`);
       }
       
-      console.log(`Making API request: ${method} ${url}`, data ? `with data: ${JSON.stringify(data)}` : '');
-      console.log("Request headers:", headers);
-      
-      // Try with retry and endpoint switching logic
-      let response;
-      let retryCount = 0;
-      const maxRetries = API_ENDPOINTS.length * 2; // Increase max retries
-      
-      while (retryCount < maxRetries) {
-        try {
-          // Set a timeout to prevent hanging
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-          
-          options.signal = controller.signal;
-          
-          response = await fetch(url, options);
-          clearTimeout(timeoutId);
-          
-          console.log(`Response from ${url}:`, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers.entries()])
-          });
-          
-          break; // If successful, exit the retry loop
-        } catch (fetchError) {
-          console.warn(`API fetch failed (attempt ${retryCount + 1}/${maxRetries}): ${url}`);
-          console.error("Fetch error details:", fetchError);
-          retryCount++;
-          
-          if (retryCount < maxRetries) {
-            // Try a different endpoint before giving up
-            this.switchEndpoint();
-            const newUrl = endpoint.startsWith('http') 
-              ? endpoint 
-              : `${BASE_URL}/${endpoint}`;
-            console.log(`Retrying with endpoint: ${newUrl}`);
-          } else {
-            throw fetchError; // All retries failed, propagate the error
-          }
-        }
+      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}${endpoint} `);
+      console.log(`Request headers:`, this.api.defaults.headers);
+      if (data) {
+        console.log(`Request data:`, data);
       }
       
-      if (!response) {
-        throw new Error('Failed to connect to any API endpoints');
+      // Make the request
+      let response: AxiosResponse;
+      
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await this.api.get(endpoint);
+          break;
+        case 'POST':
+          response = await this.api.post(endpoint, data);
+          break;
+        case 'PUT':
+          response = await this.api.put(endpoint, data);
+          break;
+        case 'DELETE':
+          response = await this.api.delete(endpoint, { data });
+          break;
+        default:
+          throw new Error(`Unsupported method: ${method}`);
       }
       
-      // Handle empty responses gracefully
-      let responseData;
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json') && response.status !== 204) {
-        const text = await response.text();
-        responseData = text ? JSON.parse(text) : null;
-      } else {
-        responseData = null;
-      }
-      
-      if (!response.ok) {
-        const errorMessage = responseData?.message || `API request failed with status ${response.status}`;
-        console.error(`API error for ${method} ${url}: ${response.status} - ${errorMessage}`);
-        
-        if (response.status === 404) {
-          return {
-            data: null,
-            error: `Endpoint not found: ${endpoint}. The server might be unavailable or the API endpoint is incorrect.`,
-            status: response.status
-          };
-        }
-        
-        throw new Error(errorMessage);
-      }
+      // Log the response
+      console.log(`Response from ${this.api.defaults.baseURL}${endpoint}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
       
       return {
-        data: responseData,
-        error: null,
-        status: response.status
+        data: response.data,
+        status: response.status,
+        headers: response.headers
       };
-    } catch (error) {
-      console.error(`API request failed for ${endpoint}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (error: any) {
+      const status = error.response?.status || 500;
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
       
-      // Don't show toast for health check failures, they're expected when backend is not running
-      if (!endpoint.includes('health')) {
-        console.error("Could not connect to server.");
-      }
+      console.error(`API error for ${method} ${this.api.defaults.baseURL}${endpoint}: ${status} - ${errorMsg}`);
+      console.error(`API request failed for ${endpoint}: ${errorMsg}`);
+      console.error(`Could not connect to server.`);
       
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500
+        error: errorMsg,
+        status,
+        data: error.response?.data
       };
     }
   }
   
-  async get<T>(endpoint: string, authRequired: boolean = true): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, 'GET', undefined, authRequired);
+  // Auth functions
+  async login(email: string, password: string): Promise<any> {
+    return this.request('auth/login', 'POST', { email, password });
   }
   
-  async post<T>(endpoint: string, data: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, 'POST', data, authRequired);
+  async register(userData: { email: string; password: string; name?: string }): Promise<any> {
+    return this.request('auth/register', 'POST', userData);
   }
   
-  async put<T>(endpoint: string, data: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, 'PUT', data, authRequired);
+  // Machine functions
+  async getMachineStatus(machineId: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'GET');
   }
   
-  async delete<T>(endpoint: string, data?: any, authRequired: boolean = true): Promise<ApiResponse<T>> {
-    if (data) {
-      return this.request<T>(endpoint, 'DELETE', data, authRequired);
-    }
-    return this.request<T>(endpoint, 'DELETE', undefined, authRequired);
+  async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
   }
   
-  async login(email: string, password: string) {
-    console.log('Attempting login via API for:', email);
-    return this.post<{ token: string, user: any }>(
-      'auth/login', 
-      { email, password },
-      false
-    );
+  // Generic REST methods
+  async get(endpoint: string): Promise<any> {
+    return this.request(endpoint, 'GET');
   }
   
-  async register(userData: any) {
-    console.log('Attempting registration via API for:', userData.email);
-    return this.post<{ token: string, user: any }>(
-      'auth/register', 
-      userData,
-      false
-    );
+  async post(endpoint: string, data: any): Promise<any> {
+    return this.request(endpoint, 'POST', data);
   }
   
-  async checkHealth() {
-    console.log("Checking API health directly");
-    
-    // Try multiple endpoints for health check
-    let healthResponse: ApiResponse<any> = {
-      data: null,
-      error: "Failed to connect to any health endpoints",
-      status: 500
-    };
-    
-    // Try each endpoint directly first
-    for (const baseEndpoint of API_ENDPOINTS) {
-      const healthUrl = baseEndpoint.endsWith('/') 
-        ? `${baseEndpoint}health` 
-        : `${baseEndpoint}/health`;
-      
-      console.log(`Trying health check at: ${healthUrl}`);
-      
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch(healthUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          mode: 'cors',
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          console.log(`Health check successful at ${healthUrl}`);
-          // We found a working endpoint, use it
-          BASE_URL = baseEndpoint;
-          console.log(`Switching to working endpoint: ${BASE_URL}`);
-          
-          // Try to get response data
-          try {
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-              const text = await response.text();
-              const data = text ? JSON.parse(text) : null;
-              
-              return {
-                data: data || { status: 'ok', message: 'Server is available' },
-                error: null,
-                status: response.status
-              };
-            }
-          } catch (e) {
-            console.warn("Could not parse JSON from health check", e);
-          }
-          
-          // Return a success even if we couldn't parse JSON
-          return {
-            data: { status: 'ok', message: 'Server is available' },
-            error: null,
-            status: response.status
-          };
-        }
-      } catch (error) {
-        console.error(`Health check failed for ${healthUrl}:`, error);
-      }
-    }
-    
-    // Fall back to the standard API method
-    return this.get<{ status: string, message: string }>(
-      'health',
-      false
-    );
+  async put(endpoint: string, data: any): Promise<any> {
+    return this.request(endpoint, 'PUT', data);
   }
   
-  async getCurrentUser() {
-    return this.get<any>('users/me');
-  }
-  
-  async updateUser(userId: string, updates: any) {
-    return this.put<any>(`users/${userId}`, updates);
-  }
-  
-  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
-    return this.put<void>(
-      `users/${userId}/password`, 
-      { currentPassword, newPassword }
-    );
-  }
-  
-  async getUserByEmail(email: string) {
-    return this.get<any>(`users/email/${email}`);
-  }
-  
-  async getUserById(userId: string) {
-    return this.get<any>(`users/${userId}`);
-  }
-  
-  async updateProfile(userId: string, updates: any) {
-    console.log(`Updating profile via API with:`, updates);
-    // Don't include userId in the URL as it comes from the token on server side
-    return this.put<{ success: boolean, user: any }>(`auth/profile`, updates);
-  }
-  
-  async addCertification(userId: string, certificationId: string) {
-    console.log(`Adding certification for user ${userId}, machine ${certificationId}`);
-    return this.post<{ success: boolean }>(
-      'certifications', 
-      { userId, machineId: certificationId }
-    );
-  }
-  
-  async removeCertification(userId: string, machineId: string) {
-    console.log(`API: Removing certification for user ${userId}, machine ${machineId}`);
-    return this.delete<{ success: boolean }>(`certifications/${userId}/${machineId}`);
-  }
-
-  async clearCertifications(userId: string) {
-    console.log(`Clearing all certifications for user ${userId}`);
-    return this.delete<{ success: boolean }>(`certifications/user/${userId}/clear`);
-  }
-  
-  async getUserCertifications(userId: string) {
-    return this.get<string[]>(`certifications/user/${userId}`);
-  }
-  
-  async checkCertification(userId: string, machineId: string) {
-    return this.get<boolean>(`certifications/check/${userId}/${machineId}`);
-  }
-  
-  async getAllBookings() {
-    return this.get<any[]>('bookings/all');
-  }
-  
-  async getUserBookings(userId: string) {
-    return this.get<any[]>(`bookings`);
-  }
-  
-  async addBooking(userId: string, machineId: string, date: string, time: string) {
-    return this.post<{ success: boolean }>(
-      'bookings', 
-      { machineId, date, time }
-    );
-  }
-  
-  async updateBookingStatus(bookingId: string, status: string) {
-    console.log(`Updating booking status: ${bookingId} to ${status}`);
-    
-    try {
-      const response = await this.put<any>(
-        `bookings/${bookingId}/status`, 
-        { status }
-      );
-      
-      if (!response.error) {
-        return response;
-      }
-    } catch (error) {
-      console.log(`Error with standard endpoint: ${error}`);
-    }
-    
-    try {
-      return await this.put<any>(
-        `bookings/update-status`, 
-        { bookingId, status }
-      );
-    } catch (error) {
-      console.log(`Error with alternative endpoint: ${error}`);
-      throw error;
-    }
-  }
-  
-  async cancelBooking(bookingId: string) {
-    return this.put<any>(`bookings/${bookingId}/cancel`);
-  }
-  
-  async updateAdminCredentials(email: string, password: string) {
-    return this.put<void>(
-      'admin/credentials', 
-      { email, password }
-    );
-  }
-  
-  async getAllUsers() {
-    return this.get<any[]>('users');
-  }
-  
-  async getMachineStatus(machineId: string) {
-    return this.get<{ status: string, note?: string }>(`machines/${machineId}/status`);
-  }
-  
-  async addSafetyCertification(userId: string) {
-    return this.post<{ success: boolean }>(
-      'certifications/safety', 
-      { userId }
-    );
-  }
-  
-  async removeSafetyCertification(userId: string) {
-    return this.delete<{ success: boolean }>(
-      'certifications/safety', 
-      { userId }
-    );
-  }
-  
-  async updateMachineStatus(machineId: string, status: string, note?: string) {
-    return this.put<{ success: boolean }>(
-      `machines/${machineId}/status`, 
-      { status, maintenanceNote: note }
-    );
-  }
-  
-  async getAllMachines() {
-    return this.get<any[]>('machines');
-  }
-  
-  async getMachineById(machineId: string) {
-    return this.get<any>(`machines/${machineId}`);
-  }
-  
-  async createMachine(machineData: any) {
-    return this.post<any>('machines', machineData);
-  }
-  
-  async updateMachine(machineId: string, machineData: any) {
-    return this.put<any>(`machines/${machineId}`, machineData);
-  }
-  
-  async deleteMachine(machineId: string) {
-    return this.delete<{ success: boolean }>(`machines/${machineId}`);
-  }
-
-  async changePassword(currentPassword: string, newPassword: string) {
-    console.log('Attempting to change password via API');
-    
-    // Ensure we're using the correct endpoint
-    return this.post<{ message: string, success: boolean }>(
-      'auth/change-password', 
-      { currentPassword, newPassword }
-    );
+  async delete(endpoint: string): Promise<any> {
+    return this.request(endpoint, 'DELETE');
   }
 }
 
+// Create a singleton instance
 export const apiService = new ApiService();

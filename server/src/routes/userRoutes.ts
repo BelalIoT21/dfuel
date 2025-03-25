@@ -1,10 +1,13 @@
 
 import express from 'express';
-import { getUsers, getUserById, updateUserProfile, updateUser, changePassword, deleteUser } from '../controllers/userController';
+import { getUsers, getUserById, updateUserProfile, updateUser, changePassword, deleteUser, getCurrentUser } from '../controllers/userController';
 import { protect, admin } from '../middleware/authMiddleware';
 import { body } from 'express-validator';
 
 const router = express.Router();
+
+// Get current user profile
+router.get('/me', protect, getCurrentUser);
 
 // Get all users (admin only)
 router.get('/', protect, admin, getUsers);
