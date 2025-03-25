@@ -13,7 +13,7 @@ export interface IMachine extends mongoose.Document {
   difficulty?: string;
   imageUrl?: string;
   
-  // New fields for enhanced machine information
+  // Enhanced machine information
   details?: string;
   specifications?: string;
   certificationInstructions?: string;
@@ -66,7 +66,7 @@ const machineSchema = new mongoose.Schema<IMachine>(
     imageUrl: {
       type: String,
     },
-    // New fields for enhanced machine information
+    // Enhanced machine information
     details: {
       type: String,
     },

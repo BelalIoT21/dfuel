@@ -60,8 +60,20 @@ const MachineForm: React.FC<MachineFormProps> = ({
           quizDatabaseService.getAllQuizzes()
         ]);
         
-        setCourses(fetchedCourses || []);
-        setQuizzes(fetchedQuizzes || []);
+        // Sort courses and quizzes by ID to ensure they appear in the correct order
+        const sortedCourses = (fetchedCourses || []).sort((a, b) => {
+          return parseInt(a._id || a.id) - parseInt(b._id || b.id);
+        });
+        
+        const sortedQuizzes = (fetchedQuizzes || []).sort((a, b) => {
+          return parseInt(a._id || a.id) - parseInt(b._id || b.id);
+        });
+        
+        setCourses(sortedCourses);
+        setQuizzes(sortedQuizzes);
+        
+        console.log('Fetched courses:', sortedCourses.map(c => `${c._id || c.id}: ${c.title}`));
+        console.log('Fetched quizzes:', sortedQuizzes.map(q => `${q._id || q.id}: ${q.title}`));
       } catch (error) {
         console.error("Error fetching data for machine form:", error);
       } finally {
@@ -84,6 +96,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const handleSwitchChange = (id: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [id]: checked }));
   };
+
+  // Find the matching course for this machine based on ID
+  const suggestedCourse = formData._id && courses.find(course => course._id === formData._id);
+  // Find the matching quiz for this machine based on ID
+  const suggestedQuiz = formData._id && quizzes.find(quiz => quiz._id === formData._id);
 
   return (
     <Card className="mb-6">
@@ -121,8 +138,9 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Machine">Machine</SelectItem>
-                  <SelectItem value="Cutting">Cutting</SelectItem>
-                  <SelectItem value="Printing">Printing</SelectItem>
+                  <SelectItem value="Laser Cutter">Laser Cutter</SelectItem>
+                  <SelectItem value="3D Printer">3D Printer</SelectItem>
+                  <SelectItem value="CNC">CNC</SelectItem>
                   <SelectItem value="Electronics">Electronics</SelectItem>
                   <SelectItem value="Woodworking">Woodworking</SelectItem>
                   <SelectItem value="Metalworking">Metalworking</SelectItem>
@@ -252,11 +270,15 @@ const MachineForm: React.FC<MachineFormProps> = ({
                       {courses.map((course) => (
                         <SelectItem key={course._id || course.id} value={course._id || course.id}>
                           {course.title}
+                          {suggestedCourse && suggestedCourse._id === (course._id || course.id) ? " (Recommended)" : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">Select the safety course for this machine</p>
+                  <p className="text-xs text-gray-500">
+                    {suggestedCourse && !formData.linkedCourseId && 
+                     `Recommended course: ${suggestedCourse.title}`}
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -273,11 +295,15 @@ const MachineForm: React.FC<MachineFormProps> = ({
                       {quizzes.map((quiz) => (
                         <SelectItem key={quiz._id || quiz.id} value={quiz._id || quiz.id}>
                           {quiz.title}
+                          {suggestedQuiz && suggestedQuiz._id === (quiz._id || quiz.id) ? " (Recommended)" : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-gray-500">Select the certification quiz for this machine</p>
+                  <p className="text-xs text-gray-500">
+                    {suggestedQuiz && !formData.linkedQuizId && 
+                     `Recommended quiz: ${suggestedQuiz.title}`}
+                  </p>
                 </div>
               </>
             )}

@@ -1,4 +1,3 @@
-
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
@@ -74,36 +73,47 @@ async function seedCourses() {
     const courses = [
       {
         _id: '1',
-        title: 'Laser Cutting Basics',
-        description: 'Learn the fundamentals of laser cutting technology.',
+        title: 'Laser Cutter Safety Course',
+        description: 'Learn the fundamentals of laser cutting technology and safety protocols.',
         category: 'Fabrication',
-        content: '# Laser Cutting Basics\n\nWelcome to the Laser Cutting Basics course. This course will introduce you to the fundamental concepts of laser cutting.\n\n## Safety First\n\nBefore operating any laser cutting equipment, it\'s essential to understand the safety procedures.\n\n## Materials\n\nDifferent materials react differently to laser cutting. In this section, we\'ll explore various materials and their properties.',
+        content: '# Laser Cutter Safety Course\n\nWelcome to the Laser Cutter Safety Course. This course will introduce you to the fundamental concepts of laser cutting and important safety procedures.\n\n## Safety First\n\nBefore operating the laser cutter, it\'s essential to understand the safety procedures.\n\n## Materials\n\nDifferent materials react differently to laser cutting. In this section, we\'ll explore various materials and their properties.',
         imageUrl: '/courses/laser-cutting.jpg',
         relatedMachineIds: ['1'],
         quizId: '1',
-        difficulty: 'Beginner'
+        difficulty: 'Intermediate'
       },
       {
         _id: '2',
-        title: '3D Printing Fundamentals',
-        description: 'Get started with 3D printing technology.',
+        title: 'Ultimaker 3D Printer Course',
+        description: 'Get started with Ultimaker 3D printing technology.',
         category: 'Fabrication',
-        content: '# 3D Printing Fundamentals\n\nWelcome to the 3D Printing Fundamentals course. This course will introduce you to the exciting world of 3D printing.\n\n## What is 3D Printing?\n\n3D printing, also known as additive manufacturing, is a process of making three dimensional solid objects from a digital file.\n\n## Common Technologies\n\nThere are several technologies used in 3D printing, including FDM, SLA, and SLS.',
+        content: '# Ultimaker 3D Printer Course\n\nWelcome to the Ultimaker 3D Printer Course. This course will introduce you to the exciting world of 3D printing with the Ultimaker.\n\n## What is 3D Printing?\n\n3D printing, also known as additive manufacturing, is a process of making three dimensional solid objects from a digital file.\n\n## Common Technologies\n\nThe Ultimaker uses FDM (Fused Deposition Modeling) technology to create precise and reliable prints.',
         imageUrl: '/courses/3d-printing.jpg',
-        relatedMachineIds: ['2', '3', '4'],
+        relatedMachineIds: ['2'],
         quizId: '2',
         difficulty: 'Beginner'
       },
       {
         _id: '3',
-        title: 'Makerspace Safety',
-        description: 'Essential safety protocols for makerspace environments.',
-        category: 'Safety',
-        content: '# Makerspace Safety\n\nWelcome to the Makerspace Safety course. This course covers essential safety protocols that all makerspace users must follow.\n\n## General Safety Guidelines\n\nAlways wear appropriate personal protective equipment (PPE) when working with machinery or chemicals.\n\n## Emergency Procedures\n\nKnow the location of fire extinguishers, first aid kits, and emergency exits.',
-        imageUrl: '/courses/safety.jpg',
-        relatedMachineIds: ['5', '6'],
+        title: 'X1 E Carbon 3D Printer Training',
+        description: 'Advanced training for the X1 E Carbon 3D Printer.',
+        category: 'Fabrication',
+        content: '# X1 E Carbon 3D Printer Training\n\nWelcome to the X1 E Carbon 3D Printer training course. This advanced 3D printer offers exceptional capabilities for creating high-strength parts with carbon fiber materials.\n\n## Carbon Fiber Printing\n\nLearn how to work with carbon fiber reinforced materials for maximum strength and durability.\n\n## Advanced Settings\n\nMaster the specialized settings required for optimal printing results with the X1 E Carbon.',
+        imageUrl: '/courses/carbon-3d.jpg',
+        relatedMachineIds: ['3'],
         quizId: '3',
-        difficulty: 'Beginner'
+        difficulty: 'Advanced'
+      },
+      {
+        _id: '4',
+        title: 'Bambu Lab X1 E Course',
+        description: 'Complete guide to using the Bambu Lab X1 E 3D printer.',
+        category: 'Fabrication',
+        content: '# Bambu Lab X1 E Course\n\nWelcome to the Bambu Lab X1 E Course. This comprehensive guide will teach you how to get the most out of your Bambu Lab X1 E 3D printer.\n\n## High-Speed Printing\n\nLearn how to utilize the X1 E\'s impressive 500mm/s print speeds while maintaining quality.\n\n## Multi-Material Printing\n\nMaster the art of printing with multiple materials in a single print job using the Bambu Lab X1 E.',
+        imageUrl: '/courses/bambu-lab.jpg',
+        relatedMachineIds: ['4'],
+        quizId: '4',
+        difficulty: 'Intermediate'
       }
     ];
 
@@ -156,8 +166,8 @@ async function seedQuizzes() {
       },
       {
         _id: '2',
-        title: '3D Printing Knowledge Check',
-        description: 'Verify your understanding of 3D printing concepts and best practices.',
+        title: 'Ultimaker Certification Quiz',
+        description: 'Verify your understanding of Ultimaker 3D printing concepts and best practices.',
         category: 'Fabrication',
         imageUrl: '/quizzes/3d-printing-quiz.jpg',
         questions: [
@@ -165,56 +175,87 @@ async function seedQuizzes() {
             question: 'What does FDM stand for in 3D printing?',
             options: ['Fast Deposition Method', 'Fused Deposition Modeling', 'Filament Direct Manufacturing', 'Final Design Model'],
             correctAnswer: 1,
-            explanation: 'FDM stands for Fused Deposition Modeling, which is a common 3D printing technology.'
+            explanation: 'FDM stands for Fused Deposition Modeling, which is the technology used by Ultimaker 3D printers.'
           },
           {
-            question: 'Which material is most commonly used in FDM 3D printing?',
+            question: 'Which material is most commonly used with Ultimaker printers?',
             options: ['Resin', 'Metal powder', 'PLA/ABS filament', 'Clay'],
             correctAnswer: 2,
-            explanation: 'PLA and ABS filaments are the most commonly used materials in FDM 3D printing.'
+            explanation: 'PLA and ABS filaments are the most commonly used materials in Ultimaker 3D printers.'
           },
           {
-            question: 'What is the purpose of a heated bed on a 3D printer?',
+            question: 'What is the purpose of a heated bed on the Ultimaker?',
             options: ['To speed up printing', 'To prevent warping', 'To melt the filament', 'To sterilize the print area'],
             correctAnswer: 1,
             explanation: 'A heated bed helps prevent warping by keeping the first layers of a print warm during the printing process.'
           }
         ],
         passingScore: 70,
-        relatedMachineIds: ['2', '3', '4'],
+        relatedMachineIds: ['2'],
         relatedCourseId: '2',
-        difficulty: 'Intermediate'
+        difficulty: 'Beginner'
       },
       {
         _id: '3',
-        title: 'General Safety Quiz',
-        description: 'Test your knowledge of general makerspace safety.',
-        category: 'Safety',
-        imageUrl: '/quizzes/safety-quiz.jpg',
+        title: 'X1 E Carbon 3D Printer Certification',
+        description: 'Advanced certification for carbon fiber 3D printing.',
+        category: 'Fabrication',
+        imageUrl: '/quizzes/carbon-quiz.jpg',
         questions: [
           {
-            question: 'What should you do if you witness an accident in the makerspace?',
-            options: ['Ignore it if it\'s minor', 'Take a photo first', 'Alert staff immediately', 'Try to fix the problem yourself'],
+            question: 'What is the primary advantage of carbon fiber reinforcement in 3D printing?',
+            options: ['Decreased weight', 'Increased strength', 'Lower cost', 'Faster printing'],
+            correctAnswer: 1,
+            explanation: 'Carbon fiber reinforcement significantly increases the strength and stiffness of printed parts.'
+          },
+          {
+            question: 'What temperature range is typically used for printing carbon fiber materials?',
+            options: ['180-200°C', '220-240°C', '250-280°C', '300-350°C'],
             correctAnswer: 2,
-            explanation: 'Always alert staff immediately if you witness an accident, regardless of severity.'
+            explanation: 'Carbon fiber reinforced materials typically require higher temperatures in the 250-280°C range.'
           },
           {
-            question: 'When is it acceptable to wear loose clothing while operating machinery?',
-            options: ['When it\'s hot in the makerspace', 'When you\'re careful', 'When using non-rotating equipment only', 'Never'],
+            question: 'What special hardware feature does the X1 E Carbon printer have?',
+            options: ['Dual extruders', 'Hardened steel nozzle', 'Enclosed chamber', 'All of the above'],
             correctAnswer: 3,
-            explanation: 'It is never acceptable to wear loose clothing when operating machinery as it can get caught in moving parts.'
-          },
-          {
-            question: 'What is the first step when using a new piece of equipment?',
-            options: ['Ask for training from staff', 'Read the manual online', 'Watch YouTube tutorials', 'Try it out carefully'],
-            correctAnswer: 0,
-            explanation: 'Always ask for proper training from staff before using any new equipment.'
+            explanation: 'The X1 E Carbon has all these features to properly handle abrasive carbon fiber materials.'
           }
         ],
-        passingScore: 100, // Safety quiz requires perfect score
-        relatedMachineIds: ['5', '6'],
+        passingScore: 80,
+        relatedMachineIds: ['3'],
         relatedCourseId: '3',
-        difficulty: 'Beginner'
+        difficulty: 'Advanced'
+      },
+      {
+        _id: '4',
+        title: 'Bambu Lab X1 E Certification Quiz',
+        description: 'Test your knowledge of the Bambu Lab X1 E 3D printer.',
+        category: 'Fabrication',
+        imageUrl: '/quizzes/bambu-quiz.jpg',
+        questions: [
+          {
+            question: 'What is the maximum print speed of the Bambu Lab X1 E?',
+            options: ['100 mm/s', '250 mm/s', '500 mm/s', '1000 mm/s'],
+            correctAnswer: 2,
+            explanation: 'The Bambu Lab X1 E can print at speeds up to 500 mm/s.'
+          },
+          {
+            question: 'What type of printer architecture does the Bambu Lab X1 E use?',
+            options: ['Delta', 'Cartesian', 'Core XY', 'Polar'],
+            correctAnswer: 2,
+            explanation: 'The Bambu Lab X1 E uses a Core XY architecture for faster and more precise movements.'
+          },
+          {
+            question: 'What special feature helps with multi-material printing on the Bambu Lab X1 E?',
+            options: ['Dual extruders', 'AMS (Automatic Material System)', 'Tool changing', 'Manual filament switching'],
+            correctAnswer: 1,
+            explanation: 'The AMS (Automatic Material System) allows the Bambu Lab X1 E to print with multiple materials automatically.'
+          }
+        ],
+        passingScore: 75,
+        relatedMachineIds: ['4'],
+        relatedCourseId: '4',
+        difficulty: 'Intermediate'
       }
     ];
 
@@ -230,7 +271,7 @@ async function seedQuizzes() {
   }
 }
 
-// New function to ensure machine order
+// Helper function to ensure machine order
 async function ensureMachineOrder() {
   try {
     console.log('Ensuring machines are in correct order...');
@@ -409,6 +450,8 @@ type MachineTemplate = {
   difficulty: string;
   imageUrl: string;
   specifications: string;
+  linkedCourseId?: string;
+  linkedQuizId?: string;
 };
 
 // Define the machine templates record
@@ -429,6 +472,8 @@ async function seedMissingMachines(missingIds: string[]) {
       difficulty: 'Intermediate',
       imageUrl: '/machines/laser-cutter.jpg',
       specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
+      linkedCourseId: '1',
+      linkedQuizId: '1'
     },
     '2': {
       _id: '2',
@@ -437,20 +482,24 @@ async function seedMissingMachines(missingIds: string[]) {
       description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
       status: 'Available',
       requiresCertification: true,
-      difficulty: 'Intermediate',
+      difficulty: 'Beginner',
       imageUrl: '/machines/3d-printer.jpg',
       specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
+      linkedCourseId: '2',
+      linkedQuizId: '2'
     },
     '3': {
       _id: '3',
       name: 'X1 E Carbon 3D Printer',
       type: '3D Printer',
-      description: 'High-speed multi-material 3D printer with exceptional print quality.',
+      description: 'High-speed multi-material 3D printer with carbon fiber capabilities.',
       status: 'Available',
       requiresCertification: true,
-      difficulty: 'Intermediate',
-      imageUrl: '/machines/bambu-printer.jpg',
-      specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
+      difficulty: 'Advanced',
+      imageUrl: '/machines/carbon-3d.jpg',
+      specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS, Carbon Fiber',
+      linkedCourseId: '3',
+      linkedQuizId: '3'
     },
     '4': {
       _id: '4',
@@ -459,9 +508,11 @@ async function seedMissingMachines(missingIds: string[]) {
       description: 'Next-generation 3D printing technology with advanced features.',
       status: 'Available',
       requiresCertification: true,
-      difficulty: 'Advanced',
-      imageUrl: '/machines/cnc-mill.jpg',
-      specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
+      difficulty: 'Intermediate',
+      imageUrl: '/machines/bambu-printer.jpg',
+      specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS, PC',
+      linkedCourseId: '4',
+      linkedQuizId: '4'
     },
     '5': {
       _id: '5',
@@ -469,10 +520,10 @@ async function seedMissingMachines(missingIds: string[]) {
       type: 'Safety Equipment',
       description: 'Store hazardous materials safely.',
       status: 'Available',
-      requiresCertification: true,
+      requiresCertification: false,
       difficulty: 'Basic',
       imageUrl: '/machines/safety-cabinet.jpg',
-      specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
+      specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours'
     },
     '6': {
       _id: '6',
@@ -483,7 +534,7 @@ async function seedMissingMachines(missingIds: string[]) {
       requiresCertification: false,
       difficulty: 'Basic',
       imageUrl: '/machines/safety-course.jpg',
-      specifications: 'Duration: 1 hour, Required for all makerspace users',
+      specifications: 'Duration: 1 hour, Required for all makerspace users'
     },
   };
   

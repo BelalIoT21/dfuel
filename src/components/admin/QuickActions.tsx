@@ -5,42 +5,42 @@ import { Link } from "react-router-dom";
 
 export function QuickActions() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <h2 className="text-xl font-semibold">Quick Actions</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Button variant="outline" asChild className="justify-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/users">
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="mr-3 h-5 w-5" />
             Manage Users
           </Link>
         </Button>
-        <Button variant="outline" asChild className="justify-start">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/machines">
-            <Building2 className="mr-2 h-4 w-4" />
+            <Building2 className="mr-3 h-5 w-5" />
             Manage Machines
           </Link>
         </Button>
-        <Button variant="outline" asChild className="justify-start">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/courses">
-            <BookOpen className="mr-2 h-4 w-4" />
+            <BookOpen className="mr-3 h-5 w-5" />
             Manage Courses
           </Link>
         </Button>
-        <Button variant="outline" asChild className="justify-start">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/quizzes">
-            <CheckSquare className="mr-2 h-4 w-4" />
+            <CheckSquare className="mr-3 h-5 w-5" />
             Manage Quizzes
           </Link>
         </Button>
-        <Button variant="outline" asChild className="justify-start">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/machines/new">
-            <Cog className="mr-2 h-4 w-4" />
+            <Cog className="mr-3 h-5 w-5" />
             Add Machine
           </Link>
         </Button>
-        <Button variant="outline" asChild className="justify-start">
+        <Button variant="outline" asChild className="justify-start h-12">
           <Link to="/admin/courses/new">
-            <GraduationCap className="mr-2 h-4 w-4" />
+            <GraduationCap className="mr-3 h-5 w-5" />
             Add Course
           </Link>
         </Button>
