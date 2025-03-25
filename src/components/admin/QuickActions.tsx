@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Building2, GraduationCap, CheckSquare, Users, BookOpen, Cog } from "lucide-react";
+import { Building2, CheckSquare, Users, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function QuickActions() {
@@ -30,18 +30,6 @@ export function QuickActions() {
           <Link to="/admin/quizzes">
             <CheckSquare className="mr-3 h-5 w-5" />
             Manage Quizzes
-          </Link>
-        </Button>
-        <Button variant="outline" asChild className="justify-start h-12">
-          <Link to="/admin/machines/new">
-            <Cog className="mr-3 h-5 w-5" />
-            Add Machine
-          </Link>
-        </Button>
-        <Button variant="outline" asChild className="justify-start h-12">
-          <Link to="/admin/courses/new">
-            <GraduationCap className="mr-3 h-5 w-5" />
-            Add Course
           </Link>
         </Button>
       </div>

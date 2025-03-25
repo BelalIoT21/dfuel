@@ -34,6 +34,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -65,11 +66,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     if (!validateForm()) return;
     
     try {
+      setIsSubmitting(true);
       await onLogin(email, password);
       console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError('Authentication failed. Please try again.');
+      setFormError('Invalid email or password. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -125,8 +129,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
             </Button>
           </motion.div>
         </motion.form>

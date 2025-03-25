@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -27,12 +26,7 @@ export const useAuthFunctions = (
       // Handle API errors
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
-        toast({
-          title: "Login failed",
-          description: apiResponse.error,
-          variant: "destructive"
-        });
-        return false;
+        throw new Error(apiResponse.error);
       }
   
       // Validate the response structure
@@ -42,12 +36,7 @@ export const useAuthFunctions = (
   
       if (!userData || !userData._id || !userData.name || !userData.email || !token) {
         console.error("API response is missing required fields:", apiResponse);
-        toast({
-          title: "Login failed",
-          description: "The server returned incomplete data. Please try again.",
-          variant: "destructive"
-        });
-        return false;
+        throw new Error("The server returned incomplete data. Please try again.");
       }
   
       // Ensure certifications are properly set and always an array
@@ -87,10 +76,10 @@ export const useAuthFunctions = (
       console.error("Error during login:", error);
       toast({
         title: "Login failed",
-        description: "An unexpected error occurred. MongoDB server may be unavailable.",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive"
       });
-      return false;
+      throw error; // Re-throw to be caught by the login form
     } finally {
       setIsLoading(false);
     }
