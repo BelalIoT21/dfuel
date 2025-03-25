@@ -73,7 +73,7 @@ const AdminDashboardScreen = ({ navigation }) => {
       <Card style={styles.card}>
         <Card.Content>
           <Title style={styles.cardTitle}>Quick Actions</Title>
-          <View style={styles.buttonContainer}>
+          <View style={styles.buttonGrid}>
             <Button 
               mode="contained" 
               style={styles.actionButton}
@@ -87,6 +87,20 @@ const AdminDashboardScreen = ({ navigation }) => {
               onPress={() => navigateToScreen('AdminMachines')}
             >
               Manage Machines
+            </Button>
+            <Button 
+              mode="contained" 
+              style={styles.actionButton}
+              onPress={() => navigateToScreen('AdminCourses')}
+            >
+              Manage Courses
+            </Button>
+            <Button 
+              mode="contained" 
+              style={styles.actionButton}
+              onPress={() => navigateToScreen('AdminQuizzes')}
+            >
+              Manage Quizzes
             </Button>
           </View>
         </Card.Content>
@@ -185,11 +199,16 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     marginBottom: 12,
   },
-  buttonContainer: {
-    gap: 8,
+  buttonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   actionButton: {
-    marginVertical: 4,
+    flex: 1,
+    minWidth: '48%',
+    marginVertical: 6,
     backgroundColor: '#7c3aed',
   },
 });

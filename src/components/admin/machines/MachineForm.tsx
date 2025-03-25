@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { courseDatabaseService } from '@/services/database/courseService';
+import { quizDatabaseService } from '@/services/database/quizService';
 
 export interface MachineFormData {
   name: string;
@@ -44,6 +47,31 @@ const MachineForm: React.FC<MachineFormProps> = ({
   description,
   submitLabel,
 }) => {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [fetchedCourses, fetchedQuizzes] = await Promise.all([
+          courseDatabaseService.getAllCourses(),
+          quizDatabaseService.getAllQuizzes()
+        ]);
+        
+        setCourses(fetchedCourses || []);
+        setQuizzes(fetchedQuizzes || []);
+      } catch (error) {
+        console.error("Error fetching data for machine form:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -203,27 +231,56 @@ const MachineForm: React.FC<MachineFormProps> = ({
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="linkedCourseId">Linked Course ID</Label>
-              <Input
-                id="linkedCourseId"
-                value={formData.linkedCourseId || ''}
-                onChange={handleInputChange}
-                placeholder="Enter linked course ID"
-              />
-              <p className="text-xs text-gray-500">Enter the ID of the safety course for this machine</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="linkedQuizId">Linked Quiz ID</Label>
-              <Input
-                id="linkedQuizId"
-                value={formData.linkedQuizId || ''}
-                onChange={handleInputChange}
-                placeholder="Enter linked quiz ID"
-              />
-              <p className="text-xs text-gray-500">Enter the ID of the certification quiz for this machine</p>
-            </div>
+            {loading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-gray-500">Loading courses and quizzes...</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
+                  <Select
+                    value={formData.linkedCourseId || "none"}
+                    onValueChange={(value) => handleSelectChange('linkedCourseId', value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a course (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {courses.map((course) => (
+                        <SelectItem key={course._id || course.id} value={course._id || course.id}>
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">Select the safety course for this machine</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
+                  <Select
+                    value={formData.linkedQuizId || "none"}
+                    onValueChange={(value) => handleSelectChange('linkedQuizId', value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a quiz (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {quizzes.map((quiz) => (
+                        <SelectItem key={quiz._id || quiz.id} value={quiz._id || quiz.id}>
+                          {quiz.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">Select the certification quiz for this machine</p>
+                </div>
+              </>
+            )}
           </TabsContent>
         </Tabs>
         
