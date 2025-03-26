@@ -194,7 +194,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/utils/images/IMG_7814.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
       specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
       linkedCourseId: '1',  // Added course ID
       linkedQuizId: '1'     // Added quiz ID
@@ -207,7 +207,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/utils/images/IMG_7773.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
       specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
       linkedCourseId: '2',  // Added course ID
       linkedQuizId: '2'     // Added quiz ID
@@ -220,7 +220,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/utils/images/IMG_7768.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7768.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
       linkedCourseId: '3',  // Added course ID
       linkedQuizId: '3'     // Added quiz ID
@@ -233,7 +233,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Advanced',
-      imageUrl: '/utils/images/IMG_7769.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7769.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
       linkedCourseId: '4',  // Added course ID
       linkedQuizId: '4'     // Added quiz ID
@@ -246,7 +246,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Basic',
-      imageUrl: '/utils/images/IMG_7775.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7775.jpg',
       specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
       linkedCourseId: '5',  // Added course ID
       linkedQuizId: '5'     // Added quiz ID
@@ -259,7 +259,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/utils/images/IMG_7821.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
       specifications: 'Duration: 1 hour, Required for all makerspace users',
       linkedCourseId: '6',  // Added course ID
       linkedQuizId: '6'     // Added quiz ID
