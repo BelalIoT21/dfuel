@@ -69,10 +69,22 @@ class MongoQuizService {
     }
     
     try {
-      // If no _id is provided, generate one based on the count of quizzes
+      // Generate appropriate ID
       if (!quiz._id) {
-        const count = await this.quizzesCollection.countDocuments();
-        quiz._id = String(count + 100); // Start from 100 to avoid conflicts with default IDs
+        // Get all existing quizzes
+        const existingQuizzes = await this.quizzesCollection.find({}, { projection: { _id: 1 } }).toArray();
+        
+        // Extract numeric IDs
+        const numericIds = existingQuizzes
+          .map(q => q._id)
+          .filter(id => /^\d+$/.test(id))
+          .map(id => parseInt(id));
+        
+        // Find the highest numeric ID, defaulting to 4 if none found
+        const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
+        
+        // New ID should be the highest + 1, starting at least from 5
+        quiz._id = String(Math.max(highestId + 1, 5));
       }
       
       console.log(`Adding new quiz to MongoDB: ${quiz.title} (ID: ${quiz._id})`);

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -46,74 +47,89 @@ const Quiz = () => {
         
         console.log(`Fetching quiz data for ID: ${id}`);
         
-        // Check if the ID is for a quiz directly
+        // Try to get the quiz directly first
         try {
           const quizData = await quizDatabaseService.getQuizById(id);
           
-          if (quizData && quizData.questions && quizData.questions.length > 0) {
+          if (quizData && quizData._id) {
             console.log('Retrieved quiz data directly:', quizData);
             setQuiz(quizData);
-            setQuestions(quizData.questions);
-            setAnswers(new Array(quizData.questions.length).fill(-1));
             
-            // Try to find the machine that links to this quiz
-            const allMachines = await machineService.getAllMachines();
-            const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
-            if (linkedMachine) {
-              setMachine(linkedMachine);
-              setMachineId(linkedMachine.id || linkedMachine._id);
+            if (quizData.questions && quizData.questions.length > 0) {
+              setQuestions(quizData.questions);
+              setAnswers(new Array(quizData.questions.length).fill(-1));
+              
+              // Try to find the machine that links to this quiz
+              try {
+                const allMachines = await machineService.getAllMachines();
+                const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
+                if (linkedMachine) {
+                  setMachine(linkedMachine);
+                  setMachineId(linkedMachine.id || linkedMachine._id);
+                  console.log('Found linked machine:', linkedMachine.name);
+                }
+              } catch (err) {
+                console.error('Error finding linked machine:', err);
+                // Continue anyway since we have the quiz
+              }
+              
+              setLoading(false);
+              return;
+            } else {
+              console.log('Quiz found but has no questions');
+              setError('This quiz has no questions.');
             }
-            
-            setLoading(false);
-            return;
           }
         } catch (err) {
-          console.log('Not a direct quiz ID, trying machine lookup');
+          console.log('Error fetching quiz directly:', err);
           // Continue with machine lookup
         }
         
         // If not a direct quiz ID, try to get the machine and its linked quiz
-        const machineData = await machineService.getMachineById(id);
-        
-        if (!machineData) {
-          console.error(`Machine or quiz with ID ${id} not found`);
-          setError('Quiz not found');
-          setLoading(false);
-          return;
-        }
-        
-        console.log('Retrieved machine data:', machineData);
-        setMachine(machineData);
-        setMachineId(machineData.id || machineData._id || id);
+        try {
+          const machineData = await machineService.getMachineById(id);
+          
+          if (machineData && machineData._id) {
+            console.log('Retrieved machine data:', machineData);
+            setMachine(machineData);
+            setMachineId(machineData.id || machineData._id || id);
 
-        // Check if the machine has a linked quiz
-        if (machineData.linkedQuizId) {
-          try {
-            console.log(`Machine has linked quiz: ${machineData.linkedQuizId}`);
-            const quizData = await quizDatabaseService.getQuizById(machineData.linkedQuizId);
-            
-            if (quizData && quizData.questions && quizData.questions.length > 0) {
-              console.log('Retrieved linked quiz data:', quizData);
-              setQuiz(quizData);
-              setQuestions(quizData.questions);
-              setAnswers(new Array(quizData.questions.length).fill(-1));
-              setLoading(false);
-              return;
+            // Check if the machine has a linked quiz
+            if (machineData.linkedQuizId) {
+              try {
+                console.log(`Machine has linked quiz: ${machineData.linkedQuizId}`);
+                const quizData = await quizDatabaseService.getQuizById(machineData.linkedQuizId);
+                
+                if (quizData && quizData.questions && quizData.questions.length > 0) {
+                  console.log('Retrieved linked quiz data:', quizData);
+                  setQuiz(quizData);
+                  setQuestions(quizData.questions);
+                  setAnswers(new Array(quizData.questions.length).fill(-1));
+                  setLoading(false);
+                  return;
+                } else {
+                  console.log('Linked quiz has no questions or could not be loaded');
+                  setError('This machine has a linked quiz, but it has no questions.');
+                }
+              } catch (err) {
+                console.error('Error fetching linked quiz:', err);
+                setError('Error loading the quiz for this machine.');
+              }
             } else {
-              console.log('Linked quiz has no questions or could not be loaded');
+              console.log('Machine has no linked quiz ID');
+              setError('This machine does not have a quiz associated with it.');
             }
-          } catch (err) {
-            console.error('Error fetching linked quiz:', err);
+          } else {
+            console.log('Machine not found or incomplete data');
+            setError('Could not find a machine or quiz with this ID.');
           }
-        } else {
-          console.log('Machine has no linked quiz ID');
+        } catch (err) {
+          console.error('Error fetching machine:', err);
+          setError('Could not find a machine or quiz with this ID.');
         }
-        
-        // Set error if we couldn't load any quiz
-        setError('No quiz available for this machine or ID');
       } catch (err) {
         console.error('Error fetching quiz data:', err);
-        setError('Failed to load quiz');
+        setError('Failed to load quiz.');
       } finally {
         setLoading(false);
       }

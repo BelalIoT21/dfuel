@@ -63,9 +63,20 @@ export const createQuiz = async (req: Request, res: Response) => {
       }
     }
 
-    // Generate a new ID based on the count of quizzes + 100 (to avoid conflicts with default IDs)
-    const count = await Quiz.countDocuments();
-    const newId = String(count + 100);
+    // Get existing quiz IDs and find the highest numeric ID
+    const existingQuizzes = await Quiz.find({}, '_id');
+    const numericIds = existingQuizzes
+      .map(quiz => quiz._id)
+      .filter(id => /^\d+$/.test(id))
+      .map(id => parseInt(id));
+    
+    // Find the highest numeric ID, default to 4 if none found
+    const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
+    
+    // New ID should be the highest + 1, starting at least from 5
+    const newId = String(Math.max(highestId + 1, 5));
+    
+    console.log(`Creating new quiz with ID: ${newId}`);
 
     const quiz = new Quiz({
       _id: newId,
