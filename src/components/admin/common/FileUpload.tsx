@@ -52,6 +52,9 @@ const FileUpload = ({
     
     setLoading(true);
     try {
+      // Display file size for debugging
+      console.log(`Processing file: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      
       // Get base data URL
       const dataUrl = await fileToDataUrl(file);
       
@@ -67,6 +70,12 @@ const FileUpload = ({
           title: "Large File",
           description: "This file is quite large. Processing might take longer than usual.",
           duration: 5000
+        });
+      } else {
+        toast({
+          title: "File Uploaded",
+          description: `Successfully processed ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+          duration: 3000
         });
       }
     } catch (error) {

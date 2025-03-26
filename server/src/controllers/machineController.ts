@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -27,7 +26,7 @@ export const getMachines = async (req: Request, res: Response) => {
     const machines = await Machine.find(query);
     console.log(`Retrieved ${machines.length} machines${filterSpecial ? ' (filtered)' : ''}`);
     
-    // Normalize status field for all machines before sending response
+    // Normalize status field and ensure image URLs are consistent
     const normalizedMachines = machines.map(machine => {
       // Clone the document to avoid modifying the original
       const machineObj = machine.toObject();
@@ -43,10 +42,21 @@ export const getMachines = async (req: Request, res: Response) => {
         return 'available'; // Default status
       })();
       
-      // Return a new object with the normalized client status
+      // Normalize image URL - ensure it's consistent for all client views
+      let imageUrl = machineObj.imageUrl || '';
+      
+      // If image URL is not empty, ensure it has a leading slash
+      if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+        imageUrl = '/' + imageUrl;
+      }
+      
+      // Return a new object with normalized fields
       return {
         ...machineObj,
-        status: clientStatus
+        status: clientStatus,
+        imageUrl: imageUrl,
+        // Add image property for compatibility with components expecting 'image'
+        image: imageUrl
       };
     });
     
@@ -155,6 +165,12 @@ export const createMachine = async (req: Request, res: Response) => {
       linkedQuizId = ''
     } = req.body;
 
+    // Normalize image URL
+    let normalizedImageUrl = imageUrl;
+    if (normalizedImageUrl && !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {
+      normalizedImageUrl = '/' + normalizedImageUrl;
+    }
+
     // Generate the next available ID (starting from 7)
     // Find the highest current machine ID
     const machines = await Machine.find({}, '_id').sort({ _id: -1 });
@@ -182,7 +198,7 @@ export const createMachine = async (req: Request, res: Response) => {
       status,
       requiresCertification,
       difficulty,
-      imageUrl,
+      imageUrl: normalizedImageUrl,
       specifications,
       details,
       certificationInstructions,
@@ -194,7 +210,13 @@ export const createMachine = async (req: Request, res: Response) => {
     const createdMachine = await machine.save();
     console.log(`Created new machine: ${name} with ID: ${createdMachine._id}`);
 
-    res.status(201).json(createdMachine);
+    // Add image property for frontend compatibility
+    const machineWithImage = {
+      ...createdMachine.toObject(),
+      image: normalizedImageUrl
+    };
+
+    res.status(201).json(machineWithImage);
   } catch (error) {
     console.error('Error in createMachine:', error);
     res.status(500).json({ 

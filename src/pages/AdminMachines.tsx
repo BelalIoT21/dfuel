@@ -30,6 +30,13 @@ const AdminMachines = () => {
           const filteredMachines = fetchedMachines.filter(machine => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
+          }).map(machine => {
+            // Ensure machine has both imageUrl and image properties
+            return {
+              ...machine,
+              imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
+              image: machine.image || machine.imageUrl || '/placeholder.svg'
+            };
           });
           console.log("Filtered machines:", filteredMachines);
           setMachinesList(filteredMachines);
@@ -175,14 +182,20 @@ const AdminMachines = () => {
                 filteredMachines.map((machine) => {
                   // Ensure we're using the correct ID
                   const machineId = machine.id || machine._id;
+                  // Ensure we have a consistent image URL
+                  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+                  
                   return (
                     <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
                       <div className="flex-shrink-0 w-full md:w-1/4">
                         <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                           <img
-                            src={machine.imageUrl || machine.image || '/placeholder.svg'}
+                            src={imageUrl}
                             alt={machine.name}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
                           />
                         </div>
                       </div>
