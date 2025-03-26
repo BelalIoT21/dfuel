@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -178,6 +179,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
+  // Fix: Changed onFileSelect to onFileChange to match the FileUpload component API
   const handleImageChange = (dataUrl: string | null) => {
     console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl?.length} bytes]` : 'null');
     if (dataUrl) {
@@ -393,9 +395,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
                     />
                   </div>
                 )}
+                {/* Fix: Changed onFileSelect to onFileChange to match the FileUpload component API */}
                 <FileUpload 
                   id="image"
-                  onFileSelect={handleImageChange}
+                  onFileChange={handleImageChange}
+                  existingUrl={formData.imageUrl}
                   accept="image/*"
                   maxSizeMB={5}
                   label="Upload Machine Image"
