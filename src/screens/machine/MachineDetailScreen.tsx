@@ -75,12 +75,18 @@ const MachineDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  // Modified to always go back to the home screen
+  const handleGoBack = () => {
+    // Always go back to the Home screen
+    navigation.navigate('Home');
+  };
+
   if (loading) {
     return <LoadingState />;
   }
 
   if (!machine) {
-    return <ErrorState onGoBack={() => navigation.goBack()} />;
+    return <ErrorState onGoBack={handleGoBack} />;
   }
 
   // Check if machine requires certification - default to true if not specified
@@ -112,6 +118,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
           hasMachineSafetyCert={hasMachineSafetyCert}
           userId={userId}
           requiresCertification={requiresCertification}
+          onGoBack={handleGoBack} // Pass the new handler
         />
       </View>
     </ScrollView>

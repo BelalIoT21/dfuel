@@ -9,24 +9,42 @@ interface ErrorStateProps {
 
 const ErrorState = ({ onGoBack }: ErrorStateProps) => {
   return (
-    <View style={styles.errorContainer}>
-      <Text style={styles.errorText}>Machine not found</Text>
-      <Button mode="contained" onPress={onGoBack}>Go Back</Button>
+    <View style={styles.container}>
+      <Text style={styles.errorTitle}>Error</Text>
+      <Text style={styles.errorMessage}>Unable to load machine information</Text>
+      <Button 
+        mode="contained" 
+        onPress={onGoBack} 
+        style={styles.button}
+      >
+        Return to Dashboard
+      </Button>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  errorContainer: {
+  container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#f5f3ff',
   },
-  errorText: {
-    fontSize: 18,
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#ef4444',
-    marginBottom: 20,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#7c3aed',
   },
 });
 

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -174,12 +175,11 @@ const MachineDetail = () => {
   };
 
   const handleGoBack = () => {
-    if (fromAdmin) {
-      navigate('/admin/machines');
-    } else if (location.state?.fromQuiz) {
-      navigate(location.state.returnTo || -1);
+    // Always navigate back to dashboard instead of using the browser history
+    if (user?.isAdmin) {
+      navigate('/admin');
     } else {
-      navigate(-1);
+      navigate('/home');
     }
   };
 
