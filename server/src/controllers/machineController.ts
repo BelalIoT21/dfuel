@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -288,7 +289,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.details = details !== undefined ? details : machine.details;
     machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
     
-    // Updated handling of linkedCourseId - only set to null if explicitly empty or 'none'
+    // Updated handling of linkedCourseId - only set to undefined if explicitly empty or 'none'
     if (linkedCourseId !== undefined) {
       if (linkedCourseId === '' || linkedCourseId === 'none') {
         machine.linkedCourseId = undefined;
@@ -299,7 +300,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       }
     }
     
-    // Updated handling of linkedQuizId - only set to null if explicitly empty or 'none'
+    // Updated handling of linkedQuizId - only set to undefined if explicitly empty or 'none'
     if (linkedQuizId !== undefined) {
       if (linkedQuizId === '' || linkedQuizId === 'none') {
         machine.linkedQuizId = undefined;

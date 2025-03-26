@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -102,8 +101,8 @@ class MongoMachineService {
         if (normalizedStatus.toLowerCase() === 'maintenance') {
           dbStatus = 'Maintenance';
         } else if (normalizedStatus.toLowerCase() === 'in-use' || 
-                   normalizedStatus.toLowerCase() === 'in use' || 
-                   normalizedStatus.toLowerCase() === 'out of order') {
+                  normalizedStatus.toLowerCase() === 'in use' || 
+                  normalizedStatus.toLowerCase() === 'out of order') {
           dbStatus = 'In Use';
         }
         
@@ -298,27 +297,25 @@ class MongoMachineService {
       
       // Important fix for linkedCourseId and linkedQuizId - make it explicit when to set null
       if ('linkedCourseId' in updates) {
-        // Only set to null if explicitly passed as empty string or "none"
+        // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedCourseId === '' || updates.linkedCourseId === 'none') {
-          updateData.linkedCourseId = null;
-          console.log(`Setting linkedCourseId to null`);
+          updateData.linkedCourseId = undefined;
+          console.log(`Setting linkedCourseId to undefined`);
         } else if (updates.linkedCourseId) {
           updateData.linkedCourseId = updates.linkedCourseId;
           console.log(`Setting linkedCourseId to: ${updates.linkedCourseId}`);
         }
-        // If it's undefined, don't include it in the update
       }
       
       if ('linkedQuizId' in updates) {
-        // Only set to null if explicitly passed as empty string or "none"
+        // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedQuizId === '' || updates.linkedQuizId === 'none') {
-          updateData.linkedQuizId = null;
-          console.log(`Setting linkedQuizId to null`);
+          updateData.linkedQuizId = undefined;
+          console.log(`Setting linkedQuizId to undefined`);
         } else if (updates.linkedQuizId) {
           updateData.linkedQuizId = updates.linkedQuizId;
           console.log(`Setting linkedQuizId to: ${updates.linkedQuizId}`);
         }
-        // If it's undefined, don't include it in the update
       }
       
       const result = await this.machinesCollection.updateOne(
@@ -545,6 +542,5 @@ class MongoMachineService {
 }
 
 // Create a singleton instance
-const mongoMachineService = new MongoMachineService();
-export { mongoMachineService };
+export const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;

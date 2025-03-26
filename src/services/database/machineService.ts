@@ -150,18 +150,18 @@ export class MachineDatabaseService extends BaseService {
       
       // Handle linked course ID with "in" operator to check if property exists
       if ('linkedCourseId' in cleanedData) {
-        // Empty string should be converted to null
+        // Empty string should be converted to undefined
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
-          cleanedData.linkedCourseId = null;
+          cleanedData.linkedCourseId = undefined;
         }
         console.log(`Setting linkedCourseId to: ${cleanedData.linkedCourseId}`);
       }
       
       // Handle linked quiz ID with "in" operator to check if property exists
       if ('linkedQuizId' in cleanedData) {
-        // Empty string should be converted to null
+        // Empty string should be converted to undefined
         if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
-          cleanedData.linkedQuizId = null;
+          cleanedData.linkedQuizId = undefined;
         }
         console.log(`Setting linkedQuizId to: ${cleanedData.linkedQuizId}`);
       }
