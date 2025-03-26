@@ -38,6 +38,7 @@ const Quiz = () => {
   const [machineId, setMachineId] = useState<string | null>(null);
   const [certificationProcessing, setCertificationProcessing] = useState(false);
   const [certificationAdded, setCertificationAdded] = useState(false);
+  const [relatedMachineIds, setRelatedMachineIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -56,6 +57,12 @@ const Quiz = () => {
           if (quizData && quizData._id) {
             console.log('Retrieved quiz data directly:', quizData);
             setQuiz(quizData);
+            
+            // If quiz has relatedMachineIds, store them for certification
+            if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
+              console.log('Quiz has related machine IDs:', quizData.relatedMachineIds);
+              setRelatedMachineIds(quizData.relatedMachineIds.map(id => String(id)));
+            }
             
             if (quizData.questions && quizData.questions.length > 0) {
               setQuestions(quizData.questions);
@@ -109,6 +116,13 @@ const Quiz = () => {
                 if (quizData && quizData.questions && quizData.questions.length > 0) {
                   console.log('Retrieved linked quiz data:', quizData);
                   setQuiz(quizData);
+                  
+                  // If quiz has relatedMachineIds, store them for certification
+                  if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
+                    console.log('Quiz has related machine IDs:', quizData.relatedMachineIds);
+                    setRelatedMachineIds(quizData.relatedMachineIds.map(id => String(id)));
+                  }
+                  
                   setQuestions(quizData.questions);
                   setAnswers(new Array(quizData.questions.length).fill(-1));
                   setLoading(false);
@@ -181,46 +195,62 @@ const Quiz = () => {
     setPassed(hasPassed);
     
     // If passed, grant certification
-    if (hasPassed && user && machineId) {
+    if (hasPassed && user) {
       setCertificationProcessing(true);
       
-      console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
-      
-      try {
-        // Ensure IDs are strings
-        const userId = String(user.id);
-        const certMachineId = String(machineId);
-        
-        console.log(`Attempting certification with userId=${userId}, machineId=${certMachineId}`);
-        
-        const success = await addUserCertification(userId, certMachineId);
-        
-        if (success) {
-          console.log('Successfully added certification');
-          setCertificationAdded(true);
-          toast({
-            title: "Certification Granted",
-            description: "You have been certified for this machine!",
-            variant: "default"
-          });
-        } else {
-          console.error('All certification attempts failed');
-          toast({
-            title: "Certification Issue",
-            description: "Your quiz was passed, but there was an issue adding the certification. Please contact an administrator.",
-            variant: "destructive"
-          });
+      // First try to use machine ID
+      let certSuccess = false;
+      if (machineId) {
+        console.log(`User passed quiz. Adding certification for machine ${machineId}`);
+        try {
+          certSuccess = await addUserCertification(String(user.id), String(machineId));
+          console.log(`Certification for machine ${machineId} result:`, certSuccess);
+        } catch (error) {
+          console.error(`Error adding certification for machine ${machineId}:`, error);
         }
-      } catch (error) {
-        console.error('Error adding certification:', error);
+      }
+
+      // If that didn't work or there was no machineId, try related machine IDs
+      if (!certSuccess && relatedMachineIds && relatedMachineIds.length > 0) {
+        console.log('Using related machine IDs for certification:', relatedMachineIds);
+        
+        for (const relatedId of relatedMachineIds) {
+          try {
+            console.log(`Attempting certification for related machine ${relatedId}`);
+            const success = await addUserCertification(String(user.id), relatedId);
+            if (success) {
+              console.log(`Successfully added certification for related machine ${relatedId}`);
+              certSuccess = true;
+              // If no machineId was set before, set it now so return to machine page works
+              if (!machineId) {
+                setMachineId(relatedId);
+              }
+              break;
+            }
+          } catch (relatedError) {
+            console.error(`Error adding certification for related machine ${relatedId}:`, relatedError);
+          }
+        }
+      }
+      
+      if (certSuccess) {
+        console.log('Successfully added certification');
+        setCertificationAdded(true);
         toast({
-          title: "Certification Error",
-          description: "An error occurred while adding your certification.",
+          title: "Certification Granted",
+          description: "You have been certified for this machine!",
+          variant: "default"
+        });
+      } else {
+        console.error('All certification attempts failed');
+        toast({
+          title: "Certification Issue",
+          description: "Your quiz was passed, but there was an issue adding the certification. Please contact an administrator.",
           variant: "destructive"
         });
-      } finally {
-        setCertificationProcessing(false);
       }
+      
+      setCertificationProcessing(false);
     }
     
     setSubmitted(true);
@@ -244,6 +274,10 @@ const Quiz = () => {
       // Use our saved machineId if machine object is not available
       console.log(`Navigating to machine page for saved machineId: ${machineId}`);
       navigate(`/machine/${machineId}`);
+    } else if (relatedMachineIds && relatedMachineIds.length > 0) {
+      // Use the first related machine ID as fallback
+      console.log(`Navigating to machine page for related machineId: ${relatedMachineIds[0]}`);
+      navigate(`/machine/${relatedMachineIds[0]}`);
     } else {
       // Fallback to ID from params if nothing else is available
       console.log(`Fallback navigation to machine page for ID: ${id}`);
