@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -199,8 +198,8 @@ export const createMachine = async (req: Request, res: Response) => {
       specifications,
       details,
       certificationInstructions,
-      linkedCourseId: linkedCourseId || null,
-      linkedQuizId: linkedQuizId || null,
+      linkedCourseId: linkedCourseId || undefined,
+      linkedQuizId: linkedQuizId || undefined,
       bookedTimeSlots: []
     });
 
@@ -292,7 +291,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     // Updated handling of linkedCourseId - only set to null if explicitly empty or 'none'
     if (linkedCourseId !== undefined) {
       if (linkedCourseId === '' || linkedCourseId === 'none') {
-        machine.linkedCourseId = null;
+        machine.linkedCourseId = undefined;
         console.log(`Removed linkedCourseId for machine ${id}`);
       } else {
         machine.linkedCourseId = linkedCourseId;
@@ -303,7 +302,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     // Updated handling of linkedQuizId - only set to null if explicitly empty or 'none'
     if (linkedQuizId !== undefined) {
       if (linkedQuizId === '' || linkedQuizId === 'none') {
-        machine.linkedQuizId = null;
+        machine.linkedQuizId = undefined;
         console.log(`Removed linkedQuizId for machine ${id}`);
       } else {
         machine.linkedQuizId = linkedQuizId;
@@ -457,3 +456,4 @@ export const deleteMachine = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
+

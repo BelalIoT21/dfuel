@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -544,5 +545,6 @@ class MongoMachineService {
 }
 
 // Create a singleton instance
-export const mongoMachineService = new MongoMachineService();
-
+const mongoMachineService = new MongoMachineService();
+export { mongoMachineService };
+export default mongoMachineService;

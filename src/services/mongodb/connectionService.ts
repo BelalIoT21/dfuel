@@ -1,5 +1,5 @@
 import { isWeb } from '../../utils/platform';
-import mongoMachineService from './machineService';
+import { mongoMachineService } from './machineService';
 import mongoSeedService from './seedService';
 
 class MongoConnectionService {
