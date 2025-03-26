@@ -12,17 +12,11 @@ import {
   updateMachineImages, 
   seedAllMachines 
 } from './seeds/machineSeeder';
-import { 
-  seedCourses, 
-  updateCourseImages,
-  checkAndSeedCourses
-} from './seeds/courseSeeder';
-import { 
-  seedQuizzes, 
-  checkAndSeedQuizzes 
-} from './seeds/quizSeeder';
+import { seedSafetyCourses } from './seeds/courseSeeder';
+import { seedSafetyQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
 import { createAdminUser } from '../controllers/admin/adminController';
+import { seedUsers } from './seeds/userSeeder';
 
 dotenv.config();
 
@@ -64,57 +58,18 @@ export class SeedService {
       await updateMachineImages();
       await ensureMachineOrder();
 
-      // Get existing course IDs
-      const existingCourses = await Course.find({}, '_id');
-      const existingCourseIds = existingCourses.map(c => c._id.toString());
-      
-      console.log('Existing course IDs:', existingCourseIds);
-      
-      // Define expected course IDs (1-4)
-      const expectedCourseIds = ['1', '2', '3', '4'];
-      
-      // Check if any expected course IDs are missing
-      const missingCourseIds = expectedCourseIds.filter(id => !existingCourseIds.includes(id));
-      
-      if (missingCourseIds.length > 0 || courseCount === 0) {
-        console.log(`Missing course IDs: ${missingCourseIds.join(', ')}. Seeding courses...`);
-        if (courseCount === 0) {
-          await seedCourses();
-        } else {
-          await checkAndSeedCourses();
-        }
-      } else {
-        // Update course images even if courses exist
-        console.log('All expected courses found. Updating course images...');
-        await updateCourseImages();
+      // Seed users if needed
+      if (userCount === 0) {
+        console.log('No users found. Seeding default users...');
+        await seedUsers();
       }
 
-      // Get existing quiz IDs
-      const existingQuizzes = await Quiz.find({}, '_id');
-      const existingQuizIds = existingQuizzes.map(q => q._id.toString());
+      // Seed safety courses and quizzes
+      console.log('Ensuring safety courses exist...');
+      await seedSafetyCourses();
       
-      console.log('Existing quiz IDs:', existingQuizIds);
-      
-      // Define expected quiz IDs (1-4)
-      const expectedQuizIds = ['1', '2', '3', '4'];
-      
-      // Check if any expected quiz IDs are missing
-      const missingQuizIds = expectedQuizIds.filter(id => !existingQuizIds.includes(id));
-      
-      if (missingQuizIds.length > 0 || quizCount === 0) {
-        console.log(`Missing quiz IDs: ${missingQuizIds.join(', ')}. Seeding quizzes...`);
-        if (quizCount === 0) {
-          await seedQuizzes();
-        } else {
-          await checkAndSeedQuizzes();
-        }
-      } else {
-        console.log('All expected quizzes found. No reseeding needed.');
-      }
-
-      if (userCount > 0 && machineCount > 0 && bookingCount > 0 && courseCount > 0 && quizCount > 0) {
-        console.log('Database already seeded. All expected entities present.');
-      }
+      console.log('Ensuring safety quizzes exist...');
+      await seedSafetyQuizzes();
 
       console.log('Database seeding complete!');
     } catch (error) {
@@ -123,4 +78,3 @@ export class SeedService {
     }
   }
 }
-
