@@ -21,6 +21,8 @@ import AdminQuizzes from "./pages/AdminQuizzes";
 import AdminQuizEdit from "./pages/AdminQuizEdit";
 
 function App() {
+  console.log("Routes initialized, including /bookings for ActiveBookings page");
+  
   return (
     <AuthProvider>
       <BrowserRouter>

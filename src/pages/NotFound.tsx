@@ -1,5 +1,5 @@
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
@@ -7,12 +7,17 @@ import { useEffect, useState } from 'react';
 const NotFound = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [redirectPath, setRedirectPath] = useState('/');
   
   useEffect(() => {
-    // Determine the appropriate redirect path based on user status
+    console.log("NotFound page accessed from path:", location.pathname);
+    
+    // Determine the appropriate redirect path based on user status and current path
     if (user) {
-      if (user.isAdmin) {
+      if (location.pathname.startsWith('/admin') && user.isAdmin) {
+        setRedirectPath('/admin');
+      } else if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
         setRedirectPath('/home');  
@@ -20,7 +25,7 @@ const NotFound = () => {
     } else {
       setRedirectPath('/');
     }
-  }, [user]);
+  }, [user, location]);
 
   const handleReturn = () => {
     console.log('Navigating to:', redirectPath);
