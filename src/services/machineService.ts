@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 
 export class MachineService {
@@ -9,13 +10,6 @@ export class MachineService {
       if (!machineId || !status) {
         console.error("Invalid machineId or status passed to updateMachineStatus");
         return false;
-      }
-      
-      // Check if it's a safety cabinet - always available, no status updates needed
-      const isSafetyCabinet = machineId === "5";
-      if (isSafetyCabinet) {
-        console.log("Safety Cabinet is always available, not updating status");
-        return true;
       }
       
       // Get auth token from localStorage
@@ -47,12 +41,6 @@ export class MachineService {
     try {
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineStatus");
-        return 'available';
-      }
-      
-      // Check if it's a safety cabinet - always available
-      if (machineId === "5") {
-        console.log("Safety Cabinet is always available");
         return 'available';
       }
 

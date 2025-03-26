@@ -1,43 +1,37 @@
-export interface MongoUser {
+
+import { Collection, Document, ObjectId } from 'mongodb';
+
+export interface MongoUser extends Document {
   id: string;
+  _id?: string | ObjectId;
   name: string;
   email: string;
-  password?: string;
+  password: string;
   isAdmin: boolean;
   certifications: string[];
-  bookings: string[];
+  certificationDates?: Record<string, Date>;
+  bookings: any[];
   lastLogin: string;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export interface MongoBooking {
-  id: string;
-  userId: string;
-  machineId: string;
-  startTime: string;
-  endTime: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface MongoMachine {
-  _id: string;
+export interface MongoMachine extends Document {
+  _id: string | ObjectId;
+  id?: string;
   name: string;
-  description: string;
+  type?: string;
+  description?: string;
+  specifications?: string;
+  status?: string;
+  maintenanceNote?: string;
   imageUrl?: string;
-  status: 'available' | 'maintenance' | 'in-use';
-  type: string;
-  requiresCertification: boolean;
-  certificationInstructions?: string;
   linkedCourseId?: string;
   linkedQuizId?: string;
-  displayOrder?: number;
+  requiresCertification?: boolean;
 }
 
-export interface MongoQuiz {
-  _id: string;
+export interface MongoQuiz extends Document {
+  _id: string | ObjectId;
+  id?: string;
   title: string;
   description: string;
   category: string;
@@ -52,21 +46,17 @@ export interface MongoQuiz {
   relatedMachineIds?: string[];
   relatedCourseId?: string;
   difficulty: string;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
-export interface MongoCourse {
-  _id: string;
+export interface MongoCourse extends Document {
+  _id: string | ObjectId;
+  id?: string;
   title: string;
   description: string;
   category: string;
+  content: string;
   imageUrl?: string;
-  lessons: {
-    title: string;
-    content: string;
-  }[];
   relatedMachineIds?: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
+  quizId?: string;
+  difficulty: string;
 }
