@@ -9,8 +9,14 @@
 export const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
+    reader.onload = () => {
+      console.log(`File successfully converted to data URL. Size: ${Math.round(reader.result.toString().length / 1024)}KB`);
+      resolve(reader.result as string);
+    };
+    reader.onerror = (error) => {
+      console.error('Error converting file to data URL:', error);
+      reject(error);
+    };
     reader.readAsDataURL(file);
   });
 };
@@ -19,18 +25,23 @@ export const fileToDataUrl = (file: File): Promise<string> => {
  * Validate file type and size
  */
 export const validateFile = (file: File, allowedTypes: string[], maxSizeMB: number): string | null => {
+  console.log(`Validating file: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)}MB, type: ${file.type}`);
+  
   // Check file type
   const fileType = file.type;
   if (!allowedTypes.includes(fileType)) {
+    console.error(`Invalid file type: ${fileType}. Allowed types: ${allowedTypes.join(', ')}`);
     return `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`;
   }
   
   // Check file size
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   if (file.size > maxSizeBytes) {
+    console.error(`File size exceeds maximum: ${(file.size / (1024 * 1024)).toFixed(2)}MB > ${maxSizeMB}MB`);
     return `File size exceeds the maximum allowed size (${maxSizeMB}MB)`;
   }
   
+  console.log(`File validation passed for ${file.name}`);
   return null;
 };
 
@@ -48,13 +59,14 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased to 5MB for images
+// Maximum file sizes - 5MB for images
 export const MAX_IMAGE_SIZE_MB = 5; // 5MB for reliable uploads
 export const MAX_VIDEO_SIZE_MB = 10; // 10MB for reliable uploads
 
-// Simplified function that doesn't attempt any compression
+// No compression - just return the original data URL
 export const compressImageIfNeeded = async (dataUrl: string): Promise<string> => {
-  // Simply log the size and return the original data URL
-  console.log(`Image size: ${(dataUrl.length / (1024 * 1024)).toFixed(2)}MB`);
+  // Log the size but don't attempt compression
+  const sizeInMB = (dataUrl.length / (1024 * 1024)).toFixed(2);
+  console.log(`Image size: ${sizeInMB}MB - no compression applied`);
   return dataUrl;
 };

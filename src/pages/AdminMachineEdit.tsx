@@ -134,9 +134,21 @@ const AdminMachineEdit = () => {
       setIsSubmitting(true);
       console.log("Submitting machine data:", formData);
       
+      // Create a clean version of the data for sending to the API
+      const dataToSubmit = { ...formData };
+      
+      // Convert empty string values to null/undefined for the backend
+      if (dataToSubmit.linkedCourseId === '') {
+        dataToSubmit.linkedCourseId = undefined;
+      }
+      
+      if (dataToSubmit.linkedQuizId === '') {
+        dataToSubmit.linkedQuizId = undefined;
+      }
+      
       if (isEditing && id) {
         // Update existing machine
-        const success = await machineDatabaseService.updateMachine(id, formData);
+        const success = await machineDatabaseService.updateMachine(id, dataToSubmit);
         
         if (success) {
           toast({
@@ -149,7 +161,7 @@ const AdminMachineEdit = () => {
         }
       } else {
         // Create new machine
-        const result = await machineDatabaseService.createMachine(formData);
+        const result = await machineDatabaseService.createMachine(dataToSubmit);
         
         if (result) {
           toast({

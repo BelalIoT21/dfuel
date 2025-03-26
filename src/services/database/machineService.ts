@@ -102,36 +102,51 @@ export class MachineDatabaseService extends BaseService {
 
   async updateMachine(machineId: string, machineData: Partial<MachineData>): Promise<any> {
     try {
+      // Make a deep copy of the machine data to avoid modifying the original
+      const cleanedData = JSON.parse(JSON.stringify(machineData));
+      
       // For standard machines (1-4), ensure we use the correct image if none is provided
-      if (['1', '2', '3', '4'].includes(machineId) && (!machineData.imageUrl || machineData.imageUrl === '')) {
+      if (['1', '2', '3', '4'].includes(machineId) && (!cleanedData.imageUrl || cleanedData.imageUrl === '')) {
         console.log(`Using default image for machine ${machineId}`);
-        machineData.imageUrl = this.defaultImageMap[machineId];
-        machineData.image = this.defaultImageMap[machineId];
+        cleanedData.imageUrl = this.defaultImageMap[machineId];
+        cleanedData.image = this.defaultImageMap[machineId];
       }
       
       // Ensure both imageUrl and image fields are set to the same value
-      if (machineData.imageUrl && !machineData.image) {
-        machineData.image = machineData.imageUrl;
-      } else if (machineData.image && !machineData.imageUrl) {
-        machineData.imageUrl = machineData.image;
+      if (cleanedData.imageUrl && !cleanedData.image) {
+        cleanedData.image = cleanedData.imageUrl;
+      } else if (cleanedData.image && !cleanedData.imageUrl) {
+        cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Clean empty strings for linkedCourseId and linkedQuizId
-      if (machineData.linkedCourseId === '') {
-        machineData.linkedCourseId = undefined;
+      // Explicitly handle certificates, courses, and quizzes
+      
+      // Handle linked course ID - empty string should be converted to null
+      if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
+        cleanedData.linkedCourseId = null;
+        console.log('Setting linkedCourseId to null');
       }
       
-      if (machineData.linkedQuizId === '') {
-        machineData.linkedQuizId = undefined;
+      // Handle linked quiz ID - empty string should be converted to null
+      if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
+        cleanedData.linkedQuizId = null;
+        console.log('Setting linkedQuizId to null');
+      }
+      
+      // Handle certification instructions - empty string is valid
+      if (cleanedData.certificationInstructions === undefined) {
+        // Don't modify if not provided
+      } else if (cleanedData.certificationInstructions === null) {
+        cleanedData.certificationInstructions = '';
       }
 
       // Cast requiresCertification to boolean if it's a string
-      if (typeof machineData.requiresCertification === 'string') {
-        machineData.requiresCertification = machineData.requiresCertification === 'true';
+      if (typeof cleanedData.requiresCertification === 'string') {
+        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
       }
       
-      console.log(`Updating machine ${machineId} with cleaned data:`, machineData);
-      const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
+      console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
+      const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
       console.log(`Update response for machine ${machineId}:`, response);
       
       // Ensure the response has both image properties

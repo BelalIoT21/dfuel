@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { courseDatabaseService } from '@/services/database/courseService';
 import { quizDatabaseService } from '@/services/database/quizService';
 import { Asterisk } from 'lucide-react';
 import FileUpload from '../common/FileUpload';
+import { useToast } from '@/hooks/use-toast';
 
 export interface MachineFormData {
   name: string;
@@ -61,6 +61,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const [courses, setCourses] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>("basic");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,13 +93,18 @@ const MachineForm: React.FC<MachineFormProps> = ({
         console.log('Fetched quizzes:', sortedQuizzes.map(q => `${q._id || q.id}: ${q.title}`));
       } catch (error) {
         console.error("Error fetching data for machine form:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load courses and quizzes",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
     
     fetchData();
-  }, []);
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -105,12 +112,10 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    // Important fix: properly handle empty values for linkedCourseId and linkedQuizId
+    // Handle empty values for linkedCourseId and linkedQuizId
     let finalValue = value;
-    if (id === 'linkedCourseId' || id === 'linkedQuizId') {
-      if (value === 'none') {
-        finalValue = '';
-      }
+    if ((id === 'linkedCourseId' || id === 'linkedQuizId') && value === 'none') {
+      finalValue = '';
     }
     
     console.log(`Setting ${id} to:`, finalValue);
@@ -118,6 +123,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSwitchChange = (id: string, checked: boolean) => {
+    console.log(`Setting ${id} to:`, checked);
     setFormData((prev) => ({ ...prev, [id]: checked }));
   };
 
@@ -165,6 +171,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
     return null;
   };
 
+  const handleSubmit = () => {
+    console.log("Submitting form data:", formData);
+    onSubmit();
+  };
+
   const suggestedCourse = getRecommendedCourse();
   const suggestedQuiz = getRecommendedQuiz();
 
@@ -175,7 +186,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="basic">
+        <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
@@ -388,7 +399,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
         </Tabs>
         
         <div className="flex gap-2 pt-4 border-t mt-4">
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : submitLabel}
           </Button>
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
