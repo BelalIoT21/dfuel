@@ -1,10 +1,8 @@
-import mongoDbService from './mongoDbService';
-import { machines } from '../utils/data';
-import { isWeb } from '../utils/platform';
+
 import { apiService } from './apiService';
 
 export class MachineService {
-  // Update machine status - prioritize MongoDB
+  // Update machine status - use API only
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<boolean> {
     try {
       console.log(`Updating machine status: ID=${machineId}, status=${status}`);
@@ -45,7 +43,7 @@ export class MachineService {
     }
   }
 
-  // Get machine status - now uses the dedicated status endpoint
+  // Get machine status - now uses the dedicated status endpoint only
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       if (!machineId) {
@@ -88,7 +86,7 @@ export class MachineService {
     }
   }
   
-  // Get machine maintenance note
+  // Get machine maintenance note - API only
   async getMachineMaintenanceNote(machineId: string): Promise<string | undefined> {
     try {
       if (!machineId) {
@@ -128,7 +126,7 @@ export class MachineService {
     }
   }
   
-  // Get machine by ID - unchanged
+  // Get machine by ID - API only
   async getMachineById(machineId: string): Promise<any | null> {
     try {
       console.log(`Getting machine by ID: ${machineId}`);
@@ -159,23 +157,6 @@ export class MachineService {
         console.error("API error getting machine by ID:", error);
       }
       
-      // Fallback to the static machines data
-      const machine = machines.find(m => m.id === machineId);
-      
-      if (machine) {
-        // Filter out machines 5 and 6
-        if (machineId === "5" || machineId === "6") {
-          console.log(`Machine ${machineId} is filtered out`);
-          return null;
-        }
-        
-        return {
-          ...machine,
-          status: 'available',
-          type: machine.type || "Machine"
-        };
-      }
-      
       console.error(`Machine not found with ID: ${machineId}`);
       return null;
     } catch (error) {
@@ -184,7 +165,7 @@ export class MachineService {
     }
   }
   
-  // Helper method to get machines - unchanged
+  // Get machines - API only
   async getMachines(timestamp?: number): Promise<any[]> {
     try {
       console.log("Getting machines, timestamp:", timestamp || "none");
@@ -211,18 +192,11 @@ export class MachineService {
         console.error("API error getting machines:", error);
       }
       
-      console.log("Falling back to static machines data");
-      // Fallback to static machines data
-      return machines.map(machine => ({
-        ...machine,
-        type: machine.type || "Machine" 
-      }));
+      console.log("No machines found in API");
+      return []; // Return empty array instead of falling back to static data
     } catch (error) {
       console.error("Error getting machines data:", error);
-      return machines.map(machine => ({
-        ...machine,
-        type: machine.type || "Machine"
-      }));
+      return []; // Return empty array on error
     }
   }
 }
@@ -230,5 +204,4 @@ export class MachineService {
 // Create a singleton instance
 export const machineService = new MachineService();
 
-// Set Laser Cutter to maintenance mode when the application starts
-console.log("Machine service initialized.");
+console.log("Machine service initialized (localStorage removed).");

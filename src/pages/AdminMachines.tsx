@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { machines } from '../utils/data';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
@@ -23,8 +23,11 @@ const AdminMachines = () => {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
+        setInitialLoadComplete(false);
+        console.log("Fetching machines from database...");
         const timestamp = new Date().getTime();
         const fetchedMachines = await machineDatabaseService.getAllMachines();
+        
         if (fetchedMachines && fetchedMachines.length > 0) {
           const filteredMachines = fetchedMachines.filter(machine => {
             const id = machine.id || machine._id;
@@ -40,18 +43,14 @@ const AdminMachines = () => {
           console.log("Filtered machines:", filteredMachines);
           setMachinesList(filteredMachines);
         } else {
-          const filteredDefaultMachines = machines.filter(machine => 
-            machine.id !== '5' && machine.id !== '6'
-          );
-          setMachinesList(filteredDefaultMachines);
+          console.log("No machines found in database");
+          setMachinesList([]);
         }
+        
         setInitialLoadComplete(true);
       } catch (error) {
         console.error("Error fetching machines:", error);
-        const filteredDefaultMachines = machines.filter(machine => 
-          machine.id !== '5' && machine.id !== '6'
-        );
-        setMachinesList(filteredDefaultMachines);
+        setMachinesList([]);
         setInitialLoadComplete(true);
       }
     };
@@ -94,7 +93,6 @@ const AdminMachines = () => {
   }
 
   const filteredMachines = machinesList
-    .filter(machine => true)
     .filter(machine =>
       machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       machine.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,6 +111,7 @@ const AdminMachines = () => {
         description: "The machine has been deleted successfully."
       });
       
+      // Remove the machine from the local state immediately
       setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
     } catch (error) {
       console.error("Error deleting machine:", error);

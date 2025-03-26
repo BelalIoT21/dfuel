@@ -36,6 +36,7 @@ const AdminMachineEdit = () => {
       if (isEditing && id) {
         try {
           setLoading(true);
+          console.log(`Loading machine with ID: ${id}...`);
           const machine = await machineDatabaseService.getMachineById(id);
           
           if (machine) {
@@ -63,6 +64,14 @@ const AdminMachineEdit = () => {
               linkedQuizId: machine.linkedQuizId || '',
               _id: machine._id
             });
+          } else {
+            console.error(`Machine with ID ${id} not found`);
+            toast({
+              title: 'Error',
+              description: 'Machine not found',
+              variant: 'destructive'
+            });
+            navigate('/admin/machines');
           }
         } catch (error) {
           console.error('Error loading machine:', error);
