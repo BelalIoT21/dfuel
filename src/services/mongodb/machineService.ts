@@ -131,12 +131,8 @@ class MongoMachineService {
       const machines = await this.machinesCollection.find().sort({ _id: 1 }).toArray();
       console.log(`Retrieved ${machines.length} machines from MongoDB in order by ID`);
       
-      // Filter out machines 5 and 6
-      const filteredMachines = machines.filter(machine => 
-        machine._id !== '5' && machine._id !== '6'
-      );
-      
-      return filteredMachines;
+      // No longer filtering out machines 5 and 6
+      return machines;
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
       return [];
@@ -362,7 +358,7 @@ class MongoMachineService {
       const existingMachineIds = existingMachines.map(m => m._id);
       
       // Define expected machine IDs
-      const expectedMachineIds = ['1', '2', '3', '4', '5', '6']; // Added machines 5 and 6
+      const expectedMachineIds = ['1', '2', '3', '4', '5', '6', '7']; // Added machine 7
       
       // Check if any expected machine IDs are missing
       const missingMachineIds = expectedMachineIds.filter(id => !existingMachineIds.includes(id));
@@ -443,6 +439,18 @@ class MongoMachineService {
             imageUrl: '/machines/safety-course.jpg',
             linkedCourseId: '6',
             linkedQuizId: '6'
+          },
+          { 
+            _id: '7', 
+            name: '3D Scanner', 
+            type: '3D Scanner', 
+            status: 'Available', 
+            description: 'High-resolution 3D scanning for detailed models.', 
+            requiresCertification: true,
+            difficulty: 'Advanced',
+            imageUrl: '/machines/3d-scanner.jpg',
+            linkedCourseId: '7',
+            linkedQuizId: '7'
           }
         ];
         
@@ -519,6 +527,14 @@ class MongoMachineService {
             imageUrl: '/machines/safety-course.jpg',
             linkedCourseId: '6',
             linkedQuizId: '6'
+          },
+          { 
+            _id: '7', 
+            name: '3D Scanner', 
+            type: '3D Scanner',
+            imageUrl: '/machines/3d-scanner.jpg',
+            linkedCourseId: '7',
+            linkedQuizId: '7'
           }
         ];
         

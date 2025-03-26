@@ -93,11 +93,6 @@ export class MachineService {
         return undefined;
       }
       
-      // Check if it's a safety cabinet - no maintenance notes
-      if (machineId === "5") {
-        return undefined;
-      }
-
       // Try status endpoint first
       try {
         const response = await apiService.get(`machines/${machineId}/status`);
@@ -187,6 +182,40 @@ export class MachineService {
       
       console.log("No machines found in API");
       return []; // Return empty array instead of falling back to static data
+    } catch (error) {
+      console.error("Error getting machines data:", error);
+      return []; // Return empty array on error
+    }
+  }
+
+  // Add a method to get all machines including special ones
+  async getAllMachines(): Promise<any[]> {
+    try {
+      console.log("Getting all machines without filtering");
+      
+      // Use API to get machines
+      try {
+        const response = await apiService.get('machines');
+        
+        if (response.data && Array.isArray(response.data)) {
+          console.log(`Retrieved ${response.data.length} machines from API (unfiltered)`);
+          
+          // Ensure each machine has an id field (might be _id in MongoDB)
+          return response.data.map(machine => ({
+            ...machine,
+            id: machine.id || machine._id,
+            type: machine.type || "Machine",
+            status: machine.status?.toLowerCase() || 'available'
+          }));
+        } else {
+          console.error("API returned invalid data format for machines:", response.data);
+        }
+      } catch (error) {
+        console.error("API error getting all machines:", error);
+      }
+      
+      console.log("No machines found in API");
+      return []; // Return empty array
     } catch (error) {
       console.error("Error getting machines data:", error);
       return []; // Return empty array on error

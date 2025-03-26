@@ -70,29 +70,23 @@ const Quiz = () => {
               setQuestions(quizData.questions);
               setAnswers(new Array(quizData.questions.length).fill(-1));
               
-              // Special handling for safety-related machines (IDs 5 and 6)
-              if (id === "5" || id === "6") {
-                setMachine({ id, name: id === "5" ? "Safety Cabinet" : "Safety Course" });
-                setMachineId(id);
-              } else {
-                // Try to find a related machine
-                try {
-                  const allMachines = await machineService.getAllMachines();
-                  const linkedMachine = allMachines.find(m => 
-                    m.linkedQuizId === id || 
-                    (quizData.relatedMachineIds && quizData.relatedMachineIds.includes(String(m.id || m._id)))
-                  );
-                  
-                  if (linkedMachine) {
-                    console.log('Found linked machine:', linkedMachine);
-                    setMachine(linkedMachine);
-                    const machineIdStr = String(linkedMachine.id || linkedMachine._id);
-                    setMachineId(machineIdStr);
-                    console.log('Set machine ID to:', machineIdStr);
-                  }
-                } catch (err) {
-                  console.error('Error finding linked machine:', err);
+              // Try to find a related machine - no special case filtering
+              try {
+                const allMachines = await machineService.getAllMachines();
+                const linkedMachine = allMachines.find(m => 
+                  m.linkedQuizId === id || 
+                  (quizData.relatedMachineIds && quizData.relatedMachineIds.includes(String(m.id || m._id)))
+                );
+                
+                if (linkedMachine) {
+                  console.log('Found linked machine:', linkedMachine);
+                  setMachine(linkedMachine);
+                  const machineIdStr = String(linkedMachine.id || linkedMachine._id);
+                  setMachineId(machineIdStr);
+                  console.log('Set machine ID to:', machineIdStr);
                 }
+              } catch (err) {
+                console.error('Error finding linked machine:', err);
               }
               
               setLoading(false);
