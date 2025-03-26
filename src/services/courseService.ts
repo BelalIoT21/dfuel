@@ -42,7 +42,7 @@ class CourseService {
         const sizeMB = (imageUrl.length / (1024 * 1024)).toFixed(2);
         console.log(`Image size being sent: ${sizeKB}KB (${sizeMB}MB)`);
         
-        // Increased to match the new limit in fileUpload.ts
+        // Updated to match the 5MB limit in fileUpload.ts
         if (imageUrl.length > 5.5 * 1024 * 1024) { // Slightly over 5MB to allow for encoding overhead
           console.error(`Image size (${sizeMB}MB) exceeds maximum (5MB)`);
           return { error: "Image exceeds maximum size of 5MB" };

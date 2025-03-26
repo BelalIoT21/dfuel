@@ -137,6 +137,9 @@ const AdminMachineEdit = () => {
       // Create a clean version of the data for sending to the API
       const dataToSubmit = { ...formData };
       
+      // Make sure boolean values are properly handled
+      dataToSubmit.requiresCertification = Boolean(formData.requiresCertification);
+      
       // Convert empty string values to null/undefined for the backend
       if (dataToSubmit.linkedCourseId === '') {
         dataToSubmit.linkedCourseId = undefined;

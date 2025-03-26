@@ -10,7 +10,7 @@ export const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      console.log(`File successfully converted to data URL. Size: ${Math.round(reader.result.toString().length / 1024)}KB`);
+      console.log(`File successfully converted to data URL. Size: ${Math.round(reader.result.toString().length / 1024 / 1024)}MB`);
       resolve(reader.result as string);
     };
     reader.onerror = (error) => {

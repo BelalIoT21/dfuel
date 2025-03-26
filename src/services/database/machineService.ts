@@ -74,9 +74,12 @@ export class MachineDatabaseService extends BaseService {
         machineData.linkedQuizId = undefined;
       }
 
-      // Cast requiresCertification to boolean if it's a string
+      // Explicitly convert requiresCertification to boolean
       if (typeof machineData.requiresCertification === 'string') {
         machineData.requiresCertification = machineData.requiresCertification === 'true';
+      } else {
+        // Make sure it's a boolean
+        machineData.requiresCertification = Boolean(machineData.requiresCertification);
       }
       
       console.log("Cleaned machine data for creation:", machineData);
@@ -140,9 +143,12 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.certificationInstructions = '';
       }
 
-      // Cast requiresCertification to boolean if it's a string
+      // Explicitly handle requiresCertification as a boolean
       if (typeof cleanedData.requiresCertification === 'string') {
         cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
+      } else {
+        // Make sure it's a boolean
+        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);

@@ -69,7 +69,7 @@ const FileUpload = ({
       
       toast({
         title: "File Uploaded",
-        description: `Successfully processed ${file.name} (${fileSizeKB}KB)`,
+        description: `Successfully processed ${file.name} (${fileSizeMB}MB)`,
         duration: 3000
       });
     } catch (error) {
@@ -136,7 +136,7 @@ const FileUpload = ({
             />
           </div>
           <p className="text-xs text-gray-500">
-            Max file size: {maxSizeMB}MB ({Math.round(maxSizeMB * 1024)}KB). For best results, use images under 100KB.
+            Max file size: {maxSizeMB}MB. For best results, use smaller images when possible.
           </p>
         </>
       )}
