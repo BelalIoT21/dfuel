@@ -54,7 +54,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Fetch all machines from database
       let databaseMachines: any[] = [];
       try {
-        // Use getAllMachines to ensure we get every machine
+        // Use getAllMachines to ensure we get every machine - now fixed to use apiService.get
         databaseMachines = await machineService.getAllMachines();
         console.log(`Got ${databaseMachines.length} machines from database`);
         

@@ -176,6 +176,8 @@ const MachineDetail = () => {
   const handleGoBack = () => {
     if (fromAdmin) {
       navigate('/admin/machines');
+    } else if (location.state?.fromQuiz) {
+      navigate(location.state.returnTo || -1);
     } else {
       navigate(-1);
     }

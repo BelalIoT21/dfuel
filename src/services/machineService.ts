@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 
 class MachineService {
@@ -5,7 +6,7 @@ class MachineService {
   async getMachines() {
     try {
       console.log("Getting machines with filtering");
-      const response = await apiService.getMachines();
+      const response = await apiService.get('machines');
       
       if (response.error) {
         console.error("Error fetching machines:", response.error);
@@ -30,7 +31,7 @@ class MachineService {
   async getAllMachines() {
     try {
       console.log("Getting all machines without filtering");
-      const response = await apiService.getMachines();
+      const response = await apiService.get('machines');
       
       if (response.error) {
         console.error("Error fetching all machines:", response.error);
@@ -49,7 +50,7 @@ class MachineService {
   async getMachineById(id: string) {
     try {
       console.log(`Getting machine with ID: ${id}`);
-      const response = await apiService.getMachine(id);
+      const response = await apiService.get(`machines/${id}`);
       
       if (response.error) {
         console.error(`Error fetching machine ${id}:`, response.error);
@@ -66,7 +67,7 @@ class MachineService {
 
   async getMachineStatus(id: string) {
     try {
-      const response = await apiService.getMachineStatus(id);
+      const response = await apiService.get(`machines/${id}/status`);
       
       if (response.error) {
         console.error(`Error fetching status for machine ${id}:`, response.error);

@@ -315,16 +315,16 @@ const Quiz = () => {
     if (machine && (machine.id || machine._id)) {
       const targetId = machine.id || machine._id;
       console.log(`Navigating to machine page for ID: ${targetId}`);
-      navigate(`/machine/${targetId}`);
+      navigate(`/machine/${targetId}`, { replace: true });
     } else if (machineId) {
       console.log(`Navigating to machine page for saved machineId: ${machineId}`);
-      navigate(`/machine/${machineId}`);
+      navigate(`/machine/${machineId}`, { replace: true });
     } else if (relatedMachineIds && relatedMachineIds.length > 0) {
       console.log(`Navigating to machine page for related machineId: ${relatedMachineIds[0]}`);
-      navigate(`/machine/${relatedMachineIds[0]}`);
+      navigate(`/machine/${relatedMachineIds[0]}`, { replace: true });
     } else {
       console.log(`Fallback navigation to machine page for ID: ${id}`);
-      navigate(`/machine/${id}`);
+      navigate(`/machine/${id}`, { replace: true });
     }
   };
 
