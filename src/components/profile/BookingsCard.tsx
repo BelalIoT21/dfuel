@@ -1,116 +1,93 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar, PlusCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { Calendar, RefreshCw, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { bookingService } from '@/services/bookingService';
-import { machineService } from '@/services/machineService';
 import BookingsList from './BookingsList';
 import EmptyBookingsView from './EmptyBookingsView';
-import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const BookingsCard = () => {
-  const [bookings, setBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const fetchBookings = useCallback(async () => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchBookings = async () => {
     if (!user) return;
     
-    setIsLoading(true);
+    setRefreshing(true);
     try {
       console.log(`Fetching bookings for user: ${user.id}`);
       const userBookings = await bookingService.getUserBookings(user.id);
-      console.log('Received bookings:', userBookings);
-      setBookings(userBookings || []);
+      setBookings(userBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      setBookings([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [user]);
-  
+  };
+
   useEffect(() => {
     fetchBookings();
-  }, [fetchBookings]);
-  
-  const getMachineName = useCallback(async (machineId) => {
-    if (!machineId) return 'Unknown Machine';
-    
-    try {
-      const machine = await machineService.getMachineById(machineId);
-      return machine?.name || 'Unknown Machine';
-    } catch (error) {
-      console.error(`Error fetching machine ${machineId}:`, error);
-      return 'Unknown Machine';
-    }
-  }, []);
-  
-  const handleViewDetails = (booking) => {
-    // View booking details implementation
-    console.log('View booking details:', booking);
+  }, [user]);
+
+  const handleNewBooking = () => {
+    // Navigate to certifications tab instead of booking page
+    navigate('/profile?tab=certifications');
   };
-  
-  const handleDeleteBooking = useCallback((booking) => {
-    console.log('Booking deleted:', booking);
-    // Remove the booking from the state
-    setBookings(prevBookings => 
-      prevBookings.filter(b => 
-        (b.id !== booking.id && b._id !== booking._id)
-      )
-    );
-    // Refetch after a short delay to ensure server sync
-    setTimeout(() => {
-      fetchBookings();
-    }, 1000);
-  }, [fetchBookings]);
-  
-  const navigateToMachineBooking = () => {
-    navigate('/machines');
+
+  const handleRefresh = () => {
+    fetchBookings();
   };
-  
-  if (isLoading) {
-    return (
-      <Card className="border-purple-100 shadow-md">
-        <CardContent className="p-6 text-center">
-          <Loader2 className="h-8 w-8 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading your bookings...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+
+  if (!user) return null;
+
   return (
-    <Card className="border-purple-100 shadow-md">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <Calendar className="h-5 w-5 text-purple-600 mr-2" />
-            <h3 className="text-lg font-medium">Your Bookings</h3>
-          </div>
+    <Card className="border-purple-100">
+      <CardHeader className="flex flex-row justify-between items-center">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar size={20} className="text-purple-600" />
+            Your Bookings
+          </CardTitle>
+          <CardDescription>Manage your machine bookings</CardDescription>
+        </div>
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm" 
-            className="border-purple-200 hover:bg-purple-50"
-            onClick={navigateToMachineBooking}
+            onClick={handleRefresh} 
+            disabled={refreshing}
           >
-            <PlusCircle className="h-4 w-4 mr-1" />
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleNewBooking}
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
             New Booking
           </Button>
         </div>
-        
-        {bookings.length === 0 ? (
-          <EmptyBookingsView />
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+            <div>Loading bookings...</div>
+          </div>
+        ) : bookings.length > 0 ? (
+          <BookingsList bookings={bookings} onRefresh={fetchBookings} />
         ) : (
-          <BookingsList 
-            bookings={bookings} 
-            getMachineName={getMachineName}
-            onViewDetails={handleViewDetails}
-            onDeleteBooking={handleDeleteBooking}
-          />
+          <EmptyBookingsView />
         )}
       </CardContent>
     </Card>

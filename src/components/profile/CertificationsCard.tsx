@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -8,12 +7,13 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
-import { courseService } from '@/services/courseService'; // Import courseService
+import { courseService } from '@/services/courseService';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import BookMachineButton from './BookMachineButton';
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
+const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
 
 const CertificationsCard = () => {
   const { user } = useAuth();
@@ -310,8 +310,8 @@ const CertificationsCard = () => {
                   <div className="text-sm text-blue-500 mb-1">No certification required</div>
                 )}
                 
-                {/* Display linked course if available */}
-                {machine.linkedCourseId && (
+                {/* Display linked course if available and machine is not Laser Cutter */}
+                {machine.linkedCourseId && machine.id !== MACHINE_ID_LASER_CUTTER && (
                   <div className="mt-2 mb-2">
                     <div className="text-xs text-purple-600 font-medium flex items-center">
                       <BookOpen className="h-3 w-3 mr-1" />

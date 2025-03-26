@@ -1,23 +1,35 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const EmptyBookingsView = ({ onBookMachine }) => {
+const EmptyBookingsView = () => {
+  const navigate = useNavigate();
+
+  const handleBookMachine = () => {
+    // Navigate to certifications tab instead of booking page
+    navigate('/profile?tab=certifications');
+  };
+
   return (
-    <div className="text-center py-10 px-4 space-y-6">
-      <div className="inline-flex justify-center items-center w-20 h-20 rounded-full bg-purple-100 mb-4">
-        <CalendarPlus size={32} className="text-purple-600" />
+    <div className="text-center py-12">
+      <div className="bg-purple-50 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-4">
+        <Calendar className="h-10 w-10 text-purple-500" />
       </div>
-      <h3 className="text-xl font-medium text-gray-800">No Bookings Found</h3>
-      <p className="text-gray-500 max-w-md mx-auto">
-        You don't have any machine reservations yet. Book a machine to get started with our facilities.
+      
+      <h3 className="text-xl font-semibold text-gray-800 mb-2">No Bookings Found</h3>
+      
+      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+        You don't have any machine reservations yet. Book a
+        machine to get started with our facilities.
       </p>
-      <Button 
-        className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2 mx-auto mt-4 px-6 py-2.5" 
-        onClick={onBookMachine}
+      
+      <Button
+        onClick={handleBookMachine}
+        className="flex items-center gap-2"
       >
-        <CalendarPlus size={18} />
+        <Calendar className="h-4 w-4" />
         Book a Machine
       </Button>
     </div>

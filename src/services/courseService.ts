@@ -37,8 +37,13 @@ class CourseService {
       const data = imageUrl === null ? { imageUrl: null } : { imageUrl };
       
       // For large payloads, log the size
-      if (imageUrl && imageUrl.length > 1000000) {
-        console.log(`Large image being sent, size: ${(imageUrl.length / (1024 * 1024)).toFixed(2)} MB`);
+      if (imageUrl) {
+        const sizeKB = (imageUrl.length / 1024).toFixed(2);
+        console.log(`Image size being sent: ${sizeKB}KB`);
+        
+        if (imageUrl.length > 100000) { // 100KB
+          console.warn(`Image size (${sizeKB}KB) may be too large for stable upload`);
+        }
       }
       
       const response = await apiService.put(`/courses/${courseId}`, data);

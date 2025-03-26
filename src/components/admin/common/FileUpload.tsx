@@ -40,7 +40,8 @@ const FileUpload = ({
     
     // Display file size for debugging
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
+    const fileSizeKB = (file.size / 1024).toFixed(2);
+    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB (${fileSizeKB}KB), type: ${file.type}`);
     
     // Validate file
     const validationError = validateFile(file, allowedTypes, maxSizeMB);
@@ -58,7 +59,9 @@ const FileUpload = ({
       // Get data URL directly without compression
       const dataUrl = await fileToDataUrl(file);
       
-      console.log(`File converted to data URL, length: ${dataUrl.length} characters`);
+      const dataUrlSizeMB = (dataUrl.length / (1024 * 1024)).toFixed(2);
+      const dataUrlSizeKB = (dataUrl.length / 1024).toFixed(2);
+      console.log(`File converted to data URL, size: ${dataUrlSizeMB}MB (${dataUrlSizeKB}KB)`);
       
       // Update the preview and notify parent component
       setPreview(dataUrl);
@@ -66,7 +69,7 @@ const FileUpload = ({
       
       toast({
         title: "File Uploaded",
-        description: `Successfully processed ${file.name} (${fileSizeMB}MB)`,
+        description: `Successfully processed ${file.name} (${fileSizeKB}KB)`,
         duration: 3000
       });
     } catch (error) {
@@ -133,7 +136,7 @@ const FileUpload = ({
             />
           </div>
           <p className="text-xs text-gray-500">
-            Max file size: {maxSizeMB}MB. Recommended size: under 1MB for best performance.
+            Max file size: {maxSizeMB}MB ({Math.round(maxSizeMB * 1024)}KB). For best results, use images under 100KB.
           </p>
         </>
       )}
