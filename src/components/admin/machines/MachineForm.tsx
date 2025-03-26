@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,7 +63,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("basic");
 
-  // Debug log to see the current form data
   useEffect(() => {
     console.log("Current form data:", {
       ...formData,
@@ -75,10 +73,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
     });
   }, [formData]);
 
-  // Fix for the status field - ensure it's properly normalized
   useEffect(() => {
     if (formData && formData.status) {
-      // Normalize status if it's in lowercase or different format
       let normalizedStatus = formData.status;
       
       if (formData.status === 'available') {
@@ -89,7 +85,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
         normalizedStatus = 'Out of Order';
       }
       
-      // Only update if it's different to avoid infinite loop
       if (normalizedStatus !== formData.status) {
         console.log(`Normalizing status from "${formData.status}" to "${normalizedStatus}"`);
         setFormData(prev => ({
@@ -150,12 +145,10 @@ const MachineForm: React.FC<MachineFormProps> = ({
     console.log(`Handling select change for ${id}: ${value}`);
     
     if (id === 'linkedCourseId' || id === 'linkedQuizId') {
-      // If "none" is selected, set to empty string to ensure it gets sent as null/undefined to API
       const finalValue = value === 'none' ? '' : value;
-      console.log(`Setting ${id} to:`, finalValue || 'empty string');
+      console.log(`Setting ${id} to:`, finalValue === '' ? 'empty string (will be null)' : finalValue);
       setFormData((prev) => ({ ...prev, [id]: finalValue }));
     } else {
-      // For other select fields
       setFormData((prev) => ({ ...prev, [id]: value }));
     }
   };
@@ -206,7 +199,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSubmit = () => {
-    // Explicitly convert requiresCertification to boolean before submitting
     const finalFormData = {
       ...formData,
       requiresCertification: Boolean(formData.requiresCertification)
@@ -217,35 +209,29 @@ const MachineForm: React.FC<MachineFormProps> = ({
       requiresCertification: `${finalFormData.requiresCertification} (${typeof finalFormData.requiresCertification})`,
     });
     
-    // Update the form data with the proper boolean value
     setFormData(finalFormData);
     
-    // Now submit the form
     onSubmit();
   };
 
   const suggestedCourse = getRecommendedCourse();
   const suggestedQuiz = getRecommendedQuiz();
 
-  // Determine the course display value
   const getCourseDisplayValue = () => {
     if (!formData.linkedCourseId) return "none";
     return formData.linkedCourseId;
   };
 
-  // Determine the quiz display value
   const getQuizDisplayValue = () => {
     if (!formData.linkedQuizId) return "none";
     return formData.linkedQuizId;
   };
 
-  // Get course name by ID
   const getCourseName = (courseId: string) => {
     const course = courses.find(c => (c._id || c.id) === courseId);
     return course ? course.title : `Course ${courseId}`;
   };
 
-  // Get quiz name by ID
   const getQuizName = (quizId: string) => {
     const quiz = quizzes.find(q => (q._id || q.id) === quizId);
     return quiz ? quiz.title : `Quiz ${quizId}`;

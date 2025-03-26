@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,7 @@ const Quiz = () => {
   const [passed, setPassed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [machineId, setMachineId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -55,6 +55,15 @@ const Quiz = () => {
             setQuiz(quizData);
             setQuestions(quizData.questions);
             setAnswers(new Array(quizData.questions.length).fill(-1));
+            
+            // Try to find the machine that links to this quiz
+            const allMachines = await machineService.getAllMachines();
+            const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
+            if (linkedMachine) {
+              setMachine(linkedMachine);
+              setMachineId(linkedMachine.id || linkedMachine._id);
+            }
+            
             setLoading(false);
             return;
           }
@@ -75,6 +84,7 @@ const Quiz = () => {
         
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
+        setMachineId(machineData.id || machineData._id || id);
 
         // Check if the machine has a linked quiz
         if (machineData.linkedQuizId) {
@@ -174,9 +184,21 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    if (!machine) return;
+    // Use stored machineId if available, otherwise fall back to machine.id or machine._id
+    const targetId = machineId || (machine && (machine.id || machine._id));
     
-    navigate(`/machine/${machine.id || machine._id}`);
+    if (!targetId) {
+      toast({
+        title: "Navigation Error",
+        description: "Could not determine which machine page to return to",
+        variant: "destructive"
+      });
+      navigate('/home');
+      return;
+    }
+    
+    console.log(`Navigating to machine page for ID: ${targetId}`);
+    navigate(`/machine/${targetId}`);
   };
 
   if (loading) {

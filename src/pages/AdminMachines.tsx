@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,20 +97,9 @@ const AdminMachines = () => {
       }
     };
     
-    const ensureMachine1HasCourseAndQuiz = async () => {
-      try {
-        // Update to use correct IDs for machine 1
-        await machineDatabaseService.linkMachineCourseAndQuiz('1', '1', '1');
-        console.log("Successfully linked Machine 1 with course 1 and quiz 1");
-      } catch (error) {
-        console.error("Error linking machine 1 with course and quiz:", error);
-      }
-    };
-    
     fetchMachines();
     fetchUsers();
     fetchCoursesAndQuizzes();
-    ensureMachine1HasCourseAndQuiz();
   }, []);
   
   const getCourseName = (courseId: string) => {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -89,13 +88,7 @@ const AdminMachineEdit = () => {
           setLoading(false);
         }
       } else {
-        // For new machines, initialize with default course and quiz IDs
-        const defaultId = Math.floor(Math.random() * 1000 + 7).toString(); // Random ID for new machine
-        setFormData(prev => ({
-          ...prev,
-          linkedCourseId: defaultId,
-          linkedQuizId: defaultId
-        }));
+        // For new machines, just initialize defaults and exit loading state
         setLoading(false);
       }
     };
@@ -174,11 +167,11 @@ const AdminMachineEdit = () => {
       
       // Convert empty string values to null/undefined for the backend
       if (dataToSubmit.linkedCourseId === '') {
-        dataToSubmit.linkedCourseId = undefined;
+        dataToSubmit.linkedCourseId = null;
       }
       
       if (dataToSubmit.linkedQuizId === '') {
-        dataToSubmit.linkedQuizId = undefined;
+        dataToSubmit.linkedQuizId = null;
       }
       
       if (isEditing && id) {
