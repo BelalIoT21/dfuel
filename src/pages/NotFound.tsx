@@ -17,10 +17,15 @@ const NotFound = () => {
     if (user) {
       if (location.pathname.startsWith('/admin') && user.isAdmin) {
         setRedirectPath('/admin');
-      } else if (location.pathname === '/bookings' || location.pathname.startsWith('/booking/')) {
-        // If trying to access bookings, redirect to home page
+      } else if (location.pathname === '/bookings') {
+        // If trying to access bookings page directly, don't redirect to home
+        // This ensures the bookings page is accessible
+        console.log("Accessed bookings page, will not redirect");
+        setRedirectPath(user.isAdmin ? '/admin' : '/home');
+      } else if (location.pathname.startsWith('/booking/')) {
+        // If trying to access a specific booking page
         setRedirectPath('/home');
-        console.log("Redirecting from bookings to home page");
+        console.log("Redirecting from specific booking to home page");
       } else if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {

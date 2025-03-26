@@ -33,7 +33,12 @@ const ActiveBookings = () => {
       try {
         setLoading(true);
         console.log('Fetching bookings for user:', user.id);
-        const userBookings = await bookingService.getUserBookings(user.id);
+        
+        // If admin, fetch all bookings, otherwise fetch user's bookings
+        const userBookings = user.isAdmin 
+          ? await bookingService.getAllBookings()
+          : await bookingService.getUserBookings(user.id);
+          
         console.log('Retrieved bookings:', userBookings);
         
         // Sort bookings by date and time
@@ -115,31 +120,48 @@ const ActiveBookings = () => {
     navigate(`/machine/${machineId}`);
   };
 
+  const getBackDestination = () => {
+    if (user?.isAdmin) {
+      return '/admin';
+    }
+    return '/home';
+  };
+
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
         variant="ghost"
         className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(getBackDestination())}
       >
         <ChevronLeft className="h-4 w-4" />
-        Back
+        Back to {user?.isAdmin ? 'Admin Dashboard' : 'Home'}
       </Button>
 
       <Card className="shadow-lg border-purple-100">
         <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
-          <CardTitle className="text-2xl text-purple-800">Your Bookings</CardTitle>
-          <CardDescription>Manage your machine booking appointments</CardDescription>
+          <CardTitle className="text-2xl text-purple-800">
+            {user?.isAdmin ? 'All Bookings' : 'Your Bookings'}
+          </CardTitle>
+          <CardDescription>
+            {user?.isAdmin 
+              ? 'Manage all machine booking appointments' 
+              : 'Manage your machine booking appointments'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
-              <p className="text-gray-600">Loading your bookings...</p>
+              <p className="text-gray-600">Loading bookings...</p>
             </div>
           ) : bookings.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-lg text-gray-500 mb-4">You don't have any active bookings</p>
+              <p className="text-lg text-gray-500 mb-4">
+                {user?.isAdmin 
+                  ? 'There are no active bookings in the system' 
+                  : 'You don\'t have any active bookings'}
+              </p>
               <Button onClick={() => navigate('/home')} className="bg-purple-600 hover:bg-purple-700">
                 Browse Machines
               </Button>
@@ -154,6 +176,12 @@ const ActiveBookings = () => {
                       {booking.status}
                     </span>
                   </div>
+                  {user?.isAdmin && (
+                    <div className="mb-2">
+                      <span className="text-gray-500 text-sm">User: </span>
+                      <span className="font-medium">{booking.userName || 'Unknown User'}</span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mb-3">
                     <div>
                       <span className="text-gray-500 text-sm">Date: </span>
