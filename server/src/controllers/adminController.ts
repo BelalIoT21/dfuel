@@ -1,9 +1,11 @@
+
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Machine } from '../models/Machine';
+import { Booking } from '../models/Booking'; // Added import for Booking model
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -191,8 +193,8 @@ export const seedAdminUser = async (req: Request, res: Response) => {
 // Controller to update all machine course/quiz links
 export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: Response) => {
   try {
-    // Default course and quiz mappings
-    const defaultLinks = {
+    // Default course and quiz mappings with explicit type declaration
+    const defaultLinks: Record<string, { courseId: string; quizId: string }> = {
       '1': { courseId: '5', quizId: '100' },
       '2': { courseId: '2', quizId: '2' },
       '3': { courseId: '3', quizId: '3' },
@@ -210,6 +212,7 @@ export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: R
     // Update each machine
     for (const machine of machines) {
       const machineId = machine._id.toString();
+      // Use the defaultLinks with index access that TypeScript can validate
       const link = defaultLinks[machineId] || { courseId: machineId, quizId: machineId };
       
       if (!machine.linkedCourseId || !machine.linkedQuizId) {
