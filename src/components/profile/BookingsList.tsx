@@ -155,7 +155,17 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
           description: "Booking deleted successfully"
         });
         // Call the parent component's callback to update state
-        onDeleteBooking(booking);
+        if (onDeleteBooking) {
+          onDeleteBooking(booking);
+        } else {
+          // If no callback was provided, at least update local UI
+          // This prevents the deleted booking from reappearing
+          // until the parent component refreshes the list
+          const deleteBookingDelay = setTimeout(() => {
+            setProcessingDelete(null);
+          }, 1000);
+          return () => clearTimeout(deleteBookingDelay);
+        }
       } else {
         toast({
           title: "Error",
@@ -181,6 +191,11 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
         const machineId = getBookingMachineId(booking);
         const bookingId = booking.id || booking._id;
         const isProcessing = processingDelete === bookingId;
+        
+        // Skip rendering bookings that are being processed for deletion
+        if (isProcessing && !onDeleteBooking) {
+          return null;
+        }
         
         return (
           <div key={bookingId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">

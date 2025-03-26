@@ -1,156 +1,115 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, PlusCircle, Loader2 } from "lucide-react";
 import { bookingService } from '@/services/bookingService';
-import { bookingDatabaseService } from '@/services/database/bookingService';
 import { machineService } from '@/services/machineService';
-import { useToast } from '@/hooks/use-toast';
 import BookingsList from './BookingsList';
+import EmptyBookingsView from './EmptyBookingsView';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const BookingsCard = () => {
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [machines, setMachines] = useState({});
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchBookingsAndMachines = async () => {
-      if (!user) return;
-      
-      try {
-        setLoading(true);
-        
-        // Get bookings
-        const userBookings = await bookingService.getUserBookings(user.id);
-        console.log("User bookings in BookingsCard:", userBookings);
-        
-        // Get all machines to resolve machine names
-        const allMachines = await machineService.getMachines();
-        
-        // Create a lookup object for machine names
-        const machinesLookup = {};
-        allMachines.forEach(machine => {
-          const id = machine.id || machine._id;
-          machinesLookup[id] = machine.name;
-        });
-        
-        setMachines(machinesLookup);
-        setBookings(userBookings);
-      } catch (error) {
-        console.error("Error fetching bookings:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load bookings"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBookingsAndMachines();
-  }, [user, toast]);
-
-  const getMachineName = (machineId) => {
-    return machines[machineId] || "Unknown Machine";
-  };
-
-  const handleViewDetails = (booking) => {
-    // We no longer need to navigate to a different page since we'll show a dialog
-    // The dialog handling is now in BookingsList
-    console.log("View booking details for:", booking);
-  };
-
-  const handleDeleteBooking = async (booking) => {
+  
+  const fetchBookings = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
     try {
-      const bookingId = booking.id || booking._id;
-      
-      if (!bookingId) {
-        toast({
-          title: "Error",
-          description: "Booking ID is missing",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      const success = await bookingDatabaseService.deleteBooking(bookingId);
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: "Booking deleted successfully"
-        });
-        // Remove the booking from state
-        setBookings(bookings.filter(b => (b.id || b._id) !== bookingId));
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to delete booking",
-          variant: "destructive"
-        });
-      }
+      console.log(`Fetching bookings for user: ${user.id}`);
+      const userBookings = await bookingService.getUserBookings(user.id);
+      console.log('Received bookings:', userBookings);
+      setBookings(userBookings || []);
     } catch (error) {
-      console.error("Error deleting booking:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
+      console.error('Error fetching bookings:', error);
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
     }
+  }, [user]);
+  
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+  
+  const getMachineName = useCallback(async (machineId) => {
+    if (!machineId) return 'Unknown Machine';
+    
+    try {
+      const machine = await machineService.getMachineById(machineId);
+      return machine?.name || 'Unknown Machine';
+    } catch (error) {
+      console.error(`Error fetching machine ${machineId}:`, error);
+      return 'Unknown Machine';
+    }
+  }, []);
+  
+  const handleViewDetails = (booking) => {
+    // View booking details implementation
+    console.log('View booking details:', booking);
   };
-
+  
+  const handleDeleteBooking = useCallback((booking) => {
+    console.log('Booking deleted:', booking);
+    // Remove the booking from the state
+    setBookings(prevBookings => 
+      prevBookings.filter(b => 
+        (b.id !== booking.id && b._id !== booking._id)
+      )
+    );
+    // Refetch after a short delay to ensure server sync
+    setTimeout(() => {
+      fetchBookings();
+    }, 1000);
+  }, [fetchBookings]);
+  
+  const navigateToMachineBooking = () => {
+    navigate('/machines');
+  };
+  
+  if (isLoading) {
+    return (
+      <Card className="border-purple-100 shadow-md">
+        <CardContent className="p-6 text-center">
+          <Loader2 className="h-8 w-8 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading your bookings...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   return (
-    <Card className="border-purple-100">
-      <CardHeader className="flex flex-row justify-between items-center">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar size={20} className="text-purple-600" />
-            Machine Bookings
-          </CardTitle>
-          <CardDescription>Manage your machine booking appointments</CardDescription>
-        </div>
-        <div className="ml-auto">
+    <Card className="border-purple-100 shadow-md">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Calendar className="h-5 w-5 text-purple-600 mr-2" />
+            <h3 className="text-lg font-medium">Your Bookings</h3>
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => navigate('/profile?tab=certifications')}
-            className="text-purple-600 hover:bg-purple-50"
+            className="border-purple-200 hover:bg-purple-50"
+            onClick={navigateToMachineBooking}
           >
-            Browse Machines
+            <PlusCircle className="h-4 w-4 mr-1" />
+            New Booking
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="py-8 flex justify-center">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-purple-600" />
-              <p className="text-gray-500">Loading your bookings...</p>
-            </div>
-          </div>
-        ) : bookings.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-gray-500 mb-4">You don't have any active bookings</p>
-            <Button 
-              onClick={() => navigate('/profile?tab=certifications')}
-              variant="default"
-            >
-              Browse Machines
-            </Button>
-          </div>
+        
+        {bookings.length === 0 ? (
+          <EmptyBookingsView />
         ) : (
           <BookingsList 
             bookings={bookings} 
-            getMachineName={getMachineName} 
-            onViewDetails={handleViewDetails} 
-            onDeleteBooking={handleDeleteBooking} 
+            getMachineName={getMachineName}
+            onViewDetails={handleViewDetails}
+            onDeleteBooking={handleDeleteBooking}
           />
         )}
       </CardContent>

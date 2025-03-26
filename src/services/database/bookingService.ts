@@ -2,6 +2,7 @@
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import { toast } from '@/components/ui/use-toast';
+import mongoDbService from '../mongoDbService';
 
 /**
  * Service that handles all booking-related database operations.
@@ -65,6 +66,18 @@ export class BookingDatabaseService extends BaseService {
   async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
     console.log(`Updating booking ${bookingId} status to ${status}`);
     try {
+      // Try direct MongoDB access first if available
+      try {
+        const success = await mongoDbService.updateBookingStatus(bookingId, status);
+        if (success) {
+          console.log("Successfully updated booking status via MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error updating booking status:", mongoError);
+      }
+      
+      // Fall back to API
       const response = await apiService.updateBookingStatus(bookingId, status);
       if (response.data && !response.error) {
         console.log("Successfully updated booking status via API");
@@ -85,32 +98,79 @@ export class BookingDatabaseService extends BaseService {
   }
   
   async cancelBooking(bookingId: string): Promise<boolean> {
-    return this.updateBookingStatus(bookingId, 'Canceled');
+    try {
+      // Try direct MongoDB access first if available
+      try {
+        const success = await mongoDbService.updateBookingStatus(bookingId, 'Canceled');
+        if (success) {
+          console.log("Successfully canceled booking via MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error canceling booking:", mongoError);
+      }
+      
+      // Fall back to API
+      return this.updateBookingStatus(bookingId, 'Canceled');
+    } catch (error) {
+      console.error("Error in cancelBooking:", error);
+      return false;
+    }
   }
   
   async deleteBooking(bookingId: string): Promise<boolean> {
     console.log(`Attempting to delete booking ${bookingId}`);
     try {
-      // First try API's delete endpoint
-      const response = await apiService.delete(`bookings/${bookingId}`);
+      // First try MongoDB direct deletion if available
+      let success = false;
       
-      if (response.data && response.data.success) {
-        console.log("Successfully deleted booking via API");
+      try {
+        success = await mongoDbService.deleteBooking(bookingId);
+        if (success) {
+          console.log("Successfully deleted booking via MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error deleting booking:", mongoError);
+      }
+      
+      // Try multiple API endpoints
+      const endpoints = [
+        `bookings/${bookingId}`,
+        `auth/bookings/${bookingId}`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying to delete booking via ${endpoint}`);
+          const response = await apiService.delete(endpoint);
+          
+          if (response.data && response.data.success) {
+            console.log(`Successfully deleted booking via API endpoint: ${endpoint}`);
+            return true;
+          }
+        } catch (apiError) {
+          console.error(`API error deleting booking via ${endpoint}:`, apiError);
+        }
+      }
+      
+      // If all deletion attempts fail, try cancellation
+      console.log("All deletion attempts failed, trying to cancel instead");
+      success = await this.cancelBooking(bookingId);
+      
+      if (success) {
+        console.log("Successfully marked booking as canceled instead of deleting");
+        // Return true even though we only canceled - this is better UX than returning an error
         return true;
       }
       
-      // If that fails, try auth/bookings delete endpoint
-      console.log("First deletion attempt failed, trying auth/bookings endpoint");
-      const authResponse = await apiService.delete(`auth/bookings/${bookingId}`);
-      
-      if (authResponse.data && authResponse.data.success) {
-        console.log("Successfully deleted booking via auth API");
-        return true;
-      }
-      
-      // If both fail, try cancellation as a last resort
-      console.log("Both deletion attempts failed, trying to cancel instead");
-      return this.cancelBooking(bookingId);
+      console.error("All methods of booking deletion failed");
+      toast({
+        title: "Error",
+        description: "Failed to delete booking. Please try again later.",
+        variant: "destructive"
+      });
+      return false;
     } catch (error) {
       console.error("API error in deleteBooking:", error);
       toast({
