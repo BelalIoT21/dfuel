@@ -31,6 +31,23 @@ export class MachineDatabaseService extends BaseService {
     '6': '/utils/images/IMG_7821.jpg'  // Safety Course
   };
 
+  // Get a proper image URL for client display
+  private getProperImageUrl(url?: string): string {
+    if (!url) return '/placeholder.svg';
+    
+    // For server paths, keep them as is - they'll be resolved by the components
+    if (url.startsWith('/utils/images')) {
+      return url;
+    }
+    
+    // For data URLs (base64), return as is
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    
+    return url || '/placeholder.svg';
+  }
+
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       const response = await apiService.getMachineStatus(machineId);
@@ -97,13 +114,11 @@ export class MachineDatabaseService extends BaseService {
       const response = await apiService.request('machines', 'POST', cleanedData, true);
       console.log("Create machine response:", response);
       
-      // Ensure the response has both image properties
+      // Ensure the response has both image properties and proper URLs
       if (response.data) {
-        if (response.data.imageUrl && !response.data.image) {
-          response.data.image = response.data.imageUrl;
-        } else if (response.data.image && !response.data.imageUrl) {
-          response.data.imageUrl = response.data.image;
-        }
+        const imageUrl = this.getProperImageUrl(response.data.imageUrl || response.data.image);
+        response.data.image = imageUrl;
+        response.data.imageUrl = imageUrl;
       }
       
       return response.data;
@@ -135,7 +150,7 @@ export class MachineDatabaseService extends BaseService {
       }
       
       // For standard machines (1-4), ensure we use the correct image if none is provided
-      if (['1', '2', '3', '4'].includes(machineId) && (!cleanedData.imageUrl || cleanedData.imageUrl === '')) {
+      if (['1', '2', '3', '4', '5', '6'].includes(machineId) && (!cleanedData.imageUrl || cleanedData.imageUrl === '')) {
         console.log(`Using default image for machine ${machineId}`);
         cleanedData.imageUrl = this.defaultImageMap[machineId];
         cleanedData.image = this.defaultImageMap[machineId];
@@ -167,13 +182,11 @@ export class MachineDatabaseService extends BaseService {
       const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
       console.log(`Update response for machine ${machineId}:`, response);
       
-      // Ensure the response has both image properties
+      // Ensure the response has both image properties with proper URLs
       if (response.data && response.data.machine) {
-        if (response.data.machine.imageUrl && !response.data.machine.image) {
-          response.data.machine.image = response.data.machine.imageUrl;
-        } else if (response.data.machine.image && !response.data.machine.imageUrl) {
-          response.data.machine.imageUrl = response.data.machine.image;
-        }
+        const imageUrl = this.getProperImageUrl(response.data.machine.imageUrl || response.data.machine.image);
+        response.data.machine.image = imageUrl;
+        response.data.machine.imageUrl = imageUrl;
       }
       
       return response.data;
@@ -203,7 +216,8 @@ export class MachineDatabaseService extends BaseService {
       // Ensure all machines have both imageUrl and image properties
       if (response.data && Array.isArray(response.data)) {
         response.data = response.data.map(machine => {
-          const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+          // Use our helper to get a proper image URL
+          const imageUrl = this.getProperImageUrl(machine.imageUrl || machine.image);
 
           // Ensure requiresCertification is a boolean
           let requiresCertification: boolean;
@@ -237,7 +251,8 @@ export class MachineDatabaseService extends BaseService {
       
       // Ensure the machine has both imageUrl and image properties
       if (response.data) {
-        const imageUrl = response.data.imageUrl || response.data.image || '/placeholder.svg';
+        // Use our helper to get a proper image URL
+        const imageUrl = this.getProperImageUrl(response.data.imageUrl || response.data.image);
         
         // Ensure requiresCertification is a boolean
         let requiresCertification: boolean;

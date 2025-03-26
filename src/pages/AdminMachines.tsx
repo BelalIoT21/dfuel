@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,8 +25,15 @@ const AdminMachines = () => {
   const getProperImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/placeholder.svg';
     
+    // Handle server image paths by adding the API URL prefix
     if (imageUrl.startsWith('/utils/images')) {
-      return `${import.meta.env.VITE_API_URL || ''}/api${imageUrl}`;
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      return `${apiUrl}/api${imageUrl}`;
+    }
+    
+    // Handle base64 data URLs directly
+    if (imageUrl.startsWith('data:')) {
+      return imageUrl;
     }
     
     return imageUrl;
@@ -45,6 +53,7 @@ const AdminMachines = () => {
             return id !== '5' && id !== '6';
           }).map(machine => {
             const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
+            console.log(`Machine ${machine.id || machine._id} image URL: ${imageUrl}`);
             return {
               ...machine,
               imageUrl: imageUrl,
@@ -218,7 +227,9 @@ const AdminMachines = () => {
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
+                  // Make sure to use the proper image URL function
                   const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
+                  console.log(`AdminMachines - Machine ${machineId} image: ${imageUrl}`);
                   
                   return (
                     <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">

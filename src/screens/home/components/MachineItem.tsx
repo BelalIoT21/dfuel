@@ -77,8 +77,13 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     // If the URL starts with /utils/images, ensure it has the API URL prefix
     if (url.startsWith('/utils/images')) {
       // For React Native, we need to use the full URL
-      const apiUrl = 'http://localhost:5000'; // Adjust this based on your configuration
+      const apiUrl = 'http://localhost:5000'; // Make sure this is consistent with your environment
       return `${apiUrl}/api${url}`;
+    }
+    
+    // Handle base64 data URLs directly
+    if (url.startsWith('data:')) {
+      return url;
     }
     
     return url;

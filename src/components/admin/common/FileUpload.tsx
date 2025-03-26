@@ -35,7 +35,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (!url) return null;
     
     if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       return `${apiUrl}/api${url}`;
     }
     
@@ -89,7 +89,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         const compressedDataUrl = await compressImageIfNeeded(dataUrl, targetCompressedSizeMB, 0.9); // Higher initial quality
         
         // Calculate the new size and update
-        finalSize = (compressedDataUrl.length / (1024 * 1024)).toFixed(2);
+        finalSize = ((compressedDataUrl.length * 0.75) / (1024 * 1024)).toFixed(2); // Approximate base64 size
         console.log(`Image compressed from ${fileSizeMB} MB to ${finalSize} MB`);
         
         // Use the compressed version
@@ -138,6 +138,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Properly display existing images
   const displayPreview = preview || (existingUrl ? formatExistingUrl(existingUrl) : null);
+
+  console.log("FileUpload: displaying image preview:", displayPreview);
 
   return (
     <div className="space-y-2">

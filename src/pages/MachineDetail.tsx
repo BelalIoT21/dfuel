@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,8 +28,13 @@ const MachineDetail = () => {
     if (!url) return '/placeholder.svg';
     
     if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       return `${apiUrl}/api${url}`;
+    }
+    
+    // Handle base64 data URLs directly
+    if (url.startsWith('data:')) {
+      return url;
     }
     
     return url;
@@ -192,6 +198,10 @@ const MachineDetail = () => {
   const hasLinkedCourse = !!machine?.linkedCourseId;
   const hasLinkedQuiz = !!machine?.linkedQuizId;
 
+  // Get the image URL with proper formatting
+  const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
+  console.log("MachineDetail - displaying image:", machineImageUrl);
+
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -230,11 +240,11 @@ const MachineDetail = () => {
         <CardContent className="space-y-6 pt-6">
           <div className="rounded-md overflow-hidden">
             <img 
-              src={getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg')}
+              src={machineImageUrl}
               alt={machine?.name} 
               className="w-full h-64 object-cover"
               onError={(e) => {
-                console.error(`Failed to load image: ${machine?.imageUrl || machine?.image}`);
+                console.error(`Failed to load image: ${machineImageUrl}`);
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
