@@ -1,10 +1,24 @@
-// Only update the request method to handle additional options
+
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken } from '../utils/tokenStorage';
+import { getToken, saveToken } from '../utils/tokenStorage';
 
 const API_BASE_URL = 'http://localhost:4000/api';
 
 class ApiService {
+  private token: string | null = null;
+
+  // Initialize token from storage
+  constructor() {
+    this.token = getToken();
+    console.log('ApiService initialized, token exists:', !!this.token);
+  }
+
+  // Set token manually (used during login)
+  setToken(token: string | null): void {
+    console.log('Setting API service token:', token ? 'token-present' : 'token-removed');
+    this.token = token;
+  }
+
   async request(
     endpoint: string, 
     method: 'GET' | 'POST' | 'PUT' | 'DELETE', 
@@ -23,7 +37,16 @@ class ApiService {
 
       // Add authorization if required
       if (requireAuth) {
-        const token = getToken();
+        // First try token from instance (set during login)
+        let token = this.token;
+        
+        // If not available, try from storage
+        if (!token) {
+          token = getToken();
+          // Update instance token if found in storage
+          if (token) this.token = token;
+        }
+        
         console.log(`Using token for authorization: ${token ? 'token-present' : 'no-token'}`);
         
         if (token) {
@@ -83,6 +106,66 @@ class ApiService {
     }
   }
 
+  // Add login endpoint
+  async login(email: string, password: string): Promise<any> {
+    console.log(`Attempting login for user: ${email}`);
+    const response = await this.request('auth/login', 'POST', { email, password }, false);
+    
+    // If login successful, store the token
+    if (response.data && response.data.data && response.data.data.token) {
+      const token = response.data.data.token;
+      console.log('Login successful, saving token');
+      this.setToken(token);
+      saveToken(token, true); // Save with remember=true for persistence
+    }
+    
+    return response;
+  }
+
+  // Add getCurrentUser endpoint
+  async getCurrentUser(): Promise<any> {
+    return this.request('auth/me', 'GET');
+  }
+
+  // Add health check endpoint
+  async checkHealth(): Promise<any> {
+    return this.request('health', 'GET', undefined, false);
+  }
+
+  // Get all users (admin only)
+  async getAllUsers(): Promise<any> {
+    return this.request('admin/users', 'GET');
+  }
+
+  // Get user by ID
+  async getUserById(id: string): Promise<any> {
+    return this.request(`users/${id}`, 'GET');
+  }
+
+  // Get user by email
+  async getUserByEmail(email: string): Promise<any> {
+    return this.request(`users/email/${email}`, 'GET');
+  }
+
+  // Register new user
+  async register(userData: { email: string, password: string, name?: string }): Promise<any> {
+    return this.request('auth/register', 'POST', userData, false);
+  }
+
+  // Update user profile
+  async updateProfile(userId: string, updates: any): Promise<any> {
+    return this.request(`auth/profile`, 'PUT', updates);
+  }
+
+  // Change password
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+    return this.request('auth/change-password', 'POST', { 
+      currentPassword, 
+      newPassword 
+    });
+  }
+
+  // Machine endpoints
   async getMachineStatus(machineId: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'GET');
   }

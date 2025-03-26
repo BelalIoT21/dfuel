@@ -15,6 +15,7 @@ interface UserResponse {
   name: string;
   email: string;
   isAdmin: boolean;
+  certifications: string[];
   lastLogin: Date; // Added lastLogin to the interface
   createdAt: Date; // Added createdAt
 }
@@ -26,19 +27,23 @@ interface LoginResponse {
   }
 }
 
-export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response<LoginResponse | { message: string }>) => {
+export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response) => {
   try {
     const { email, password } = req.body;
+    
+    console.log(`Login attempt for: ${email}`);
 
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      console.log(`User not found: ${email}`);
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Compare the password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log(`Invalid password for user: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -48,6 +53,7 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
 
     // Generate token
     const token = generateToken(user._id.toString());
+    console.log(`Login successful for: ${email}, token generated`);
 
     // Return the standardized response
     res.json({
@@ -57,6 +63,7 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
           name: user.name,
           email: user.email,
           isAdmin: user.isAdmin,
+          certifications: user.certifications || [],
           lastLogin: user.lastLogin,
           createdAt: user.createdAt
         },

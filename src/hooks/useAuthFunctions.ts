@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
+import { saveToken } from '@/utils/tokenStorage';
 
 export const useAuthFunctions = (
   user: User | null,
@@ -18,23 +20,22 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // MongoDB login via API
+      // Call the login endpoint
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
       console.log("API login response:", JSON.stringify(apiResponse, null, 2));
   
       // Handle API errors
       if (apiResponse.error) {
-        console.error("API login error:", apiResponse.error);
-        throw new Error(apiResponse.error);
+        console.error("API login error:", apiResponse.message);
+        throw new Error(apiResponse.message || "Login failed. Please check your credentials.");
       }
   
-      // Validate the response structure
-      const nestedData = apiResponse.data?.data; // Access the nested `data` object
-      const userData = nestedData?.user;
-      const token = nestedData?.token;
+      // API response structure: { data: { data: { user: {...}, token: "..." } } }
+      const userData = apiResponse.data?.data?.user;
+      const token = apiResponse.data?.data?.token;
   
-      if (!userData || !userData._id || !userData.name || !userData.email || !token) {
+      if (!userData || !token) {
         console.error("API response is missing required fields:", apiResponse);
         throw new Error("The server returned incomplete data. Please try again.");
       }
@@ -49,19 +50,18 @@ export const useAuthFunctions = (
       
       console.log("User certifications from API:", userData.certifications);
   
-      // Normalize user data (map `_id` to `id` for consistency)
+      // Normalize user data
       const normalizedUser = {
         ...userData,
-        id: String(userData._id), // Convert _id to string if necessary
+        id: String(userData._id), // Ensure id is available in our expected format
         certifications: userData.certifications || []
       };
   
       console.log("Setting user data in state:", normalizedUser);
   
-      // Save token in localStorage for auth persistence
+      // Save token for auth persistence (apiService already saves it internally)
       console.log("Saving token to localStorage");
-      localStorage.setItem('token', token);
-      apiService.setToken(token); // Set token in API service
+      saveToken(token, true);
   
       setUser(normalizedUser as User); // Update the user state
   

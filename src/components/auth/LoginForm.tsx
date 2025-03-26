@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { motion } from 'framer-motion';
 
 interface LoginFormProps {
@@ -35,6 +35,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -60,7 +61,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login form submitted", { email, password });
+    console.log("Login form submitted", { email, password, rememberMe });
     setFormError('');
     
     if (!validateForm()) return;
@@ -69,9 +70,9 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       setIsSubmitting(true);
       await onLogin(email, password);
       console.log("Login successful");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Authentication error:", error);
-      setFormError('Invalid email or password. Please try again.');
+      setFormError(error.message || 'Invalid email or password. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +135,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               className="w-full bg-purple-600 hover:bg-purple-700"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : 'Sign In'}
             </Button>
           </motion.div>
         </motion.form>
