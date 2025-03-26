@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -96,11 +97,26 @@ export const getMachineById = async (req: Request, res: Response) => {
         clientStatus = machineObj.status.toLowerCase();
       }
     }
+    
+    // Normalize image URL
+    let imageUrl = machineObj.imageUrl || '';
+    
+    // If image URL is empty but we have a default, use it
+    if ((!imageUrl || imageUrl === '') && id in DEFAULT_MACHINE_IMAGES) {
+      imageUrl = DEFAULT_MACHINE_IMAGES[id as keyof typeof DEFAULT_MACHINE_IMAGES];
+    }
+    
+    // If image URL is not empty, ensure it has a leading slash
+    if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+      imageUrl = '/' + imageUrl;
+    }
 
-    // Return a new object with the normalized client status
+    // Return a new object with the normalized fields
     res.status(200).json({
       ...machineObj,
-      status: clientStatus
+      status: clientStatus,
+      imageUrl: imageUrl,
+      image: imageUrl
     });
   } catch (error) {
     console.error('Error in getMachineById:', error);
@@ -253,6 +269,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       requiresCertification,
       difficulty,
       imageUrl,
+      image,
       specifications,
       details,
       certificationInstructions,
@@ -270,11 +287,12 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     machine.difficulty = difficulty || machine.difficulty;
     
-    // Special handling for imageUrl - important fix
-    if (imageUrl !== undefined) {
-      // If an imageUrl is provided (even empty string), use it
-      machine.imageUrl = imageUrl;
-      console.log(`Updated image URL for machine ${id} to: ${imageUrl}`);
+    // Special handling for image fields - consolidate imageUrl and image properties
+    const finalImageUrl = imageUrl || image || machine.imageUrl;
+    if (finalImageUrl !== undefined) {
+      // If an image is provided (even empty string), use it
+      machine.imageUrl = finalImageUrl;
+      console.log(`Updated image URL for machine ${id} to: ${finalImageUrl}`);
     } else if (id in DEFAULT_MACHINE_IMAGES && (!machine.imageUrl || machine.imageUrl === "")) {
       // Use default image for standard machines if no image exists
       machine.imageUrl = DEFAULT_MACHINE_IMAGES[id as keyof typeof DEFAULT_MACHINE_IMAGES];
@@ -320,12 +338,20 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     const updatedMachine = await machine.save();
     console.log("Machine updated successfully:", updatedMachine);
+    
+    // Normalize image URL for response
+    let normalizedImageUrl = updatedMachine.imageUrl || '';
+    if (normalizedImageUrl && !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {
+      normalizedImageUrl = '/' + normalizedImageUrl;
+    }
 
     res.status(200).json({ 
       message: 'Machine updated successfully', 
       machine: {
         ...updatedMachine.toObject(),
-        status: updatedMachine.status === 'In Use' ? 'in-use' : updatedMachine.status.toLowerCase()
+        status: updatedMachine.status === 'In Use' ? 'in-use' : updatedMachine.status.toLowerCase(),
+        imageUrl: normalizedImageUrl,
+        image: normalizedImageUrl
       }
     });
   } catch (error) {

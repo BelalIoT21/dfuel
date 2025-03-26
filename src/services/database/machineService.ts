@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -9,6 +10,7 @@ export interface MachineData {
   requiresCertification?: boolean;
   difficulty?: string;
   imageUrl?: string;
+  image?: string; // Added for compatibility with both image properties
   details?: string;
   specifications?: string;
   certificationInstructions?: string;
@@ -55,8 +57,26 @@ export class MachineDatabaseService extends BaseService {
   async createMachine(machineData: MachineData): Promise<any> {
     try {
       console.log("Creating machine with data:", machineData);
+      
+      // Ensure both imageUrl and image fields are set to the same value
+      if (machineData.imageUrl && !machineData.image) {
+        machineData.image = machineData.imageUrl;
+      } else if (machineData.image && !machineData.imageUrl) {
+        machineData.imageUrl = machineData.image;
+      }
+      
       const response = await apiService.request('machines', 'POST', machineData, true);
       console.log("Create machine response:", response);
+      
+      // Ensure the response has both image properties
+      if (response.data) {
+        if (response.data.imageUrl && !response.data.image) {
+          response.data.image = response.data.imageUrl;
+        } else if (response.data.image && !response.data.imageUrl) {
+          response.data.imageUrl = response.data.image;
+        }
+      }
+      
       return response.data;
     } catch (error) {
       console.error("API error, could not create machine:", error);
@@ -70,10 +90,28 @@ export class MachineDatabaseService extends BaseService {
       if (['1', '2', '3', '4'].includes(machineId) && (!machineData.imageUrl || machineData.imageUrl === '')) {
         console.log(`Using default image for machine ${machineId}`);
         machineData.imageUrl = this.defaultImageMap[machineId];
+        machineData.image = this.defaultImageMap[machineId];
+      }
+      
+      // Ensure both imageUrl and image fields are set to the same value
+      if (machineData.imageUrl && !machineData.image) {
+        machineData.image = machineData.imageUrl;
+      } else if (machineData.image && !machineData.imageUrl) {
+        machineData.imageUrl = machineData.image;
       }
       
       console.log(`Updating machine ${machineId} with data:`, machineData);
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
+      
+      // Ensure the response has both image properties
+      if (response.data) {
+        if (response.data.imageUrl && !response.data.image) {
+          response.data.image = response.data.imageUrl;
+        } else if (response.data.image && !response.data.imageUrl) {
+          response.data.imageUrl = response.data.image;
+        }
+      }
+      
       return response.data;
     } catch (error) {
       console.error(`API error, could not update machine ${machineId}:`, error);
@@ -97,6 +135,19 @@ export class MachineDatabaseService extends BaseService {
       const timestamp = new Date().getTime();
       const response = await apiService.request(`machines?t=${timestamp}`, 'GET', undefined, true);
       console.log("Machine response in service:", response);
+      
+      // Ensure all machines have both imageUrl and image properties
+      if (response.data && Array.isArray(response.data)) {
+        response.data = response.data.map(machine => {
+          const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+          return {
+            ...machine,
+            imageUrl: imageUrl,
+            image: imageUrl
+          };
+        });
+      }
+      
       return response.data || [];
     } catch (error) {
       console.error("API error, could not get all machines:", error);
@@ -107,6 +158,14 @@ export class MachineDatabaseService extends BaseService {
   async getMachineById(machineId: string): Promise<any> {
     try {
       const response = await apiService.request(`machines/${machineId}`, 'GET', undefined, true);
+      
+      // Ensure the machine has both imageUrl and image properties
+      if (response.data) {
+        const imageUrl = response.data.imageUrl || response.data.image || '/placeholder.svg';
+        response.data.imageUrl = imageUrl;
+        response.data.image = imageUrl;
+      }
+      
       return response.data;
     } catch (error) {
       console.error(`API error, could not get machine ${machineId}:`, error);

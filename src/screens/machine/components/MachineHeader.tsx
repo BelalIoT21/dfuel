@@ -6,7 +6,8 @@ import { Chip } from 'react-native-paper';
 interface MachineHeaderProps {
   machine: {
     name: string;
-    image: string;
+    image?: string;
+    imageUrl?: string;
   };
   machineStatus: string;
   isCertified: boolean;
@@ -39,10 +40,13 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     }
   };
 
+  // Get the image URL, preferring imageUrl but falling back to image
+  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+
   return (
     <>
       <Image 
-        source={{ uri: machine.image }}
+        source={{ uri: imageUrl }}
         style={styles.machineImage}
         resizeMode="cover"
       />

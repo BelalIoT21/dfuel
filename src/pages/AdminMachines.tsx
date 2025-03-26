@@ -31,11 +31,12 @@ const AdminMachines = () => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
           }).map(machine => {
-            // Ensure machine has both imageUrl and image properties
+            // Ensure machine has both imageUrl and image properties with consistent values
+            const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
             return {
               ...machine,
-              imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
-              image: machine.image || machine.imageUrl || '/placeholder.svg'
+              imageUrl: imageUrl,
+              image: imageUrl
             };
           });
           console.log("Filtered machines:", filteredMachines);
@@ -206,6 +207,7 @@ const AdminMachines = () => {
                             alt={machine.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
+                              console.error(`Failed to load image: ${imageUrl}`);
                               (e.target as HTMLImageElement).src = '/placeholder.svg';
                             }}
                           />

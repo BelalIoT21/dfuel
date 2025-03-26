@@ -69,9 +69,13 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     
   // Check if user is certified for this machine
   const isCertified = certsArray.includes(machineId);
+  
+  // Get a consistent image URL (prefer imageUrl, fall back to image)
+  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
 
   console.log(`Machine ${machineId} (${machineName}) certification status:`, isCertified);
   console.log(`Machine ID:`, machineId);
+  console.log(`Image URL:`, imageUrl);
   console.log(`User certifications:`, certsArray);
 
   return (
@@ -83,7 +87,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
       })}
     >
       <Card style={styles.card}>
-        <Card.Cover source={{ uri: machine.image || machine.imageUrl || '/placeholder.svg' }} style={styles.cardImage} />
+        <Card.Cover source={{ uri: imageUrl }} style={styles.cardImage} />
         <Card.Content>
           <Title>{machineName}</Title>
           <Paragraph numberOfLines={2} style={styles.description}>{machine.description}</Paragraph>

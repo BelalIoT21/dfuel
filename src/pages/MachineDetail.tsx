@@ -202,19 +202,21 @@ const MachineDetail = () => {
         
         <CardContent className="space-y-6 pt-6">
           {/* Machine Image */}
-          {machine?.imageUrl && (
-            <div className="rounded-md overflow-hidden">
-              <img 
-                src={machine.imageUrl.startsWith('/') ? machine.imageUrl : `/${machine.imageUrl}`} 
-                alt={machine.name} 
-                className="w-full h-64 object-cover"
-                onError={(e) => {
-                  // Fallback to placeholder if image fails to load
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
-              />
-            </div>
-          )}
+          <div className="rounded-md overflow-hidden">
+            <img 
+              src={
+                machine?.imageUrl || 
+                machine?.image || 
+                '/placeholder.svg'
+              } 
+              alt={machine?.name} 
+              className="w-full h-64 object-cover"
+              onError={(e) => {
+                console.error(`Failed to load image: ${machine?.imageUrl || machine?.image}`);
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          </div>
           
           {/* Description */}
           <div>
