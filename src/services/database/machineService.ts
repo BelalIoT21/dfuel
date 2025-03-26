@@ -22,7 +22,7 @@ export interface MachineData {
  */
 export class MachineDatabaseService extends BaseService {
   // Define default image mappings for standard machines
-  private defaultImageMap = {
+  private defaultImageMap: Record<string, string> = {
     '1': '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png', // Laser Cutter
     '2': '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png', // Ultimaker
     '3': '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png', // X1 E Carbon 3D Printer

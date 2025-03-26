@@ -101,10 +101,27 @@ async function updateMachineImages() {
   }
 }
 
-// Function to seed missing machines
-async function seedMissingMachines(missingIds) {
+// Define machine template type for strong typing
+interface MachineTemplate {
+  _id: string;
+  name: string;
+  type: string;
+  description: string;
+  status: string;
+  requiresCertification: boolean;
+  difficulty: string;
+  imageUrl: string;
+  bookedTimeSlots?: any[];
+  specifications?: string;
+  linkedCourseId?: string;
+  linkedQuizId?: string;
+  maintenanceNote?: string;
+}
+
+// Function to seed missing machines with proper type definition
+async function seedMissingMachines(missingIds: string[]): Promise<MachineTemplate[]> {
   // Define machine templates with the new image URLs
-  const machineTemplates = {
+  const machineTemplates: Record<string, MachineTemplate> = {
     '1': {
       _id: '1',
       name: 'Laser Cutter',
@@ -146,7 +163,7 @@ async function seedMissingMachines(missingIds) {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/machines/bambu-printer.jpg',
+      imageUrl: '/machines/bambu-lab.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS, PC',
       linkedCourseId: '4',
       linkedQuizId: '4'
@@ -196,13 +213,13 @@ async function seedMissingMachines(missingIds) {
     
     // Try one by one if bulk insert fails
     console.log('Attempting to create machines one by one...');
-    const results = [];
+    const results: MachineTemplate[] = [];
     
     for (const id of sortedMissingIds) {
       try {
         const machine = new Machine(machineTemplates[id]);
         await machine.save();
-        results.push(machine);
+        results.push(machineTemplates[id]);
         console.log(`Created machine: ${id}`);
       } catch (singleErr) {
         console.error(`Failed to create machine ${id}:`, singleErr);
