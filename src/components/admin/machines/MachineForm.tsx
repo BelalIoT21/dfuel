@@ -62,6 +62,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("basic");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("Current form data:", {
@@ -71,6 +72,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
       linkedQuizId: formData.linkedQuizId || "none",
       status: formData.status
     });
+    
+    // Set initial image preview if one exists
+    if (formData.imageUrl && !imagePreview) {
+      setImagePreview(formData.imageUrl);
+    }
   }, [formData]);
 
   useEffect(() => {
@@ -174,10 +180,13 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const handleImageChange = (dataUrl: string | null) => {
     console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl?.length} bytes]` : 'null');
-    setFormData(prev => ({
-      ...prev,
-      imageUrl: dataUrl || ''
-    }));
+    if (dataUrl) {
+      setImagePreview(dataUrl);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: dataUrl
+      }));
+    }
   };
 
   const getRecommendedCourse = () => {
@@ -251,6 +260,25 @@ const MachineForm: React.FC<MachineFormProps> = ({
     return quiz ? quiz.title : `Quiz ${quizId}`;
   };
 
+  const getImageUrl = (url: string) => {
+    if (!url) return null;
+    
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    // For server URLs from API
+    if (url.startsWith('/utils/images')) {
+      return `http://localhost:4000${url}`;
+    }
+    
+    return url;
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -292,9 +320,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <SelectItem value="Laser Cutter">Laser Cutter</SelectItem>
                   <SelectItem value="3D Printer">3D Printer</SelectItem>
                   <SelectItem value="CNC">CNC</SelectItem>
-                  <SelectItem value="Electronics">Electronics</SelectItem>
-                  <SelectItem value="Woodworking">Woodworking</SelectItem>
-                  <SelectItem value="Metalworking">Metalworking</SelectItem>
+                  <SelectItem value="Safety Equipment">Safety Equipment</SelectItem>
+                  <SelectItem value="Certification">Certification</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -307,6 +334,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter machine description"
+                rows={3}
                 required
               />
             </div>
@@ -318,8 +346,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 onValueChange={(value) => handleSelectChange('status', value)}
                 required
               >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select machine status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Available">Available</SelectItem>
@@ -327,11 +355,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <SelectItem value="Out of Order">Out of Order</SelectItem>
                 </SelectContent>
               </Select>
-              {!formData.status && (
-                <p className="text-xs text-red-500 mt-1">
-                  Please select a status
-                </p>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -342,69 +365,77 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
+                  <SelectValue placeholder="Select difficulty level" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Basic">Basic</SelectItem>
                   <SelectItem value="Beginner">Beginner</SelectItem>
                   <SelectItem value="Intermediate">Intermediate</SelectItem>
                   <SelectItem value="Advanced">Advanced</SelectItem>
+                  <SelectItem value="Expert">Expert</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="imageUpload">Machine Image</Label>
-              <FileUpload
-                existingUrl={formData.imageUrl}
-                onFileChange={handleImageChange}
-                label="Upload Machine Image"
-                compressImages={true}
-                targetCompressedSizeMB={2}
-              />
-              {formData._id && formData._id >= "1" && formData._id <= "4" && !formData.imageUrl && (
-                <p className="text-xs text-amber-600 mt-1">
-                  This is a standard machine that should have a default image.
-                </p>
-              )}
+              <Label htmlFor="image">Machine Image</Label>
+              <div className="flex flex-col space-y-2">
+                {imagePreview && (
+                  <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden mb-2">
+                    <img 
+                      src={getImageUrl(imagePreview)}
+                      alt="Machine preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error("Failed to load image preview:", imagePreview);
+                        // Don't set a fallback to avoid infinite error loop
+                      }}
+                    />
+                  </div>
+                )}
+                <FileUpload 
+                  id="image"
+                  onFileSelect={handleImageChange}
+                  accept="image/*"
+                  maxSizeMB={5}
+                  label="Upload Machine Image"
+                />
+              </div>
             </div>
           </TabsContent>
           
           <TabsContent value="details" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="details">Detailed Description</Label>
-              <Textarea
-                id="details"
-                value={formData.details || ''}
-                onChange={handleInputChange}
-                placeholder="Enter detailed information about the machine"
-                className="min-h-[150px]"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="specifications">Technical Specifications</Label>
+              <Label htmlFor="specifications">Specifications</Label>
               <Textarea
                 id="specifications"
                 value={formData.specifications || ''}
                 onChange={handleInputChange}
-                placeholder="Enter technical specifications, dimensions, power requirements, etc."
-                className="min-h-[150px]"
+                placeholder="Enter machine specifications"
+                rows={4}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="details">Additional Details</Label>
+              <Textarea
+                id="details"
+                value={formData.details || ''}
+                onChange={handleInputChange}
+                placeholder="Enter additional details"
+                rows={4}
               />
             </div>
           </TabsContent>
           
           <TabsContent value="certification" className="space-y-4">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="flex items-center w-full">
-                <Switch
-                  id="requiresCertification"
-                  checked={Boolean(formData.requiresCertification)}
-                  onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
-                />
-                <Label htmlFor="requiresCertification" className="cursor-pointer ml-2">
-                  Requires Certification
-                </Label>
-              </div>
+              <Switch
+                id="requiresCertification"
+                checked={formData.requiresCertification}
+                onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
+              />
+              <Label htmlFor="requiresCertification">Requires Certification</Label>
             </div>
             
             <div className="space-y-2">
@@ -413,91 +444,92 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 id="certificationInstructions"
                 value={formData.certificationInstructions || ''}
                 onChange={handleInputChange}
-                placeholder="Enter instructions for certification process"
-                className="min-h-[100px]"
+                placeholder="Enter certification instructions"
+                rows={4}
               />
             </div>
             
-            {loading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-sm text-gray-500">Loading courses and quizzes...</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
-                  <Select
-                    value={getCourseDisplayValue()}
-                    onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select a course (optional)">
-                        {formData.linkedCourseId ? getCourseName(formData.linkedCourseId) : "None"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="none">None</SelectItem>
-                      {courses.map((course) => {
-                        const courseId = course._id || course.id;
-                        const isRecommended = suggestedCourse && suggestedCourse._id === courseId;
-                        return (
-                          <SelectItem key={courseId} value={courseId}>
-                            {course.title}
-                            {isRecommended ? " (Recommended)" : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  {suggestedCourse && !formData.linkedCourseId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Recommended course: {suggestedCourse.title}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
-                  <Select
-                    value={getQuizDisplayValue()}
-                    onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select a quiz (optional)">
-                        {formData.linkedQuizId ? getQuizName(formData.linkedQuizId) : "None"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="none">None</SelectItem>
-                      {quizzes.map((quiz) => {
-                        const quizId = quiz._id || quiz.id;
-                        const isRecommended = suggestedQuiz && suggestedQuiz._id === quizId;
-                        return (
-                          <SelectItem key={quizId} value={quizId}>
-                            {quiz.title}
-                            {isRecommended ? " (Recommended)" : ""}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  {suggestedQuiz && !formData.linkedQuizId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Recommended quiz: {suggestedQuiz.title}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="linkedCourseId">Linked Course</Label>
+              <Select
+                value={getCourseDisplayValue()}
+                onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select linked course" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem 
+                      key={course._id || course.id} 
+                      value={course._id || course.id}
+                    >
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {suggestedCourse && !formData.linkedCourseId && (
+                <p className="text-xs text-purple-600 mt-1">
+                  Suggestion: Link to "{suggestedCourse.title}"
+                </p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="linkedQuizId">Linked Quiz</Label>
+              <Select
+                value={getQuizDisplayValue()}
+                onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select linked quiz" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {quizzes.map((quiz) => (
+                    <SelectItem 
+                      key={quiz._id || quiz.id} 
+                      value={quiz._id || quiz.id}
+                    >
+                      {quiz.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {suggestedQuiz && !formData.linkedQuizId && (
+                <p className="text-xs text-purple-600 mt-1">
+                  Suggestion: Link to "{suggestedQuiz.title}"
+                </p>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
         
-        <div className="flex gap-2 pt-4 border-t mt-4">
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : submitLabel}
+        <div className="flex justify-end space-x-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
           </Button>
-          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></div>
+                Processing...
+              </>
+            ) : (
+              submitLabel
+            )}
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -57,12 +57,27 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
       }
     }
     
-    // If we have a valid imageUrl or image, use it
+    // If we have a valid imageUrl that starts with http, use it directly
+    if (machine.imageUrl && machine.imageUrl.startsWith('http')) {
+      return { uri: machine.imageUrl };
+    }
+    
+    // If we have a server path imageUrl that starts with /utils/images
+    if (machine.imageUrl && machine.imageUrl.startsWith('/utils/images')) {
+      return { uri: `http://localhost:4000${machine.imageUrl}` };
+    }
+    
+    // If we have a valid imageUrl (could be a data URL or relative path)
     if (machine.imageUrl) {
       return { uri: machine.imageUrl };
     }
     
+    // If we have a valid image property
     if (machine.image) {
+      // Check if the image is a server path
+      if (machine.image.startsWith('/utils/images')) {
+        return { uri: `http://localhost:4000${machine.image}` };
+      }
       return { uri: machine.image };
     }
     
@@ -71,6 +86,7 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
   };
   
   console.log('MachineHeader - Machine:', machine);
+  console.log('MachineHeader - Image source:', machine.imageUrl || machine.image || 'none');
 
   return (
     <>
@@ -79,7 +95,7 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
         style={styles.machineImage}
         resizeMode="cover"
         onError={(e) => {
-          console.error('Failed to load image');
+          console.error('Failed to load image', e.nativeEvent.error);
         }}
       />
       

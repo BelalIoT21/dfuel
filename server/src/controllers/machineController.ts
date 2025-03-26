@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -10,6 +11,33 @@ const DEFAULT_MACHINE_IMAGES: Record<string, string> = {
   '4': '/utils/images/IMG_7769.jpg', // Bambu Lab
   '5': '/utils/images/IMG_7775.jpg', // Safety Cabinet
   '6': '/utils/images/IMG_7821.jpg'  // Safety Course
+};
+
+// Helper function to format image URLs properly for client use
+const formatImageUrl = (url: string, id?: string): string => {
+  if (!url || url === '') {
+    if (id && id in DEFAULT_MACHINE_IMAGES) {
+      return DEFAULT_MACHINE_IMAGES[id];
+    }
+    return '';
+  }
+  
+  // For data URLs, return as is
+  if (url.startsWith('data:')) {
+    return url;
+  }
+  
+  // For server paths, make sure they have the correct format
+  if (url.startsWith('/utils/images')) {
+    return `http://localhost:4000${url}`;
+  }
+  
+  // Ensure all URLs have proper format
+  if (!url.startsWith('http') && !url.startsWith('/')) {
+    return '/' + url;
+  }
+  
+  return url;
 };
 
 export const getMachines = async (req: Request, res: Response) => {
@@ -36,15 +64,7 @@ export const getMachines = async (req: Request, res: Response) => {
         return 'available';
       })();
       
-      let imageUrl = machineObj.imageUrl || '';
-      
-      if ((!imageUrl || imageUrl === '') && machineObj._id in DEFAULT_MACHINE_IMAGES) {
-        imageUrl = DEFAULT_MACHINE_IMAGES[machineObj._id];
-      }
-      
-      if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-        imageUrl = '/' + imageUrl;
-      }
+      const imageUrl = formatImageUrl(machineObj.imageUrl || '', machineObj._id);
       
       return {
         ...machineObj,
@@ -87,15 +107,7 @@ export const getMachineById = async (req: Request, res: Response) => {
       }
     }
     
-    let imageUrl = machineObj.imageUrl || '';
-    
-    if ((!imageUrl || imageUrl === '') && id in DEFAULT_MACHINE_IMAGES) {
-      imageUrl = DEFAULT_MACHINE_IMAGES[id as keyof typeof DEFAULT_MACHINE_IMAGES];
-    }
-    
-    if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-      imageUrl = '/' + imageUrl;
-    }
+    const imageUrl = formatImageUrl(machineObj.imageUrl || '', id);
 
     res.status(200).json({
       ...machineObj,
@@ -284,17 +296,25 @@ export const updateMachine = async (req: Request, res: Response) => {
       
       machine.requiresCertification = normalizedValue;
       console.log(`Setting requiresCertification for machine ${id} to ${normalizedValue} (${typeof normalizedValue})`);
-      
-      // IMPORTANT: Never clear linkedCourseId or linkedQuizId when requiresCertification is turned off
-      // Only clear them if they are explicitly set to null, empty string, or 'none'
     }
     
     if (difficulty !== undefined) machine.difficulty = difficulty;
     
-    const finalImageUrl = imageUrl || image || machine.imageUrl;
-    if (finalImageUrl !== undefined) {
-      machine.imageUrl = finalImageUrl;
-      console.log(`Updated image URL for machine ${id} to: ${finalImageUrl}`);
+    // Handle image uploads - correctly process data URLs or path URLs
+    if (imageUrl || image) {
+      const finalImageUrl = imageUrl || image;
+      
+      // Check if the image is a data URL
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        console.log(`Storing data URL image for machine ${id} (length: ${finalImageUrl.length} bytes)`);
+        machine.imageUrl = finalImageUrl;
+      } else if (finalImageUrl) {
+        // For regular URLs, just store the path
+        console.log(`Storing URL image for machine ${id}: ${finalImageUrl}`);
+        machine.imageUrl = finalImageUrl;
+      }
+      
+      console.log(`Updated image URL for machine ${id}`);
     } else if (id in DEFAULT_MACHINE_IMAGES && (!machine.imageUrl || machine.imageUrl === "")) {
       machine.imageUrl = DEFAULT_MACHINE_IMAGES[id as keyof typeof DEFAULT_MACHINE_IMAGES];
       console.log(`Applied default image for machine ${id}: ${machine.imageUrl}`);
@@ -345,18 +365,16 @@ export const updateMachine = async (req: Request, res: Response) => {
     const updatedMachine = await machine.save();
     console.log(`Machine ${id} updated successfully:`, updatedMachine);
     
-    let normalizedImageUrl = updatedMachine.imageUrl || '';
-    if (normalizedImageUrl && !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {
-      normalizedImageUrl = '/' + normalizedImageUrl;
-    }
+    // Format the image URL for the response
+    const formattedImageUrl = formatImageUrl(updatedMachine.imageUrl || '', id);
 
     res.status(200).json({ 
       message: 'Machine updated successfully', 
       machine: {
         ...updatedMachine.toObject(),
         status: updatedMachine.status === 'In Use' ? 'in-use' : updatedMachine.status.toLowerCase(),
-        imageUrl: normalizedImageUrl,
-        image: normalizedImageUrl
+        imageUrl: formattedImageUrl,
+        image: formattedImageUrl
       }
     });
   } catch (error) {
