@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { machineDatabaseService } from '@/services/database/machineService';
 import { courseDatabaseService } from '@/services/database/courseService';
 import { X, Plus, Trash2 } from 'lucide-react';
+import FileUpload from '@/components/admin/common/FileUpload';
 
 export interface QuizQuestion {
   question: string;
@@ -78,7 +78,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
     fetchData();
   }, []);
 
-  // Make sure we have at least one question
   useEffect(() => {
     if (formData.questions.length === 0) {
       addQuestion();
@@ -89,7 +88,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
     
-    // Clear error for this field if it exists
     if (formErrors[id]) {
       setFormErrors(prev => {
         const newErrors = {...prev};
@@ -102,7 +100,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
   const handleSelectChange = (id: string, value: string) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
     
-    // Clear error for this field if it exists
     if (formErrors[id]) {
       setFormErrors(prev => {
         const newErrors = {...prev};
@@ -136,7 +133,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
         },
       ],
     }));
-    // Set the active index to the new question
     setActiveQuestionIndex(formData.questions.length);
   };
 
@@ -145,7 +141,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
       ...prev,
       questions: prev.questions.filter((_, i) => i !== index),
     }));
-    // Adjust active index if needed
     if (activeQuestionIndex >= formData.questions.length - 1) {
       setActiveQuestionIndex(Math.max(0, formData.questions.length - 2));
     }
@@ -161,7 +156,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
       return { ...prev, questions: updatedQuestions };
     });
     
-    // Clear question error if it exists
     if (formErrors[`question-${index}`]) {
       setFormErrors(prev => {
         const newErrors = {...prev};
@@ -202,7 +196,6 @@ const QuizForm: React.FC<QuizFormProps> = ({
       updatedQuestions[questionIndex] = {
         ...updatedQuestions[questionIndex],
         options: updatedOptions,
-        // Reset correct answer if it's now out of bounds
         correctAnswer: updatedQuestions[questionIndex].correctAnswer >= updatedOptions.length 
           ? 0 
           : updatedQuestions[questionIndex].correctAnswer,
@@ -222,13 +215,11 @@ const QuizForm: React.FC<QuizFormProps> = ({
       errors.description = "Description is required";
     }
     
-    // Validate all questions
     formData.questions.forEach((question, index) => {
       if (!question.question.trim()) {
         errors[`question-${index}`] = "Question text is required";
       }
       
-      // Check if all options have values
       const emptyOptions = question.options.filter(opt => !opt.trim()).length;
       if (emptyOptions > 0) {
         errors[`question-${index}-options`] = "All options must have values";
@@ -243,6 +234,10 @@ const QuizForm: React.FC<QuizFormProps> = ({
     if (validateForm()) {
       onSubmit();
     }
+  };
+
+  const handleFileChange = (dataUrl: string | null) => {
+    setFormData((prev) => ({ ...prev, imageUrl: dataUrl || undefined }));
   };
 
   return (
@@ -339,12 +334,11 @@ const QuizForm: React.FC<QuizFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl || ''}
-                onChange={handleInputChange}
-                placeholder="Enter image URL"
+              <Label>Quiz Image</Label>
+              <FileUpload
+                onFileChange={handleFileChange}
+                existingUrl={formData.imageUrl}
+                label="Upload Quiz Image" 
               />
             </div>
           </TabsContent>

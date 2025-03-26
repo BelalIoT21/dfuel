@@ -16,13 +16,15 @@ interface VideoUploadProps {
   existingUrl?: string;
   className?: string;
   label?: string;
+  previewHeight?: string;
 }
 
 const VideoUpload = ({
   onFileChange,
   existingUrl,
   className = "",
-  label = "Upload Video"
+  label = "Upload Video",
+  previewHeight = "max-h-[300px]"
 }: VideoUploadProps) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [loading, setLoading] = useState(false);
@@ -72,7 +74,7 @@ const VideoUpload = ({
           <video 
             src={preview} 
             controls
-            className="w-full h-auto max-h-[300px]"
+            className={`w-full h-auto ${previewHeight}`}
           />
           <Button 
             variant="destructive" 
