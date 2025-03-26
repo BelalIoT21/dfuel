@@ -98,14 +98,30 @@ class MongoQuizService {
     
     try {
       console.log(`Updating quiz ${quizId} in MongoDB`);
+      
+      // Special handling for imageUrl when it's explicitly set to null or empty string
+      const updateData: any = { ...quiz, updatedAt: new Date() };
+      
+      // If imageUrl is explicitly null, remove it from the database
+      if (quiz.imageUrl === null) {
+        console.log(`Removing image from quiz ${quizId}`);
+        await this.quizzesCollection.updateOne(
+          { _id: quizId },
+          { $unset: { imageUrl: "" } }
+        );
+        delete updateData.imageUrl;
+      } else if (quiz.imageUrl === "") {
+        console.log(`Removing image from quiz ${quizId}`);
+        await this.quizzesCollection.updateOne(
+          { _id: quizId },
+          { $unset: { imageUrl: "" } }
+        );
+        delete updateData.imageUrl;
+      }
+      
       const result = await this.quizzesCollection.updateOne(
         { _id: quizId },
-        { 
-          $set: { 
-            ...quiz,
-            updatedAt: new Date()
-          } 
-        }
+        { $set: updateData }
       );
       
       return result.matchedCount > 0;

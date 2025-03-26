@@ -40,6 +40,7 @@ export class QuizDatabaseService extends BaseService {
   }
 
   async createQuiz(quizData: QuizData): Promise<any> {
+    console.log("Creating quiz with image:", quizData.imageUrl ? "Image present" : "No image");
     return this.apiRequest(
       async () => await apiService.request('quizzes', 'POST', quizData, true),
       'Could not create quiz'
@@ -47,8 +48,17 @@ export class QuizDatabaseService extends BaseService {
   }
 
   async updateQuiz(quizId: string, quizData: Partial<QuizData>): Promise<any> {
+    // Handle the case where imageUrl is explicitly set to null or empty
+    const payload = { ...quizData };
+    if (payload.imageUrl === null || payload.imageUrl === "") {
+      console.log("Removing image from quiz:", quizId);
+      payload.imageUrl = null; // Explicitly set to null to indicate removal
+    } else if (payload.imageUrl) {
+      console.log("Updating quiz with new image");
+    }
+    
     return this.apiRequest(
-      async () => await apiService.request(`quizzes/${quizId}`, 'PUT', quizData, true),
+      async () => await apiService.request(`quizzes/${quizId}`, 'PUT', payload, true),
       `Could not update quiz ${quizId}`
     );
   }

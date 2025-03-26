@@ -23,6 +23,18 @@ class CourseService {
       return null;
     }
   }
+  
+  async updateCourseImage(courseId: string, imageUrl: string | null) {
+    try {
+      console.log(`Updating course ${courseId} image:`, imageUrl ? "New image" : "Removing image");
+      const data = imageUrl === null ? { imageUrl: null } : { imageUrl };
+      const response = await apiService.put(`/courses/${courseId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating course ${courseId} image:`, error);
+      return null;
+    }
+  }
 }
 
 export const courseService = new CourseService();

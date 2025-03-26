@@ -127,20 +127,34 @@ export const updateQuiz = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
+    // Handle image URL deletion (if null or empty string is explicitly provided)
+    const updateData: any = {
+      title,
+      description,
+      category,
+      questions: questions || [],
+      passingScore: passingScore || 70,
+      relatedMachineIds: relatedMachineIds || [],
+      relatedCourseId,
+      difficulty: difficulty || 'Beginner'
+    };
+    
+    // Only set imageUrl if it's not null or empty string
+    if (imageUrl === null || imageUrl === "") {
+      // Remove imageUrl field by using $unset in a separate operation
+      await Quiz.updateOne(
+        { _id: id },
+        { $unset: { imageUrl: 1 } }
+      );
+    } else if (imageUrl) {
+      // Only add the imageUrl field if it has a value
+      updateData.imageUrl = imageUrl;
+    }
+
     // Update the quiz
     const updatedQuiz = await Quiz.findByIdAndUpdate(
       id,
-      {
-        title,
-        description,
-        category,
-        imageUrl,
-        questions: questions || [],
-        passingScore: passingScore || 70,
-        relatedMachineIds: relatedMachineIds || [],
-        relatedCourseId,
-        difficulty: difficulty || 'Beginner'
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
