@@ -368,8 +368,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Advanced',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '5', // Adding course link
-            linkedQuizId: '100'  // Adding quiz link
+            linkedCourseId: '1', // Updated to match correct course ID
+            linkedQuizId: '1'  // Updated to match correct quiz ID
           },
           { 
             _id: '2', 
@@ -464,8 +464,8 @@ class MongoMachineService {
             name: 'Laser Cutter', 
             type: 'Laser Cutter',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '5', // Adding course link
-            linkedQuizId: '100'  // Adding quiz link
+            linkedCourseId: '1', // Updated to correct course ID
+            linkedQuizId: '1'  // Updated to correct quiz ID
           },
           { 
             _id: '2', 

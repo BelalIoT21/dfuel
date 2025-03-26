@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +18,8 @@ const AdminMachines = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [coursesList, setCoursesList] = useState<any[]>([]);
+  const [quizzesList, setQuizzesList] = useState<any[]>([]);
   
   useEffect(() => {
     const fetchMachines = async () => {
@@ -64,10 +65,31 @@ const AdminMachines = () => {
       }
     };
     
+    const fetchCoursesAndQuizzes = async () => {
+      try {
+        // Fetch courses
+        const response = await fetch('/api/courses');
+        if (response.ok) {
+          const courses = await response.json();
+          setCoursesList(courses);
+        }
+        
+        // Fetch quizzes
+        const quizResponse = await fetch('/api/quizzes');
+        if (quizResponse.ok) {
+          const quizzes = await quizResponse.json();
+          setQuizzesList(quizzes);
+        }
+      } catch (error) {
+        console.error("Error fetching courses and quizzes:", error);
+      }
+    };
+    
     const ensureMachine1HasCourseAndQuiz = async () => {
       try {
-        await machineDatabaseService.linkMachineCourseAndQuiz('1', '5', '100');
-        console.log("Successfully linked Machine 1 with course and quiz");
+        // Update to use correct IDs for machine 1
+        await machineDatabaseService.linkMachineCourseAndQuiz('1', '1', '1');
+        console.log("Successfully linked Machine 1 with course 1 and quiz 1");
       } catch (error) {
         console.error("Error linking machine 1 with course and quiz:", error);
       }
@@ -75,8 +97,19 @@ const AdminMachines = () => {
     
     fetchMachines();
     fetchUsers();
+    fetchCoursesAndQuizzes();
     ensureMachine1HasCourseAndQuiz();
   }, []);
+  
+  const getCourseName = (courseId: string) => {
+    const course = coursesList.find(c => c.id === courseId || c._id === courseId);
+    return course ? course.title : `Course ${courseId}`;
+  };
+  
+  const getQuizName = (quizId: string) => {
+    const quiz = quizzesList.find(q => q.id === quizId || q._id === quizId);
+    return quiz ? quiz.title : `Quiz ${quizId}`;
+  };
   
   if (!user?.isAdmin) {
     return (
@@ -217,6 +250,12 @@ const AdminMachines = () => {
                           </div>
                           <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
                             Difficulty: {machine.difficulty || 'Beginner'}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                            Course: {machine.linkedCourseId ? getCourseName(machine.linkedCourseId) : 'None'}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                            Quiz: {machine.linkedQuizId ? getQuizName(machine.linkedQuizId) : 'None'}
                           </div>
                           <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
                             Users Certified: {getUsersCertifiedCount(machineId)}

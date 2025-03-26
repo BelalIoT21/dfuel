@@ -1,11 +1,10 @@
-
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Machine } from '../models/Machine';
-import { Booking } from '../models/Booking'; // Added import for Booking model
+import { Booking } from '../models/Booking';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -195,7 +194,7 @@ export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: R
   try {
     // Default course and quiz mappings with explicit type declaration
     const defaultLinks: Record<string, { courseId: string; quizId: string }> = {
-      '1': { courseId: '5', quizId: '100' },
+      '1': { courseId: '1', quizId: '1' }, // Updated to match correct IDs for machine 1
       '2': { courseId: '2', quizId: '2' },
       '3': { courseId: '3', quizId: '3' },
       '4': { courseId: '4', quizId: '4' },
