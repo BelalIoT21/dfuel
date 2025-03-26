@@ -38,7 +38,7 @@ const BookMachineButton = ({
       variant={canBook ? "default" : "outline"}
     >
       <Calendar className="mr-2 h-4 w-4" />
-      {canBook ? "Book Now" : isCertified ? "Machine Unavailable" : "Certification Required"}
+      {canBook ? "Book Now" : isAvailable ? "Certification Required" : "Machine Unavailable"}
     </Button>
   );
 };

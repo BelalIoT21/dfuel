@@ -11,7 +11,6 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import BookMachineButton from './BookMachineButton';
 
-// Define special machine IDs that are always displayed regardless of availability
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
 const CertificationsCard = () => {
@@ -34,7 +33,6 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
-      // Fetch active machines from database
       let databaseMachines: any[] = [];
       try {
         databaseMachines = await machineService.getMachines();
@@ -44,7 +42,6 @@ const CertificationsCard = () => {
         databaseMachines = [];
       }
       
-      // Extract available machine IDs from database machines
       const databaseMachineIds = databaseMachines.map(machine => 
         (machine.id || machine._id).toString()
       );
@@ -52,18 +49,15 @@ const CertificationsCard = () => {
       console.log("Available machine IDs from database:", databaseMachineIds);
       setAvailableMachineIds(databaseMachineIds);
       
-      // Get the certification list - these are the machines we'll show
       const allCertifications = await fetchAvailableMachinesForCertification(databaseMachines);
       console.log("All certifications filtered:", allCertifications.length);
       
-      // Get fresh user certifications from the service
       let userCerts = [];
       try {
         userCerts = await certificationService.getUserCertifications(user.id);
         console.log("Fresh certifications from service:", userCerts);
       } catch (err) {
         console.error("Error fetching fresh certifications:", err);
-        // Fallback to user object
         userCerts = (user?.certifications || []).map(cert => 
           typeof cert === 'string' ? cert : cert.toString()
         );
@@ -71,7 +65,6 @@ const CertificationsCard = () => {
       
       console.log("User certifications in CertificationsCard:", userCerts);
       
-      // Fetch machine statuses
       const statuses = {};
       for (const machine of databaseMachines) {
         const machineId = (machine.id || machine._id).toString();
@@ -85,7 +78,6 @@ const CertificationsCard = () => {
       }
       setMachineStatuses(statuses);
       
-      // Add special machines (Safety Cabinet and Safety Course) if they're not already included
       const specialMachines = [];
       if (!allCertifications.some(m => (m.id || m._id).toString() === "5")) {
         specialMachines.push({
@@ -107,7 +99,6 @@ const CertificationsCard = () => {
       
       const combinedMachines = [...allCertifications, ...specialMachines];
       
-      // Clean up stale certifications (for machines that don't exist anymore)
       if (userCerts.length > 0) {
         const validMachineIds = [...databaseMachineIds, ...SPECIAL_MACHINE_IDS];
         const staleCertifications = userCerts.filter(cert => !validMachineIds.includes(cert));
@@ -124,7 +115,6 @@ const CertificationsCard = () => {
             }
           }
           
-          // Get updated user certifications after cleanup
           try {
             userCerts = await certificationService.getUserCertifications(user.id);
             console.log("Updated certifications after cleanup:", userCerts);
@@ -134,7 +124,6 @@ const CertificationsCard = () => {
         }
       }
       
-      // Format the machines for display, including only machines that still exist or special machines
       const formattedMachines = combinedMachines
         .filter(machine => {
           const machineId = machine.id?.toString() || machine._id?.toString();
@@ -151,7 +140,7 @@ const CertificationsCard = () => {
             name: machine.name,
             certified: userCerts.includes(machineId),
             date: format(certDate, 'dd/MM/yyyy'),
-            bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
+            bookable: !SPECIAL_MACHINE_IDS.includes(machineId),
             status: statuses[machineId] || (SPECIAL_MACHINE_IDS.includes(machineId) ? 'available' : 'unknown')
           };
         });
@@ -170,19 +159,15 @@ const CertificationsCard = () => {
     }
   };
 
-  // Helper function to fetch available machines for certification
   const fetchAvailableMachinesForCertification = async (databaseMachines: any[]): Promise<any[]> => {
-    // Filter machines, keeping only those that exist in the database or are special (5, 6)
     return databaseMachines.filter(machine => {
       const machineId = (machine.id || machine._id).toString();
       const machineName = machine.name?.toLowerCase();
       
-      // Skip "cnc mill" machines
       if (machineName && machineName === "cnc mill") {
         return false;
       }
       
-      // Include all other machines
       return true;
     });
   };
@@ -269,51 +254,49 @@ const CertificationsCard = () => {
                     </span>
                   )}
                 </div>
-                {machine.certified ? (
+                
+                {machine.requiresCertification !== false ? (
                   <>
-                    <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
-                      <Award className="h-3 w-3" />
-                      Certified
-                    </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      Certified on: {machine.date}
-                    </div>
-                    {machine.bookable ? (
-                      <div className="flex flex-col gap-2 mt-3">
-                        <BookMachineButton 
-                          machineId={machine.id}
-                          isCertified={machine.certified}
-                          machineStatus={machine.status}
-                          size="sm"
-                          className="w-full"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-1 border-purple-200 hover:bg-purple-100"
-                          onClick={() => navigate(`/machine/${machine.id}`)}
-                        >
-                          View Details
-                        </Button>
-                      </div>
+                    {machine.certified ? (
+                      <>
+                        <div className="text-sm text-green-600 font-medium mb-1 flex items-center gap-1">
+                          <Award className="h-3 w-3" />
+                          Certified
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          Certified on: {machine.date}
+                        </div>
+                      </>
                     ) : (
-                      <div className="text-sm text-purple-600 mt-2">
-                        Certification Complete
-                      </div>
+                      <div className="text-sm text-red-500 mb-1">Not certified</div>
                     )}
                   </>
                 ) : (
-                  <>
-                    <div className="text-sm text-red-500 mb-1">Not certified</div>
+                  <div className="text-sm text-blue-500 mb-1">No certification required</div>
+                )}
+                
+                {machine.bookable ? (
+                  <div className="flex flex-col gap-2 mt-3">
+                    <BookMachineButton 
+                      machineId={machine.id}
+                      isCertified={machine.certified || machine.requiresCertification === false}
+                      machineStatus={machine.status}
+                      size="sm"
+                      className="w-full"
+                    />
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="mt-2 border-purple-200 hover:bg-purple-100"
-                      onClick={() => handleAction(machine.id)}
+                      className="mt-1 border-purple-200 hover:bg-purple-100"
+                      onClick={() => navigate(`/machine/${machine.id}`)}
                     >
-                      View Machine
+                      View Details
                     </Button>
-                  </>
+                  </div>
+                ) : (
+                  <div className="text-sm text-purple-600 mt-2">
+                    {machine.requiresCertification !== false ? "Certification Complete" : "No certification required"}
+                  </div>
                 )}
               </div>
             ))}

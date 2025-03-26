@@ -16,6 +16,7 @@ interface MachineActionsProps {
   isAdmin?: boolean;
   hasMachineSafetyCert?: boolean;
   userId?: string;
+  requiresCertification?: boolean;
 }
 
 const MachineActions = ({ 
@@ -28,7 +29,8 @@ const MachineActions = ({
   onBookMachine,
   isAdmin = false,
   hasMachineSafetyCert = false,
-  userId
+  userId,
+  requiresCertification = true
 }: MachineActionsProps) => {
   const [certificationsChecked, setCertificationsChecked] = useState(false);
   const [certifiedState, setCertifiedState] = useState(isCertified);
@@ -59,9 +61,10 @@ const MachineActions = ({
       canGetCertified,
       isAdmin,
       hasMachineSafetyCert,
-      userId
+      userId,
+      requiresCertification
     });
-  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId]);
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, requiresCertification]);
 
   const handleTakeCourse = () => {
     // If not Safety Course and user doesn't have Safety Course certification
@@ -99,34 +102,39 @@ const MachineActions = ({
 
   return (
     <View style={styles.actionContainer}>
-      <Button 
-        mode="contained" 
-        icon="book-open-variant" 
-        style={styles.actionButton}
-        onPress={handleTakeCourse}
-      >
-        Safety Course
-      </Button>
-      
-      <Button 
-        mode="contained" 
-        icon="clipboard-list" 
-        style={styles.actionButton}
-        onPress={handleTakeQuiz}
-      >
-        Take Quiz
-      </Button>
-      
-      {(!certifiedState && (canGetCertified || isSafetyCourse)) && (
-        <Button 
-          mode="contained" 
-          icon="certificate" 
-          style={styles.actionButton}
-          onPress={onGetCertified}
-          disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
-        >
-          Get Certified
-        </Button>
+      {/* Show certification-related buttons only if certification is required or it's the safety course */}
+      {(requiresCertification || isSafetyCourse) && (
+        <>
+          <Button 
+            mode="contained" 
+            icon="book-open-variant" 
+            style={styles.actionButton}
+            onPress={handleTakeCourse}
+          >
+            Safety Course
+          </Button>
+          
+          <Button 
+            mode="contained" 
+            icon="clipboard-list" 
+            style={styles.actionButton}
+            onPress={handleTakeQuiz}
+          >
+            Take Quiz
+          </Button>
+          
+          {(!certifiedState && (canGetCertified || isSafetyCourse)) && (
+            <Button 
+              mode="contained" 
+              icon="certificate" 
+              style={styles.actionButton}
+              onPress={onGetCertified}
+              disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
+            >
+              Get Certified
+            </Button>
+          )}
+        </>
       )}
       
       {/* Only show booking buttons for bookable machines */}
@@ -142,7 +150,7 @@ const MachineActions = ({
             >
               Book Machine (Admin)
             </Button>
-          ) : (machineStatus === 'available' && certifiedState) ? (
+          ) : ((machineStatus === 'available' && (certifiedState || !requiresCertification))) ? (
             <Button 
               mode="contained" 
               icon="calendar-plus" 

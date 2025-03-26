@@ -78,7 +78,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     <TouchableOpacity
       onPress={() => navigation.navigate('MachineDetail', { 
         machineId: machineId,
-        name: machineName
+        name: machineName,
+        requiresCertification: machine.requiresCertification !== false // Default to true if not specified
       })}
     >
       <Card style={styles.card}>

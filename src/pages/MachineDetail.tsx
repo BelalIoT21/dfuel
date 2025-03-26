@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
 import { ChevronLeft, Loader2, Calendar, Award } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from '@/components/profile/BookMachineButton';
 
 const MachineDetail = () => {
@@ -161,6 +162,9 @@ const MachineDetail = () => {
     );
   }
 
+  // Check if certification is required
+  const requiresCertification = machine?.requiresCertification !== false;
+
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -226,42 +230,48 @@ const MachineDetail = () => {
             </div>
           )}
           
-          {/* Certification Status */}
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-            <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
-            {isCertified ? (
-              <div className="flex items-center text-green-600">
-                <Award className="mr-2 h-5 w-5" />
-                <span>You are certified to use this machine</span>
-              </div>
-            ) : (
-              <div className="flex items-center text-amber-600">
-                <span>You need to get certified before using this machine</span>
-              </div>
-            )}
-          </div>
+          {/* Certification Status - only show if certification is required */}
+          {requiresCertification && (
+            <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
+              <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
+              {isCertified ? (
+                <div className="flex items-center text-green-600">
+                  <Award className="mr-2 h-5 w-5" />
+                  <span>You are certified to use this machine</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-amber-600">
+                  <span>You need to get certified before using this machine</span>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Actions */}
           <div className="flex flex-col md:flex-row gap-3 pt-2">
-            <Button 
-              onClick={handleTakeCourse} 
-              variant="outline"
-              className="flex-1"
-            >
-              Take Course
-            </Button>
-            
-            <Button 
-              onClick={handleTakeQuiz} 
-              variant="outline"
-              className="flex-1"
-            >
-              Take Quiz
-            </Button>
+            {requiresCertification && (
+              <>
+                <Button 
+                  onClick={handleTakeCourse} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Take Course
+                </Button>
+                
+                <Button 
+                  onClick={handleTakeQuiz} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Take Quiz
+                </Button>
+              </>
+            )}
             
             <BookMachineButton 
               machineId={id || ''}
-              isCertified={isCertified}
+              isCertified={isCertified || !requiresCertification}
               machineStatus={machineStatus}
               className="flex-1"
             />

@@ -86,7 +86,10 @@ const MachineDetailScreen = ({ route, navigation }) => {
       <View style={styles.contentContainer}>
         <MachineDescription description={machine.description} />
         
-        <MachineRequirements isCertified={isCertified} />
+        {/* Only show requirements if certification is required */}
+        {machine.requiresCertification !== false && (
+          <MachineRequirements isCertified={isCertified} />
+        )}
         
         <MachineActions 
           isCertified={isCertified}
@@ -99,6 +102,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
           isAdmin={user?.isAdmin}
           hasMachineSafetyCert={hasMachineSafetyCert}
           userId={userId}
+          requiresCertification={machine.requiresCertification !== false}
         />
       </View>
     </ScrollView>
