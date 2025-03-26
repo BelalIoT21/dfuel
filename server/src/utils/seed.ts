@@ -1,4 +1,3 @@
-
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
@@ -48,6 +47,10 @@ export class SeedService {
       if (courseCount === 0) {
         console.log('No courses found. Seeding courses...');
         await seedCourses();
+      } else {
+        // Update course images even if courses exist
+        console.log('Updating course images...');
+        await updateCourseImages();
       }
 
       // Check if we need to seed quizzes
@@ -397,6 +400,40 @@ async function seedAllMachines() {
   console.log(`Created ${machines.length} machines successfully in order:`, verifyIds);
   
   return machines;
+}
+
+// New function to update course images
+async function updateCourseImages() {
+  try {
+    const courseUpdates = [
+      {
+        _id: '1',
+        imageUrl: '/courses/laser-course-updated.jpg'
+      },
+      {
+        _id: '2',
+        imageUrl: '/courses/3d-printing-updated.jpg'
+      },
+      {
+        _id: '3',
+        imageUrl: '/courses/carbon-3d-updated.jpg'
+      },
+      {
+        _id: '4',
+        imageUrl: '/courses/bambu-lab-updated.jpg'
+      }
+    ];
+
+    for (const update of courseUpdates) {
+      await Course.updateOne(
+        { _id: update._id },
+        { $set: { imageUrl: update.imageUrl } }
+      );
+      console.log(`Updated image for course ${update._id}`);
+    }
+  } catch (error) {
+    console.error('Error updating course images:', error);
+  }
 }
 
 // New function to seed courses

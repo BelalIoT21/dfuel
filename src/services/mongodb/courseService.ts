@@ -72,7 +72,7 @@ class MongoCourseService {
       // If no _id is provided, generate one based on the count of courses
       if (!course._id) {
         const count = await this.coursesCollection.countDocuments();
-        course._id = String(count + 104); // Start from 104 to begin after course ID 4
+        course._id = String(count + 5); // Start from 5 instead of 104
       }
       
       console.log(`Adding new course to MongoDB: ${course.title} (ID: ${course._id})`);
