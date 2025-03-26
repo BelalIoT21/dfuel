@@ -25,19 +25,19 @@ export async function updateMachineImages() {
     const machineUpdates = [
       {
         _id: '1',
-        imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png'
+        imageUrl: './images/IMG_7814.jpg'
       },
       {
         _id: '2',
-        imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png'
+        imageUrl: './images/IMG_7773.jpg'
       },
       {
         _id: '3',
-        imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
+        imageUrl: './images/IMG_7768.jpg'
       },
       {
         _id: '4',
-        imageUrl: '/machines/bambu-lab.jpg'
+        imageUrl: './images/IMG_7769.jpg'
       }
     ];
 

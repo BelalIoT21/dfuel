@@ -2,6 +2,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -24,6 +25,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Serve the "images" folder as a static directory
+app.use('/images', express.static(path.join(__dirname, '../images')));
 
 // Middleware
 app.use(express.json());
