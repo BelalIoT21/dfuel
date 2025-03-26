@@ -157,7 +157,7 @@ export const createMachine = async (req: Request, res: Response) => {
 
     // Generate the next available ID (starting from 7)
     // Find the highest current machine ID
-    const machines = await Machine.find({}, { _id: 1 }).sort({ _id: -1 });
+    const machines = await Machine.find({}, '_id').sort({ _id: -1 });
     let nextId = '7'; // Default start if no machines exist
     
     if (machines.length > 0) {
@@ -248,22 +248,31 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     machine.difficulty = difficulty || machine.difficulty;
     
-    // Special handling for imageUrl
-    if (imageUrl && imageUrl !== "") {
-      // User provided an image, use it
+    // Special handling for imageUrl - important fix
+    if (imageUrl !== undefined) {
+      // If an imageUrl is provided (even empty string), use it
       machine.imageUrl = imageUrl;
+      console.log(`Updated image URL for machine ${id} to: ${imageUrl}`);
     } else if (id in DEFAULT_MACHINE_IMAGES && (!machine.imageUrl || machine.imageUrl === "")) {
       // Use default image for standard machines if no image exists
       machine.imageUrl = DEFAULT_MACHINE_IMAGES[id as keyof typeof DEFAULT_MACHINE_IMAGES];
       console.log(`Applied default image for machine ${id}: ${machine.imageUrl}`);
     }
-    // Otherwise keep the existing image
     
     machine.specifications = specifications !== undefined ? specifications : machine.specifications;
     machine.details = details !== undefined ? details : machine.details;
     machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
-    machine.linkedCourseId = linkedCourseId !== undefined ? linkedCourseId : machine.linkedCourseId;
-    machine.linkedQuizId = linkedQuizId !== undefined ? linkedQuizId : machine.linkedQuizId;
+    
+    // Fix for course and quiz relationships
+    if (linkedCourseId !== undefined) {
+      machine.linkedCourseId = linkedCourseId;
+      console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
+    }
+    
+    if (linkedQuizId !== undefined) {
+      machine.linkedQuizId = linkedQuizId;
+      console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
+    }
     
     // Convert status to proper format (first letter capitalized)
     if (status) {

@@ -73,11 +73,15 @@ const MachineForm: React.FC<MachineFormProps> = ({
         
         // Sort courses and quizzes by ID to ensure they appear in the correct order
         const sortedCourses = (fetchedCourses || []).sort((a, b) => {
-          return parseInt(a._id || a.id) - parseInt(b._id || b.id);
+          const idA = parseInt(a._id || a.id) || 0;
+          const idB = parseInt(b._id || b.id) || 0;
+          return idA - idB;
         });
         
         const sortedQuizzes = (fetchedQuizzes || []).sort((a, b) => {
-          return parseInt(a._id || a.id) - parseInt(b._id || b.id);
+          const idA = parseInt(a._id || a.id) || 0;
+          const idB = parseInt(b._id || b.id) || 0;
+          return idA - idB;
         });
         
         setCourses(sortedCourses);
@@ -101,7 +105,16 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [id]: value }));
+    // Important fix: properly handle empty values for linkedCourseId and linkedQuizId
+    let finalValue = value;
+    if (id === 'linkedCourseId' || id === 'linkedQuizId') {
+      if (value === 'none') {
+        finalValue = '';
+      }
+    }
+    
+    console.log(`Setting ${id} to:`, finalValue);
+    setFormData((prev) => ({ ...prev, [id]: finalValue }));
   };
 
   const handleSwitchChange = (id: string, checked: boolean) => {
@@ -109,6 +122,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleImageChange = (dataUrl: string | null) => {
+    console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl.length} bytes]` : 'null');
     setFormData(prev => ({
       ...prev,
       imageUrl: dataUrl || ''
@@ -121,13 +135,13 @@ const MachineForm: React.FC<MachineFormProps> = ({
     
     // Direct mapping for machines 1-4
     if (formData._id === "1") {
-      return courses.find(course => course._id === "1");
+      return courses.find(course => course._id === "1" || course.id === "1");
     } else if (formData._id === "2") {
-      return courses.find(course => course._id === "2");
+      return courses.find(course => course._id === "2" || course.id === "2");
     } else if (formData._id === "3") {
-      return courses.find(course => course._id === "3");
+      return courses.find(course => course._id === "3" || course.id === "3");
     } else if (formData._id === "4") {
-      return courses.find(course => course._id === "4");
+      return courses.find(course => course._id === "4" || course.id === "4");
     }
     
     return null;
@@ -139,13 +153,13 @@ const MachineForm: React.FC<MachineFormProps> = ({
     
     // Direct mapping for machines 1-4
     if (formData._id === "1") {
-      return quizzes.find(quiz => quiz._id === "1");
+      return quizzes.find(quiz => quiz._id === "1" || quiz.id === "1");
     } else if (formData._id === "2") {
-      return quizzes.find(quiz => quiz._id === "2");
+      return quizzes.find(quiz => quiz._id === "2" || quiz.id === "2");
     } else if (formData._id === "3") {
-      return quizzes.find(quiz => quiz._id === "3");
+      return quizzes.find(quiz => quiz._id === "3" || quiz.id === "3");
     } else if (formData._id === "4") {
-      return quizzes.find(quiz => quiz._id === "4");
+      return quizzes.find(quiz => quiz._id === "4" || quiz.id === "4");
     }
     
     return null;
@@ -257,6 +271,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 onFileChange={handleImageChange}
                 label="Upload Machine Image"
               />
+              {formData._id && formData._id >= "1" && formData._id <= "4" && !formData.imageUrl && (
+                <p className="text-xs text-amber-600 mt-1">
+                  This is a standard machine that should have a default image.
+                </p>
+              )}
             </div>
           </TabsContent>
           
@@ -316,12 +335,12 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
                   <Select
                     value={formData.linkedCourseId || "none"}
-                    onValueChange={(value) => handleSelectChange('linkedCourseId', value === "none" ? "" : value)}
+                    onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select a course (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
                       {courses.map((course) => (
                         <SelectItem key={course._id || course.id} value={course._id || course.id}>
@@ -342,12 +361,12 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
                   <Select
                     value={formData.linkedQuizId || "none"}
-                    onValueChange={(value) => handleSelectChange('linkedQuizId', value === "none" ? "" : value)}
+                    onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-white">
                       <SelectValue placeholder="Select a quiz (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
                       {quizzes.map((quiz) => (
                         <SelectItem key={quiz._id || quiz.id} value={quiz._id || quiz.id}>

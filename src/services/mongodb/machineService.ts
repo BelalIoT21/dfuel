@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -245,12 +246,31 @@ class MongoMachineService {
     try {
       console.log(`Updating machine ${machineId} with data:`, updates);
       
-      // Ensure we handle requiresCertification correctly
-      const updateData = { ...updates, updatedAt: new Date() };
+      // Create a clean update object
+      const updateData: Record<string, any> = { updatedAt: new Date() };
       
-      // Handle the case where requiresCertification is explicitly set to false
-      if (updates.requiresCertification === false) {
-        console.log("Explicitly setting requiresCertification to false");
+      // Handle each field specifically to avoid overwriting with undefined
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.type !== undefined) updateData.type = updates.type;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.requiresCertification !== undefined) updateData.requiresCertification = updates.requiresCertification;
+      if (updates.difficulty !== undefined) updateData.difficulty = updates.difficulty;
+      if (updates.imageUrl !== undefined) updateData.imageUrl = updates.imageUrl;
+      if (updates.specifications !== undefined) updateData.specifications = updates.specifications;
+      if (updates.details !== undefined) updateData.details = updates.details;
+      if (updates.maintenanceNote !== undefined) updateData.maintenanceNote = updates.maintenanceNote;
+      if (updates.certificationInstructions !== undefined) updateData.certificationInstructions = updates.certificationInstructions;
+      
+      // Important fix for linkedCourseId and linkedQuizId
+      if (updates.linkedCourseId !== undefined) {
+        updateData.linkedCourseId = updates.linkedCourseId;
+        console.log(`Setting linkedCourseId to: ${updates.linkedCourseId}`);
+      }
+      
+      if (updates.linkedQuizId !== undefined) {
+        updateData.linkedQuizId = updates.linkedQuizId;
+        console.log(`Setting linkedQuizId to: ${updates.linkedQuizId}`);
       }
       
       const result = await this.machinesCollection.updateOne(
@@ -261,7 +281,8 @@ class MongoMachineService {
       console.log(`Machine update result: ${JSON.stringify({
         acknowledged: result.acknowledged,
         modifiedCount: result.modifiedCount,
-        matchedCount: result.matchedCount
+        matchedCount: result.matchedCount,
+        fields: Object.keys(updateData)
       })}`);
       
       // Also update status if provided

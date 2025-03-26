@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { Key, RefreshCw, Calendar, Award } from 'lucide-react';
+import { Key, RefreshCw, Calendar, Award, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
+import { courseService } from '@/services/courseService'; // Import courseService
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import BookMachineButton from './BookMachineButton';
@@ -22,6 +24,7 @@ const CertificationsCard = () => {
   const { toast } = useToast();
   const [machineStatuses, setMachineStatuses] = useState({});
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
+  const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -32,6 +35,24 @@ const CertificationsCard = () => {
     setRefreshing(true);
     try {
       console.log("Fetching machines for CertificationsCard");
+      
+      // Fetch all courses to build a map
+      try {
+        const allCourses = await courseService.getCourses();
+        const coursesById: Record<string, any> = {};
+        
+        if (Array.isArray(allCourses)) {
+          allCourses.forEach(course => {
+            const courseId = course.id || course._id;
+            coursesById[courseId] = course;
+          });
+        }
+        
+        console.log("Courses map created:", Object.keys(coursesById).length);
+        setCoursesMap(coursesById);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
       
       let databaseMachines: any[] = [];
       try {
@@ -135,13 +156,21 @@ const CertificationsCard = () => {
             ? new Date(user.certificationDates[machineId])
             : new Date();
           
+          // Add linked course information if available
+          const linkedCourseId = machine.linkedCourseId;
+          const linkedCourse = linkedCourseId && coursesMap[linkedCourseId] 
+            ? coursesMap[linkedCourseId] 
+            : null;
+          
           return {
             id: machineId,
             name: machine.name,
             certified: userCerts.includes(machineId),
             date: format(certDate, 'dd/MM/yyyy'),
             bookable: !SPECIAL_MACHINE_IDS.includes(machineId),
-            status: statuses[machineId] || (SPECIAL_MACHINE_IDS.includes(machineId) ? 'available' : 'unknown')
+            status: statuses[machineId] || (SPECIAL_MACHINE_IDS.includes(machineId) ? 'available' : 'unknown'),
+            linkedCourseId: linkedCourseId || null,
+            courseName: linkedCourse ? linkedCourse.title : null
           };
         });
       
@@ -178,6 +207,12 @@ const CertificationsCard = () => {
 
   const handleAction = (machineId: string) => {
     navigate(`/machine/${machineId}`);
+  };
+
+  const navigateToCourse = (courseId: string) => {
+    if (courseId) {
+      navigate(`/course/${courseId}`);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -273,6 +308,23 @@ const CertificationsCard = () => {
                   </>
                 ) : (
                   <div className="text-sm text-blue-500 mb-1">No certification required</div>
+                )}
+                
+                {/* Display linked course if available */}
+                {machine.linkedCourseId && (
+                  <div className="mt-2 mb-2">
+                    <div className="text-xs text-purple-600 font-medium flex items-center">
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      Required Course:
+                    </div>
+                    <Button 
+                      variant="link" 
+                      className="text-xs p-0 h-auto text-blue-600 hover:text-blue-800"
+                      onClick={() => navigateToCourse(machine.linkedCourseId)}
+                    >
+                      {machine.courseName || "View Course"}
+                    </Button>
+                  </div>
                 )}
                 
                 {machine.bookable ? (
