@@ -30,10 +30,10 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
   const [machineStatuses, setMachineStatuses] = useState<Record<string, string>>({});
   const [machineNotes, setMachineNotes] = useState<Record<string, string>>({});
   
-  // Filter machine data to only include machines 1-4
+  // Filter machine data to only include actual machines (not machine 5 and 6)
   const filteredMachineData = machineData.filter(machine => {
     const machineId = machine.id || machine._id;
-    return ["1", "2", "3", "4"].includes(machineId);
+    return machineId !== "5" && machineId !== "6";
   });
   
   // Check server connection and load machine statuses on mount
@@ -109,36 +109,30 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
     setIsLoading(true);
     
     try {
-      // Focus on machines 1-4 which are actual machines
-      const machineIds = ["1", "2", "3", "4"];
+      // Skip machines 5 and 6 which are special machines
       const newStatuses: Record<string, string> = {};
       const newNotes: Record<string, string> = {};
       
-      // Fetch each machine directly with its own request to ensure fresh data
-      for (const machineId of machineIds) {
-        try {
-          console.log(`Fetching data for machine ${machineId}...`);
-          const response = await fetch(`http://localhost:4000/api/machines/${machineId}`);
-          
-          if (response.ok) {
-            const machineData = await response.json();
-            console.log(`Machine ${machineId} data:`, machineData);
-            
+      // Get all machines from the API
+      const machinesResponse = await fetch('http://localhost:4000/api/machines');
+      
+      if (machinesResponse.ok) {
+        const machines = await machinesResponse.json();
+        console.log(`Fetched ${machines.length} machines`);
+        
+        // Process each machine that's not 5 or 6
+        for (const machine of machines) {
+          const machineId = machine._id || machine.id;
+          if (machineId !== '5' && machineId !== '6') {
             // Store the status in our status map
-            if (machineData.status) {
-              newStatuses[machineId] = machineData.status.toLowerCase();
-              console.log(`Stored status for machine ${machineId}: ${newStatuses[machineId]}`);
-            }
+            newStatuses[machineId] = machine.status?.toLowerCase() || 'available';
+            console.log(`Stored status for machine ${machineId}: ${newStatuses[machineId]}`);
             
             // Store maintenance note if present
-            if (machineData.maintenanceNote) {
-              newNotes[machineId] = machineData.maintenanceNote;
+            if (machine.maintenanceNote) {
+              newNotes[machineId] = machine.maintenanceNote;
             }
-          } else {
-            console.error(`Error fetching machine ${machineId}:`, response.statusText);
           }
-        } catch (error) {
-          console.error(`Network error fetching machine ${machineId}:`, error);
         }
       }
       

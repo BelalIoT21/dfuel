@@ -99,6 +99,20 @@ const ActiveBookings = () => {
     }
   };
 
+  const handleViewMachine = (machineId: string) => {
+    if (!machineId) {
+      toast({
+        title: "Error",
+        description: "Machine information is missing",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log(`Navigating to machine ${machineId}`);
+    navigate(`/machine/${machineId}`);
+  };
+
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -148,16 +162,26 @@ const ActiveBookings = () => {
                       <span>{booking.time}</span>
                     </div>
                   </div>
-                  {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
+                  <div className="flex gap-2 mt-2">
+                    {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={() => handleCancelBooking(booking.id)}
+                      >
+                        Cancel Booking
+                      </Button>
+                    ) : null}
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="border-red-300 text-red-700 hover:bg-red-50"
-                      onClick={() => handleCancelBooking(booking.id)}
+                      className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                      onClick={() => handleViewMachine(booking.machineId)}
                     >
-                      Cancel Booking
+                      View Machine
                     </Button>
-                  ) : null}
+                  </div>
                 </div>
               ))}
             </div>

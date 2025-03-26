@@ -60,7 +60,8 @@ class BookingService {
       return { 
         ...booking,
         machineName: machineName || 'Unknown Machine',
-        id: booking._id || booking.id
+        id: booking._id || booking.id,
+        machineId: machineId // Ensure machineId is consistently available
       };
     }));
     
