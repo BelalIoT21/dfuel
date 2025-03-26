@@ -29,9 +29,12 @@ const app = express();
 // Serve the "images" folder as a static directory
 app.use('/images', express.static(path.join(__dirname, '../images')));
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Also serve the utils/images folder for machine images
+app.use('/utils/images', express.static(path.join(__dirname, './utils/images')));
+
+// Set up higher limits for request payload size
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // Development logging

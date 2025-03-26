@@ -25,19 +25,19 @@ export async function updateMachineImages() {
     const machineUpdates = [
       {
         _id: '1',
-        imageUrl: './images/IMG_7814.jpg'
+        imageUrl: '/utils/images/IMG_7814.jpg'
       },
       {
         _id: '2',
-        imageUrl: './images/IMG_7773.jpg'
+        imageUrl: '/utils/images/IMG_7773.jpg'
       },
       {
         _id: '3',
-        imageUrl: './images/IMG_7768.jpg'
+        imageUrl: '/utils/images/IMG_7768.jpg'
       },
       {
         _id: '4',
-        imageUrl: './images/IMG_7769.jpg'
+        imageUrl: '/utils/images/IMG_7769.jpg'
       }
     ];
 
@@ -46,7 +46,7 @@ export async function updateMachineImages() {
         { _id: update._id },
         { $set: { imageUrl: update.imageUrl } }
       );
-      console.log(`Updated image for machine ${update._id}`);
+      console.log(`Updated image for machine ${update._id} to ${update.imageUrl}`);
     }
   } catch (error) {
     console.error('Error updating machine images:', error);
@@ -65,7 +65,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Advanced',
-      imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
+      imageUrl: '/utils/images/IMG_7814.jpg',
       bookedTimeSlots: [],
       linkedCourseId: '1',  // Added course ID
       linkedQuizId: '1'     // Added quiz ID
@@ -78,7 +78,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
+      imageUrl: '/utils/images/IMG_7773.jpg',
       bookedTimeSlots: [],
       linkedCourseId: '2',  // Added course ID
       linkedQuizId: '2'     // Added quiz ID
@@ -91,7 +91,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Advanced',
-      imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
+      imageUrl: '/utils/images/IMG_7768.jpg',
       bookedTimeSlots: [],
       linkedCourseId: '3',  // Added course ID
       linkedQuizId: '3'     // Added quiz ID
@@ -104,7 +104,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/machines/bambu-lab.jpg',
+      imageUrl: '/utils/images/IMG_7769.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS, PC',
       linkedCourseId: '4',  // Added course ID
       linkedQuizId: '4'     // Added quiz ID
@@ -117,7 +117,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/machines/safety-cabinet.jpg',
+      imageUrl: '/utils/images/IMG_7775.jpg',
       specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
       linkedCourseId: '5',  // Added course ID
       linkedQuizId: '5'     // Added quiz ID
@@ -130,7 +130,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/machines/safety-course.jpg',
+      imageUrl: '/utils/images/IMG_7821.jpg',
       specifications: 'Duration: 1 hour, Required for all makerspace users',
       linkedCourseId: '6',  // Added course ID
       linkedQuizId: '6'     // Added quiz ID
@@ -148,7 +148,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
     for (const machine of missingMachines) {
       const newMachine = new Machine(machine);
       await newMachine.save();
-      console.log(`Created missing machine: ${machine.name} (ID: ${machine._id})`);
+      console.log(`Created missing machine: ${machine.name} (ID: ${machine._id}) with image: ${machine.imageUrl}`);
     }
     
     console.log(`Added ${missingMachines.length} missing machines in order`);
@@ -165,7 +165,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
         const machine = new Machine(machineTemplates[id]);
         await machine.save();
         results.push(machineTemplates[id]);
-        console.log(`Created machine: ${id}`);
+        console.log(`Created machine: ${id} with image: ${machineTemplates[id].imageUrl}`);
       } catch (singleErr) {
         console.error(`Failed to create machine ${id}:`, singleErr);
       }
@@ -186,7 +186,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
+      imageUrl: '/utils/images/IMG_7814.jpg',
       specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
       linkedCourseId: '1',  // Added course ID
       linkedQuizId: '1'     // Added quiz ID
@@ -199,7 +199,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
+      imageUrl: '/utils/images/IMG_7773.jpg',
       specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
       linkedCourseId: '2',  // Added course ID
       linkedQuizId: '2'     // Added quiz ID
@@ -212,7 +212,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
+      imageUrl: '/utils/images/IMG_7768.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
       linkedCourseId: '3',  // Added course ID
       linkedQuizId: '3'     // Added quiz ID
@@ -225,7 +225,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Advanced',
-      imageUrl: '/machines/bambu-lab.jpg',
+      imageUrl: '/utils/images/IMG_7769.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
       linkedCourseId: '4',  // Added course ID
       linkedQuizId: '4'     // Added quiz ID
@@ -238,7 +238,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Basic',
-      imageUrl: '/machines/safety-cabinet.jpg',
+      imageUrl: '/utils/images/IMG_7775.jpg',
       specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
       linkedCourseId: '5',  // Added course ID
       linkedQuizId: '5'     // Added quiz ID
@@ -251,7 +251,7 @@ export async function seedAllMachines() {
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/machines/safety-course.jpg',
+      imageUrl: '/utils/images/IMG_7821.jpg',
       specifications: 'Duration: 1 hour, Required for all makerspace users',
       linkedCourseId: '6',  // Added course ID
       linkedQuizId: '6'     // Added quiz ID
@@ -265,7 +265,7 @@ export async function seedAllMachines() {
   for (const machine of machines) {
     const newMachine = new Machine(machine);
     await newMachine.save();
-    console.log(`Created machine ${machine._id}: ${machine.name}`);
+    console.log(`Created machine ${machine._id}: ${machine.name} with image: ${machine.imageUrl}`);
   }
   
   // Verify the machine order after creation

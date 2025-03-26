@@ -24,10 +24,12 @@ export interface MachineData {
 export class MachineDatabaseService extends BaseService {
   // Define default image mappings for standard machines
   private defaultImageMap: Record<string, string> = {
-    '1': '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png', // Laser Cutter
-    '2': '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png', // Ultimaker
-    '3': '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png', // X1 E Carbon 3D Printer
-    '4': '/machines/bambu-lab.jpg' // Bambu Lab
+    '1': '/utils/images/IMG_7814.jpg', // Laser Cutter
+    '2': '/utils/images/IMG_7773.jpg', // Ultimaker
+    '3': '/utils/images/IMG_7768.jpg', // X1 E Carbon 3D Printer
+    '4': '/utils/images/IMG_7769.jpg', // Bambu Lab
+    '5': '/utils/images/IMG_7775.jpg', // Safety Cabinet
+    '6': '/utils/images/IMG_7821.jpg'  // Safety Course
   };
 
   async getMachineStatus(machineId: string): Promise<string> {
