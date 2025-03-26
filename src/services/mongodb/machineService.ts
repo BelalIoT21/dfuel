@@ -295,15 +295,29 @@ class MongoMachineService {
       if (updates.maintenanceNote !== undefined) updateData.maintenanceNote = updates.maintenanceNote;
       if (updates.certificationInstructions !== undefined) updateData.certificationInstructions = updates.certificationInstructions;
       
-      // Important fix for linkedCourseId and linkedQuizId - allow null values to clear the field
+      // Important fix for linkedCourseId and linkedQuizId - make it explicit when to set null
       if ('linkedCourseId' in updates) {
-        updateData.linkedCourseId = updates.linkedCourseId || null;
-        console.log(`Setting linkedCourseId to: ${updates.linkedCourseId || 'null'}`);
+        // Only set to null if explicitly passed as empty string or "none"
+        if (updates.linkedCourseId === '' || updates.linkedCourseId === 'none') {
+          updateData.linkedCourseId = null;
+          console.log(`Setting linkedCourseId to null`);
+        } else if (updates.linkedCourseId) {
+          updateData.linkedCourseId = updates.linkedCourseId;
+          console.log(`Setting linkedCourseId to: ${updates.linkedCourseId}`);
+        }
+        // If it's undefined, don't include it in the update
       }
       
       if ('linkedQuizId' in updates) {
-        updateData.linkedQuizId = updates.linkedQuizId || null;
-        console.log(`Setting linkedQuizId to: ${updates.linkedQuizId || 'null'}`);
+        // Only set to null if explicitly passed as empty string or "none"
+        if (updates.linkedQuizId === '' || updates.linkedQuizId === 'none') {
+          updateData.linkedQuizId = null;
+          console.log(`Setting linkedQuizId to null`);
+        } else if (updates.linkedQuizId) {
+          updateData.linkedQuizId = updates.linkedQuizId;
+          console.log(`Setting linkedQuizId to: ${updates.linkedQuizId}`);
+        }
+        // If it's undefined, don't include it in the update
       }
       
       const result = await this.machinesCollection.updateOne(
@@ -368,8 +382,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Advanced',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '1', // Updated to match correct course ID
-            linkedQuizId: '1'  // Updated to match correct quiz ID
+            linkedCourseId: '1', // Set to course 1
+            linkedQuizId: '1'  // Set to quiz 1
           },
           { 
             _id: '2', 
@@ -380,8 +394,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Intermediate',
             imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
-            linkedCourseId: '2', // Adding course link
-            linkedQuizId: '2'  // Adding quiz link
+            linkedCourseId: '2',
+            linkedQuizId: '2'
           },
           { 
             _id: '3', 
@@ -392,8 +406,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Advanced',
             imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
-            linkedCourseId: '3', // Adding course link
-            linkedQuizId: '3'  // Adding quiz link
+            linkedCourseId: '3',
+            linkedQuizId: '3'
           },
           { 
             _id: '4', 
@@ -404,8 +418,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Intermediate',
             imageUrl: '/machines/bambu-lab.jpg',
-            linkedCourseId: '4', // Adding course link
-            linkedQuizId: '4'  // Adding quiz link
+            linkedCourseId: '4',
+            linkedQuizId: '4'
           },
           { 
             _id: '5', 
@@ -416,8 +430,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Basic',
             imageUrl: '/machines/safety-cabinet.jpg',
-            linkedCourseId: '5', // Adding course link
-            linkedQuizId: '5'  // Adding quiz link
+            linkedCourseId: '5',
+            linkedQuizId: '5'
           },
           { 
             _id: '6', 
@@ -428,8 +442,8 @@ class MongoMachineService {
             requiresCertification: false,
             difficulty: 'Basic',
             imageUrl: '/machines/safety-course.jpg',
-            linkedCourseId: '6', // Adding course link
-            linkedQuizId: '6'  // Adding quiz link
+            linkedCourseId: '6',
+            linkedQuizId: '6'
           }
         ];
         
@@ -464,65 +478,71 @@ class MongoMachineService {
             name: 'Laser Cutter', 
             type: 'Laser Cutter',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '1', // Updated to correct course ID
-            linkedQuizId: '1'  // Updated to correct quiz ID
+            linkedCourseId: '1', // Set to course 1
+            linkedQuizId: '1'  // Set to quiz 1
           },
           { 
             _id: '2', 
             name: 'Ultimaker', 
             type: '3D Printer',
             imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
-            linkedCourseId: '2', // Adding course link
-            linkedQuizId: '2'  // Adding quiz link
+            linkedCourseId: '2',
+            linkedQuizId: '2'
           },
           { 
             _id: '3', 
             name: 'X1 E Carbon 3D Printer', 
             type: '3D Printer',
             imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
-            linkedCourseId: '3', // Adding course link
-            linkedQuizId: '3'  // Adding quiz link
+            linkedCourseId: '3',
+            linkedQuizId: '3'
           },
           { 
             _id: '4', 
             name: 'Bambu Lab X1 E', 
             type: '3D Printer',
-            linkedCourseId: '4', // Adding course link
-            linkedQuizId: '4'  // Adding quiz link
+            imageUrl: '/machines/bambu-lab.jpg',
+            linkedCourseId: '4',
+            linkedQuizId: '4'
           },
           { 
             _id: '5', 
             name: 'Safety Cabinet', 
             type: 'Safety Equipment',
-            linkedCourseId: '5', // Adding course link
-            linkedQuizId: '5'  // Adding quiz link
+            imageUrl: '/machines/safety-cabinet.jpg',
+            linkedCourseId: '5',
+            linkedQuizId: '5'
           },
           { 
             _id: '6', 
             name: 'Safety Course', 
             type: 'Certification',
-            linkedCourseId: '6', // Adding course link
-            linkedQuizId: '6'  // Adding quiz link
+            imageUrl: '/machines/safety-course.jpg',
+            linkedCourseId: '6',
+            linkedQuizId: '6'
           }
         ];
         
+        // Update each machine with its respective data
         for (const update of updates) {
-          await this.machinesCollection.updateOne(
-            { _id: update._id },
-            { $set: update },
-            { upsert: true }
-          );
-          console.log(`Updated machine: ${update.name} (ID: ${update._id})`);
+          const machineId = update._id;
+          console.log(`Checking if machine ${machineId} needs updates...`);
+          
+          // Check if the machine exists
+          const exists = await this.machineExists(machineId);
+          
+          if (exists) {
+            // Update the machine with the latest metadata
+            await this.updateMachine(machineId, update);
+          }
         }
-        
-        console.log("Updated machine images and data");
       }
     } catch (error) {
-      console.error("Error seeding default machines to MongoDB:", error);
+      console.error("Error seeding default machines:", error);
     }
   }
 }
 
 // Create a singleton instance
-const mongoMachineService = new MongoMachineService();
-export default mongoMachineService;
+export const mongoMachineService = new MongoMachineService();
+

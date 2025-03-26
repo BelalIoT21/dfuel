@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import User from '../models/User';
@@ -192,9 +193,9 @@ export const seedAdminUser = async (req: Request, res: Response) => {
 // Controller to update all machine course/quiz links
 export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: Response) => {
   try {
-    // Default course and quiz mappings with explicit type declaration
+    // Default course and quiz mappings with explicit type declaration and string index signature
     const defaultLinks: Record<string, { courseId: string; quizId: string }> = {
-      '1': { courseId: '1', quizId: '1' }, // Updated to match correct IDs for machine 1
+      '1': { courseId: '1', quizId: '1' }, // Ensure machine 1 has course 1 and quiz 1
       '2': { courseId: '2', quizId: '2' },
       '3': { courseId: '3', quizId: '3' },
       '4': { courseId: '4', quizId: '4' },
@@ -211,7 +212,7 @@ export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: R
     // Update each machine
     for (const machine of machines) {
       const machineId = machine._id.toString();
-      // Use the defaultLinks with index access that TypeScript can validate
+      // Use defaultLinks with proper typesafe index access
       const link = defaultLinks[machineId] || { courseId: machineId, quizId: machineId };
       
       if (!machine.linkedCourseId || !machine.linkedQuizId) {

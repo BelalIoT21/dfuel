@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -288,14 +289,26 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.details = details !== undefined ? details : machine.details;
     machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
     
+    // Updated handling of linkedCourseId - only set to null if explicitly empty or 'none'
     if (linkedCourseId !== undefined) {
-      machine.linkedCourseId = linkedCourseId || null;
-      console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId || 'null'}`);
+      if (linkedCourseId === '' || linkedCourseId === 'none') {
+        machine.linkedCourseId = null;
+        console.log(`Removed linkedCourseId for machine ${id}`);
+      } else {
+        machine.linkedCourseId = linkedCourseId;
+        console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
+      }
     }
     
+    // Updated handling of linkedQuizId - only set to null if explicitly empty or 'none'
     if (linkedQuizId !== undefined) {
-      machine.linkedQuizId = linkedQuizId || null;
-      console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId || 'null'}`);
+      if (linkedQuizId === '' || linkedQuizId === 'none') {
+        machine.linkedQuizId = null;
+        console.log(`Removed linkedQuizId for machine ${id}`);
+      } else {
+        machine.linkedQuizId = linkedQuizId;
+        console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
+      }
     }
     
     if (status) {

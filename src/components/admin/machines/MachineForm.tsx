@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,13 +147,17 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    let finalValue = value;
-    if ((id === 'linkedCourseId' || id === 'linkedQuizId') && value === 'none') {
-      finalValue = '';
-    }
+    console.log(`Handling select change for ${id}: ${value}`);
     
-    console.log(`Setting ${id} to:`, finalValue);
-    setFormData((prev) => ({ ...prev, [id]: finalValue }));
+    if (id === 'linkedCourseId' || id === 'linkedQuizId') {
+      // If "none" is selected, set to empty string
+      const finalValue = value === 'none' ? '' : value;
+      console.log(`Setting ${id} to:`, finalValue || 'empty string');
+      setFormData((prev) => ({ ...prev, [id]: finalValue }));
+    } else {
+      // For other select fields
+      setFormData((prev) => ({ ...prev, [id]: value }));
+    }
   };
 
   const handleSwitchChange = (id: string, checked: boolean) => {
@@ -221,6 +226,30 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const suggestedCourse = getRecommendedCourse();
   const suggestedQuiz = getRecommendedQuiz();
+
+  // Determine the course display value
+  const getCourseDisplayValue = () => {
+    if (!formData.linkedCourseId) return "none";
+    return formData.linkedCourseId;
+  };
+
+  // Determine the quiz display value
+  const getQuizDisplayValue = () => {
+    if (!formData.linkedQuizId) return "none";
+    return formData.linkedQuizId;
+  };
+
+  // Get course name by ID
+  const getCourseName = (courseId: string) => {
+    const course = courses.find(c => (c._id || c.id) === courseId);
+    return course ? course.title : `Course ${courseId}`;
+  };
+
+  // Get quiz name by ID
+  const getQuizName = (quizId: string) => {
+    const quiz = quizzes.find(q => (q._id || q.id) === quizId);
+    return quiz ? quiz.title : `Quiz ${quizId}`;
+  };
 
   return (
     <Card className="mb-6">
@@ -402,20 +431,26 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="linkedCourseId">Linked Safety Course</Label>
                   <Select
-                    value={formData.linkedCourseId || "none"}
+                    value={getCourseDisplayValue()}
                     onValueChange={(value) => handleSelectChange('linkedCourseId', value)}
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select a course (optional)" />
+                      <SelectValue placeholder="Select a course (optional)">
+                        {formData.linkedCourseId ? getCourseName(formData.linkedCourseId) : "None"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
-                      {courses.map((course) => (
-                        <SelectItem key={course._id || course.id} value={course._id || course.id}>
-                          {course.title}
-                          {suggestedCourse && suggestedCourse._id === (course._id || course.id) ? " (Recommended)" : ""}
-                        </SelectItem>
-                      ))}
+                      {courses.map((course) => {
+                        const courseId = course._id || course.id;
+                        const isRecommended = suggestedCourse && suggestedCourse._id === courseId;
+                        return (
+                          <SelectItem key={courseId} value={courseId}>
+                            {course.title}
+                            {isRecommended ? " (Recommended)" : ""}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {suggestedCourse && !formData.linkedCourseId && (
@@ -428,20 +463,26 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="linkedQuizId">Linked Certification Quiz</Label>
                   <Select
-                    value={formData.linkedQuizId || "none"}
+                    value={getQuizDisplayValue()}
                     onValueChange={(value) => handleSelectChange('linkedQuizId', value)}
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select a quiz (optional)" />
+                      <SelectValue placeholder="Select a quiz (optional)">
+                        {formData.linkedQuizId ? getQuizName(formData.linkedQuizId) : "None"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white">
                       <SelectItem value="none">None</SelectItem>
-                      {quizzes.map((quiz) => (
-                        <SelectItem key={quiz._id || quiz.id} value={quiz._id || quiz.id}>
-                          {quiz.title}
-                          {suggestedQuiz && suggestedQuiz._id === (quiz._id || quiz.id) ? " (Recommended)" : ""}
-                        </SelectItem>
-                      ))}
+                      {quizzes.map((quiz) => {
+                        const quizId = quiz._id || quiz.id;
+                        const isRecommended = suggestedQuiz && suggestedQuiz._id === quizId;
+                        return (
+                          <SelectItem key={quizId} value={quizId}>
+                            {quiz.title}
+                            {isRecommended ? " (Recommended)" : ""}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {suggestedQuiz && !formData.linkedQuizId && (
