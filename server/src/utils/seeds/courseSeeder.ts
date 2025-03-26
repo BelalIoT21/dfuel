@@ -1,240 +1,121 @@
 
 import { Course } from '../../models/Course';
+import mongoose from 'mongoose';
 
-// Define an interface for course template objects
-interface CourseTemplate {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  content: string;
-  imageUrl: string;
-  relatedMachineIds: string[];
-  quizId: string;
-  difficulty: string;
-}
+// Define the safety cabinet course content
+const safetyCabinetCourseContent = `
+# Safety Cabinet Usage Course
 
-// Define a type for the templates object with string keys
-interface CourseTemplates {
-  [key: string]: CourseTemplate;
-}
+## Introduction
+This course will teach you how to properly use the safety cabinet for storing hazardous materials.
 
-// Function to update course images
-export async function updateCourseImages() {
+## Important Safety Rules
+1. Always wear appropriate PPE when handling chemicals
+2. Store flammable materials in designated cabinets only
+3. Keep cabinets closed and locked when not in use
+4. Never mix incompatible chemicals
+5. Report any spills or damage immediately
+
+## Proper Storage Procedures
+- Label all containers clearly with contents and date
+- Store heavier items on lower shelves
+- Ensure all containers are sealed properly
+- Organize chemicals by compatibility groups
+- Maintain an inventory of stored materials
+
+## Emergency Procedures
+If you encounter a spill or accident:
+1. Alert others in the area
+2. Contact the lab supervisor immediately
+3. Use appropriate spill kits if trained to do so
+4. Evacuate if necessary
+`;
+
+// Define the machine safety course content
+const machineSafetyCourseContent = `
+# Machine Safety Course
+
+## Introduction
+This course covers the essential safety protocols for all machines in the makerspace.
+
+## General Safety Rules
+1. Never operate machinery without proper training
+2. Always wear appropriate PPE (eye protection, closed-toe shoes, etc.)
+3. Remove jewelry, tie back long hair, and secure loose clothing
+4. No food or drinks in the machine area
+5. Never leave running machines unattended
+
+## Emergency Procedures
+1. Know the location of emergency stops for all equipment
+2. Know the location of first aid kits and fire extinguishers
+3. Report all accidents and near-misses to staff
+4. In case of injury, seek help immediately
+
+## Before Using Any Machine
+1. Inspect the machine for damage or wear
+2. Ensure all guards are in place
+3. Check that your work area is clear
+4. Have your materials and tools organized
+5. Understand the machine's capabilities and limitations
+
+## After Using a Machine
+1. Turn off all power and wait for moving parts to stop
+2. Clean the machine and work area
+3. Return tools to their proper locations
+4. Report any issues to staff
+`;
+
+// Function to seed courses for machines 5 and 6
+export async function seedSafetyCourses() {
   try {
-    const courseUpdates = [
-      {
-        _id: '1',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg'
-      },
-      {
-        _id: '2',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg'
-      },
-      {
-        _id: '3',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg'
-      },
-      {
-        _id: '4',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg'
-      }
-    ];
-
-    for (const update of courseUpdates) {
-      const result = await Course.updateOne(
-        { _id: update._id },
-        { $set: { imageUrl: update.imageUrl } }
-      );
+    // Check if courses already exist
+    const course5 = await Course.findById('5');
+    const course6 = await Course.findById('6');
+    
+    // Create Safety Cabinet course if it doesn't exist
+    if (!course5) {
+      const safetyCabinetCourse = new Course({
+        _id: '5',
+        title: 'Safety Cabinet Usage',
+        description: 'Learn how to properly use and store materials in the safety cabinet',
+        category: 'Safety',
+        content: safetyCabinetCourseContent,
+        imageUrl: '/utils/images/IMG_7775.jpg',
+        relatedMachineIds: ['5'],
+        quizId: '5',
+        difficulty: 'Basic'
+      });
       
-      if (result.matchedCount > 0) {
-        console.log(`Updated image for course ${update._id}`);
-      } else {
-        console.log(`Course ${update._id} not found for image update`);
-      }
-    }
-  } catch (error) {
-    console.error('Error updating course images:', error);
-  }
-}
-
-// Function to check if courses need to be seeded
-export async function checkAndSeedCourses() {
-  try {
-    // Define expected course IDs
-    const expectedCourseIds = ['1', '2', '3', '4'];
-    
-    // Get existing course IDs
-    const existingCourses = await Course.find({}, '_id');
-    const existingCourseIds = existingCourses.map(c => c._id);
-    
-    // Find missing course IDs
-    const missingCourseIds = expectedCourseIds.filter(id => !existingCourseIds.includes(id));
-    
-    if (missingCourseIds.length > 0) {
-      console.log(`Missing course IDs: ${missingCourseIds.join(', ')}. Seeding missing courses...`);
-      await seedMissingCourses(missingCourseIds);
+      await safetyCabinetCourse.save();
+      console.log('Created Safety Cabinet course with ID: 5');
     } else {
-      console.log('All expected courses exist. Updating images...');
-      await updateCourseImages();
+      console.log('Safety Cabinet course already exists');
     }
-  } catch (error) {
-    console.error('Error checking courses:', error);
-  }
-}
-
-// Function to seed missing courses
-async function seedMissingCourses(missingIds: string[]) {
-  try {
-    const courseTemplates: CourseTemplates = {
-      '1': {
-        _id: '1',
-        title: 'Laser Cutter Safety Course',
-        description: 'Learn the fundamentals of laser cutting technology and safety protocols.',
-        category: 'Fabrication',
-        content: '# Laser Cutter Safety Course\n\nWelcome to the Laser Cutter Safety Course. This course will introduce you to the fundamental concepts of laser cutting and important safety procedures.\n\n## Safety First\n\nBefore operating the laser cutter, it\'s essential to understand the safety procedures.\n\n## Materials\n\nDifferent materials react differently to laser cutting. In this section, we\'ll explore various materials and their properties.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
-        relatedMachineIds: ['1'],
-        quizId: '1',
-        difficulty: 'Intermediate'
-      },
-      '2': {
-        _id: '2',
-        title: 'Ultimaker 3D Printer Course',
-        description: 'Get started with Ultimaker 3D printing technology.',
-        category: 'Fabrication',
-        content: '# Ultimaker 3D Printer Course\n\nWelcome to the Ultimaker 3D Printer Course. This course will introduce you to the exciting world of 3D printing with the Ultimaker.\n\n## What is 3D Printing?\n\n3D printing, also known as additive manufacturing, is a process of making three dimensional solid objects from a digital file.\n\n## Common Technologies\n\nThe Ultimaker uses FDM (Fused Deposition Modeling) technology to create precise and reliable prints.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
-        relatedMachineIds: ['2'],
-        quizId: '2',
-        difficulty: 'Beginner'
-      },
-      '3': {
-        _id: '3',
-        title: 'X1 E Carbon 3D Printer Training',
-        description: 'Advanced training for the X1 E Carbon 3D Printer.',
-        category: 'Fabrication',
-        content: '# X1 E Carbon 3D Printer Training\n\nWelcome to the X1 E Carbon 3D Printer training course. This advanced 3D printer offers exceptional capabilities for creating high-strength parts with carbon fiber materials.\n\n## Carbon Fiber Printing\n\nLearn how to work with carbon fiber reinforced materials for maximum strength and durability.\n\n## Advanced Settings\n\nMaster the specialized settings required for optimal printing results with the X1 E Carbon.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
-        relatedMachineIds: ['3'],
-        quizId: '3',
-        difficulty: 'Advanced'
-      },
-      '4': {
-        _id: '4',
-        title: 'Bambu Lab X1 E Course',
-        description: 'Complete guide to using the Bambu Lab X1 E 3D printer.',
-        category: 'Fabrication',
-        content: '# Bambu Lab X1 E Course\n\nWelcome to the Bambu Lab X1 E Course. This comprehensive guide will teach you how to get the most out of your Bambu Lab X1 E 3D printer.\n\n## High-Speed Printing\n\nLearn how to utilize the X1 E\'s impressive 500mm/s print speeds while maintaining quality.\n\n## Multi-Material Printing\n\nMaster the art of printing with multiple materials in a single print job using the Bambu Lab X1 E.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg',
-        relatedMachineIds: ['4'],
-        quizId: '4',
-        difficulty: 'Intermediate'
-      }
-    };
-
-    // Create the missing courses
-    for (const id of missingIds) {
-      if (id in courseTemplates) {
-        const courseTemplate = courseTemplates[id];
-        const newCourse = new Course(courseTemplate);
-        await newCourse.save();
-        console.log(`Created missing course: ${courseTemplate.title} (ID: ${id})`);
-      } else {
-        console.warn(`No template found for course ID: ${id}`);
-      }
+    
+    // Create Machine Safety course if it doesn't exist
+    if (!course6) {
+      const machineSafetyCourse = new Course({
+        _id: '6',
+        title: 'Machine Safety Fundamentals',
+        description: 'Essential safety training required for all makerspace users',
+        category: 'Safety',
+        content: machineSafetyCourseContent,
+        imageUrl: '/utils/images/IMG_7821.jpg',
+        relatedMachineIds: ['6'],
+        quizId: '6',
+        difficulty: 'Basic'
+      });
+      
+      await machineSafetyCourse.save();
+      console.log('Created Machine Safety course with ID: 6');
+    } else {
+      console.log('Machine Safety course already exists');
     }
+    
+    console.log('Safety courses seeding completed successfully');
+    return { success: true };
   } catch (error) {
-    console.error('Error seeding missing courses:', error);
-  }
-}
-
-// Function to seed all courses (used for initial setup)
-export async function seedCourses() {
-  try {
-    const courses = [
-      {
-        _id: '1',
-        title: 'Laser Cutter Safety Course',
-        description: 'Learn the fundamentals of laser cutting technology and safety protocols.',
-        category: 'Fabrication',
-        content: '# Laser Cutter Safety Course\n\nWelcome to the Laser Cutter Safety Course. This course will introduce you to the fundamental concepts of laser cutting and important safety procedures.\n\n## Safety First\n\nBefore operating the laser cutter, it\'s essential to understand the safety procedures.\n\n## Materials\n\nDifferent materials react differently to laser cutting. In this section, we\'ll explore various materials and their properties.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
-        relatedMachineIds: ['1'],
-        quizId: '1',
-        difficulty: 'Intermediate'
-      },
-      {
-        _id: '2',
-        title: 'Ultimaker 3D Printer Course',
-        description: 'Get started with Ultimaker 3D printing technology.',
-        category: 'Fabrication',
-        content: '# Ultimaker 3D Printer Course\n\nWelcome to the Ultimaker 3D Printer Course. This course will introduce you to the exciting world of 3D printing with the Ultimaker.\n\n## What is 3D Printing?\n\n3D printing, also known as additive manufacturing, is a process of making three dimensional solid objects from a digital file.\n\n## Common Technologies\n\nThe Ultimaker uses FDM (Fused Deposition Modeling) technology to create precise and reliable prints.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
-        relatedMachineIds: ['2'],
-        quizId: '2',
-        difficulty: 'Beginner'
-      },
-      {
-        _id: '3',
-        title: 'X1 E Carbon 3D Printer Training',
-        description: 'Advanced training for the X1 E Carbon 3D Printer.',
-        category: 'Fabrication',
-        content: '# X1 E Carbon 3D Printer Training\n\nWelcome to the X1 E Carbon 3D Printer training course. This advanced 3D printer offers exceptional capabilities for creating high-strength parts with carbon fiber materials.\n\n## Carbon Fiber Printing\n\nLearn how to work with carbon fiber reinforced materials for maximum strength and durability.\n\n## Advanced Settings\n\nMaster the specialized settings required for optimal printing results with the X1 E Carbon.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
-        relatedMachineIds: ['3'],
-        quizId: '3',
-        difficulty: 'Advanced'
-      },
-      {
-        _id: '4',
-        title: 'Bambu Lab X1 E Course',
-        description: 'Complete guide to using the Bambu Lab X1 E 3D printer.',
-        category: 'Fabrication',
-        content: '# Bambu Lab X1 E Course\n\nWelcome to the Bambu Lab X1 E Course. This comprehensive guide will teach you how to get the most out of your Bambu Lab X1 E 3D printer.\n\n## High-Speed Printing\n\nLearn how to utilize the X1 E\'s impressive 500mm/s print speeds while maintaining quality.\n\n## Multi-Material Printing\n\nMaster the art of printing with multiple materials in a single print job using the Bambu Lab X1 E.',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg',
-        relatedMachineIds: ['4'],
-        quizId: '4',
-        difficulty: 'Intermediate'
-      }
-    ];
-
-    for (const course of courses) {
-      const newCourse = new Course(course);
-      await newCourse.save();
-      console.log(`Created course: ${course.title}`);
-    }
-
-    console.log(`Created ${courses.length} courses successfully`);
-  } catch (error) {
-    console.error('Error seeding courses:', error);
-  }
-}
-
-// Function to generate a new course ID (starting from 5)
-export async function generateNewCourseId(): Promise<string> {
-  try {
-    // Get all existing courses
-    const existingCourses = await Course.find({}, '_id').sort({ _id: 1 });
-    
-    // Extract numeric IDs
-    const numericIds = existingCourses
-      .map(c => c._id)
-      .filter(id => /^\d+$/.test(id.toString()))
-      .map(id => parseInt(id.toString()));
-    
-    // Find the highest numeric ID, defaulting to 4 if none found
-    // This ensures new IDs start at 5
-    const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
-    
-    // New ID should be the highest + 1, ensuring minimum of 5
-    const newId = Math.max(highestId + 1, 5);
-    
-    console.log(`Generated new course ID: ${newId}`);
-    return newId.toString();
-  } catch (error) {
-    console.error('Error generating new course ID:', error);
-    // Return 5 as a fallback
-    return "5";
+    console.error('Error seeding safety courses:', error);
+    return { success: false, error };
   }
 }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,9 @@ const CertificationsCard = () => {
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
   
-  // Track safety certification specifically
+  // Track safety certifications specifically
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
+  const [hasSafetyCabinetCertification, setHasSafetyCabinetCertification] = useState(false);
 
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
@@ -72,13 +74,15 @@ const CertificationsCard = () => {
         userCertifications = await certificationService.getUserCertifications(user.id);
         console.log("User certifications:", userCertifications);
         
-        // Check for safety certification
+        // Check for safety certifications
         setHasSafetyCertification(userCertifications.includes('6'));
+        setHasSafetyCabinetCertification(userCertifications.includes('5'));
       } catch (error) {
         console.error("Error fetching user certifications:", error);
         if (user.certifications && Array.isArray(user.certifications)) {
           userCertifications = user.certifications.map(cert => String(cert));
           setHasSafetyCertification(userCertifications.includes('6'));
+          setHasSafetyCabinetCertification(userCertifications.includes('5'));
         }
       }
       
@@ -90,14 +94,14 @@ const CertificationsCard = () => {
             _id: specialMachineId,
             id: specialMachineId,
             name: specialMachineId === "5" ? "Safety Cabinet" : "Machine Safety Course",
-            type: specialMachineId === "5" ? "Safety" : "Safety Course",
+            type: specialMachineId === "5" ? "Safety Equipment" : "Safety Course",
             description: specialMachineId === "5" 
               ? "For safely storing hazardous materials" 
               : "Essential safety training for all machine users",
             status: "available",
             linkedCourseId: specialMachineId,
             linkedQuizId: specialMachineId,
-            requiresCertification: true
+            requiresCertification: specialMachineId === "5" // Safety cabinet requires certification, Safety course does not
           };
           databaseMachines.push(specialMachine);
         }
@@ -187,16 +191,19 @@ const CertificationsCard = () => {
     );
   }
 
-  // Safety course is special and should always be shown
+  // Both safety course and safety cabinet are special and should always be shown
   const safetyCourse = machines.find(m => m.id === "6");
+  const safetyCabinet = machines.find(m => m.id === "5");
   const hasCompletedSafetyCourse = hasSafetyCertification;
+  const hasCompletedSafetyCabinet = hasSafetyCabinetCertification;
   
   // Filter machines to show:
   // 1. Machines the user is certified for
-  // 2. Safety machine (id 6) if not certified
+  // 2. Safety machine (id 5 and 6) even if not certified
   const displayMachines = machines.filter(machine => 
     machine.isCertified || // Show machines user is certified for
-    machine.id === "6" // Always show safety course
+    machine.id === "5" ||  // Always show safety cabinet
+    machine.id === "6"     // Always show safety course
   );
 
   return (
@@ -252,6 +259,35 @@ const CertificationsCard = () => {
           </div>
         )}
         
+        {hasCompletedSafetyCourse && !hasCompletedSafetyCabinet && safetyCabinet && (
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-md mb-4">
+            <h3 className="text-blue-800 font-medium mb-2">Safety Cabinet Certification</h3>
+            <p className="text-blue-700 text-sm mb-3">
+              Get certified to use the Safety Cabinet for storing materials.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-blue-100 border-blue-300 text-blue-800"
+                onClick={() => navigateToCourse(safetyCabinet.linkedCourseId)}
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Safety Cabinet Course
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-blue-100 border-blue-300 text-blue-800"
+                onClick={() => navigateToQuiz(safetyCabinet.linkedQuizId)}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Safety Cabinet Quiz
+              </Button>
+            </div>
+          </div>
+        )}
+        
         {displayMachines.length === 0 ? (
           <div className="text-center py-6">
             <p className="text-gray-500 mb-4">You're not certified for any machines yet.</p>
@@ -288,15 +324,9 @@ const CertificationsCard = () => {
                     </div>
                     <div className={`
                       px-2 py-1 rounded-full text-xs font-medium 
-                      ${machineStatus === 'available' ? 'bg-green-100 text-green-800' : 
-                        machineStatus === 'maintenance' ? 'bg-red-100 text-red-800' : 
-                        machineStatus === 'in-use' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-gray-100 text-gray-800'}
+                      ${machine.isCertified ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}
                     `}>
-                      {machineStatus === 'available' ? 'Available' : 
-                       machineStatus === 'maintenance' ? 'Maintenance' : 
-                       machineStatus === 'in-use' ? 'In Use' : 
-                       'Unknown'}
+                      {machine.isCertified ? 'Certified' : 'Not Certified'}
                     </div>
                   </div>
                   

@@ -1,186 +1,172 @@
 
 import { Quiz } from '../../models/Quiz';
+import mongoose from 'mongoose';
 
-// Default quiz data array
-const defaultQuizzes = [
-  {
-    _id: '1',
-    title: 'Laser Cutter Certification Quiz',
-    description: 'Test your knowledge of laser cutting safety and operation.',
-    category: 'Fabrication',
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
-    questions: [
-      {
-        question: 'What should you NEVER put in a laser cutter?',
-        options: ['Acrylic', 'Wood', 'PVC', 'Paper'],
-        correctAnswer: 2,
-        explanation: 'PVC releases chlorine gas when cut which is harmful to humans and damages the machine.'
-      },
-      {
-        question: 'What is the primary safety concern when operating a laser cutter?',
-        options: ['Fire hazard', 'Electrical shock', 'Noise level', 'Water damage'],
-        correctAnswer: 0,
-        explanation: 'Fire is the primary safety concern when operating a laser cutter.'
-      },
-      {
-        question: 'What should you do before starting a laser cutting job?',
-        options: ['Leave the room', 'Close the lid/door', 'Remove the exhaust hose', 'Turn off the air assist'],
-        correctAnswer: 1,
-        explanation: 'Always close the lid/door before starting a laser cutting job to contain the laser beam.'
-      }
-    ],
-    passingScore: 70,
-    relatedMachineIds: ['1'],
-    relatedCourseId: '1',
-    difficulty: 'Intermediate'
-  },
-  {
-    _id: '2',
-    title: 'Ultimaker Certification Quiz',
-    description: 'Verify your understanding of Ultimaker 3D printing concepts and best practices.',
-    category: 'Fabrication',
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
-    questions: [
-      {
-        question: 'What does FDM stand for in 3D printing?',
-        options: ['Fast Deposition Method', 'Fused Deposition Modeling', 'Filament Direct Manufacturing', 'Final Design Model'],
-        correctAnswer: 1,
-        explanation: 'FDM stands for Fused Deposition Modeling, which is the technology used by Ultimaker 3D printers.'
-      },
-      {
-        question: 'Which material is most commonly used with Ultimaker printers?',
-        options: ['Resin', 'Metal powder', 'PLA/ABS filament', 'Clay'],
-        correctAnswer: 2,
-        explanation: 'PLA and ABS filaments are the most commonly used materials in Ultimaker 3D printers.'
-      },
-      {
-        question: 'What is the purpose of a heated bed on the Ultimaker?',
-        options: ['To speed up printing', 'To prevent warping', 'To melt the filament', 'To sterilize the print area'],
-        correctAnswer: 1,
-        explanation: 'A heated bed helps prevent warping by keeping the first layers of a print warm during the printing process.'
-      }
-    ],
-    passingScore: 70,
-    relatedMachineIds: ['2'],
-    relatedCourseId: '2',
-    difficulty: 'Beginner'
-  },
-  {
-    _id: '3',
-    title: 'X1 E Carbon 3D Printer Certification',
-    description: 'Advanced certification for carbon fiber 3D printing.',
-    category: 'Fabrication',
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
-    questions: [
-      {
-        question: 'What is the primary advantage of carbon fiber reinforcement in 3D printing?',
-        options: ['Decreased weight', 'Increased strength', 'Lower cost', 'Faster printing'],
-        correctAnswer: 1,
-        explanation: 'Carbon fiber reinforcement significantly increases the strength and stiffness of printed parts.'
-      },
-      {
-        question: 'What temperature range is typically used for printing carbon fiber materials?',
-        options: ['180-200°C', '220-240°C', '250-280°C', '300-350°C'],
-        correctAnswer: 2,
-        explanation: 'Carbon fiber reinforced materials typically require higher temperatures in the 250-280°C range.'
-      },
-      {
-        question: 'What special hardware feature does the X1 E Carbon printer have?',
-        options: ['Dual extruders', 'Hardened steel nozzle', 'Enclosed chamber', 'All of the above'],
-        correctAnswer: 3,
-        explanation: 'The X1 E Carbon has all these features to properly handle abrasive carbon fiber materials.'
-      }
-    ],
-    passingScore: 80,
-    relatedMachineIds: ['3'],
-    relatedCourseId: '3',
-    difficulty: 'Advanced'
-  },
-  {
-    _id: '4',
-    title: 'Bambu Lab X1 E Certification Quiz',
-    description: 'Test your knowledge of the Bambu Lab X1 E 3D printer.',
-    category: 'Fabrication',
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg',
-    questions: [
-      {
-        question: 'What is the maximum print speed of the Bambu Lab X1 E?',
-        options: ['100 mm/s', '250 mm/s', '500 mm/s', '1000 mm/s'],
-        correctAnswer: 2,
-        explanation: 'The Bambu Lab X1 E can print at speeds up to 500 mm/s.'
-      },
-      {
-        question: 'What type of printer architecture does the Bambu Lab X1 E use?',
-        options: ['Delta', 'Cartesian', 'Core XY', 'Polar'],
-        correctAnswer: 2,
-        explanation: 'The Bambu Lab X1 E uses a Core XY architecture for faster and more precise movements.'
-      },
-      {
-        question: 'What special feature helps with multi-material printing on the Bambu Lab X1 E?',
-        options: ['Dual extruders', 'AMS (Automatic Material System)', 'Tool changing', 'Manual filament switching'],
-        correctAnswer: 1,
-        explanation: 'The AMS (Automatic Material System) allows the Bambu Lab X1 E to print with multiple materials automatically.'
-      }
-    ],
-    passingScore: 75,
-    relatedMachineIds: ['4'],
-    relatedCourseId: '4',
-    difficulty: 'Intermediate'
-  }
-];
-
-// Function to seed quizzes
-export async function seedQuizzes() {
+// Function to seed quizzes for machines 5 and 6
+export async function seedSafetyQuizzes() {
   try {
-    const quizzes = defaultQuizzes;
-
-    for (const quiz of quizzes) {
-      const existingQuiz = await Quiz.findOne({ _id: quiz._id });
-      if (existingQuiz) {
-        console.log(`Quiz ${quiz._id}: ${quiz.title} already exists, skipping`);
-        continue;
-      }
+    // Check if quizzes already exist
+    const quiz5 = await Quiz.findById('5');
+    const quiz6 = await Quiz.findById('6');
+    
+    // Create Safety Cabinet quiz if it doesn't exist
+    if (!quiz5) {
+      const safetyCabinetQuiz = new Quiz({
+        _id: '5',
+        title: 'Safety Cabinet Quiz',
+        description: 'Test your knowledge about proper safety cabinet usage',
+        category: 'Safety',
+        imageUrl: '/utils/images/IMG_7775.jpg',
+        questions: [
+          {
+            question: 'Where should heavier items be stored in a safety cabinet?',
+            options: [
+              'On the top shelf',
+              'On the middle shelf',
+              'On the lower shelves',
+              'Anywhere there is space'
+            ],
+            correctAnswer: 2,
+            explanation: 'Heavier items should be stored on lower shelves to prevent accidents if they fall.'
+          },
+          {
+            question: 'What should you do if you find a chemical spill in the safety cabinet?',
+            options: [
+              'Clean it up yourself quickly',
+              'Ignore it if it\'s small',
+              'Alert others and contact the lab supervisor immediately',
+              'Cover it with paper towels and come back later'
+            ],
+            correctAnswer: 2,
+            explanation: 'Always alert others and contact the lab supervisor for any chemical spill, regardless of size.'
+          },
+          {
+            question: 'Which of the following is NOT allowed when using the safety cabinet?',
+            options: [
+              'Storing labeled containers',
+              'Mixing chemicals inside the cabinet',
+              'Organizing chemicals by compatibility groups',
+              'Keeping an inventory of stored materials'
+            ],
+            correctAnswer: 1,
+            explanation: 'Never mix chemicals inside the safety cabinet. Mixing should be done in appropriate workspaces with proper ventilation.'
+          },
+          {
+            question: 'When should safety cabinet doors be closed?',
+            options: [
+              'Only during weekends',
+              'Only when storing flammable materials',
+              'When not actively accessing the contents',
+              'Only during emergencies'
+            ],
+            correctAnswer: 2,
+            explanation: 'Safety cabinet doors should be closed and locked when not actively accessing the contents to maintain safety.'
+          },
+          {
+            question: 'What is the purpose of a safety cabinet?',
+            options: [
+              'To display hazardous materials',
+              'To mix chemicals safely',
+              'To properly store hazardous materials',
+              'To dispose of unwanted chemicals'
+            ],
+            correctAnswer: 2,
+            explanation: 'Safety cabinets are designed to safely store hazardous materials and protect them from fire and unauthorized access.'
+          }
+        ],
+        passingScore: 80,
+        relatedMachineIds: ['5'],
+        relatedCourseId: '5',
+        difficulty: 'Basic'
+      });
       
-      const newQuiz = new Quiz(quiz);
-      await newQuiz.save();
-      console.log(`Created quiz: ${quiz.title} (ID: ${quiz._id})`);
+      await safetyCabinetQuiz.save();
+      console.log('Created Safety Cabinet quiz with ID: 5');
+    } else {
+      console.log('Safety Cabinet quiz already exists');
     }
-
-    console.log(`Seeded quizzes successfully`);
+    
+    // Create Machine Safety quiz if it doesn't exist
+    if (!quiz6) {
+      const machineSafetyQuiz = new Quiz({
+        _id: '6',
+        title: 'Machine Safety Fundamentals Quiz',
+        description: 'Test your knowledge of basic machine safety principles',
+        category: 'Safety',
+        imageUrl: '/utils/images/IMG_7821.jpg',
+        questions: [
+          {
+            question: 'What should you do before operating any machine?',
+            options: [
+              'Have a snack to maintain energy',
+              'Receive proper training and authorization',
+              'Make sure you have your phone ready',
+              'Ask a friend to watch you use it'
+            ],
+            correctAnswer: 1,
+            explanation: 'Always receive proper training and authorization before operating any machine in the makerspace.'
+          },
+          {
+            question: 'Which of the following is proper PPE for machine operation?',
+            options: [
+              'Open-toed shoes for comfort',
+              'Loose clothing for freedom of movement',
+              'Eye protection and closed-toe shoes',
+              'Dangling jewelry to express yourself'
+            ],
+            correctAnswer: 2,
+            explanation: 'Eye protection and closed-toe shoes are essential PPE for machine operation.'
+          },
+          {
+            question: 'What should you do if you notice a machine isn\'t working properly?',
+            options: [
+              'Try to fix it yourself',
+              'Leave it for someone else to discover',
+              'Report it to staff immediately',
+              'Use it anyway but be more careful'
+            ],
+            correctAnswer: 2,
+            explanation: 'Always report machine issues to staff immediately. Never attempt repairs yourself or use faulty equipment.'
+          },
+          {
+            question: 'Where should food and drinks be kept in relation to machines?',
+            options: [
+              'Next to the machine while working',
+              'On a separate table in the machine area',
+              'Entirely outside the machine area',
+              'In a covered container near the machine'
+            ],
+            correctAnswer: 2,
+            explanation: 'Food and drinks should be kept entirely outside the machine area to prevent spills and contamination.'
+          },
+          {
+            question: 'What should you do after finishing with a machine?',
+            options: [
+              'Leave it running for the next person',
+              'Turn it off, clean up, and report any issues',
+              'Just turn it off and leave quickly',
+              'Clean it only if it looks dirty'
+            ],
+            correctAnswer: 1,
+            explanation: 'Always turn off the machine, clean up your work area, and report any issues you encountered.'
+          }
+        ],
+        passingScore: 80,
+        relatedMachineIds: ['6'],
+        relatedCourseId: '6',
+        difficulty: 'Basic'
+      });
+      
+      await machineSafetyQuiz.save();
+      console.log('Created Machine Safety quiz with ID: 6');
+    } else {
+      console.log('Machine Safety quiz already exists');
+    }
+    
+    console.log('Safety quizzes seeding completed successfully');
+    return { success: true };
   } catch (error) {
-    console.error('Error seeding quizzes:', error);
+    console.error('Error seeding safety quizzes:', error);
+    return { success: false, error };
   }
 }
-
-// Function to check for missing quizzes and seed only those
-export async function checkAndSeedQuizzes() {
-  try {
-    const quizzes = defaultQuizzes;
-    let seededCount = 0;
-
-    // Get existing quiz IDs
-    const existingQuizzes = await Quiz.find({}, '_id');
-    const existingQuizIds = existingQuizzes.map(quiz => quiz._id.toString());
-    
-    // Find missing quizzes
-    const missingQuizzes = quizzes.filter(quiz => !existingQuizIds.includes(quiz._id));
-    
-    if (missingQuizzes.length === 0) {
-      console.log('No missing quizzes found. All default quizzes exist.');
-      return;
-    }
-    
-    // Seed only missing quizzes
-    for (const quiz of missingQuizzes) {
-      const newQuiz = new Quiz(quiz);
-      await newQuiz.save();
-      console.log(`Created missing quiz: ${quiz.title} (ID: ${quiz._id})`);
-      seededCount++;
-    }
-
-    console.log(`Seeded ${seededCount} missing quizzes successfully`);
-  } catch (error) {
-    console.error('Error seeding missing quizzes:', error);
-  }
-}
-
