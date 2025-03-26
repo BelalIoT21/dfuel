@@ -146,10 +146,18 @@ const CertificationsCard = () => {
         }
       }
       
+      // Create a map of existing machine IDs for quick lookup
+      const existingMachineMap = {};
+      databaseMachines.forEach(machine => {
+        const machineId = (machine.id || machine._id).toString();
+        existingMachineMap[machineId] = true;
+      });
+      
+      // Only show machines that exist in the database (except special IDs)
       const formattedMachines = combinedMachines
         .filter(machine => {
           const machineId = machine.id?.toString() || machine._id?.toString();
-          return SPECIAL_MACHINE_IDS.includes(machineId) || databaseMachineIds.includes(machineId);
+          return SPECIAL_MACHINE_IDS.includes(machineId) || existingMachineMap[machineId];
         })
         .map(machine => {
           const machineId = (machine.id || machine._id).toString();

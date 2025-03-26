@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -461,6 +460,11 @@ export const deleteMachine = async (req: Request, res: Response) => {
     console.log(`Finding users with certification for machine ${machineId}`);
     
     try {
+      // First, identify all users with this machine certification
+      const usersWithCert = await User.find({ certifications: machineId });
+      console.log(`Found ${usersWithCert.length} users with certification for machine ${machineId}`);
+      
+      // Remove the certification from each user's list
       const updateResult = await User.updateMany(
         { certifications: machineId },
         { $pull: { certifications: machineId } }
@@ -468,6 +472,7 @@ export const deleteMachine = async (req: Request, res: Response) => {
       
       console.log(`Removed certification ${machineId} from ${updateResult.modifiedCount} users`);
       
+      // Also remove any certification dates for this machine
       const dateUpdateResult = await User.updateMany(
         {},
         { $unset: { [`certificationDates.${machineId}`]: "" } }
@@ -478,6 +483,7 @@ export const deleteMachine = async (req: Request, res: Response) => {
       console.error("Error removing certifications:", error);
     }
 
+    // Delete the machine
     await machine.deleteOne();
 
     res.status(200).json({ message: 'Machine deleted successfully' });

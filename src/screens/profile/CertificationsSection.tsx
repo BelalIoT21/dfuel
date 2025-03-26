@@ -110,20 +110,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
                 names[certId] = machine.name;
                 types[certId] = machine.type || 'Machine';
               } else {
-                // If machine not found, use generic name but mark for cleanup
-                names[certId] = `Machine ${certId} (Deleted)`;
-                types[certId] = 'Deleted Machine';
-                
-                // If machine doesn't exist anymore, remove certification
-                if (!SPECIAL_MACHINE_IDS.includes(certId)) {
-                  console.log(`Machine ${certId} no longer exists, will be filtered out`);
-                  // We'll filter it out in the filterCertifications function
-                }
+                // If machine not found, mark for cleanup but don't add to display
+                console.log(`Machine ${certId} no longer exists, will be filtered out`);
               }
             } catch (error) {
               console.error(`Error fetching machine ${certId}:`, error);
-              names[certId] = `Machine ${certId} (Unknown)`;
-              types[certId] = 'Unknown';
+              // Don't add to names/types - will effectively filter it out
             }
           }
         }
@@ -158,8 +150,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         return true;
       }
       
-      // Include only if machine exists in the available machines list
-      return availableMachineIds.includes(certId);
+      // Only include if machine exists AND we have a name for it
+      return availableMachineIds.includes(certId) && machineNames[certId];
     });
     
     // Sort certifications by ID to ensure proper display order
@@ -168,6 +160,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
 
   console.log("User certifications in CertificationsSection:", userCertifications);
   console.log("Available machine IDs:", availableMachineIds);
+  console.log("Machine names keys:", Object.keys(machineNames));
 
   const sortedCertifications = filterCertifications(userCertifications);
 
@@ -185,7 +178,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         }
         
         // Find certifications for machines that no longer exist
-        return !availableMachineIds.includes(certId);
+        return !availableMachineIds.includes(certId) || !machineNames[certId];
       });
       
       if (staleCertifications.length > 0) {
@@ -206,7 +199,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     };
     
     cleanupStaleCertifications();
-  }, [userCertifications, availableMachineIds, user?.id]);
+  }, [userCertifications, availableMachineIds, user?.id, machineNames]);
 
   return (
     <View style={styles.section}>

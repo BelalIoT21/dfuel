@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { machineService } from '../../../services/machineService';
 import mongoDbService from '../../../services/mongoDbService';
@@ -84,6 +83,13 @@ export const useMachineData = (user, navigation) => {
         setMachineData([]);
         return;
       }
+      
+      // Build a map of valid machine IDs for quick lookup
+      const validMachineIds = {};
+      machines.forEach(machine => {
+        const id = (machine.id || machine._id).toString();
+        validMachineIds[id] = true;
+      });
       
       // Sort machines by ID to ensure consistent ordering
       machines.sort((a, b) => {
