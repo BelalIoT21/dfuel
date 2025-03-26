@@ -3,13 +3,27 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Slide } from '../admin/courses/CourseSlideEditor';
+import { Slide, SlideElement, LegacySlide } from '../admin/courses/CourseSlideEditor';
 
 interface CourseSlideViewerProps {
-  slides: Slide[];
+  slides: Slide[] | LegacySlide[];
 }
 
-const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides }) => {
+const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides: propSlides }) => {
+  // Convert legacy slide format if needed
+  const slides = React.useMemo(() => {
+    // Check if the first item has an 'elements' property to determine format
+    if (propSlides.length > 0 && 'elements' in propSlides[0]) {
+      return propSlides as Slide[];
+    } else {
+      // Convert from legacy format
+      return (propSlides as LegacySlide[]).map(legacySlide => ({
+        id: legacySlide.id,
+        elements: [{ ...legacySlide, id: `${legacySlide.id}-1` }]
+      }));
+    }
+  }, [propSlides]);
+
   const [currentSlideIndex, setCurrentSlideIndex] = React.useState(0);
   
   const currentSlide = slides[currentSlideIndex] || null;
@@ -26,29 +40,29 @@ const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides }) => {
     }
   };
   
-  const renderSlideContent = () => {
-    if (!currentSlide) return null;
+  const renderElementContent = (element: SlideElement) => {
+    if (!element) return null;
     
-    switch (currentSlide.type) {
+    switch (element.type) {
       case 'text':
         return (
-          <div className="prose max-w-none">
-            <p>{currentSlide.content}</p>
+          <div className="prose max-w-none mb-4">
+            <p>{element.content}</p>
           </div>
         );
         
       case 'heading':
-        return currentSlide.headingLevel === 1 ? (
-          <h1 className="text-2xl font-bold mb-4">{currentSlide.content}</h1>
+        return element.headingLevel === 1 ? (
+          <h1 className="text-2xl font-bold mb-4">{element.content}</h1>
         ) : (
-          <h2 className="text-xl font-semibold mb-3">{currentSlide.content}</h2>
+          <h2 className="text-xl font-semibold mb-3">{element.content}</h2>
         );
         
       case 'image':
         return (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center mb-4">
             <img 
-              src={currentSlide.content} 
+              src={element.content} 
               alt="Course content" 
               className="max-w-full max-h-[400px] object-contain" 
             />
@@ -57,9 +71,9 @@ const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides }) => {
         
       case 'video':
         return (
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-4">
             <video 
-              src={currentSlide.content} 
+              src={element.content} 
               controls 
               className="max-w-full max-h-[400px]"
             />
@@ -67,8 +81,22 @@ const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides }) => {
         );
         
       default:
-        return <p>Unknown slide type</p>;
+        return <p>Unknown element type</p>;
     }
+  };
+  
+  const renderSlideContent = () => {
+    if (!currentSlide) return null;
+    
+    return (
+      <div>
+        {currentSlide.elements.map((element) => (
+          <React.Fragment key={element.id}>
+            {renderElementContent(element)}
+          </React.Fragment>
+        ))}
+      </div>
+    );
   };
   
   return (

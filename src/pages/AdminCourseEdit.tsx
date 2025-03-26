@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import CourseForm, { CourseFormData } from '@/components/admin/courses/CourseForm';
 import { courseDatabaseService } from '@/services/database/courseService';
-import { Slide } from '@/components/admin/courses/CourseSlideEditor';
+import { Slide, SlideElement, LegacySlide } from '@/components/admin/courses/CourseSlideEditor';
 
 const AdminCourseEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +21,7 @@ const AdminCourseEdit = () => {
     content: '',
     difficulty: 'Beginner',
     relatedMachineIds: [],
-    slides: [{ id: '1', type: 'heading', content: '', headingLevel: 1 }],
+    slides: [{ id: '1', elements: [{ id: '1-1', type: 'heading', content: '', headingLevel: 1 }] }],
   });
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
@@ -40,25 +40,56 @@ const AdminCourseEdit = () => {
           
           if (course) {
             // Try to parse slides from content
-            let slides: Slide[] = [{ id: '1', type: 'heading', content: course.title || '', headingLevel: 1 }];
+            let slides: Slide[] = [{ 
+              id: '1', 
+              elements: [{ 
+                id: '1-1', 
+                type: 'heading', 
+                content: course.title || '', 
+                headingLevel: 1 
+              }] 
+            }];
             
             if (course.content) {
               try {
-                const parsedSlides = JSON.parse(course.content);
-                if (Array.isArray(parsedSlides)) {
-                  slides = parsedSlides;
+                // First, try to parse as new slide format
+                const parsedContent = JSON.parse(course.content);
+
+                if (Array.isArray(parsedContent)) {
+                  if (parsedContent.length > 0) {
+                    // Check if it's the new format (with elements array) or legacy format
+                    if ('elements' in parsedContent[0]) {
+                      slides = parsedContent as Slide[];
+                    } else {
+                      // Convert legacy format to new format
+                      slides = (parsedContent as LegacySlide[]).map(legacySlide => ({
+                        id: legacySlide.id,
+                        elements: [{ ...legacySlide, id: `${legacySlide.id}-1` }]
+                      }));
+                    }
+                  }
                 } else {
-                  // If content exists but isn't valid JSON, create a text slide with it
+                  // If content exists but isn't valid slide array, create a text slide with it
                   slides = [
-                    { id: '1', type: 'heading', content: course.title || '', headingLevel: 1 },
-                    { id: '2', type: 'text', content: course.content }
+                    { 
+                      id: '1', 
+                      elements: [
+                        { id: '1-1', type: 'heading', content: course.title || '', headingLevel: 1 },
+                        { id: '1-2', type: 'text', content: course.content }
+                      ] 
+                    }
                   ];
                 }
               } catch (e) {
                 // If content exists but isn't valid JSON, create a text slide with it
                 slides = [
-                  { id: '1', type: 'heading', content: course.title || '', headingLevel: 1 },
-                  { id: '2', type: 'text', content: course.content }
+                  { 
+                    id: '1', 
+                    elements: [
+                      { id: '1-1', type: 'heading', content: course.title || '', headingLevel: 1 },
+                      { id: '1-2', type: 'text', content: course.content }
+                    ] 
+                  }
                 ];
               }
             }
@@ -106,13 +137,15 @@ const AdminCourseEdit = () => {
         throw new Error('Description is required');
       }
       
-      if (!formData.content.trim()) {
-        throw new Error('Content is required');
-      }
+      // Set content to JSON string of slides
+      const submissionData = {
+        ...formData,
+        content: JSON.stringify(formData.slides)
+      };
       
       if (isEditing && id) {
         // Update existing course
-        const success = await courseDatabaseService.updateCourse(id, formData);
+        const success = await courseDatabaseService.updateCourse(id, submissionData);
         
         if (success) {
           toast({
@@ -125,7 +158,7 @@ const AdminCourseEdit = () => {
         }
       } else {
         // Create new course
-        const result = await courseDatabaseService.createCourse(formData);
+        const result = await courseDatabaseService.createCourse(submissionData);
         
         if (result) {
           toast({

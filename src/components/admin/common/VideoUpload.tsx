@@ -15,12 +15,14 @@ interface VideoUploadProps {
   onFileChange: (dataUrl: string | null) => void;
   existingUrl?: string;
   className?: string;
+  label?: string;
 }
 
 const VideoUpload = ({
   onFileChange,
   existingUrl,
   className = "",
+  label = "Upload Video"
 }: VideoUploadProps) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [loading, setLoading] = useState(false);
@@ -85,7 +87,7 @@ const VideoUpload = ({
         <>
           <div className="flex items-center gap-2">
             <Video className="h-5 w-5 text-gray-500" />
-            <span className="text-sm">Upload Video</span>
+            <span className="text-sm">{label}</span>
           </div>
           <div className="flex items-center gap-2">
             <Input
