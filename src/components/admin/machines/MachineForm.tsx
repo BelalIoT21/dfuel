@@ -155,7 +155,18 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const handleSwitchChange = (id: string, checked: boolean) => {
     console.log(`Setting ${id} to:`, checked, typeof checked);
-    setFormData((prev) => ({ ...prev, [id]: Boolean(checked) }));
+    
+    if (id === 'requiresCertification') {
+      setFormData(prev => ({
+        ...prev,
+        requiresCertification: Boolean(checked)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [id]: Boolean(checked)
+      }));
+    }
   };
 
   const handleImageChange = (dataUrl: string | null) => {

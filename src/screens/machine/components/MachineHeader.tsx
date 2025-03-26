@@ -42,7 +42,7 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
 
   // Get the image URL, making sure it's properly formatted for the API
   const getProperImageUrl = (url: string) => {
-    if (!url) return '/placeholder.svg';
+    if (!url) return 'https://placeholder.com/200x200';
     
     // If the URL starts with /utils/images, ensure it has the API URL prefix
     if (url.startsWith('/utils/images')) {
@@ -55,7 +55,9 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
   };
   
   // Get the image URL, preferring imageUrl but falling back to image
-  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
+  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || 'https://placeholder.com/200x200');
+  
+  console.log('MachineHeader - Image URL:', imageUrl);
 
   return (
     <>
@@ -63,6 +65,9 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
         source={{ uri: imageUrl }}
         style={styles.machineImage}
         resizeMode="cover"
+        onError={(e) => {
+          console.error('Failed to load image:', imageUrl);
+        }}
       />
       
       <View style={styles.headerContainer}>

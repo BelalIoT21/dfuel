@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -143,6 +142,7 @@ export class MachineDatabaseService extends BaseService {
       }
       
       // Explicitly handle empty/undefined linkedCourseId and linkedQuizId values
+      // Only clear if explicitly set to null, empty, or 'none'
       if ('linkedCourseId' in cleanedData) {
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
           cleanedData.linkedCourseId = null; // Set to null explicitly for the API

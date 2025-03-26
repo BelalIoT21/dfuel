@@ -285,6 +285,9 @@ export const updateMachine = async (req: Request, res: Response) => {
       
       machine.requiresCertification = normalizedValue;
       console.log(`Setting requiresCertification for machine ${id} to ${normalizedValue} (${typeof normalizedValue})`);
+      
+      // IMPORTANT: We don't clear linkedCourseId or linkedQuizId when requiresCertification is turned off
+      // Only clear them if they are explicitly set to null, empty string, or 'none'
     }
     
     if (difficulty !== undefined) machine.difficulty = difficulty;
@@ -302,7 +305,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (details !== undefined) machine.details = details;
     if (certificationInstructions !== undefined) machine.certificationInstructions = certificationInstructions;
     
-    // Explicit handling of linkedCourseId and linkedQuizId - null handling
+    // Explicit handling of linkedCourseId and linkedQuizId - only clear if explicitly set to null, empty, or 'none'
     if (linkedCourseId === null || linkedCourseId === '' || linkedCourseId === 'none') {
       machine.linkedCourseId = undefined;
       console.log(`Removed linkedCourseId for machine ${id}`);
@@ -311,7 +314,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
     }
     
-    // Explicit handling of linkedQuizId - null handling
+    // Explicit handling of linkedQuizId - only clear if explicitly set to null, empty, or 'none'
     if (linkedQuizId === null || linkedQuizId === '' || linkedQuizId === 'none') {
       machine.linkedQuizId = undefined;
       console.log(`Removed linkedQuizId for machine ${id}`);

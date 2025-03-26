@@ -72,7 +72,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   
   // Format image URL correctly
   const getProperImageUrl = (url: string) => {
-    if (!url) return '/placeholder.svg';
+    if (!url) return 'https://placeholder.com/200x200';
     
     // If the URL starts with /utils/images, ensure it has the API URL prefix
     if (url.startsWith('/utils/images')) {
@@ -85,7 +85,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   };
   
   // Get a consistent image URL (prefer imageUrl, fall back to image)
-  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
+  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || 'https://placeholder.com/200x200');
 
   console.log(`Machine ${machineId} (${machineName}) - Image URL:`, imageUrl);
 
@@ -98,7 +98,13 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
       })}
     >
       <Card style={styles.card}>
-        <Card.Cover source={{ uri: imageUrl }} style={styles.cardImage} />
+        <Card.Cover 
+          source={{ uri: imageUrl }} 
+          style={styles.cardImage} 
+          onError={(e) => {
+            console.error(`Failed to load image for machine ${machineId}:`, imageUrl);
+          }}
+        />
         <Card.Content>
           <Title>{machineName}</Title>
           <Paragraph numberOfLines={2} style={styles.description}>{machine.description}</Paragraph>
