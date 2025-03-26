@@ -168,6 +168,7 @@ const MachineDetail = () => {
       return;
     }
     
+    console.log(`Navigating to quiz with ID: ${machine.linkedQuizId}`);
     navigate(`/quiz/${machine.linkedQuizId}`);
   };
 
@@ -201,6 +202,10 @@ const MachineDetail = () => {
   // Get the image URL with proper formatting
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   console.log("MachineDetail - displaying image:", machineImageUrl);
+  
+  // Debugging course and quiz links
+  console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
+  console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -279,26 +284,26 @@ const MachineDetail = () => {
           )}
           
           <div className="flex flex-col md:flex-row gap-3 pt-2">
-            {requiresCertification && (
-              <>
-                <Button 
-                  onClick={handleTakeCourse} 
-                  variant="outline"
-                  className="flex-1"
-                  disabled={!hasLinkedCourse}
-                >
-                  Take Course
-                </Button>
-                
-                <Button 
-                  onClick={handleTakeQuiz} 
-                  variant="outline"
-                  className="flex-1"
-                  disabled={!hasLinkedQuiz}
-                >
-                  Take Quiz
-                </Button>
-              </>
+            {/* Show course button if linked course exists */}
+            {hasLinkedCourse && (
+              <Button 
+                onClick={handleTakeCourse} 
+                variant="outline"
+                className="flex-1"
+              >
+                Take Course
+              </Button>
+            )}
+            
+            {/* Show quiz button if linked quiz exists */}
+            {hasLinkedQuiz && (
+              <Button 
+                onClick={handleTakeQuiz} 
+                variant="outline"
+                className="flex-1"
+              >
+                Take Quiz
+              </Button>
             )}
             
             <BookMachineButton 
