@@ -130,13 +130,33 @@ const MachineDetail = () => {
   const handleTakeCourse = () => {
     if (!id) return;
     
-    navigate(`/course/${id}`);
+    // Don't navigate to course if machine doesn't have a linked course
+    if (!machine?.linkedCourseId) {
+      toast({
+        title: "No Course Available",
+        description: "This machine doesn't have a linked course yet.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    navigate(`/course/${machine.linkedCourseId}`);
   };
 
   const handleTakeQuiz = () => {
     if (!id) return;
     
-    navigate(`/quiz/${id}`);
+    // Don't navigate to quiz if machine doesn't have a linked quiz
+    if (!machine?.linkedQuizId) {
+      toast({
+        title: "No Quiz Available",
+        description: "This machine doesn't have a linked quiz yet.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    navigate(`/quiz/${machine.linkedQuizId}`);
   };
 
   if (loading) {
@@ -164,6 +184,12 @@ const MachineDetail = () => {
 
   // Check if certification is required
   const requiresCertification = machine?.requiresCertification !== false;
+
+  // Check if machine has a valid linked course
+  const hasLinkedCourse = !!machine?.linkedCourseId;
+  
+  // Check if machine has a valid linked quiz
+  const hasLinkedQuiz = !!machine?.linkedQuizId;
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -257,6 +283,7 @@ const MachineDetail = () => {
                   onClick={handleTakeCourse} 
                   variant="outline"
                   className="flex-1"
+                  disabled={!hasLinkedCourse}
                 >
                   Take Course
                 </Button>
@@ -265,6 +292,7 @@ const MachineDetail = () => {
                   onClick={handleTakeQuiz} 
                   variant="outline"
                   className="flex-1"
+                  disabled={!hasLinkedQuiz}
                 >
                   Take Quiz
                 </Button>

@@ -225,17 +225,6 @@ const AdminMachines = () => {
                           <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                             Bookings: {getBookingsThisMonth(machineId)}
                           </div>
-                          
-                          {(machine.linkedCourseId && machine.linkedCourseId !== 'none' && machine.linkedCourseId !== '') && (
-                            <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
-                              Has Course
-                            </div>
-                          )}
-                          {(machine.linkedQuizId && machine.linkedQuizId !== 'none' && machine.linkedQuizId !== '') && (
-                            <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
-                              Has Quiz
-                            </div>
-                          )}
                         </div>
                         
                         <div className="flex gap-2 mt-4">

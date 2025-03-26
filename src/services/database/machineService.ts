@@ -151,10 +151,11 @@ export class MachineDatabaseService extends BaseService {
 
       // Explicitly handle requiresCertification as a boolean
       if ('requiresCertification' in cleanedData) {
+        // Ensure requiresCertification is a boolean, regardless of its input type
         if (typeof cleanedData.requiresCertification === 'string') {
           cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
         } else {
-          // Make sure it's a boolean
+          // Ensure it's a proper boolean value
           cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
         }
         console.log(`Setting requiresCertification to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);

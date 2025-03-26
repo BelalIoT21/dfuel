@@ -205,21 +205,21 @@ export const createMachine = async (req: Request, res: Response) => {
     
     console.log(`Creating new machine with ID: ${nextId}`);
     
-    // Create new machine with the generated ID
+    // Create new machine with the generated ID and ensure requiresCertification is a boolean
     const machine = new Machine({
       _id: nextId,
       name,
       type,
       description,
       status,
-      requiresCertification,
+      requiresCertification: requiresCertification !== undefined ? Boolean(requiresCertification) : true, // Default to true
       difficulty,
       imageUrl: normalizedImageUrl,
       specifications,
       details,
       certificationInstructions,
-      linkedCourseId,
-      linkedQuizId,
+      linkedCourseId: linkedCourseId || null,
+      linkedQuizId: linkedQuizId || null,
       bookedTimeSlots: []
     });
 
@@ -282,10 +282,13 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.type = type || machine.type;
     machine.description = description || machine.description;
     
-    // Critical fix: Handle requiresCertification correctly
-    // Check if it's undefined first, then assign the value
+    // Critical fix: Handle requiresCertification correctly, ensuring it's always stored as a boolean
     if (requiresCertification !== undefined) {
-      machine.requiresCertification = Boolean(requiresCertification);
+      if (typeof requiresCertification === 'string') {
+        machine.requiresCertification = requiresCertification === 'true';
+      } else {
+        machine.requiresCertification = Boolean(requiresCertification);
+      }
       console.log(`Setting requiresCertification to ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
     }
     

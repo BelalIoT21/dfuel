@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -310,8 +311,8 @@ const CertificationsCard = () => {
                   <div className="text-sm text-blue-500 mb-1">No certification required</div>
                 )}
                 
-                {/* Display linked course if available and machine is not Laser Cutter */}
-                {machine.linkedCourseId && machine.id !== MACHINE_ID_LASER_CUTTER && (
+                {/* Only display linked course if there is a valid course ID and it's not the Laser Cutter */}
+                {machine.linkedCourseId && machine.courseName && machine.id !== MACHINE_ID_LASER_CUTTER && (
                   <div className="mt-2 mb-2">
                     <div className="text-xs text-purple-600 font-medium flex items-center">
                       <BookOpen className="h-3 w-3 mr-1" />
