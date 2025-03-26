@@ -1,4 +1,3 @@
-
 import { Course } from '../../models/Course';
 
 // Define an interface for course template objects
@@ -208,5 +207,33 @@ export async function seedCourses() {
     console.log(`Created ${courses.length} courses successfully`);
   } catch (error) {
     console.error('Error seeding courses:', error);
+  }
+}
+
+// Function to generate a new course ID (starting from 5)
+export async function generateNewCourseId(): Promise<string> {
+  try {
+    // Get all existing courses
+    const existingCourses = await Course.find({}, '_id').sort({ _id: 1 });
+    
+    // Extract numeric IDs
+    const numericIds = existingCourses
+      .map(c => c._id)
+      .filter(id => /^\d+$/.test(id.toString()))
+      .map(id => parseInt(id.toString()));
+    
+    // Find the highest numeric ID, defaulting to 4 if none found
+    // This ensures new IDs start at 5
+    const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
+    
+    // New ID should be the highest + 1, ensuring minimum of 5
+    const newId = Math.max(highestId + 1, 5);
+    
+    console.log(`Generated new course ID: ${newId}`);
+    return newId.toString();
+  } catch (error) {
+    console.error('Error generating new course ID:', error);
+    // Return 5 as a fallback
+    return "5";
   }
 }

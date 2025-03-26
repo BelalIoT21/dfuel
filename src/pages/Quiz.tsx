@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -183,19 +184,54 @@ const Quiz = () => {
       console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
       
       try {
-        // Try using certificationDatabaseService first (more reliable)
-        let success = await certificationDatabaseService.addCertification(user.id, machineId);
+        // Convert IDs to strings to ensure consistency
+        const userIdStr = user.id.toString();
+        const machineIdStr = machineId.toString();
         
-        // If that fails, fall back to other service
+        console.log(`Attempting certification with userID=${userIdStr}, machineID=${machineIdStr}`);
+        
+        // Try using certificationDatabaseService first (more reliable)
+        let success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
+        console.log(`First certification attempt result: ${success ? 'success' : 'failed'}`);
+        
+        // If that fails, try direct API call
         if (!success) {
-          console.log('First certification attempt failed, trying alternative method');
-          success = await certificationService.addCertification(user.id, machineId);
+          console.log('First certification attempt failed, trying direct API call');
+          
+          try {
+            const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+            });
+            
+            const directResult = await directResponse.json();
+            console.log('Direct API call response:', directResult);
+            
+            if (directResult.success) {
+              success = true;
+              console.log('Direct API call successful');
+            }
+          } catch (directError) {
+            console.error('Direct API call failed:', directError);
+          }
+        }
+        
+        // If previous attempts fail, try certificationService
+        if (!success) {
+          console.log('Previous certification attempts failed, trying certificationService');
+          success = await certificationService.addCertification(userIdStr, machineIdStr);
+          console.log(`certificationService attempt result: ${success ? 'success' : 'failed'}`);
         }
         
         // If that also fails, try using the context method
         if (!success && addCertification) {
-          console.log('Second certification attempt failed, trying context method');
-          success = await addCertification(machineId);
+          console.log('All service attempts failed, trying context method');
+          success = await addCertification(machineIdStr);
+          console.log(`Context method attempt result: ${success ? 'success' : 'failed'}`);
         }
         
         if (success) {

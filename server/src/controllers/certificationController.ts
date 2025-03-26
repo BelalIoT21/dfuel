@@ -21,17 +21,23 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
   }
   
   try {
+    // Ensure IDs are strings for consistency
+    const userIdStr = userId.toString();
+    const machineIdStr = machineId.toString();
+    
+    console.log(`Normalized IDs for certification: userId=${userIdStr}, machineId=${machineIdStr}`);
+    
     // Try finding user with ID
-    console.log(`Looking for user with ID: ${userId}`);
-    let user = await User.findById(userId);
+    console.log(`Looking for user with ID: ${userIdStr}`);
+    let user = await User.findById(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}, trying with string ID`);
+      console.log(`User not found with ID: ${userIdStr}, trying with string ID`);
       // If ID is not found as ObjectId, try with string ID
-      user = await User.findOne({ _id: userId });
+      user = await User.findOne({ _id: userIdStr });
       
       if (!user) {
-        console.log(`User still not found with ID: ${userId}`);
+        console.log(`User still not found with ID: ${userIdStr}`);
         res.status(404).json({ 
           success: false, 
           message: 'User not found' 
@@ -42,18 +48,15 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     
     // Ensure certifications array exists
     if (!user.certifications) {
-      console.log(`Creating certifications array for user ${userId}`);
+      console.log(`Creating certifications array for user ${userIdStr}`);
       user.certifications = [];
     }
     
     console.log("User's existing certifications:", user.certifications);
     
-    // Convert machineId to string for comparison
-    const machineIdStr = String(machineId);
-    
     // Check if user already has this certification
     if (user.certifications.includes(machineIdStr)) {
-      console.log(`User ${userId} already has certification ${machineId}`);
+      console.log(`User ${userIdStr} already has certification ${machineIdStr}`);
       res.status(200).json({ 
         success: true, 
         message: 'User already has this certification' 
@@ -74,7 +77,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     
     console.log(`Saving user with updated certifications: ${user.certifications}`);
     await user.save();
-    console.log(`Added certification ${machineId} to user ${userId}`);
+    console.log(`Added certification ${machineIdStr} to user ${userIdStr}`);
     
     res.status(200).json({ 
       success: true, 
