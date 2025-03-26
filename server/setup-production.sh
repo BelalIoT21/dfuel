@@ -12,12 +12,12 @@ mkdir -p logs
 echo "Creating production .env file..."
 echo "PORT=$PROD_PORT
 NODE_ENV=production
-MONGODB_URI=mongodb://localhost:27017/learnit
-MONGODB_DB_NAME=learnit
+MONGODB_URI=mongodb://localhost:27017/dfuel
+MONGODB_DB_NAME=dfuel
 JWT_SECRET=$(openssl rand -hex 32)
 JWT_EXPIRE=7d
-ADMIN_EMAIL=admin@learnit.com
-ADMIN_PASSWORD=admin1234
+ADMIN_EMAIL=admin@dfuel.com
+ADMIN_PASSWORD=Admin123
 FORCE_ADMIN_PASSWORD_UPDATE=true" > .env.production
 
 echo "Production environment file created at .env.production"

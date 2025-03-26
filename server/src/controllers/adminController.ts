@@ -12,13 +12,19 @@ dotenv.config();
 // function to create the admin user
 export const createAdminUser = async () => {
   try {
+    console.log('Starting admin user creation process...');
+    
     // Check if any users exist
     const userCount = await User.countDocuments();
+    
+    // Check specifically for admin user
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminUser = await User.findOne({ email: adminEmail });
 
-    if (userCount > 0) {
-      console.log('Seed already completed. Admin user already exists.');
+    if (userCount > 0 && adminUser) {
+      console.log('Admin user already exists:', adminEmail);
+      
       // Check if admin user has all certifications
-      const adminUser = await User.findOne({ email: process.env.ADMIN_EMAIL });
       if (adminUser && (!adminUser.certifications || adminUser.certifications.length < 6)) {
         adminUser.certifications = ['1', '2', '3', '4', '5', '6'];
         await adminUser.save();
@@ -27,24 +33,26 @@ export const createAdminUser = async () => {
       return;
     }
 
+    // Get admin details from environment variables
+    console.log('Creating new admin user with email:', adminEmail);
     const adminPassword = process.env.ADMIN_PASSWORD?.trim();
     if (!adminPassword) {
       throw new Error('ADMIN_PASSWORD is not defined in environment variables');
     }
 
-    // Create admin user from .env credentials with all certifications
-    const adminUser = new User({
-      _id: '1',
+    // Create admin user with all certifications
+    const newAdminUser = new User({
+      _id: 1, // Use number type for _id per the schema
       name: 'Admin',
-      email: process.env.ADMIN_EMAIL,
-      password: adminPassword,
+      email: adminEmail,
+      password: adminPassword, // Will be hashed by pre-save hook
       isAdmin: true,
       certifications: ['1', '2', '3', '4', '5', '6'], // Ensure all six certifications
     });
 
-    await adminUser.save();
-    console.log('Admin user created successfully:', adminUser.email);
-    console.log('Admin certifications:', adminUser.certifications);
+    await newAdminUser.save();
+    console.log('Admin user created successfully:', newAdminUser.email);
+    console.log('Admin certifications:', newAdminUser.certifications);
   } catch (error) {
     console.error('Error in createAdminUser:', error);
     throw error; // Re-throw the error for handling elsewhere
@@ -147,7 +155,7 @@ export const updateAdminCredentials = async (req: Request, res: Response) => {
 // @desc    Seed initial admin user
 // @route   POST /api/admin/seed
 // @access  Public (only available during setup)
-export const seedAdminUser = async (req: Request, res: Response) => {
+export const seedAdminUser = asyncHandler(async (req: Request, res: Response) => {
   try {
     // Check if any users exist
     const userCount = await User.countDocuments();
@@ -158,17 +166,23 @@ export const seedAdminUser = async (req: Request, res: Response) => {
       });
     }
 
-    if (!process.env.ADMIN_PASSWORD) {
-      throw new Error('ADMIN_PASSWORD is not defined in environment variables');
-    }
-    const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+    // Get admin details from environment variables
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
     
-    // Create admin user from .env credentials with all certifications
+    if (!adminEmail || !adminPassword) {
+      throw new Error('Admin credentials are not defined in environment variables');
+    }
+    
+    // Hash password for storage
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    
+    // Create admin user with all certifications
     const adminUser = new User({
-      _id: '1',
+      _id: 1, // Use number type for _id per the schema
       name: 'Admin',
-      email: process.env.ADMIN_EMAIL,
-      password: adminPassword,
+      email: adminEmail,
+      password: hashedPassword,
       isAdmin: true,
       certifications: ['1', '2', '3', '4', '5', '6'] // Give admin all certifications
     });
@@ -187,7 +201,7 @@ export const seedAdminUser = async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
-};
+});
 
 // Controller to update all machine course/quiz links
 export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: Response) => {

@@ -10,6 +10,11 @@ export const ensureAdminUser = async () => {
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
     
+    if (!adminEmail) {
+      console.error('ADMIN_EMAIL is not defined in environment variables');
+      return;
+    }
+    
     // Check if admin user already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
     
@@ -25,7 +30,7 @@ export const ensureAdminUser = async () => {
       
       // Create new admin user with ALL certifications
       const newAdmin = new User({
-        _id: 1,
+        _id: 1, // Use number instead of string
         name: 'Administrator',
         email: adminEmail,
         password: adminPassword, // This will be hashed by the pre-save hook
@@ -43,7 +48,7 @@ export const ensureAdminUser = async () => {
       if (forcePasswordUpdate) {
         console.log('Force admin password update is enabled, updating admin password');
         
-        // Update the admin password - Fix for TypeScript error by providing a fallback value
+        // Update the admin password
         const adminPassword = process.env.ADMIN_PASSWORD;
         if (!adminPassword) {
           throw new Error('ADMIN_PASSWORD is not defined in environment variables');
@@ -56,7 +61,7 @@ export const ensureAdminUser = async () => {
       // Always ensure admin email is in sync with .env
       if (existingAdmin.email !== adminEmail) {
         console.log(`Updating admin email from ${existingAdmin.email} to ${adminEmail}`);
-        existingAdmin.email = adminEmail || 'admin@learnit.com'; // Fix: Add fallback value
+        existingAdmin.email = adminEmail || 'admin@dfuel.com'; // Fix: Add fallback value
         await existingAdmin.save();
         console.log('Admin email updated successfully');
       }

@@ -11,12 +11,12 @@ if [ ! -f .env ]; then
   echo "Creating default .env file..."
   cp .env.example .env 2>/dev/null || echo "PORT=4000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/learnit
-MONGODB_DB_NAME=learnit
+MONGODB_URI=mongodb://localhost:27017/dfuel
+MONGODB_DB_NAME=dfuel
 JWT_SECRET=your-jwt-secret-key-change-in-production
 JWT_EXPIRE=7d
-ADMIN_EMAIL=admin@learnit.com
-ADMIN_PASSWORD=admin123" > .env
+ADMIN_EMAIL=admin@dfuel.com
+ADMIN_PASSWORD=Admin123" > .env
 fi
 
 echo "Server dependencies installed successfully!"

@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoUser, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -38,13 +39,13 @@ class MongoSeedService {
       console.log("Seeding users...");
       
       const salt = await bcrypt.genSalt(10);
-      const adminPassword = await bcrypt.hash('admin123', salt);
+      const adminPassword = await bcrypt.hash('Admin123', salt);
       
       const users: MongoUser[] = [
         {
           id: '1',
           name: 'Administrator',
-          email: 'admin@learnit.com',
+          email: 'admin@dfuel.com',
           password: adminPassword,
           isAdmin: true,
           certifications: ['1', '2', '3', '4', '5', '6'],
@@ -54,7 +55,7 @@ class MongoSeedService {
         {
           id: '2',
           name: 'Regular User',
-          email: 'user@learnit.com',
+          email: 'user@dfuel.com',
           password: await bcrypt.hash('password123', salt),
           isAdmin: false,
           certifications: [],
