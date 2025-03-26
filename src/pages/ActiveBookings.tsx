@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import BookingDetailsDialog from '@/components/profile/BookingDetailsDialog';
 
@@ -17,6 +18,7 @@ const ActiveBookings = () => {
   const { toast } = useToast();
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("ActiveBookings component mounted");
@@ -69,14 +71,23 @@ const ActiveBookings = () => {
 
   const handleCancelBooking = async (bookingId: string) => {
     try {
+      setDeletingBookingId(bookingId); // Set currently deleting booking
+      
       const success = await bookingService.cancelBooking(bookingId);
       if (success) {
         toast({
           title: "Booking Cancelled",
           description: "Your booking has been successfully cancelled",
         });
-        // Update the booking list
-        setBookings(bookings.filter(booking => booking.id !== bookingId));
+        // Immediately update the booking list in UI
+        setBookings(prev => prev.filter(booking => 
+          (booking.id !== bookingId && booking._id !== bookingId)
+        ));
+        // Close dialog if open
+        if (dialogOpen && selectedBooking && 
+            (selectedBooking.id === bookingId || selectedBooking._id === bookingId)) {
+          setDialogOpen(false);
+        }
       } else {
         toast({
           title: "Error",
@@ -91,6 +102,8 @@ const ActiveBookings = () => {
         description: "An unexpected error occurred",
         variant: "destructive"
       });
+    } finally {
+      setDeletingBookingId(null);
     }
   };
 
@@ -180,52 +193,65 @@ const ActiveBookings = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {bookings.map(booking => (
-                <div key={booking.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-                    <h3 className="font-medium text-lg">{booking.machineName}</h3>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                  </div>
-                  {user?.isAdmin && (
-                    <div className="mb-2">
-                      <span className="text-gray-500 text-sm">User: </span>
-                      <span className="font-medium">{booking.userName || 'Unknown User'}</span>
+              {bookings.map(booking => {
+                const bookingId = booking.id || booking._id;
+                if (deletingBookingId === bookingId) return null; // Skip rendering if being deleted
+                
+                return (
+                  <div key={bookingId} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                      <h3 className="font-medium text-lg">{booking.machineName}</h3>
+                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
                     </div>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mb-3">
-                    <div>
-                      <span className="text-gray-500 text-sm">Date: </span>
-                      <span>{format(new Date(booking.date), 'MMMM d, yyyy')}</span>
+                    {user?.isAdmin && (
+                      <div className="mb-2">
+                        <span className="text-gray-500 text-sm">User: </span>
+                        <span className="font-medium">{booking.userName || 'Unknown User'}</span>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                      <div>
+                        <span className="text-gray-500 text-sm">Date: </span>
+                        <span>{format(new Date(booking.date), 'MMMM d, yyyy')}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-sm">Time: </span>
+                        <span>{booking.time}</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-gray-500 text-sm">Time: </span>
-                      <span>{booking.time}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
+                    <div className="flex gap-2 mt-2">
+                      {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                          onClick={() => handleCancelBooking(bookingId)}
+                          disabled={deletingBookingId !== null}
+                        >
+                          {deletingBookingId === bookingId ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            'Cancel Booking'
+                          )}
+                        </Button>
+                      ) : null}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="border-red-300 text-red-700 hover:bg-red-50"
-                        onClick={() => handleCancelBooking(booking.id)}
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleViewBookingDetails(booking)}
                       >
-                        Cancel Booking
+                        View Booking
                       </Button>
-                    ) : null}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                      onClick={() => handleViewBookingDetails(booking)}
-                    >
-                      View Booking
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -18,6 +18,8 @@ export const PendingBookingsCard = ({
   onBookingStatusChange
 }: PendingBookingsCardProps) => {
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  // Track locally processed bookings
+  const [processedBookingIds, setProcessedBookingIds] = useState<string[]>([]);
   const { toast } = useToast();
   
   const handleBookingAction = useCallback(async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
@@ -58,12 +60,9 @@ export const PendingBookingsCard = ({
           }
         }
         
-        // Force refresh the bookings list regardless of success status
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
-        }
-        
+        // Mark this booking as processed for local UI updates
         if (success) {
+          setProcessedBookingIds(prev => [...prev, bookingId]);
           toast({
             title: "Booking Removed",
             description: "The booking has been removed from the system."
@@ -74,6 +73,11 @@ export const PendingBookingsCard = ({
             description: "Could not remove the booking. Please try again.",
             variant: "destructive"
           });
+        }
+        
+        // Force refresh the bookings list
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
         }
       } else {
         // Handle approval/rejection
@@ -99,12 +103,9 @@ export const PendingBookingsCard = ({
           }
         }
         
-        // Force refresh the bookings list regardless of success status
-        if (onBookingStatusChange) {
-          onBookingStatusChange();
-        }
-        
+        // Mark this booking as processed for local UI updates
         if (success) {
+          setProcessedBookingIds(prev => [...prev, bookingId]);
           toast({
             title: `Booking ${action}`,
             description: `The booking has been ${action.toLowerCase()} successfully.`
@@ -115,6 +116,11 @@ export const PendingBookingsCard = ({
             description: `Could not ${action.toLowerCase()} booking. Please try again.`,
             variant: "destructive"
           });
+        }
+        
+        // Force refresh the bookings list
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
         }
       }
     } catch (error) {
@@ -138,7 +144,13 @@ export const PendingBookingsCard = ({
     }
   };
   
-  if (pendingBookings.length === 0) {
+  // Filter out processed bookings for immediate UI feedback
+  const visibleBookings = pendingBookings.filter(booking => {
+    const bookingId = booking.id || booking._id;
+    return !processedBookingIds.includes(bookingId);
+  });
+  
+  if (visibleBookings.length === 0) {
     return (
       <Card className="border-purple-100">
         <CardContent className="p-4 text-center">
@@ -157,50 +169,54 @@ export const PendingBookingsCard = ({
             <h3 className="font-medium">Pending Booking Requests</h3>
           </div>
           
-          {pendingBookings.map((booking) => (
-            <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
-              <div>
-                <p className="font-medium text-purple-800">
-                  {booking.machineName || `Machine ${booking.machineId || booking.machine}`}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {booking.userName || 'User'} • {formatBookingDate(booking.date)} at {booking.time}
-                </p>
+          {visibleBookings.map((booking) => {
+            const bookingId = booking.id || booking._id;
+            
+            return (
+              <div key={bookingId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+                <div>
+                  <p className="font-medium text-purple-800">
+                    {booking.machineName || `Machine ${booking.machineId || booking.machine}`}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {booking.userName || 'User'} • {formatBookingDate(booking.date)} at {booking.time}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-green-200 hover:bg-green-50 text-green-700"
+                    onClick={() => handleBookingAction(bookingId, 'Approved')}
+                    disabled={processingBookingId === bookingId}
+                  >
+                    {processingBookingId === bookingId ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-200 hover:bg-red-50 text-red-700"
+                    onClick={() => handleBookingAction(bookingId, 'Rejected')}
+                    disabled={processingBookingId === bookingId}
+                  >
+                    {processingBookingId === bookingId ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+                    Reject
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-200 hover:bg-gray-50 text-gray-700"
+                    onClick={() => handleBookingAction(bookingId, 'Deleted')}
+                    disabled={processingBookingId === bookingId}
+                  >
+                    {processingBookingId === bookingId ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
+                    Delete
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-green-200 hover:bg-green-50 text-green-700"
-                  onClick={() => handleBookingAction(booking.id || booking._id, 'Approved')}
-                  disabled={processingBookingId === (booking.id || booking._id)}
-                >
-                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-                  Approve
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => handleBookingAction(booking.id || booking._id, 'Rejected')}
-                  disabled={processingBookingId === (booking.id || booking._id)}
-                >
-                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
-                  Reject
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-200 hover:bg-gray-50 text-gray-700"
-                  onClick={() => handleBookingAction(booking.id || booking._id, 'Deleted')}
-                  disabled={processingBookingId === (booking.id || booking._id)}
-                >
-                  {processingBookingId === (booking.id || booking._id) ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Trash className="h-4 w-4 mr-1" />}
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>

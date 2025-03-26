@@ -13,6 +13,8 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processingDelete, setProcessingDelete] = useState(null);
+  // Track locally deleted bookings
+  const [deletedBookingIds, setDeletedBookingIds] = useState([]);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -154,17 +156,13 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
           title: "Success",
           description: "Booking deleted successfully"
         });
+        
+        // Add to locally deleted bookings set
+        setDeletedBookingIds(prev => [...prev, bookingId]);
+        
         // Call the parent component's callback to update state
         if (onDeleteBooking) {
           onDeleteBooking(booking);
-        } else {
-          // If no callback was provided, at least update local UI
-          // This prevents the deleted booking from reappearing
-          // until the parent component refreshes the list
-          const deleteBookingDelay = setTimeout(() => {
-            setProcessingDelete(null);
-          }, 1000);
-          return () => clearTimeout(deleteBookingDelay);
         }
       } else {
         toast({
@@ -185,15 +183,29 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
     }
   };
 
+  // Filter out locally deleted bookings
+  const visibleBookings = bookings.filter(booking => {
+    const bookingId = booking.id || booking._id;
+    return !deletedBookingIds.includes(bookingId);
+  });
+
+  if (visibleBookings.length === 0) {
+    return (
+      <div className="text-center py-4">
+        <p className="text-gray-500">No bookings to display</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {bookings.map((booking) => {
+      {visibleBookings.map((booking) => {
         const machineId = getBookingMachineId(booking);
         const bookingId = booking.id || booking._id;
         const isProcessing = processingDelete === bookingId;
         
         // Skip rendering bookings that are being processed for deletion
-        if (isProcessing && !onDeleteBooking) {
+        if (isProcessing) {
           return null;
         }
         

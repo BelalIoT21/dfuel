@@ -46,6 +46,17 @@ const BookingsCard = () => {
     fetchBookings();
   };
 
+  const handleDeleteBooking = async (deletedBooking) => {
+    // Remove the booking from the state immediately
+    const bookingId = deletedBooking.id || deletedBooking._id;
+    setBookings(currentBookings => 
+      currentBookings.filter(booking => (booking.id || booking._id) !== bookingId)
+    );
+    
+    // Optionally refresh the list after a short delay
+    setTimeout(fetchBookings, 1000);
+  };
+
   if (!user) return null;
 
   return (
@@ -85,7 +96,14 @@ const BookingsCard = () => {
             <div>Loading bookings...</div>
           </div>
         ) : bookings.length > 0 ? (
-          <BookingsList bookings={bookings} onRefresh={fetchBookings} />
+          <BookingsList 
+            bookings={bookings} 
+            onDeleteBooking={handleDeleteBooking} 
+            getMachineName={(id) => {
+              const booking = bookings.find(b => (b.machineId || b.machine) === id);
+              return booking?.machineName || `Machine ${id}`;
+            }}
+          />
         ) : (
           <EmptyBookingsView />
         )}
