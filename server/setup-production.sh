@@ -18,7 +18,7 @@ JWT_SECRET=$(openssl rand -hex 32)
 JWT_EXPIRE=7d
 ADMIN_EMAIL=admin@dfuel.com
 ADMIN_PASSWORD=Admin123
-FORCE_ADMIN_PASSWORD_UPDATE=true" > .env.production
+FORCE_ADMIN_PASSWORD_UPDATE=false" > .env.production
 
 echo "Production environment file created at .env.production"
 echo ""

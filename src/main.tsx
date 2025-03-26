@@ -25,7 +25,7 @@ const LoadingFallback = () => (
     backgroundColor: '#f5f3ff'
   }}>
     <div style={{ fontSize: '24px', color: '#7c3aed', marginBottom: '16px' }}>
-      Loading Learnit Academy...
+      Loading Dfuel Academy...
     </div>
     <div style={{ width: '50px', height: '50px', border: '5px solid #f3f3f3', borderTop: '5px solid #7c3aed', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
     <style>{`

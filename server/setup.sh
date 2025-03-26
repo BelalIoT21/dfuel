@@ -16,7 +16,8 @@ MONGODB_DB_NAME=dfuel
 JWT_SECRET=your-jwt-secret-key-change-in-production
 JWT_EXPIRE=7d
 ADMIN_EMAIL=admin@dfuel.com
-ADMIN_PASSWORD=Admin123" > .env
+ADMIN_PASSWORD=Admin123
+FORCE_ADMIN_PASSWORD_UPDATE=false" > .env
 fi
 
 echo "Server dependencies installed successfully!"
