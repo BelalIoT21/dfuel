@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -265,9 +266,10 @@ export const updateMachine = async (req: Request, res: Response) => {
       linkedQuizId
     } = req.body;
 
-    machine.name = name || machine.name;
-    machine.type = type || machine.type;
-    machine.description = description || machine.description;
+    // Only update fields that are provided
+    if (name !== undefined) machine.name = name;
+    if (type !== undefined) machine.type = type;
+    if (description !== undefined) machine.description = description;
     
     console.log(`Original requiresCertification for machine ${id}: ${requiresCertification} (${typeof requiresCertification})`);
     
@@ -285,7 +287,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       console.log(`Setting requiresCertification for machine ${id} to ${normalizedValue} (${typeof normalizedValue})`);
     }
     
-    machine.difficulty = difficulty || machine.difficulty;
+    if (difficulty !== undefined) machine.difficulty = difficulty;
     
     const finalImageUrl = imageUrl || image || machine.imageUrl;
     if (finalImageUrl !== undefined) {
@@ -296,11 +298,11 @@ export const updateMachine = async (req: Request, res: Response) => {
       console.log(`Applied default image for machine ${id}: ${machine.imageUrl}`);
     }
     
-    machine.specifications = specifications !== undefined ? specifications : machine.specifications;
-    machine.details = details !== undefined ? details : machine.details;
-    machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
+    if (specifications !== undefined) machine.specifications = specifications;
+    if (details !== undefined) machine.details = details;
+    if (certificationInstructions !== undefined) machine.certificationInstructions = certificationInstructions;
     
-    // Updated handling of linkedCourseId - only set to undefined if explicitly empty or 'none'
+    // Critical fix: Set linkedCourseId to undefined when 'none' is selected
     if (linkedCourseId !== undefined) {
       if (linkedCourseId === '' || linkedCourseId === 'none') {
         machine.linkedCourseId = undefined;
@@ -311,7 +313,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       }
     }
     
-    // Updated handling of linkedQuizId - only set to undefined if explicitly empty or 'none'
+    // Critical fix: Set linkedQuizId to undefined when 'none' is selected
     if (linkedQuizId !== undefined) {
       if (linkedQuizId === '' || linkedQuizId === 'none') {
         machine.linkedQuizId = undefined;

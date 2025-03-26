@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -137,42 +136,25 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.image = this.defaultImageMap[machineId];
       }
       
-      // Ensure both imageUrl and image fields are set to the same value
-      if (cleanedData.imageUrl && !cleanedData.image) {
-        cleanedData.image = cleanedData.imageUrl;
-      } else if (cleanedData.image && !cleanedData.imageUrl) {
-        cleanedData.imageUrl = cleanedData.image;
-      }
-      
-      // CRITICAL FIX: Always explicitly set requiresCertification to a boolean value
-      if ('requiresCertification' in cleanedData) {
-        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
-        console.log(`requiresCertification for machine ${machineId} explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
-      }
-      
       // Handle linked course ID with "in" operator to check if property exists
       if ('linkedCourseId' in cleanedData) {
-        // Empty string should be converted to undefined
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
           cleanedData.linkedCourseId = undefined;
+          console.log(`Setting linkedCourseId to undefined for machine ${machineId}`);
         }
-        console.log(`Setting linkedCourseId for machine ${machineId} to: ${cleanedData.linkedCourseId}`);
       }
       
       // Handle linked quiz ID with "in" operator to check if property exists
       if ('linkedQuizId' in cleanedData) {
-        // Empty string should be converted to undefined
         if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
           cleanedData.linkedQuizId = undefined;
+          console.log(`Setting linkedQuizId to undefined for machine ${machineId}`);
         }
-        console.log(`Setting linkedQuizId for machine ${machineId} to: ${cleanedData.linkedQuizId}`);
       }
       
-      // Handle certification instructions - empty string is valid
-      if (cleanedData.certificationInstructions === undefined) {
-        // Don't modify if not provided
-      } else if (cleanedData.certificationInstructions === null) {
-        cleanedData.certificationInstructions = '';
+      // CRITICAL FIX: Always explicitly set requiresCertification to a boolean value if provided
+      if ('requiresCertification' in cleanedData) {
+        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
@@ -181,11 +163,11 @@ export class MachineDatabaseService extends BaseService {
       console.log(`Update response for machine ${machineId}:`, response);
       
       // Ensure the response has both image properties
-      if (response.data) {
-        if (response.data.imageUrl && !response.data.image) {
-          response.data.image = response.data.imageUrl;
-        } else if (response.data.image && !response.data.imageUrl) {
-          response.data.imageUrl = response.data.image;
+      if (response.data && response.data.machine) {
+        if (response.data.machine.imageUrl && !response.data.machine.image) {
+          response.data.machine.image = response.data.machine.imageUrl;
+        } else if (response.data.machine.image && !response.data.machine.imageUrl) {
+          response.data.machine.imageUrl = response.data.machine.image;
         }
       }
       
