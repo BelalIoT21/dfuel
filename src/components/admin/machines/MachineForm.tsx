@@ -196,28 +196,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
-  // Utility function to properly display image URLs
-  const getImageUrl = (url: string) => {
-    if (!url) return null;
-    
-    // For data URLs
-    if (url.startsWith('data:')) {
-      return url;
-    }
-    
-    // For complete URLs
-    if (url.startsWith('http')) {
-      return url;
-    }
-    
-    // For server paths from API
-    if (url.startsWith('/utils/images')) {
-      return `http://localhost:4000${url}`;
-    }
-    
-    return url;
-  };
-
   const getRecommendedCourse = () => {
     if (!formData._id) return null;
     
@@ -287,25 +265,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const getQuizName = (quizId: string) => {
     const quiz = quizzes.find(q => (q._id || q.id) === quizId);
     return quiz ? quiz.title : `Quiz ${quizId}`;
-  };
-
-  const getImageUrl = (url: string) => {
-    if (!url) return null;
-    
-    if (url.startsWith('data:')) {
-      return url;
-    }
-    
-    if (url.startsWith('http')) {
-      return url;
-    }
-    
-    // For server URLs from API
-    if (url.startsWith('/utils/images')) {
-      return `http://localhost:4000${url}`;
-    }
-    
-    return url;
   };
 
   return (
@@ -567,3 +526,4 @@ const MachineForm: React.FC<MachineFormProps> = ({
 };
 
 export default MachineForm;
+
