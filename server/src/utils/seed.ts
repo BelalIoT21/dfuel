@@ -1,3 +1,4 @@
+
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
@@ -320,7 +321,7 @@ async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/machines/laser-cutter.jpg',
+      imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
       specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
     },
     {
@@ -331,7 +332,7 @@ async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/machines/3d-printer.jpg',
+      imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
       specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
     },
     {
@@ -342,7 +343,7 @@ async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Intermediate',
-      imageUrl: '/machines/bambu-printer.jpg',
+      imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
     },
     {
@@ -353,7 +354,7 @@ async function seedAllMachines() {
       status: 'Available',
       requiresCertification: true,
       difficulty: 'Advanced',
-      imageUrl: '/machines/cnc-mill.jpg',
+      imageUrl: '/machines/bambu-lab.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
     },
     {
@@ -397,26 +398,6 @@ async function seedAllMachines() {
   
   return machines;
 }
-
-// Define machine template type
-type MachineTemplate = {
-  _id: string;
-  name: string;
-  type: string;
-  description: string;
-  status: string;
-  requiresCertification: boolean;
-  difficulty: string;
-  imageUrl: string;
-  specifications: string;
-  linkedCourseId?: string;
-  linkedQuizId?: string;
-};
-
-// Define the machine templates record
-type MachineTemplates = {
-  [key: string]: MachineTemplate;
-};
 
 // New function to seed courses
 async function seedCourses() {
