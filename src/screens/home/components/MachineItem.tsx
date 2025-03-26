@@ -51,7 +51,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   };
 
   // Get the correct machine name and type based on ID
-  const machineId = String(machine.id);
+  const machineId = String(machine.id || machine._id);
   const machineName = MACHINE_NAMES[machineId] || machine.name;
   const machineType = MACHINE_TYPES[machineId] || machine.type || "Machine";
   
@@ -73,12 +73,12 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('MachineDetail', { 
-        machineId: machine.id,
+        machineId: machineId,
         name: machineName
       })}
     >
       <Card style={styles.card}>
-        <Card.Cover source={{ uri: machine.image }} style={styles.cardImage} />
+        <Card.Cover source={{ uri: machine.image || machine.imageUrl || '/placeholder.svg' }} style={styles.cardImage} />
         <Card.Content>
           <Title>{machineName}</Title>
           <Paragraph numberOfLines={2} style={styles.description}>{machine.description}</Paragraph>

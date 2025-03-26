@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,74 +172,78 @@ const AdminMachines = () => {
                   <p>Loading machines...</p>
                 </div>
               ) : filteredMachines.length > 0 ? (
-                filteredMachines.map((machine) => (
-                  <div key={machine.id || machine._id} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
-                    <div className="flex-shrink-0 w-full md:w-1/4">
-                      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                        <img
-                          src={machine.imageUrl || machine.image || '/placeholder.svg'}
-                          alt={machine.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex-grow">
-                      <h3 className="text-lg font-medium">{machine.name}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{machine.description}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Type: {machine.type || 'Machine'}
+                filteredMachines.map((machine) => {
+                  // Ensure we're using the correct ID
+                  const machineId = machine.id || machine._id;
+                  return (
+                    <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
+                      <div className="flex-shrink-0 w-full md:w-1/4">
+                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                          <img
+                            src={machine.imageUrl || machine.image || '/placeholder.svg'}
+                            alt={machine.name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
-                          Difficulty: {machine.difficulty || 'Beginner'}
-                        </div>
-                        <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          Users Certified: {getUsersCertifiedCount(machine.id || machine._id)}
-                        </div>
-                        <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                          Bookings: {getBookingsThisMonth(machine.id || machine._id)}
-                        </div>
-                        {machine.linkedCourseId && (
-                          <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
-                            Has Course
-                          </div>
-                        )}
-                        {machine.linkedQuizId && (
-                          <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
-                            Has Quiz
-                          </div>
-                        )}
                       </div>
                       
-                      <div className="flex gap-2 mt-4">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={`/machine/${machine.id || machine._id}`}>View</Link>
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          asChild
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          <Link to={`/admin/machines/edit/${machine.id || machine._id}`} className="flex items-center">
-                            <Edit className="mr-1 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteMachine(machine.id || machine._id)}
-                        >
-                          Delete
-                        </Button>
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-medium">{machine.name}</h3>
+                        <p className="text-gray-600 text-sm mt-1">{machine.description}</p>
+                        
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                            Type: {machine.type || 'Machine'}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
+                            Difficulty: {machine.difficulty || 'Beginner'}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                            Users Certified: {getUsersCertifiedCount(machineId)}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                            Bookings: {getBookingsThisMonth(machineId)}
+                          </div>
+                          {machine.linkedCourseId && (
+                            <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
+                              Has Course
+                            </div>
+                          )}
+                          {machine.linkedQuizId && (
+                            <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
+                              Has Quiz
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-2 mt-4">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to={`/machine/${machineId}`}>View</Link>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            asChild
+                            className="text-purple-600 hover:text-purple-700"
+                          >
+                            <Link to={`/admin/machines/edit/${machineId}`} className="flex items-center">
+                              <Edit className="mr-1 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => handleDeleteMachine(machineId)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   No machines found matching your search criteria.

@@ -33,11 +33,15 @@ const MachineDetail = () => {
     const loadMachineDetails = async () => {
       try {
         setLoading(true);
+        console.log("Loading machine details for ID:", id);
         
         // Try to get machine from API first
         let machineData;
         try {
-          const response = await apiService.getMachineById(id || '');
+          // Use a timestamp to prevent caching
+          const timestamp = new Date().getTime();
+          const response = await apiService.request(`machines/${id}?t=${timestamp}`, 'GET');
+          console.log("API response for machine:", response);
           if (response.data) {
             machineData = response.data;
           }
@@ -60,10 +64,13 @@ const MachineDetail = () => {
           return;
         }
         
+        console.log("Machine data loaded:", machineData);
+        
         // Get machine status - make sure to fetch it directly to get the latest status
         try {
           // Using specific endpoint for machine status to ensure we get the freshest data
-          const statusResponse = await apiService.getMachineStatus(id || '');
+          const timestamp = new Date().getTime();
+          const statusResponse = await apiService.request(`machines/${id}/status?t=${timestamp}`, 'GET');
           if (statusResponse.data && statusResponse.data.status) {
             console.log(`Fetched machine status from API: ${statusResponse.data.status}`);
             setMachineStatus(statusResponse.data.status.toLowerCase());

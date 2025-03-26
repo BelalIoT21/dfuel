@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -148,6 +149,8 @@ export const createMachine = async (req: Request, res: Response) => {
     if (machines.length > 0) {
       // Get the highest existing ID
       const highestId = machines[0]._id;
+      console.log("Highest existing ID:", highestId);
+      
       if (!isNaN(Number(highestId))) {
         // Convert to number, increment, then back to string
         nextId = String(Number(highestId) + 1);

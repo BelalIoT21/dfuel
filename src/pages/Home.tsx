@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,47 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { machineService } from '../services/machineService';
+import { apiService } from '../services/apiService';
 
 interface ExtendedMachine {
   id: string;
   name: string;
   description: string;
-  image: string;
+  image?: string;
+  imageUrl?: string;
   type: string;
   status: 'available' | 'maintenance' | 'in-use';
 }
-
-// Define consistent machine data with corrected names
-const MACHINE_DATA = [
-  {
-    id: '1',
-    name: 'Laser Cutter',
-    description: 'Professional grade 120W CO2 laser cutter for precision cutting and engraving.',
-    image: '/machines/laser-cutter.jpg',
-    type: 'Laser Cutter'
-  },
-  {
-    id: '2',
-    name: 'Ultimaker',
-    description: 'Dual-extrusion 3D printer for high-quality prototypes and functional models.',
-    image: '/machines/3d-printer.jpg',
-    type: '3D Printer'
-  },
-  {
-    id: '3',
-    name: 'X1 E Carbon 3D Printer',
-    description: 'High-speed multi-material 3D printer with exceptional print quality.',
-    image: '/machines/bambu-printer.jpg',
-    type: '3D Printer'
-  },
-  {
-    id: '4',
-    name: 'Bambu Lab X1 E',
-    description: 'Next-generation 3D printing technology with advanced features.',
-    image: '/machines/cnc-mill.jpg',
-    type: '3D Printer'
-  }
-];
 
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
@@ -71,57 +40,40 @@ const Home = () => {
         setLoading(true);
         console.log("Loading machine data for Home page");
         
-        // First fetch all available machines from the API
-        const availableMachines = await machineService.getMachines();
-        console.log("Available machines from API:", availableMachines);
+        // Fetch all machines from the API with timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await apiService.request(`machines?t=${timestamp}`, 'GET');
+        console.log("API response for machines:", response);
         
-        if (!availableMachines || availableMachines.length === 0) {
-          console.log("No machines available from API");
-          setMachineData([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Get the IDs of machines that still exist in the database
-        const existingMachineIds = availableMachines.map(m => {
-          const id = m.id || m._id;
-          return id.toString();
-        });
-        console.log("Existing machine IDs:", existingMachineIds);
-        
-        // Filter our consistent machine data to only include machines that exist in the database
-        const filteredMachineData = MACHINE_DATA.filter(machine => 
-          existingMachineIds.includes(machine.id.toString())
-        );
-        console.log("Filtered machine data before statuses:", filteredMachineData);
-        
-        if (filteredMachineData.length === 0) {
-          console.log("No machines left after filtering");
-          setMachineData([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Use our consistent machine data but fetch statuses
-        const extendedMachines = await Promise.all(filteredMachineData.map(async (machine) => {
-          try {
-            const status = await machineService.getMachineStatus(machine.id);
+        if (response.data && Array.isArray(response.data)) {
+          // Filter out special machines (5 and 6)
+          const filteredMachines = response.data.filter(machine => {
+            const id = machine.id || machine._id;
+            return id !== '5' && id !== '6';
+          });
+          
+          console.log("Filtered machines:", filteredMachines);
+          
+          // Map machines to ExtendedMachine format
+          const extendedMachines: ExtendedMachine[] = filteredMachines.map(machine => {
+            const machineId = String(machine.id || machine._id);
             return {
-              ...machine,
-              status: (status as 'available' | 'maintenance' | 'in-use') || 'available'
+              id: machineId,
+              name: machine.name,
+              description: machine.description,
+              image: machine.imageUrl || machine.image || '/placeholder.svg',
+              imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
+              type: machine.type || 'Machine',
+              status: (machine.status?.toLowerCase() || 'available') as 'available' | 'maintenance' | 'in-use'
             };
-          } catch (error) {
-            console.error(`Error loading status for machine ${machine.id}:`, error);
-            return {
-              ...machine,
-              status: 'available' as const
-            };
-          }
-        }));
-        
-        // Only include machines that exist in the database
-        setMachineData(extendedMachines);
-        console.log("Final machine data with statuses:", extendedMachines);
+          });
+          
+          console.log("Extended machines:", extendedMachines);
+          setMachineData(extendedMachines);
+        } else {
+          console.log("No valid machine data from API");
+          setMachineData([]);
+        }
       } catch (error) {
         console.error("Error loading machine data:", error);
         toast({
@@ -129,36 +81,7 @@ const Home = () => {
           description: "Failed to load machine data",
           variant: "destructive"
         });
-        
-        // Try to fetch just the IDs of available machines as a fallback
-        try {
-          const availableMachines = await machineService.getMachines();
-          
-          if (!availableMachines || availableMachines.length === 0) {
-            console.log("No machines available in fallback");
-            setMachineData([]);
-            return;
-          }
-          
-          const existingMachineIds = availableMachines.map(m => {
-            const id = m.id || m._id;
-            return id.toString();
-          });
-          
-          // Filter static data based on what exists in the database
-          const fallbackMachines = MACHINE_DATA.filter(machine => 
-            existingMachineIds.includes(machine.id)
-          ).map(machine => ({
-            ...machine,
-            status: 'available' as const
-          }));
-          
-          console.log("Fallback machines:", fallbackMachines);
-          setMachineData(fallbackMachines);
-        } catch (fallbackError) {
-          console.error("Fallback error:", fallbackError);
-          setMachineData([]); // If all else fails, show no machines
-        }
+        setMachineData([]);
       } finally {
         setLoading(false);
       }
@@ -223,7 +146,7 @@ const Home = () => {
                   <CardContent>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
                       <img
-                        src={machine.image}
+                        src={machine.image || machine.imageUrl || '/placeholder.svg'}
                         alt={machine.name}
                         className="w-full h-full object-cover"
                       />

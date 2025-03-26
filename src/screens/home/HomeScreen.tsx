@@ -53,7 +53,7 @@ const HomeScreen = ({ navigation }) => {
             userCertifications={user?.certifications || []} 
           />
         )}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
