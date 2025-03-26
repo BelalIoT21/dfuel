@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ const Quiz = () => {
         
         console.log(`Fetching quiz data for ID: ${id}`);
         
+        // First try to get the quiz directly by its ID
         try {
           const quizData = await quizDatabaseService.getQuizById(id);
           
@@ -65,12 +67,18 @@ const Quiz = () => {
             }
             
             if (quizData.questions && quizData.questions.length > 0) {
+              console.log('Quiz has questions:', quizData.questions.length);
               setQuestions(quizData.questions);
               setAnswers(new Array(quizData.questions.length).fill(-1));
               
+              // Try to find a related machine
               try {
                 const allMachines = await machineService.getAllMachines();
-                const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
+                const linkedMachine = allMachines.find(m => 
+                  m.linkedQuizId === id || 
+                  (quizData.relatedMachineIds && quizData.relatedMachineIds.includes(String(m.id || m._id)))
+                );
+                
                 if (linkedMachine) {
                   console.log('Found linked machine:', linkedMachine);
                   setMachine(linkedMachine);
@@ -88,15 +96,18 @@ const Quiz = () => {
               console.log('Quiz found but has no questions');
               setError('This quiz has no questions.');
             }
+          } else {
+            console.log('Quiz not found by direct ID lookup');
           }
         } catch (err) {
           console.log('Error fetching quiz directly:', err);
         }
         
+        // If we can't get the quiz directly, try to get a machine and then its linked quiz
         try {
           const machineData = await machineService.getMachineById(id);
           
-          if (machineData && machineData._id) {
+          if (machineData && (machineData._id || machineData.id)) {
             console.log('Retrieved machine data:', machineData);
             setMachine(machineData);
             const machineIdStr = String(machineData.id || machineData._id || id);
@@ -139,7 +150,36 @@ const Quiz = () => {
           }
         } catch (err) {
           console.error('Error fetching machine:', err);
-          setError('Could not find a machine or quiz with this ID.');
+          
+          // Last attempt - try to get all quizzes and find the one matching the ID
+          try {
+            const allQuizzes = await quizDatabaseService.getAllQuizzes();
+            const matchingQuiz = allQuizzes.find(q => String(q._id) === String(id) || String(q.id) === String(id));
+            
+            if (matchingQuiz) {
+              console.log('Found quiz in all quizzes list:', matchingQuiz);
+              setQuiz(matchingQuiz);
+              
+              if (matchingQuiz.questions && matchingQuiz.questions.length > 0) {
+                setQuestions(matchingQuiz.questions);
+                setAnswers(new Array(matchingQuiz.questions.length).fill(-1));
+                
+                if (matchingQuiz.relatedMachineIds && matchingQuiz.relatedMachineIds.length > 0) {
+                  setRelatedMachineIds(matchingQuiz.relatedMachineIds.map(id => String(id)));
+                }
+                
+                setLoading(false);
+                return;
+              } else {
+                setError('This quiz has no questions.');
+              }
+            } else {
+              setError('Could not find a machine or quiz with this ID.');
+            }
+          } catch (listErr) {
+            console.error('Error fetching all quizzes:', listErr);
+            setError('Could not find a machine or quiz with this ID.');
+          }
         }
       } catch (err) {
         console.error('Error fetching quiz data:', err);
