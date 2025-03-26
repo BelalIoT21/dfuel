@@ -11,8 +11,11 @@ import {
 
 const router = express.Router();
 
+// Configure middleware for handling large uploads
+const jsonParser = express.json({ limit: '50mb' });
+
 // Add certification
-router.post('/', protect, addCertification);
+router.post('/', protect, jsonParser, addCertification);
 
 // Remove certification
 router.delete('/:userId/:machineId', protect, removeCertification);

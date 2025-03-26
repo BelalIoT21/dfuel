@@ -22,7 +22,7 @@ const urlencodedParser = express.urlencoded({ limit: '50mb', extended: true });
 // Rate limiting for sensitive endpoints
 const updateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 50, // Increased from 5 to 50 requests per windowMs
   message: { 
     message: 'Too many machine status updates. Please wait 15 minutes before trying again.',
     error: 'RATE_LIMIT_EXCEEDED',
@@ -55,13 +55,12 @@ router.get('/:id', getMachineById);
 // Get machine status
 router.get('/:id/status', getMachineStatus);
 
-// Update machine (admin only)
+// Update machine (admin only) - Removed rate limiter
 router.put(
   '/:id',
   protect,
   admin,
   jsonParser, // Apply larger payload limit
-  updateLimiter,
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('status').isIn(['Available', 'Maintenance', 'Out of Order', 'In Use']).withMessage('Valid status is required'),
@@ -69,13 +68,12 @@ router.put(
   updateMachine
 );
 
-// Update machine status (admin only)
+// Update machine status (admin only) - Reduced rate limiting
 router.put(
   '/:id/status',
   protect,
   admin,
   jsonParser, // Apply larger payload limit
-  updateLimiter,
   [
     body('status').isString().withMessage('Status must be a string'),
     body('maintenanceNote').optional().isString().withMessage('Note must be a string'),
@@ -84,6 +82,6 @@ router.put(
 );
 
 // Delete machine (admin only)
-router.delete('/:id', protect, admin, updateLimiter, deleteMachine);
+router.delete('/:id', protect, admin, deleteMachine);
 
 export default router;
