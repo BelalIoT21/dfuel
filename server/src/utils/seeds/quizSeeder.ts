@@ -10,7 +10,7 @@ export async function seedQuizzes() {
         title: 'Laser Cutter Certification Quiz',
         description: 'Test your knowledge of laser cutting safety and operation.',
         category: 'Fabrication',
-        imageUrl: '/quizzes/laser-quiz.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
         questions: [
           {
             question: 'What should you NEVER put in a laser cutter?',
@@ -41,7 +41,7 @@ export async function seedQuizzes() {
         title: 'Ultimaker Certification Quiz',
         description: 'Verify your understanding of Ultimaker 3D printing concepts and best practices.',
         category: 'Fabrication',
-        imageUrl: '/quizzes/3d-printing-quiz.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
         questions: [
           {
             question: 'What does FDM stand for in 3D printing?',
@@ -72,7 +72,7 @@ export async function seedQuizzes() {
         title: 'X1 E Carbon 3D Printer Certification',
         description: 'Advanced certification for carbon fiber 3D printing.',
         category: 'Fabrication',
-        imageUrl: '/quizzes/carbon-quiz.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
         questions: [
           {
             question: 'What is the primary advantage of carbon fiber reinforcement in 3D printing?',
@@ -103,7 +103,7 @@ export async function seedQuizzes() {
         title: 'Bambu Lab X1 E Certification Quiz',
         description: 'Test your knowledge of the Bambu Lab X1 E 3D printer.',
         category: 'Fabrication',
-        imageUrl: '/quizzes/bambu-quiz.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg',
         questions: [
           {
             question: 'What is the maximum print speed of the Bambu Lab X1 E?',

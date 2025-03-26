@@ -25,19 +25,19 @@ export async function updateCourseImages() {
     const courseUpdates = [
       {
         _id: '1',
-        imageUrl: '/courses/laser-course-updated.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg'
       },
       {
         _id: '2',
-        imageUrl: '/courses/3d-printing-updated.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg'
       },
       {
         _id: '3',
-        imageUrl: '/courses/carbon-3d-updated.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg'
       },
       {
         _id: '4',
-        imageUrl: '/courses/bambu-lab-updated.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7825.jpg'
       }
     ];
 
