@@ -39,6 +39,7 @@ const AdminMachineEdit = () => {
           const machine = await machineDatabaseService.getMachineById(id);
           
           if (machine) {
+            console.log("Loaded machine data:", machine);
             setFormData({
               name: machine.name || '',
               description: machine.description || '',
@@ -52,6 +53,7 @@ const AdminMachineEdit = () => {
               certificationInstructions: machine.certificationInstructions || '',
               linkedCourseId: machine.linkedCourseId || '',
               linkedQuizId: machine.linkedQuizId || '',
+              _id: machine._id
             });
           }
         } catch (error) {
@@ -130,6 +132,7 @@ const AdminMachineEdit = () => {
     
     try {
       setIsSubmitting(true);
+      console.log("Submitting machine data:", formData);
       
       if (isEditing && id) {
         // Update existing machine

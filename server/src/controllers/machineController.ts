@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -129,16 +130,21 @@ export const getMachineStatus = async (req: Request, res: Response) => {
 // Create a new machine (admin only)
 export const createMachine = async (req: Request, res: Response) => {
   try {
+    console.log("Creating new machine with data:", req.body);
+    
     const { 
       name, 
       type, 
       description, 
       status = 'Available', 
-      requiresCertification = false,
+      requiresCertification,
       difficulty = 'Beginner',
       imageUrl = '',
       specifications = '',
-      details = ''
+      details = '',
+      certificationInstructions = '',
+      linkedCourseId = '',
+      linkedQuizId = ''
     } = req.body;
 
     // Generate the next available ID (starting from 7)
@@ -171,6 +177,9 @@ export const createMachine = async (req: Request, res: Response) => {
       imageUrl,
       specifications,
       details,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId,
       bookedTimeSlots: []
     });
 
@@ -191,7 +200,7 @@ export const createMachine = async (req: Request, res: Response) => {
 export const updateMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, status } = req.body;
+    console.log(`Updating machine ${id} with data:`, req.body);
 
     // Handle string IDs properly
     let machine;
@@ -205,8 +214,43 @@ export const updateMachine = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
-    // Update the machine
-    machine.name = name;
+    // Extract all fields from request body
+    const {
+      name,
+      type,
+      description,
+      status,
+      requiresCertification,
+      difficulty,
+      imageUrl,
+      specifications,
+      details,
+      certificationInstructions,
+      linkedCourseId,
+      linkedQuizId
+    } = req.body;
+
+    // Update all machine fields
+    machine.name = name || machine.name;
+    machine.type = type || machine.type;
+    machine.description = description || machine.description;
+    
+    // Important: Handle boolean field explicitly
+    machine.requiresCertification = requiresCertification !== undefined ? requiresCertification : machine.requiresCertification;
+    
+    machine.difficulty = difficulty || machine.difficulty;
+    
+    // Only update imageUrl if it's provided and not empty
+    if (imageUrl !== undefined && imageUrl !== "") {
+      machine.imageUrl = imageUrl;
+    }
+    
+    machine.specifications = specifications !== undefined ? specifications : machine.specifications;
+    machine.details = details !== undefined ? details : machine.details;
+    machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
+    machine.linkedCourseId = linkedCourseId !== undefined ? linkedCourseId : machine.linkedCourseId;
+    machine.linkedQuizId = linkedQuizId !== undefined ? linkedQuizId : machine.linkedQuizId;
+    
     // Convert status to proper format (first letter capitalized)
     if (status) {
       // Ensure we're using a valid status from the Machine model
@@ -229,9 +273,16 @@ export const updateMachine = async (req: Request, res: Response) => {
       machine.status = normalizedStatus;
     }
     
-    await machine.save();
+    const updatedMachine = await machine.save();
+    console.log("Machine updated successfully:", updatedMachine);
 
-    res.status(200).json({ message: 'Machine updated successfully', machine });
+    res.status(200).json({ 
+      message: 'Machine updated successfully', 
+      machine: {
+        ...updatedMachine.toObject(),
+        status: updatedMachine.status === 'In Use' ? 'in-use' : updatedMachine.status.toLowerCase()
+      }
+    });
   } catch (error) {
     console.error('Error in updateMachine:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });

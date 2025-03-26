@@ -236,6 +236,51 @@ class MongoMachineService {
     }
   }
   
+  async updateMachine(machineId: string, updates: Partial<MongoMachine>): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection) {
+      console.error("Machines collection not initialized");
+      return false;
+    }
+    
+    try {
+      console.log(`Updating machine ${machineId} with data:`, updates);
+      
+      // Ensure we handle requiresCertification correctly
+      const updateData = { ...updates, updatedAt: new Date() };
+      
+      // Handle the case where requiresCertification is explicitly set to false
+      if (updates.requiresCertification === false) {
+        console.log("Explicitly setting requiresCertification to false");
+      }
+      
+      const result = await this.machinesCollection.updateOne(
+        { _id: machineId },
+        { $set: updateData }
+      );
+      
+      console.log(`Machine update result: ${JSON.stringify({
+        acknowledged: result.acknowledged,
+        modifiedCount: result.modifiedCount,
+        matchedCount: result.matchedCount
+      })}`);
+      
+      // Also update status if provided
+      if (updates.status) {
+        await this.updateMachineStatus(
+          machineId,
+          updates.status,
+          updates.maintenanceNote
+        );
+      }
+      
+      return result.acknowledged && result.matchedCount > 0;
+    } catch (error) {
+      console.error("Error updating machine in MongoDB:", error);
+      return false;
+    }
+  }
+  
   async seedDefaultMachines(): Promise<void> {
     await this.initCollections();
     if (!this.machinesCollection) {

@@ -47,6 +47,7 @@ export class MachineDatabaseService extends BaseService {
 
   async createMachine(machineData: MachineData): Promise<any> {
     try {
+      console.log("Creating machine with data:", machineData);
       const response = await apiService.request('machines', 'POST', machineData, true);
       console.log("Create machine response:", response);
       return response.data;
@@ -58,6 +59,7 @@ export class MachineDatabaseService extends BaseService {
 
   async updateMachine(machineId: string, machineData: Partial<MachineData>): Promise<any> {
     try {
+      console.log(`Updating machine ${machineId} with data:`, machineData);
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
       return response.data;
     } catch (error) {

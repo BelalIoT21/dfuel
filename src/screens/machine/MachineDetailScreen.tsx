@@ -13,7 +13,15 @@ import ErrorState from './components/ErrorState';
 const MachineDetailScreen = ({ route, navigation }) => {
   const { machineId } = route.params;
   const { user, addCertification } = useAuth();
-  const { machine, machineStatus, loading, isCertified, setIsCertified, hasMachineSafetyCert, userId } = useMachineDetails(machineId, user, navigation);
+  const { 
+    machine, 
+    machineStatus, 
+    loading, 
+    isCertified, 
+    setIsCertified, 
+    hasMachineSafetyCert, 
+    userId 
+  } = useMachineDetails(machineId, user, navigation);
 
   const handleTakeCourse = () => {
     // Make sure we're passing the correct parameter name (machineId)
@@ -75,24 +83,24 @@ const MachineDetailScreen = ({ route, navigation }) => {
     return <ErrorState onGoBack={() => navigation.goBack()} />;
   }
 
+  const requiresCertification = machine.requiresCertification !== false;
+
   return (
     <ScrollView style={styles.container}>
       <MachineHeader 
         machine={machine} 
         machineStatus={machineStatus} 
-        isCertified={isCertified}
+        isCertified={requiresCertification ? isCertified : true}
       />
       
       <View style={styles.contentContainer}>
         <MachineDescription description={machine.description} />
         
         {/* Only show requirements if certification is required */}
-        {machine.requiresCertification !== false && (
-          <MachineRequirements isCertified={isCertified} />
-        )}
+        {requiresCertification && <MachineRequirements isCertified={isCertified} />}
         
         <MachineActions 
-          isCertified={isCertified}
+          isCertified={requiresCertification ? isCertified : true}
           machineStatus={machineStatus}
           machineType={machine.type || ''}
           onTakeCourse={handleTakeCourse}
@@ -102,7 +110,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
           isAdmin={user?.isAdmin}
           hasMachineSafetyCert={hasMachineSafetyCert}
           userId={userId}
-          requiresCertification={machine.requiresCertification !== false}
+          requiresCertification={requiresCertification}
         />
       </View>
     </ScrollView>

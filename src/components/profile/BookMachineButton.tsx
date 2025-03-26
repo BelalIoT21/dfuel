@@ -8,6 +8,7 @@ interface BookMachineButtonProps {
   machineId: string;
   isCertified: boolean;
   machineStatus: string;
+  requiresCertification?: boolean;
   className?: string;
   size?: 'default' | 'sm' | 'lg';
 }
@@ -16,18 +17,28 @@ const BookMachineButton = ({
   machineId, 
   isCertified, 
   machineStatus, 
+  requiresCertification = true,
   className = '',
   size = 'default'
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
 
   const isAvailable = machineStatus?.toLowerCase() === 'available';
-  const canBook = isCertified && isAvailable;
+  // If certification is not required, consider the user as certified
+  const effectiveCertification = requiresCertification ? isCertified : true;
+  const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
     console.log(`Navigating to booking page for machine ${machineId}`);
     navigate(`/booking/${machineId}`);
   };
+
+  let buttonText = "Book Now";
+  if (!isAvailable) {
+    buttonText = "Machine Unavailable";
+  } else if (requiresCertification && !isCertified) {
+    buttonText = "Certification Required";
+  }
 
   return (
     <Button 
@@ -38,7 +49,7 @@ const BookMachineButton = ({
       variant={canBook ? "default" : "outline"}
     >
       <Calendar className="mr-2 h-4 w-4" />
-      {canBook ? "Book Now" : isAvailable ? "Certification Required" : "Machine Unavailable"}
+      {buttonText}
     </Button>
   );
 };
