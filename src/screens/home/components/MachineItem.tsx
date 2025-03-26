@@ -70,13 +70,24 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Check if user is certified for this machine
   const isCertified = certsArray.includes(machineId);
   
+  // Format image URL correctly
+  const getProperImageUrl = (url: string) => {
+    if (!url) return '/placeholder.svg';
+    
+    // If the URL starts with /utils/images, ensure it has the API URL prefix
+    if (url.startsWith('/utils/images')) {
+      // For React Native, we need to use the full URL
+      const apiUrl = 'http://localhost:5000'; // Adjust this based on your configuration
+      return `${apiUrl}${url}`;
+    }
+    
+    return url;
+  };
+  
   // Get a consistent image URL (prefer imageUrl, fall back to image)
-  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
 
-  console.log(`Machine ${machineId} (${machineName}) certification status:`, isCertified);
-  console.log(`Machine ID:`, machineId);
-  console.log(`Image URL:`, imageUrl);
-  console.log(`User certifications:`, certsArray);
+  console.log(`Machine ${machineId} (${machineName}) - Image URL:`, imageUrl);
 
   return (
     <TouchableOpacity

@@ -38,6 +38,14 @@ export async function updateMachineImages() {
       {
         _id: '4',
         imageUrl: '/utils/images/IMG_7769.jpg'
+      },
+      {
+        _id: '5',
+        imageUrl: '/utils/images/IMG_7775.jpg'
+      },
+      {
+        _id: '6',
+        imageUrl: '/utils/images/IMG_7821.jpg'
       }
     ];
 
@@ -263,15 +271,38 @@ export async function seedAllMachines() {
   
   // Insert machines in order
   for (const machine of machines) {
-    const newMachine = new Machine(machine);
-    await newMachine.save();
-    console.log(`Created machine ${machine._id}: ${machine.name} with image: ${machine.imageUrl}`);
+    try {
+      const existingMachine = await Machine.findById(machine._id);
+      if (existingMachine) {
+        // Update the existing machine's image URL if needed
+        if (existingMachine.imageUrl !== machine.imageUrl) {
+          existingMachine.imageUrl = machine.imageUrl;
+          await existingMachine.save();
+          console.log(`Updated machine ${machine._id} image to: ${machine.imageUrl}`);
+        } else {
+          console.log(`Machine ${machine._id} already exists with correct image.`);
+        }
+      } else {
+        // Create new machine
+        const newMachine = new Machine(machine);
+        await newMachine.save();
+        console.log(`Created machine ${machine._id}: ${machine.name} with image: ${machine.imageUrl}`);
+      }
+    } catch (error) {
+      console.error(`Error processing machine ${machine._id}:`, error);
+    }
   }
   
   // Verify the machine order after creation
-  const verifyMachines = await Machine.find({}, '_id').sort({ _id: 1 });
-  const verifyIds = verifyMachines.map(m => m._id);
-  console.log(`Created ${machines.length} machines successfully in order:`, verifyIds);
+  const verifyMachines = await Machine.find({}, '_id imageUrl').sort({ _id: 1 });
+  const verifyIds = verifyMachines.map(m => `${m._id} (${m.imageUrl})`);
+  console.log(`Created/Updated ${machines.length} machines successfully:`, verifyIds);
   
   return machines;
+}
+
+// Export a function to run after all other seeds to ensure images are updated
+export async function ensureMachineImages() {
+  await updateMachineImages();
+  console.log("Machine images have been verified and updated if needed.");
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,18 @@ const AdminMachines = () => {
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [quizzesList, setQuizzesList] = useState<any[]>([]);
   
+  // Helper function to ensure image paths are correct
+  const getProperImageUrl = (imageUrl: string) => {
+    if (!imageUrl) return '/placeholder.svg';
+    
+    // If the image URL starts with /utils/images, make sure it's properly prefixed
+    if (imageUrl.startsWith('/utils/images')) {
+      return `${import.meta.env.VITE_API_URL || ''}${imageUrl}`;
+    }
+    
+    return imageUrl;
+  };
+  
   useEffect(() => {
     const fetchMachines = async () => {
       try {
@@ -34,7 +47,7 @@ const AdminMachines = () => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
           }).map(machine => {
-            const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+            const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
             return {
               ...machine,
               imageUrl: imageUrl,
@@ -68,14 +81,14 @@ const AdminMachines = () => {
     const fetchCoursesAndQuizzes = async () => {
       try {
         // Fetch courses
-        const response = await fetch('/api/courses');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
         if (response.ok) {
           const courses = await response.json();
           setCoursesList(courses);
         }
         
         // Fetch quizzes
-        const quizResponse = await fetch('/api/quizzes');
+        const quizResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/quizzes`);
         if (quizResponse.ok) {
           const quizzes = await quizResponse.json();
           setQuizzesList(quizzes);
@@ -222,7 +235,7 @@ const AdminMachines = () => {
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
-                  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+                  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
                   
                   return (
                     <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">

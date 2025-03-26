@@ -26,8 +26,11 @@ connectDB();
 
 const app = express();
 
-// serve the utils/images folder for machine images
+// Serve the images folder for machine images
+// First, make the utils/images directory available publicly
 app.use('/utils/images', express.static(path.join(__dirname, './utils/images')));
+// Also serve it at an alternative URL for better client compatibility
+app.use('/api/utils/images', express.static(path.join(__dirname, './utils/images')));
 
 // Set up higher limits for request payload size
 app.use(express.json({ limit: '50mb' }));

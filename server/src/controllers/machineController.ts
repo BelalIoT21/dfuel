@@ -38,6 +38,10 @@ export const getMachines = async (req: Request, res: Response) => {
       
       let imageUrl = machineObj.imageUrl || '';
       
+      if ((!imageUrl || imageUrl === '') && machineObj._id in DEFAULT_MACHINE_IMAGES) {
+        imageUrl = DEFAULT_MACHINE_IMAGES[machineObj._id];
+      }
+      
       if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
         imageUrl = '/' + imageUrl;
       }
@@ -208,9 +212,15 @@ export const createMachine = async (req: Request, res: Response) => {
     const createdMachine = await machine.save();
     console.log(`Created new machine: ${name} with ID: ${createdMachine._id}`);
 
+    let finalImageUrl = normalizedImageUrl || '';
+    if ((!finalImageUrl || finalImageUrl === '') && createdMachine._id in DEFAULT_MACHINE_IMAGES) {
+      finalImageUrl = DEFAULT_MACHINE_IMAGES[createdMachine._id as keyof typeof DEFAULT_MACHINE_IMAGES];
+    }
+
     const machineWithImage = {
       ...createdMachine.toObject(),
-      image: normalizedImageUrl
+      image: finalImageUrl,
+      imageUrl: finalImageUrl
     };
 
     res.status(201).json(machineWithImage);

@@ -40,8 +40,22 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     }
   };
 
+  // Get the image URL, making sure it's properly formatted for the API
+  const getProperImageUrl = (url: string) => {
+    if (!url) return '/placeholder.svg';
+    
+    // If the URL starts with /utils/images, ensure it has the API URL prefix
+    if (url.startsWith('/utils/images')) {
+      // For React Native, we need to use the full URL
+      const apiUrl = 'http://localhost:5000'; // Adjust this based on your config
+      return `${apiUrl}${url}`;
+    }
+    
+    return url;
+  };
+  
   // Get the image URL, preferring imageUrl but falling back to image
-  const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
 
   return (
     <>
