@@ -29,7 +29,7 @@ class CourseService {
       console.log(`Updating course ${courseId} image:`, imageUrl ? "New image" : "Removing image");
       
       // Check if imageUrl is too large
-      if (imageUrl && imageUrl.length > 2000000) {
+      if (imageUrl && imageUrl.length > 5000000) { // Increased threshold
         console.warn("Image is very large, processing may take longer");
       }
       

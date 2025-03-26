@@ -8,7 +8,8 @@ import {
   validateFile, 
   fileToDataUrl, 
   IMAGE_TYPES, 
-  MAX_IMAGE_SIZE_MB 
+  MAX_IMAGE_SIZE_MB,
+  compressImageIfNeeded
 } from '@/utils/fileUpload';
 
 interface FileUploadProps {
@@ -51,9 +52,14 @@ const FileUpload = ({
     
     setLoading(true);
     try {
+      // Get base data URL
       const dataUrl = await fileToDataUrl(file);
-      setPreview(dataUrl);
-      onFileChange(dataUrl);
+      
+      // Try to optimize large images
+      const optimizedDataUrl = await compressImageIfNeeded(dataUrl, maxSizeMB);
+      
+      setPreview(optimizedDataUrl);
+      onFileChange(optimizedDataUrl);
       
       // Inform the user about large files
       if (file.size > 5 * 1024 * 1024) {

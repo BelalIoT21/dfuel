@@ -87,6 +87,29 @@ export class BookingDatabaseService extends BaseService {
   async cancelBooking(bookingId: string): Promise<boolean> {
     return this.updateBookingStatus(bookingId, 'Canceled');
   }
+  
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    console.log(`Attempting to delete booking ${bookingId}`);
+    try {
+      const response = await apiService.delete(`bookings/${bookingId}`);
+      
+      if (response.data && response.data.success) {
+        console.log("Successfully deleted booking via API");
+        return true;
+      }
+      
+      console.error("Failed to delete booking:", response.error);
+      return false;
+    } catch (error) {
+      console.error("API error in deleteBooking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete booking. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }
 }
 
 // Create a singleton instance

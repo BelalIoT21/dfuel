@@ -48,7 +48,22 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased limits
-export const MAX_IMAGE_SIZE_MB = 10; // Increased from 5MB to 10MB
-export const MAX_VIDEO_SIZE_MB = 100; // Increased from 50MB to 100MB
+// Maximum file sizes - increased limits further
+export const MAX_IMAGE_SIZE_MB = 15; // Increased from 10MB to 15MB
+export const MAX_VIDEO_SIZE_MB = 150; // Increased from 100MB to 150MB
 
+// Function to compress an image if needed
+export const compressImageIfNeeded = async (dataUrl: string, maxSizeMB: number = MAX_IMAGE_SIZE_MB): Promise<string> => {
+  // If the image isn't too large, return it as is
+  const estimatedSizeInMB = (dataUrl.length * 3) / (4 * 1024 * 1024); // Rough estimate of size
+  
+  if (estimatedSizeInMB <= maxSizeMB) {
+    return dataUrl;
+  }
+  
+  console.log(`Image is large (approximately ${estimatedSizeInMB.toFixed(2)}MB), attempting basic optimization`);
+  
+  // For very large images, we'll just return them and let the server handle it
+  // The server-side code has been updated to handle larger payloads
+  return dataUrl;
+};

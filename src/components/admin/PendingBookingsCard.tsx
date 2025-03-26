@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Calendar, Loader2, Trash } from "lucide-react";
@@ -20,26 +20,54 @@ export const PendingBookingsCard = ({
   const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const handleBookingAction = async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
+  const handleBookingAction = useCallback(async (bookingId: string, action: 'Approved' | 'Rejected' | 'Deleted') => {
+    if (!bookingId) {
+      toast({
+        title: "Error",
+        description: "Invalid booking ID",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setProcessingBookingId(bookingId);
     
     try {
       console.log(`BookingService action: bookingId=${bookingId}, action=${action}`);
       
       if (action === 'Deleted') {
-        // Use MongoDB to delete the booking
-        const success = await mongoDbService.deleteBooking(bookingId);
+        // Try MongoDB deletion first
+        let success = false;
+        
+        try {
+          console.log("Attempting to delete booking via MongoDB:", bookingId);
+          success = await mongoDbService.deleteBooking(bookingId);
+          console.log(`MongoDB deleteBooking result for ID ${bookingId}: ${success}`);
+        } catch (mongoError) {
+          console.error("MongoDB booking deletion error:", mongoError);
+        }
+        
+        // If MongoDB fails, try the booking service
+        if (!success) {
+          try {
+            console.log("MongoDB deletion failed, trying bookingService for ID:", bookingId);
+            success = await bookingService.deleteBooking(bookingId);
+            console.log(`BookingService deleteBooking result: ${success}`);
+          } catch (serviceError) {
+            console.error("BookingService error deleting booking:", serviceError);
+          }
+        }
+        
+        // Force refresh the bookings list regardless of success status
+        if (onBookingStatusChange) {
+          onBookingStatusChange();
+        }
         
         if (success) {
           toast({
             title: "Booking Removed",
             description: "The booking has been removed from the system."
           });
-          
-          // After deleting, trigger refresh of the bookings list
-          if (onBookingStatusChange) {
-            onBookingStatusChange();
-          }
         } else {
           toast({
             title: "Delete Failed",
@@ -72,56 +100,21 @@ export const PendingBookingsCard = ({
         }
         
         // Force refresh the bookings list regardless of success status
-        // This ensures the UI stays in sync with the database
         if (onBookingStatusChange) {
           onBookingStatusChange();
         }
         
-        // Check successful MongoDB query or bookingService call
         if (success) {
           toast({
             title: `Booking ${action}`,
             description: `The booking has been ${action.toLowerCase()} successfully.`
           });
         } else {
-          // Double-check if the booking might have been approved anyway
-          // by fetching fresh data to confirm the actual status
-          try {
-            // We'll give a short delay to allow database updates to propagate
-            setTimeout(async () => {
-              const allBookings = await mongoDbService.getAllBookings();
-              const updatedBooking = allBookings.find(b => 
-                (b.id === bookingId || b._id === bookingId)
-              );
-              
-              if (updatedBooking && updatedBooking.status === action) {
-                // The booking was actually updated despite the error
-                console.log("Booking was actually updated successfully:", updatedBooking);
-                toast({
-                  title: `Booking ${action}`,
-                  description: `The booking has been ${action.toLowerCase()} successfully.`
-                });
-                
-                // Force refresh again
-                if (onBookingStatusChange) {
-                  onBookingStatusChange();
-                }
-              } else {
-                toast({
-                  title: "Action Failed",
-                  description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-                  variant: "destructive"
-                });
-              }
-            }, 500);
-          } catch (verificationError) {
-            console.error("Error verifying booking status:", verificationError);
-            toast({
-              title: "Action Failed",
-              description: `Could not ${action.toLowerCase()} booking. Please try again.`,
-              variant: "destructive"
-            });
-          }
+          toast({
+            title: "Action Failed",
+            description: `Could not ${action.toLowerCase()} booking. Please try again.`,
+            variant: "destructive"
+          });
         }
       }
     } catch (error) {
@@ -135,7 +128,7 @@ export const PendingBookingsCard = ({
     } finally {
       setProcessingBookingId(null);
     }
-  };
+  }, [toast, onBookingStatusChange]);
   
   const formatBookingDate = (dateString: string) => {
     try {
