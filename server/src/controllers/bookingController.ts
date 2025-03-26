@@ -1,10 +1,9 @@
-
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Booking, IBooking } from '../models/Booking';
 import mongoose from 'mongoose';
 import User from '../models/User';
-import { Machine } from '../models/Machine'; // Fix import - Machine is not a default export
+import { Machine } from '../models/Machine';
 
 // Create booking
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
@@ -249,6 +248,30 @@ export const cancelBooking = asyncHandler(async (req: Request, res: Response) =>
     
     booking.status = 'Canceled';
     await booking.save();
+    
+    // Ensure proper format for machine ID
+    const machineIdStr = booking.machine ? 
+      (typeof booking.machine === 'object' && booking.machine._id 
+        ? booking.machine._id.toString() 
+        : booking.machine.toString())
+      : null;
+    
+    // If we have a valid machine ID, update its booked time slots
+    if (machineIdStr && booking.date && booking.time) {
+      const date = new Date(booking.date);
+      const dateStr = date.toISOString().substring(0, 10);
+      const timeSlotKey = `${dateStr}-${booking.time}`;
+      
+      try {
+        await Machine.findByIdAndUpdate(
+          machineIdStr,
+          { $pull: { bookedTimeSlots: timeSlotKey } }
+        );
+        console.log(`Removed booking time slot ${timeSlotKey} from machine ${machineIdStr}`);
+      } catch (error) {
+        console.error(`Error removing time slot from machine: ${error}`);
+      }
+    }
     
     res.json({ success: true, booking });
   } catch (error) {

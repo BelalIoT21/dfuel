@@ -264,8 +264,12 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    // Navigate to the correct machine page
-    if (machine && (machine.id || machine._id)) {
+    // Modified to go to admin machines page if coming from admin section
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/admin')) {
+      console.log('Navigating to admin machines page');
+      navigate('/admin/machines');
+    } else if (machine && (machine.id || machine._id)) {
       // Use the actual machine ID we have saved
       const targetId = machine.id || machine._id;
       console.log(`Navigating to machine page for ID: ${targetId}`);

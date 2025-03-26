@@ -29,8 +29,8 @@ const BookMachineButton = ({
   const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
-    // Navigate to the machine page for booking, not just certifications tab
-    navigate(`/machine/${machineId}`);
+    // Navigate directly to the booking page instead of machine page
+    navigate(`/booking/${machineId}`);
   };
 
   let buttonText = "Book Now";

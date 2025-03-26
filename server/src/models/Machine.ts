@@ -26,6 +26,32 @@ export interface IMachine extends mongoose.Document {
   removeBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
 }
 
+// Helper function to ensure IDs are sequential and start from highest existing ID
+async function getNextId(): Promise<string> {
+  try {
+    // Find the highest numeric ID in the collection
+    const machines = await mongoose.model('Machine').find({}, '_id').sort({ _id: -1 }).limit(10);
+    
+    // Start with ID 5 as base (since you mentioned special IDs like 5 and 6)
+    let highestId = 4;
+    
+    // Find the highest numeric ID
+    for (const machine of machines) {
+      const idNum = parseInt(machine._id.toString(), 10);
+      if (!isNaN(idNum) && idNum > highestId) {
+        highestId = idNum;
+      }
+    }
+    
+    // Return the next ID
+    return (highestId + 1).toString();
+  } catch (error) {
+    console.error('Error generating next machine ID:', error);
+    // Fallback to timestamp-based ID if there's an error
+    return Date.now().toString();
+  }
+}
+
 const machineSchema = new mongoose.Schema<IMachine>(
   {
     _id: {
@@ -91,7 +117,7 @@ const machineSchema = new mongoose.Schema<IMachine>(
   }
 );
 
-// Add methods to the schema
+// Modified to properly handle machine time slots
 machineSchema.methods.addBookedTimeSlot = async function(dateTimeSlot: string): Promise<boolean> {
   try {
     if (!this.bookedTimeSlots.includes(dateTimeSlot)) {
@@ -124,5 +150,14 @@ machineSchema.methods.removeBookedTimeSlot = async function(dateTimeSlot: string
     return false;
   }
 };
+
+// Add pre-save middleware to handle ID generation for new documents
+machineSchema.pre('save', async function(next) {
+  if (this.isNew && !this._id) {
+    this._id = await getNextId();
+    console.log(`Generated new machine ID: ${this._id}`);
+  }
+  next();
+});
 
 export const Machine = mongoose.model<IMachine>('Machine', machineSchema);

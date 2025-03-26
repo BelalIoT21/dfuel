@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +13,7 @@ import BookMachineButton from '@/components/profile/BookMachineButton';
 const MachineDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -24,6 +24,8 @@ const MachineDetail = () => {
   const [isCertified, setIsCertified] = useState(false);
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
 
+  const fromAdmin = location.pathname.includes('/admin') || location.state?.fromAdmin;
+
   const getProperImageUrl = (url: string) => {
     if (!url) return '/placeholder.svg';
     
@@ -32,7 +34,6 @@ const MachineDetail = () => {
       return `${apiUrl}/api${url}`;
     }
     
-    // Handle base64 data URLs directly
     if (url.startsWith('data:')) {
       return url;
     }
@@ -172,6 +173,14 @@ const MachineDetail = () => {
     navigate(`/quiz/${machine.linkedQuizId}`);
   };
 
+  const handleGoBack = () => {
+    if (fromAdmin) {
+      navigate('/admin/machines');
+    } else {
+      navigate(-1);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
@@ -199,11 +208,10 @@ const MachineDetail = () => {
   const hasLinkedCourse = !!machine?.linkedCourseId;
   const hasLinkedQuiz = !!machine?.linkedQuizId;
 
-  // Get the image URL with proper formatting
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
+  
   console.log("MachineDetail - displaying image:", machineImageUrl);
   
-  // Debugging course and quiz links
   console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
 
@@ -212,7 +220,7 @@ const MachineDetail = () => {
       <Button
         variant="ghost"
         className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
-        onClick={() => navigate(-1)}
+        onClick={handleGoBack}
       >
         <ChevronLeft className="h-4 w-4" />
         Back
@@ -284,7 +292,6 @@ const MachineDetail = () => {
           )}
           
           <div className="flex flex-col md:flex-row gap-3 pt-2">
-            {/* Show course button if linked course exists */}
             {hasLinkedCourse && (
               <Button 
                 onClick={handleTakeCourse} 
@@ -295,7 +302,6 @@ const MachineDetail = () => {
               </Button>
             )}
             
-            {/* Show quiz button if linked quiz exists */}
             {hasLinkedQuiz && (
               <Button 
                 onClick={handleTakeQuiz} 
