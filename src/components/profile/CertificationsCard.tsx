@@ -137,12 +137,8 @@ const CertificationsCard = () => {
     fetchMachinesAndCertifications();
   }, [user]);
 
-  const handleAction = (machineId: string, isCertified: boolean, isBookable: boolean) => {
-    if (isCertified && isBookable) {
-      navigate(`/booking/${machineId}`);
-    } else {
-      navigate(`/machine/${machineId}`);
-    }
+  const handleAction = (machineId: string) => {
+    navigate(`/machine/${machineId}`);
   };
 
   const getStatusColor = (status) => {
@@ -258,10 +254,10 @@ const CertificationsCard = () => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="mt-2 border-red-200 hover:bg-red-100 text-red-600"
-                      onClick={() => handleAction(machine.id, false, machine.bookable)}
+                      className="mt-2 border-purple-200 hover:bg-purple-100"
+                      onClick={() => handleAction(machine.id)}
                     >
-                      Get Certified
+                      View Machine
                     </Button>
                   </>
                 )}
