@@ -10,8 +10,10 @@ export const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      console.log(`File successfully converted to data URL. Size: ${Math.round(reader.result.toString().length / 1024 / 1024)}MB`);
-      resolve(reader.result as string);
+      const result = reader.result as string;
+      const sizeInMB = (result.length / (1024 * 1024)).toFixed(2);
+      console.log(`File successfully converted to data URL. Size: ${sizeInMB}MB`);
+      resolve(result);
     };
     reader.onerror = (error) => {
       console.error('Error converting file to data URL:', error);
@@ -59,9 +61,9 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased to 10MB for images
-export const MAX_IMAGE_SIZE_MB = 10; // Increased from 5MB to 10MB
-export const MAX_VIDEO_SIZE_MB = 20; // Increased from 10MB to 20MB
+// Maximum file sizes - increased to 15MB for images
+export const MAX_IMAGE_SIZE_MB = 15; // Increased from 10MB to 15MB
+export const MAX_VIDEO_SIZE_MB = 30; // Increased from 20MB to 30MB
 
 // No compression - just return the original data URL
 export const compressImageIfNeeded = async (dataUrl: string): Promise<string> => {

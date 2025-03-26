@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +64,16 @@ const MachineForm: React.FC<MachineFormProps> = ({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("basic");
 
+  // Debug log to see the current form data
+  useEffect(() => {
+    console.log("Current form data:", {
+      ...formData,
+      requiresCertification: `${formData.requiresCertification} (${typeof formData.requiresCertification})`,
+      linkedCourseId: formData.linkedCourseId || "none",
+      linkedQuizId: formData.linkedQuizId || "none"
+    });
+  }, [formData]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -120,8 +131,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSwitchChange = (id: string, checked: boolean) => {
-    console.log(`Setting ${id} to:`, checked);
-    setFormData((prev) => ({ ...prev, [id]: Boolean(checked) }));
+    console.log(`Setting ${id} to:`, checked, typeof checked);
+    setFormData((prev) => ({ ...prev, [id]: checked }));
   };
 
   const handleImageChange = (dataUrl: string | null) => {
@@ -165,7 +176,21 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSubmit = () => {
-    console.log("Submitting form data:", formData);
+    // Explicitly convert requiresCertification to boolean before submitting
+    const finalFormData = {
+      ...formData,
+      requiresCertification: Boolean(formData.requiresCertification)
+    };
+    
+    console.log("Submitting form data:", {
+      ...finalFormData,
+      requiresCertification: `${finalFormData.requiresCertification} (${typeof finalFormData.requiresCertification})`,
+    });
+    
+    // Update the form data with the proper boolean value
+    setFormData(finalFormData);
+    
+    // Now submit the form
     onSubmit();
   };
 
@@ -309,12 +334,19 @@ const MachineForm: React.FC<MachineFormProps> = ({
           
           <TabsContent value="certification" className="space-y-4">
             <div className="flex items-center space-x-2 mb-4">
-              <Switch
-                id="requiresCertification"
-                checked={formData.requiresCertification}
-                onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
-              />
-              <Label htmlFor="requiresCertification">Requires Certification</Label>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="requiresCertification"
+                    checked={formData.requiresCertification}
+                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
+                  />
+                  <Label htmlFor="requiresCertification" className="cursor-pointer">Requires Certification</Label>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Current value: {formData.requiresCertification ? 'Yes' : 'No'} ({typeof formData.requiresCertification})
+                </div>
+              </div>
             </div>
             
             <div className="space-y-2">

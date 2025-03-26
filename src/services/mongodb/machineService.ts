@@ -206,6 +206,14 @@ class MongoMachineService {
       const exists = await this.machineExists(machine._id);
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB - updating`);
+        
+        // Ensure requiresCertification is always a boolean
+        if (typeof machine.requiresCertification === 'string') {
+          machine.requiresCertification = machine.requiresCertification === 'true';
+        } else if (machine.requiresCertification !== undefined) {
+          machine.requiresCertification = Boolean(machine.requiresCertification);
+        }
+        
         // Update the machine to ensure it has all properties
         const result = await this.machinesCollection.updateOne(
           { _id: machine._id },
@@ -214,8 +222,17 @@ class MongoMachineService {
         return result.acknowledged;
       }
       
+      // Ensure requiresCertification is always a boolean
+      if (typeof machine.requiresCertification === 'string') {
+        machine.requiresCertification = machine.requiresCertification === 'true';
+      } else if (machine.requiresCertification !== undefined) {
+        machine.requiresCertification = Boolean(machine.requiresCertification);
+      }
+      
       // Add the machine to the collection
       console.log(`Adding new machine to MongoDB: ${machine.name} (ID: ${machine._id})`);
+      console.log(`requiresCertification: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
+      
       const newMachine = { ...machine, createdAt: new Date(), updatedAt: new Date() };
       const result = await this.machinesCollection.insertOne(newMachine);
       
@@ -254,9 +271,9 @@ class MongoMachineService {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.status !== undefined) updateData.status = updates.status;
       
-      // Ensure requiresCertification is properly handled - explicitly setting to boolean
+      // Ensure requiresCertification is properly handled
+      // Always convert to boolean and always include in update if present
       if ('requiresCertification' in updates) {
-        // Convert to explicit boolean to ensure consistent storage
         if (typeof updates.requiresCertification === 'string') {
           updateData.requiresCertification = updates.requiresCertification === 'true';
         } else {
@@ -453,4 +470,3 @@ class MongoMachineService {
 // Create a singleton instance
 const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;
-

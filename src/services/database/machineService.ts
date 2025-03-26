@@ -58,33 +58,37 @@ export class MachineDatabaseService extends BaseService {
     try {
       console.log("Creating machine with data:", machineData);
       
+      // Create a clean copy to work with
+      const cleanedData = { ...machineData };
+      
       // Ensure both imageUrl and image fields are set to the same value
-      if (machineData.imageUrl && !machineData.image) {
-        machineData.image = machineData.imageUrl;
-      } else if (machineData.image && !machineData.imageUrl) {
-        machineData.imageUrl = machineData.image;
+      if (cleanedData.imageUrl && !cleanedData.image) {
+        cleanedData.image = cleanedData.imageUrl;
+      } else if (cleanedData.image && !cleanedData.imageUrl) {
+        cleanedData.imageUrl = cleanedData.image;
       }
       
       // Clean empty strings for linkedCourseId and linkedQuizId
-      if (machineData.linkedCourseId === '') {
-        machineData.linkedCourseId = undefined;
+      if (cleanedData.linkedCourseId === '') {
+        cleanedData.linkedCourseId = undefined;
       }
       
-      if (machineData.linkedQuizId === '') {
-        machineData.linkedQuizId = undefined;
+      if (cleanedData.linkedQuizId === '') {
+        cleanedData.linkedQuizId = undefined;
       }
 
       // Explicitly convert requiresCertification to boolean
-      if (typeof machineData.requiresCertification === 'string') {
-        machineData.requiresCertification = machineData.requiresCertification === 'true';
+      if (typeof cleanedData.requiresCertification === 'string') {
+        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
       } else {
         // Make sure it's a boolean
-        machineData.requiresCertification = Boolean(machineData.requiresCertification);
+        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       }
       
-      console.log("Cleaned machine data for creation:", machineData);
+      console.log("Cleaned machine data for creation:", cleanedData);
+      console.log("requiresCertification:", cleanedData.requiresCertification, typeof cleanedData.requiresCertification);
       
-      const response = await apiService.request('machines', 'POST', machineData, true);
+      const response = await apiService.request('machines', 'POST', cleanedData, true);
       console.log("Create machine response:", response);
       
       // Ensure the response has both image properties
@@ -122,16 +126,15 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Critical fix for certification requirements - always include the value in the update
-      // Make sure to explicitly check for the property to ensure null values are properly passed
-      if ('requiresCertification' in cleanedData) {
-        // Convert to boolean, regardless of input type
-        if (typeof cleanedData.requiresCertification === 'string') {
-          cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
-        } else {
-          cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
-        }
-        console.log(`Setting requiresCertification to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+      // Critical fix for certification requirements
+      // Always include the value in the update and ensure it's a boolean
+      console.log(`requiresCertification in update data: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+      
+      // Always explicitly convert to boolean
+      if (typeof cleanedData.requiresCertification === 'string') {
+        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
+      } else if (cleanedData.requiresCertification !== undefined) {
+        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       }
       
       // Fix: Handle courses and quizzes with explicit property checks
@@ -162,6 +165,8 @@ export class MachineDatabaseService extends BaseService {
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
+      console.log(`Final requiresCertification value: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+      
       const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
       console.log(`Update response for machine ${machineId}:`, response);
       

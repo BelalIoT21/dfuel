@@ -32,6 +32,7 @@ const FileUpload = ({
 }: FileUploadProps) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [loading, setLoading] = useState(false);
+  const [fileSize, setFileSize] = useState<string | null>(null);
   const { toast } = useToast();
   
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +42,7 @@ const FileUpload = ({
     // Display file size for debugging - showing in MB for clarity
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
     console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
+    setFileSize(`${fileSizeMB}MB`);
     
     // Validate file
     const validationError = validateFile(file, allowedTypes, maxSizeMB);
@@ -84,6 +86,7 @@ const FileUpload = ({
   
   const clearFile = () => {
     setPreview(null);
+    setFileSize(null);
     onFileChange(null);
   };
   
@@ -113,6 +116,11 @@ const FileUpload = ({
           >
             <X className="h-4 w-4" />
           </Button>
+          {fileSize && (
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+              {fileSize}
+            </div>
+          )}
         </div>
       ) : (
         <>

@@ -40,12 +40,20 @@ const AdminMachineEdit = () => {
           
           if (machine) {
             console.log("Loaded machine data:", machine);
+            
+            // Ensure requiresCertification is a proper boolean
+            const requiresCertification = typeof machine.requiresCertification === 'boolean' 
+              ? machine.requiresCertification 
+              : machine.requiresCertification === 'true' || Boolean(machine.requiresCertification);
+              
+            console.log("Setting requiresCertification to:", requiresCertification, typeof requiresCertification);
+            
             setFormData({
               name: machine.name || '',
               description: machine.description || '',
               type: machine.type || 'Machine',
               status: machine.status || 'Available',
-              requiresCertification: machine.requiresCertification || false,
+              requiresCertification: requiresCertification,
               difficulty: machine.difficulty || 'Beginner',
               imageUrl: machine.imageUrl || '',
               details: machine.details || '',
@@ -132,13 +140,15 @@ const AdminMachineEdit = () => {
     
     try {
       setIsSubmitting(true);
-      console.log("Submitting machine data:", formData);
       
-      // Create a clean version of the data for sending to the API
-      const dataToSubmit = { ...formData };
+      // Explicitly ensure requiresCertification is a boolean
+      const dataToSubmit = {
+        ...formData,
+        requiresCertification: Boolean(formData.requiresCertification)
+      };
       
-      // Make sure boolean values are properly handled
-      dataToSubmit.requiresCertification = Boolean(formData.requiresCertification);
+      console.log("Submitting machine data:", dataToSubmit);
+      console.log("requiresCertification:", dataToSubmit.requiresCertification, typeof dataToSubmit.requiresCertification);
       
       // Convert empty string values to null/undefined for the backend
       if (dataToSubmit.linkedCourseId === '') {
