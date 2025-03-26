@@ -6,6 +6,8 @@ import bcrypt from 'bcryptjs';
 import { Machine } from '../models/Machine';
 import { Booking } from '../models/Booking';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -15,17 +17,22 @@ export const createAdminUser = async () => {
     console.log('Starting admin user creation process...');
     
     // Check if any users exist
-    const userCount = await User.countDocuments();
+    const adminEmail = process.env.ADMIN_EMAIL;
+    console.log('Looking for admin with email:', adminEmail);
+    
+    if (!adminEmail) {
+      console.error('ADMIN_EMAIL is not defined in environment variables');
+      return;
+    }
     
     // Check specifically for admin user
-    const adminEmail = process.env.ADMIN_EMAIL;
     const adminUser = await User.findOne({ email: adminEmail });
 
-    if (userCount > 0 && adminUser) {
+    if (adminUser) {
       console.log('Admin user already exists:', adminEmail);
       
       // Check if admin user has all certifications
-      if (adminUser && (!adminUser.certifications || adminUser.certifications.length < 6)) {
+      if (!adminUser.certifications || adminUser.certifications.length < 6) {
         adminUser.certifications = ['1', '2', '3', '4', '5', '6'];
         await adminUser.save();
         console.log('Updated admin user with all certifications');
@@ -35,14 +42,14 @@ export const createAdminUser = async () => {
 
     // Get admin details from environment variables
     console.log('Creating new admin user with email:', adminEmail);
-    const adminPassword = process.env.ADMIN_PASSWORD?.trim();
+    const adminPassword = process.env.ADMIN_PASSWORD;
     if (!adminPassword) {
       throw new Error('ADMIN_PASSWORD is not defined in environment variables');
     }
 
     // Create admin user with all certifications
     const newAdminUser = new User({
-      _id: 1, // Use number type for _id per the schema
+      _id: '1', // Use string type for consistency
       name: 'Admin',
       email: adminEmail,
       password: adminPassword, // Will be hashed by pre-save hook
@@ -126,21 +133,58 @@ export const updateAdminCredentials = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email or password is required' });
     }
     
-    // Update .env file
+    // Find the admin user
+    const adminUser = await User.findOne({ isAdmin: true });
+    if (!adminUser) {
+      return res.status(404).json({ message: 'Admin user not found' });
+    }
+    
+    // Update the admin user
     if (email) {
+      adminUser.email = email;
+      
+      // Also update the .env file
+      try {
+        const envPath = path.resolve(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+          let envContent = fs.readFileSync(envPath, 'utf8');
+          envContent = envContent.replace(/ADMIN_EMAIL=.*/g, `ADMIN_EMAIL=${email}`);
+          fs.writeFileSync(envPath, envContent);
+          console.log('Updated ADMIN_EMAIL in .env file');
+        }
+      } catch (err) {
+        console.error('Error updating .env file:', err);
+      }
+      
+      // Update process.env for current process
       process.env.ADMIN_EMAIL = email;
     }
     
     if (password) {
+      adminUser.password = password; // Will be hashed by the pre-save hook
+      
+      // Also update the .env file
+      try {
+        const envPath = path.resolve(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+          let envContent = fs.readFileSync(envPath, 'utf8');
+          envContent = envContent.replace(/ADMIN_PASSWORD=.*/g, `ADMIN_PASSWORD=${password}`);
+          fs.writeFileSync(envPath, envContent);
+          console.log('Updated ADMIN_PASSWORD in .env file');
+        }
+      } catch (err) {
+        console.error('Error updating .env file:', err);
+      }
+      
+      // Update process.env for current process
       process.env.ADMIN_PASSWORD = password;
     }
     
-    // In a real app, we would update the .env file on disk
-    // For this demo, we'll just update the process.env
+    await adminUser.save();
     
     res.json({ 
       message: 'Admin credentials updated',
-      email: process.env.ADMIN_EMAIL,
+      email: adminUser.email,
       passwordUpdated: !!password
     });
   } catch (error) {
@@ -157,47 +201,52 @@ export const updateAdminCredentials = async (req: Request, res: Response) => {
 // @access  Public (only available during setup)
 export const seedAdminUser = asyncHandler(async (req: Request, res: Response) => {
   try {
-    // Check if any users exist
-    const userCount = await User.countDocuments();
-    
-    if (userCount > 0) {
-      res.status(400).json({ 
-        message: 'Seed already completed. Admin user already exists.' 
+    // Check if admin user already exists
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+      return res.status(400).json({
+        message: 'ADMIN_EMAIL is not defined in environment variables'
       });
-      return;
+    }
+    
+    const existingAdmin = await User.findOne({ email: adminEmail });
+    
+    if (existingAdmin) {
+      return res.status(400).json({ 
+        message: 'Admin user already exists',
+        admin: existingAdmin.email
+      });
     }
 
     // Get admin details from environment variables
-    const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
     
-    if (!adminEmail || !adminPassword) {
-      throw new Error('Admin credentials are not defined in environment variables');
+    if (!adminPassword) {
+      return res.status(400).json({
+        message: 'ADMIN_PASSWORD is not defined in environment variables'
+      });
     }
-    
-    // Hash password for storage
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     
     // Create admin user with all certifications
     const adminUser = new User({
-      _id: 1, // Use number type for _id per the schema
+      _id: '1', // Use string type for consistency
       name: 'Admin',
       email: adminEmail,
-      password: hashedPassword,
+      password: adminPassword, // Will be hashed by pre-save hook
       isAdmin: true,
       certifications: ['1', '2', '3', '4', '5', '6'] // Give admin all certifications
     });
     
     await adminUser.save();
     
-    res.status(201).json({ 
+    return res.status(201).json({ 
       message: 'Admin user created successfully',
       email: adminUser.email,
       certifications: adminUser.certifications
     });
   } catch (error) {
     console.error('Error in seedAdminUser:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });

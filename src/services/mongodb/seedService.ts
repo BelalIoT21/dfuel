@@ -43,9 +43,9 @@ class MongoSeedService {
       
       const users: MongoUser[] = [
         {
-          id: '1',
+          id: '1', // Use string ID for consistency
           name: 'Administrator',
-          email: 'admin@dfuel.com',
+          email: 'admin@dfuel.com', // Match email to .env
           password: adminPassword,
           isAdmin: true,
           certifications: ['1', '2', '3', '4', '5', '6'],

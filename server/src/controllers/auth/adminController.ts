@@ -2,6 +2,8 @@
 import User from '../../models/User';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -14,6 +16,8 @@ export const ensureAdminUser = async () => {
       console.error('ADMIN_EMAIL is not defined in environment variables');
       return;
     }
+    
+    console.log('Checking for admin user with email:', adminEmail);
     
     // Check if admin user already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
@@ -30,7 +34,7 @@ export const ensureAdminUser = async () => {
       
       // Create new admin user with ALL certifications
       const newAdmin = new User({
-        _id: 1, // Use number instead of string
+        _id: '1', // Use string ID for consistency
         name: 'Administrator',
         email: adminEmail,
         password: adminPassword, // This will be hashed by the pre-save hook
@@ -42,6 +46,8 @@ export const ensureAdminUser = async () => {
       console.log('Default admin user created successfully');
       console.log('Admin certifications:', newAdmin.certifications);
     } else {
+      console.log('Found existing admin user:', existingAdmin.email);
+      
       // Check if admin password needs to be updated
       const forcePasswordUpdate = process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true';
       
