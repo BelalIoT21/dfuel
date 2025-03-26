@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { courseDatabaseService } from '@/services/database/courseService';
 import { quizDatabaseService } from '@/services/database/quizService';
+import { Asterisk } from 'lucide-react';
 
 export interface MachineFormData {
   name: string;
@@ -37,6 +38,14 @@ interface MachineFormProps {
   description: string;
   submitLabel: string;
 }
+
+// Component for required field label with asterisk
+const RequiredFieldLabel = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
+  <Label htmlFor={htmlFor} className="flex items-center">
+    {children}
+    <Asterisk className="h-3 w-3 ml-1 text-red-600" />
+  </Label>
+);
 
 const MachineForm: React.FC<MachineFormProps> = ({
   formData,
@@ -153,20 +162,22 @@ const MachineForm: React.FC<MachineFormProps> = ({
           
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Machine Name</Label>
+              <RequiredFieldLabel htmlFor="name">Machine Name</RequiredFieldLabel>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter machine name"
+                required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="type">Machine Type</Label>
+              <RequiredFieldLabel htmlFor="type">Machine Type</RequiredFieldLabel>
               <Select
                 value={formData.type}
                 onValueChange={(value) => handleSelectChange('type', value)}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select machine type" />
@@ -185,20 +196,22 @@ const MachineForm: React.FC<MachineFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <RequiredFieldLabel htmlFor="description">Description</RequiredFieldLabel>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter machine description"
+                required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <RequiredFieldLabel htmlFor="status">Status</RequiredFieldLabel>
               <Select
                 value={formData.status}
                 onValueChange={(value) => handleSelectChange('status', value)}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -212,10 +225,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="difficulty">Difficulty Level</Label>
+              <RequiredFieldLabel htmlFor="difficulty">Difficulty Level</RequiredFieldLabel>
               <Select
                 value={formData.difficulty}
                 onValueChange={(value) => handleSelectChange('difficulty', value)}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select difficulty" />

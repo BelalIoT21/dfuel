@@ -72,7 +72,62 @@ const AdminMachineEdit = () => {
     loadMachine();
   }, [id, isEditing, navigate, toast, user?.isAdmin]);
 
+  const validateForm = () => {
+    // Check required fields
+    if (!formData.name.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Machine name is required',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    if (!formData.type) {
+      toast({
+        title: 'Validation Error',
+        description: 'Machine type is required',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    if (!formData.description.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Description is required',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    if (!formData.status) {
+      toast({
+        title: 'Validation Error',
+        description: 'Status is required',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    if (!formData.difficulty) {
+      toast({
+        title: 'Validation Error',
+        description: 'Difficulty level is required',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async () => {
+    // Validate required fields before submitting
+    if (!validateForm()) {
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
