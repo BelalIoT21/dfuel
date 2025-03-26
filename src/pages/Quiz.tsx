@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -67,9 +66,10 @@ const Quiz = () => {
                 const allMachines = await machineService.getAllMachines();
                 const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
                 if (linkedMachine) {
+                  console.log('Found linked machine:', linkedMachine);
                   setMachine(linkedMachine);
                   setMachineId(linkedMachine.id || linkedMachine._id);
-                  console.log('Found linked machine:', linkedMachine.name);
+                  console.log('Set machine ID to:', linkedMachine.id || linkedMachine._id);
                 }
               } catch (err) {
                 console.error('Error finding linked machine:', err);
@@ -96,6 +96,7 @@ const Quiz = () => {
             console.log('Retrieved machine data:', machineData);
             setMachine(machineData);
             setMachineId(machineData.id || machineData._id || id);
+            console.log('Set machine ID to:', machineData.id || machineData._id || id);
 
             // Check if the machine has a linked quiz
             if (machineData.linkedQuizId) {
@@ -184,51 +185,51 @@ const Quiz = () => {
       console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
       
       try {
-        // Convert IDs to strings to ensure consistency
+        // FIXED: Always ensure IDs are strings to prevent conversion issues
         const userIdStr = String(user.id);
         const machineIdStr = String(machineId);
         
         console.log(`Attempting certification with userID=${userIdStr}, machineID=${machineIdStr}`);
         
-        // Array to track certification attempts
+        // More detailed tracking of attempts
         const certificationAttempts = [];
         let success = false;
         
-        // Method 1: Use certificationDatabaseService (most reliable)
+        // Method 1: Direct API call - most reliable method first
         try {
-          success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
-          certificationAttempts.push({method: "certificationDatabaseService", success});
-          console.log(`First certification attempt result: ${success ? 'success' : 'failed'}`);
-        } catch (err) {
-          console.error("Error with certificationDatabaseService:", err);
-          certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
+          console.log('Attempting direct API call to add certification');
+          const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+          });
+          
+          const directResult = await directResponse.json();
+          certificationAttempts.push({method: "direct API", response: directResult});
+          console.log('Direct API call response:', directResult);
+          
+          if (directResponse.ok || directResult.success) {
+            success = true;
+            console.log('Direct API call successful');
+          }
+        } catch (directError) {
+          console.error('Direct API call failed:', directError);
+          certificationAttempts.push({method: "direct API", error: String(directError)});
         }
         
-        // Method 2: Direct API call if Method 1 fails
+        // Method 2: Use certificationDatabaseService if Method 1 fails
         if (!success) {
-          console.log('First certification attempt failed, trying direct API call');
-          
+          console.log('First attempt failed, trying certificationDatabaseService');
           try {
-            const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              },
-              body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-            });
-            
-            const directResult = await directResponse.json();
-            certificationAttempts.push({method: "direct API", response: directResult});
-            console.log('Direct API call response:', directResult);
-            
-            if (directResult.success) {
-              success = true;
-              console.log('Direct API call successful');
-            }
-          } catch (directError) {
-            console.error('Direct API call failed:', directError);
-            certificationAttempts.push({method: "direct API", error: String(directError)});
+            success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
+            certificationAttempts.push({method: "certificationDatabaseService", success});
+            console.log(`Database service attempt result: ${success ? 'success' : 'failed'}`);
+          } catch (err) {
+            console.error("Error with certificationDatabaseService:", err);
+            certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
           }
         }
         
@@ -258,7 +259,7 @@ const Quiz = () => {
           }
         }
         
-        // Emergency fallback - extreme case last resort - raw fetch API call to different endpoint
+        // Method 5: Emergency fallback - extreme case last resort
         if (!success) {
           console.log('All standard methods failed, trying emergency endpoint');
           try {
@@ -271,10 +272,11 @@ const Quiz = () => {
               body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
             });
             
-            if (emergencyResponse.ok) {
-              const emergencyResult = await emergencyResponse.json();
-              certificationAttempts.push({method: "emergency API", response: emergencyResult});
-              console.log('Emergency API call response:', emergencyResult);
+            const emergencyResult = await emergencyResponse.json();
+            certificationAttempts.push({method: "emergency API", response: emergencyResult});
+            console.log('Emergency API call response:', emergencyResult);
+            
+            if (emergencyResponse.ok || emergencyResult.success) {
               success = true;
             }
           } catch (emergencyError) {
@@ -325,7 +327,7 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    // Use stored machineId if available, otherwise fall back to machine.id or machine._id
+    // FIXED: Ensure we navigate to the correct machine page
     const targetId = machineId || (machine && (machine.id || machine._id));
     
     if (!targetId) {
@@ -334,6 +336,7 @@ const Quiz = () => {
         description: "Could not determine which machine page to return to",
         variant: "destructive"
       });
+      // FIXED: Navigate to home instead of dashboard if we can't find the machine
       navigate('/home');
       return;
     }

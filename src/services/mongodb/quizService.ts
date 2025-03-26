@@ -84,7 +84,7 @@ class MongoQuizService {
         // This ensures new IDs start at 5
         const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
         
-        // New ID should be the highest + 1, ensuring minimum of 5
+        // FIXED: Ensure new ID is at least 5
         quiz._id = String(Math.max(highestId + 1, 5));
         
         console.log(`Generated new quiz ID: ${quiz._id}`);

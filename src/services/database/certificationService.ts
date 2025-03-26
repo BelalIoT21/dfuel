@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 
 class CertificationDatabaseService {
@@ -36,6 +37,7 @@ class CertificationDatabaseService {
       
       // First attempt - direct API call
       try {
+        console.log('Attempt 1: Direct API call');
         const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
           method: 'POST',
           headers: {
@@ -45,12 +47,12 @@ class CertificationDatabaseService {
           body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
         });
         
-        if (directResponse.ok) {
-          const result = await directResponse.json();
-          console.log("Direct fetch API response:", result);
-          if (result.success) {
-            return true;
-          }
+        const responseData = await directResponse.json();
+        console.log("Direct fetch API response:", responseData);
+        
+        if (directResponse.ok || responseData.success) {
+          console.log("Direct API call successful");
+          return true;
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
@@ -58,11 +60,12 @@ class CertificationDatabaseService {
       
       // Second attempt - use apiService.addCertification
       try {
+        console.log('Attempt 2: Using apiService.addCertification');
         const response = await apiService.addCertification(stringUserId, stringMachineId);
         console.log("API response for adding certification:", response);
         
         if (response.data?.success || response.status === 200 || response.status === 201) {
-          console.log("Certification added successfully");
+          console.log("Certification added successfully via apiService");
           return true;
         }
       } catch (apiError) {
@@ -71,24 +74,24 @@ class CertificationDatabaseService {
       
       // Third attempt - use generic POST method
       try {
-        console.log("Trying fallback method for adding certification...");
+        console.log("Attempt 3: Using generic POST method");
         const fallbackResponse = await apiService.post('certifications', {
           userId: stringUserId,
           machineId: stringMachineId
         });
         
         console.log("Fallback API response:", fallbackResponse);
-        if (fallbackResponse.data?.success) {
+        if (fallbackResponse.data?.success || fallbackResponse.status === 200 || fallbackResponse.status === 201) {
           console.log("Certification added successfully using fallback method");
           return true;
         }
       } catch (fallbackError) {
-        console.error("Fallback certification method also failed:", fallbackError);
+        console.error("Fallback certification method failed:", fallbackError);
       }
       
       // Fourth attempt - alternative endpoint
       try {
-        console.log("Trying API endpoint with /api prefix...");
+        console.log("Attempt 4: Using alternative API endpoint");
         const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
           method: 'POST',
           headers: {
