@@ -33,7 +33,7 @@ export const validateFile = (file: File, allowedTypes: string[], maxSizeMB: numb
   const fileType = file.type;
   if (!allowedTypes.includes(fileType)) {
     console.error(`Invalid file type: ${fileType}. Allowed types: ${allowedTypes.join(', ')}`);
-    return `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`;
+    return `Invalid file type. Allowed types: ${allowedTypes.map(t => t.split('/')[1]).join(', ')}`;
   }
   
   // Check file size
@@ -61,9 +61,9 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased to 15MB for images
-export const MAX_IMAGE_SIZE_MB = 15; // Increased from 10MB to 15MB
-export const MAX_VIDEO_SIZE_MB = 30; // Increased from 20MB to 30MB
+// Maximum file sizes - increased to 20MB for images
+export const MAX_IMAGE_SIZE_MB = 20; // Increased from 15MB to 20MB
+export const MAX_VIDEO_SIZE_MB = 50; // Increased from 30MB to 50MB
 
 // No compression - just return the original data URL
 export const compressImageIfNeeded = async (dataUrl: string): Promise<string> => {

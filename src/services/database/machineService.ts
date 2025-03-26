@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -77,11 +76,8 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.linkedQuizId = null;
       }
 
-      // Explicitly convert requiresCertification to boolean - critical fix
-      if (cleanedData.requiresCertification !== undefined) {
-        // Force it to be a proper boolean value
-        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
-      }
+      // CRITICAL FIX: Always convert requiresCertification to boolean
+      cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       
       console.log("Cleaned machine data for creation:", cleanedData);
       console.log("requiresCertification:", cleanedData.requiresCertification, typeof cleanedData.requiresCertification);
@@ -101,7 +97,7 @@ export class MachineDatabaseService extends BaseService {
       return response.data;
     } catch (error) {
       console.error("API error, could not create machine:", error);
-      return null;
+      throw new Error(`Failed to create machine: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -125,17 +121,11 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Critical fix for certification requirements
-      // Always ensure requiresCertification is a boolean
-      if (cleanedData.requiresCertification !== undefined) {
-        // Always force it to be a boolean
+      // CRITICAL FIX: Always explicitly set requiresCertification to a boolean value
+      if ('requiresCertification' in cleanedData) {
         cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
         console.log(`requiresCertification explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
-      } else {
-        console.log("requiresCertification not provided in update");
       }
-      
-      // Fix: Handle courses and quizzes with explicit property checks
       
       // Handle linked course ID with "in" operator to check if property exists
       if ('linkedCourseId' in cleanedData) {
@@ -179,7 +169,7 @@ export class MachineDatabaseService extends BaseService {
       return response.data;
     } catch (error) {
       console.error(`API error, could not update machine ${machineId}:`, error);
-      return null;
+      throw new Error(`Failed to update machine: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

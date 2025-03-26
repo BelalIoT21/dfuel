@@ -42,11 +42,8 @@ const AdminMachineEdit = () => {
           if (machine) {
             console.log("Loaded machine data:", machine);
             
-            // Ensure requiresCertification is a proper boolean - key fix
-            const requiresCertification = typeof machine.requiresCertification === 'boolean' 
-              ? machine.requiresCertification 
-              : machine.requiresCertification === 'true' || Boolean(machine.requiresCertification);
-              
+            // CRITICAL FIX: Ensure requiresCertification is a proper boolean
+            const requiresCertification = Boolean(machine.requiresCertification);
             console.log("Setting requiresCertification to:", requiresCertification, typeof requiresCertification);
             
             setFormData({
@@ -150,7 +147,7 @@ const AdminMachineEdit = () => {
     try {
       setIsSubmitting(true);
       
-      // Explicitly ensure requiresCertification is a boolean
+      // CRITICAL FIX: Explicitly ensure requiresCertification is a boolean
       const dataToSubmit = {
         ...formData,
         requiresCertification: Boolean(formData.requiresCertification)
@@ -170,29 +167,47 @@ const AdminMachineEdit = () => {
       
       if (isEditing && id) {
         // Update existing machine
-        const success = await machineDatabaseService.updateMachine(id, dataToSubmit);
-        
-        if (success) {
+        try {
+          const updatedMachine = await machineDatabaseService.updateMachine(id, dataToSubmit);
+          
+          if (updatedMachine) {
+            toast({
+              title: 'Success',
+              description: 'Machine updated successfully'
+            });
+            navigate('/admin/machines');
+          } else {
+            throw new Error('Failed to update machine');
+          }
+        } catch (error) {
+          console.error('Error updating machine:', error);
           toast({
-            title: 'Success',
-            description: 'Machine updated successfully'
+            title: 'Error',
+            description: error instanceof Error ? error.message : 'Failed to update machine',
+            variant: 'destructive'
           });
-          navigate('/admin/machines');
-        } else {
-          throw new Error('Failed to update machine');
         }
       } else {
         // Create new machine
-        const result = await machineDatabaseService.createMachine(dataToSubmit);
-        
-        if (result) {
+        try {
+          const result = await machineDatabaseService.createMachine(dataToSubmit);
+          
+          if (result) {
+            toast({
+              title: 'Success',
+              description: 'Machine created successfully'
+            });
+            navigate('/admin/machines');
+          } else {
+            throw new Error('Failed to create machine');
+          }
+        } catch (error) {
+          console.error('Error creating machine:', error);
           toast({
-            title: 'Success',
-            description: 'Machine created successfully'
+            title: 'Error',
+            description: error instanceof Error ? error.message : 'Failed to create machine',
+            variant: 'destructive'
           });
-          navigate('/admin/machines');
-        } else {
-          throw new Error('Failed to create machine');
         }
       }
     } catch (error) {

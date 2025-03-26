@@ -53,9 +53,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
         return;
       }
 
-      // Convert file to data URL
+      // Use a more optimized approach for large files
       const dataUrl = await fileToDataUrl(file);
-      console.log(`File converted to data URL (length: ${dataUrl.length})`);
+      
+      // For large files, log size info but not the entire content
+      console.log(`File converted to data URL (length: ${dataUrl.length}, approximate size: ${(dataUrl.length / 1.37 / 1024 / 1024).toFixed(2)} MB)`);
       
       setPreview(dataUrl);
       onFileChange(dataUrl);

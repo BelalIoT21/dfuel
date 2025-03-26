@@ -15,6 +15,10 @@ import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
+// Configure middleware for handling large uploads (50MB limit)
+const jsonParser = express.json({ limit: '50mb' });
+const urlencodedParser = express.urlencoded({ limit: '50mb', extended: true });
+
 // Rate limiting for sensitive endpoints
 const updateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -36,6 +40,7 @@ router.post(
   '/',
   protect,
   admin,
+  jsonParser, // Apply larger payload limit
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('type').notEmpty().withMessage('Type is required'),
@@ -55,7 +60,8 @@ router.put(
   '/:id',
   protect,
   admin,
-  updateLimiter, // Apply rate limiting
+  jsonParser, // Apply larger payload limit
+  updateLimiter,
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('status').isIn(['Available', 'Maintenance', 'Out of Order', 'In Use']).withMessage('Valid status is required'),
@@ -68,7 +74,8 @@ router.put(
   '/:id/status',
   protect,
   admin,
-  updateLimiter, // Apply rate limiting
+  jsonParser, // Apply larger payload limit
+  updateLimiter,
   [
     body('status').isString().withMessage('Status must be a string'),
     body('maintenanceNote').optional().isString().withMessage('Note must be a string'),
