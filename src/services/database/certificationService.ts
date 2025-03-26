@@ -29,55 +29,88 @@ class CertificationDatabaseService {
       }
       
       // Ensure IDs are strings for consistency
-      const stringUserId = userId.toString();
-      const stringMachineId = machineId.toString();
+      const stringUserId = String(userId);
+      const stringMachineId = String(machineId);
       
       console.log(`Calling API to add certification: userId=${stringUserId}, machineId=${stringMachineId}`);
-      const response = await apiService.addCertification(stringUserId, stringMachineId);
       
-      console.log("API response for adding certification:", response);
-      
-      if (response.error) {
-        console.error('Error adding certification:', response.error);
-        return false;
-      }
-      
-      // Also try with direct API call as fallback
-      if (!response.data?.success) {
-        console.log("Trying fallback method for adding certification...");
-        try {
-          const fallbackResponse = await apiService.post('certifications', {
-            userId: stringUserId,
-            machineId: stringMachineId
-          });
-          
-          console.log("Fallback API response:", fallbackResponse);
-          if (fallbackResponse.data?.success) {
-            console.log("Certification added successfully using fallback method");
-            return true;
-          }
-        } catch (fallbackError) {
-          console.error("Fallback certification method also failed:", fallbackError);
-        }
-      }
-      
-      return response.data?.success || false;
-    } catch (error) {
-      console.error('Error adding certification:', error);
-      
-      // Try one more time with direct API call
+      // First attempt - direct API call
       try {
-        console.log("Trying emergency fallback for adding certification...");
-        const emergencyResponse = await apiService.post('certifications', {
-          userId: userId.toString(),
-          machineId: machineId.toString()
+        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
         });
         
-        return emergencyResponse.data?.success || false;
-      } catch (emergencyError) {
-        console.error("Emergency fallback also failed:", emergencyError);
-        return false;
+        if (directResponse.ok) {
+          const result = await directResponse.json();
+          console.log("Direct fetch API response:", result);
+          if (result.success) {
+            return true;
+          }
+        }
+      } catch (directError) {
+        console.error("Direct API call failed:", directError);
       }
+      
+      // Second attempt - use apiService.addCertification
+      try {
+        const response = await apiService.addCertification(stringUserId, stringMachineId);
+        console.log("API response for adding certification:", response);
+        
+        if (response.data?.success || response.status === 200 || response.status === 201) {
+          console.log("Certification added successfully");
+          return true;
+        }
+      } catch (apiError) {
+        console.error("API service call failed:", apiError);
+      }
+      
+      // Third attempt - use generic POST method
+      try {
+        console.log("Trying fallback method for adding certification...");
+        const fallbackResponse = await apiService.post('certifications', {
+          userId: stringUserId,
+          machineId: stringMachineId
+        });
+        
+        console.log("Fallback API response:", fallbackResponse);
+        if (fallbackResponse.data?.success) {
+          console.log("Certification added successfully using fallback method");
+          return true;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback certification method also failed:", fallbackError);
+      }
+      
+      // Fourth attempt - alternative endpoint
+      try {
+        console.log("Trying API endpoint with /api prefix...");
+        const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
+        });
+        
+        if (alternativeResponse.ok) {
+          console.log("Alternative API endpoint successful");
+          return true;
+        }
+      } catch (alternativeError) {
+        console.error("Alternative API endpoint failed:", alternativeError);
+      }
+      
+      console.log("All attempts to add certification failed");
+      return false;
+    } catch (error) {
+      console.error('Error adding certification:', error);
+      return false;
     }
   }
 

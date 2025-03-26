@@ -22,8 +22,8 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
   
   try {
     // Ensure IDs are strings for consistency
-    const userIdStr = userId.toString();
-    const machineIdStr = machineId.toString();
+    const userIdStr = String(userId);
+    const machineIdStr = String(machineId);
     
     console.log(`Normalized IDs for certification: userId=${userIdStr}, machineId=${machineIdStr}`);
     
@@ -37,12 +37,17 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
       user = await User.findOne({ _id: userIdStr });
       
       if (!user) {
-        console.log(`User still not found with ID: ${userIdStr}`);
-        res.status(404).json({ 
-          success: false, 
-          message: 'User not found' 
-        });
-        return;
+        // Try finding by ID field if _id doesn't work
+        user = await User.findOne({ id: userIdStr });
+        
+        if (!user) {
+          console.log(`User still not found with ID: ${userIdStr}`);
+          res.status(404).json({ 
+            success: false, 
+            message: 'User not found' 
+          });
+          return;
+        }
       }
     }
     

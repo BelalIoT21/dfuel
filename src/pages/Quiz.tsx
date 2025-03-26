@@ -185,16 +185,26 @@ const Quiz = () => {
       
       try {
         // Convert IDs to strings to ensure consistency
-        const userIdStr = user.id.toString();
-        const machineIdStr = machineId.toString();
+        const userIdStr = String(user.id);
+        const machineIdStr = String(machineId);
         
         console.log(`Attempting certification with userID=${userIdStr}, machineID=${machineIdStr}`);
         
-        // Try using certificationDatabaseService first (more reliable)
-        let success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
-        console.log(`First certification attempt result: ${success ? 'success' : 'failed'}`);
+        // Array to track certification attempts
+        const certificationAttempts = [];
+        let success = false;
         
-        // If that fails, try direct API call
+        // Method 1: Use certificationDatabaseService (most reliable)
+        try {
+          success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
+          certificationAttempts.push({method: "certificationDatabaseService", success});
+          console.log(`First certification attempt result: ${success ? 'success' : 'failed'}`);
+        } catch (err) {
+          console.error("Error with certificationDatabaseService:", err);
+          certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
+        }
+        
+        // Method 2: Direct API call if Method 1 fails
         if (!success) {
           console.log('First certification attempt failed, trying direct API call');
           
@@ -209,6 +219,7 @@ const Quiz = () => {
             });
             
             const directResult = await directResponse.json();
+            certificationAttempts.push({method: "direct API", response: directResult});
             console.log('Direct API call response:', directResult);
             
             if (directResult.success) {
@@ -217,22 +228,63 @@ const Quiz = () => {
             }
           } catch (directError) {
             console.error('Direct API call failed:', directError);
+            certificationAttempts.push({method: "direct API", error: String(directError)});
           }
         }
         
-        // If previous attempts fail, try certificationService
+        // Method 3: Use certificationService if Method 1 and 2 fail
         if (!success) {
           console.log('Previous certification attempts failed, trying certificationService');
-          success = await certificationService.addCertification(userIdStr, machineIdStr);
-          console.log(`certificationService attempt result: ${success ? 'success' : 'failed'}`);
+          try {
+            success = await certificationService.addCertification(userIdStr, machineIdStr);
+            certificationAttempts.push({method: "certificationService", success});
+            console.log(`certificationService attempt result: ${success ? 'success' : 'failed'}`);
+          } catch (err) {
+            console.error("Error with certificationService:", err);
+            certificationAttempts.push({method: "certificationService", error: String(err)});
+          }
         }
         
-        // If that also fails, try using the context method
+        // Method 4: Use context method if all previous methods fail
         if (!success && addCertification) {
           console.log('All service attempts failed, trying context method');
-          success = await addCertification(machineIdStr);
-          console.log(`Context method attempt result: ${success ? 'success' : 'failed'}`);
+          try {
+            success = await addCertification(machineIdStr);
+            certificationAttempts.push({method: "context addCertification", success});
+            console.log(`Context method attempt result: ${success ? 'success' : 'failed'}`);
+          } catch (err) {
+            console.error("Error with context addCertification:", err);
+            certificationAttempts.push({method: "context addCertification", error: String(err)});
+          }
         }
+        
+        // Emergency fallback - extreme case last resort - raw fetch API call to different endpoint
+        if (!success) {
+          console.log('All standard methods failed, trying emergency endpoint');
+          try {
+            const emergencyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+            });
+            
+            if (emergencyResponse.ok) {
+              const emergencyResult = await emergencyResponse.json();
+              certificationAttempts.push({method: "emergency API", response: emergencyResult});
+              console.log('Emergency API call response:', emergencyResult);
+              success = true;
+            }
+          } catch (emergencyError) {
+            console.error('Emergency API call failed:', emergencyError);
+            certificationAttempts.push({method: "emergency API", error: String(emergencyError)});
+          }
+        }
+        
+        // Log all attempts for debugging
+        console.log("All certification attempts:", JSON.stringify(certificationAttempts, null, 2));
         
         if (success) {
           console.log('Successfully added certification');
