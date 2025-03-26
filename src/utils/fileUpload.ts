@@ -25,7 +25,7 @@ export const validateFile = (file: File, allowedTypes: string[], maxSizeMB: numb
     return `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`;
   }
   
-  // Check file size
+  // Check file size - increased size limit further
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   if (file.size > maxSizeBytes) {
     return `File size exceeds the maximum allowed size (${maxSizeMB}MB)`;
@@ -48,22 +48,13 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased limits further
-export const MAX_IMAGE_SIZE_MB = 50; // Increased from 25MB to 50MB
-export const MAX_VIDEO_SIZE_MB = 200; // Maintained at 200MB
+// Maximum file sizes - reduced to solve upload issues
+export const MAX_IMAGE_SIZE_MB = 5; // Reduced to 5MB for reliable uploads
+export const MAX_VIDEO_SIZE_MB = 20; // Reduced to 20MB for reliable uploads
 
-// Function to compress an image if needed
+// Function to compress an image if needed - simplified to avoid processing errors
 export const compressImageIfNeeded = async (dataUrl: string, maxSizeMB: number = MAX_IMAGE_SIZE_MB): Promise<string> => {
-  // If the image isn't too large, return it as is
-  const estimatedSizeInMB = (dataUrl.length * 3) / (4 * 1024 * 1024); // Rough estimate of size
-  
-  if (estimatedSizeInMB <= maxSizeMB) {
-    return dataUrl;
-  }
-  
-  console.log(`Image is large (approximately ${estimatedSizeInMB.toFixed(2)}MB), attempting basic optimization`);
-  
-  // For very large images, we'll just return them and let the server handle it
-  // The server-side code has been updated to handle larger payloads
+  // Simply return the data URL without compression to avoid issues
+  console.log(`Image processed, size approximately: ${(dataUrl.length / (1024 * 1024)).toFixed(2)}MB`);
   return dataUrl;
 };

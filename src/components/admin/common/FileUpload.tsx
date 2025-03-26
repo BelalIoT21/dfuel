@@ -8,8 +8,7 @@ import {
   validateFile, 
   fileToDataUrl, 
   IMAGE_TYPES, 
-  MAX_IMAGE_SIZE_MB,
-  compressImageIfNeeded
+  MAX_IMAGE_SIZE_MB
 } from '@/utils/fileUpload';
 
 interface FileUploadProps {
@@ -39,6 +38,10 @@ const FileUpload = ({
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Display file size for debugging
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
+    
     // Validate file
     const validationError = validateFile(file, allowedTypes, maxSizeMB);
     if (validationError) {
@@ -52,37 +55,25 @@ const FileUpload = ({
     
     setLoading(true);
     try {
-      // Display file size for debugging
-      console.log(`Processing file: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-      
-      // Get base data URL
+      // Get data URL directly without compression
       const dataUrl = await fileToDataUrl(file);
       
-      // Try to optimize large images
-      const optimizedDataUrl = await compressImageIfNeeded(dataUrl, maxSizeMB);
+      console.log(`File converted to data URL, length: ${dataUrl.length} characters`);
       
-      setPreview(optimizedDataUrl);
-      onFileChange(optimizedDataUrl);
+      // Update the preview and notify parent component
+      setPreview(dataUrl);
+      onFileChange(dataUrl);
       
-      // Inform the user about large files
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Large File",
-          description: "This file is quite large. Processing might take longer than usual.",
-          duration: 5000
-        });
-      } else {
-        toast({
-          title: "File Uploaded",
-          description: `Successfully processed ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
-          duration: 3000
-        });
-      }
+      toast({
+        title: "File Uploaded",
+        description: `Successfully processed ${file.name} (${fileSizeMB}MB)`,
+        duration: 3000
+      });
     } catch (error) {
       console.error("Error processing file:", error);
       toast({
         title: "Error",
-        description: "Failed to process the file",
+        description: "Failed to process the file. Please try a smaller image.",
         variant: "destructive"
       });
     } finally {
@@ -142,7 +133,7 @@ const FileUpload = ({
             />
           </div>
           <p className="text-xs text-gray-500">
-            Max file size: {maxSizeMB}MB
+            Max file size: {maxSizeMB}MB. Recommended size: under 1MB for best performance.
           </p>
         </>
       )}

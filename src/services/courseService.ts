@@ -26,17 +26,21 @@ class CourseService {
   
   async updateCourseImage(courseId: string, imageUrl: string | null) {
     try {
-      console.log(`Updating course ${courseId} image:`, imageUrl ? "New image" : "Removing image");
+      console.log(`Updating course ${courseId} image:`, imageUrl ? "New image provided" : "Removing image");
       
-      // Check if imageUrl is too large
-      if (imageUrl && imageUrl.length > 10000000) { // Increased threshold further
-        console.warn("Image is very large, processing may take longer");
-        
-        // For extremely large images, let the request go through but warn about it
-        console.log("Processing large image, this may take some time");
+      // Simple check if imageUrl is provided but empty
+      if (imageUrl === "") {
+        console.warn("Empty image URL provided, treating as null");
+        imageUrl = null;
       }
       
       const data = imageUrl === null ? { imageUrl: null } : { imageUrl };
+      
+      // For large payloads, log the size
+      if (imageUrl && imageUrl.length > 1000000) {
+        console.log(`Large image being sent, size: ${(imageUrl.length / (1024 * 1024)).toFixed(2)} MB`);
+      }
+      
       const response = await apiService.put(`/courses/${courseId}`, data);
       
       if (response.error) {
