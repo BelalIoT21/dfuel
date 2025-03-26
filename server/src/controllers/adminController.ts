@@ -161,9 +161,10 @@ export const seedAdminUser = asyncHandler(async (req: Request, res: Response) =>
     const userCount = await User.countDocuments();
     
     if (userCount > 0) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         message: 'Seed already completed. Admin user already exists.' 
       });
+      return;
     }
 
     // Get admin details from environment variables
