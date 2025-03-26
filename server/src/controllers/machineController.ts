@@ -1,4 +1,5 @@
 
+// Updating only the updateMachine method to better handle certification updates
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -226,6 +227,7 @@ export const updateMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     console.log(`Updating machine ${id} with data:`, req.body);
+    console.log(`Request body size: ${JSON.stringify(req.body).length / 1024} KB`);
 
     let machine;
     if (mongoose.Types.ObjectId.isValid(id)) {
@@ -260,6 +262,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     console.log(`Original requiresCertification: ${requiresCertification} (${typeof requiresCertification})`);
     
+    // Handle requiresCertification explicitly
     if (requiresCertification !== undefined) {
       let normalizedValue: boolean;
       if (typeof requiresCertification === 'boolean') {
@@ -289,26 +292,22 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.details = details !== undefined ? details : machine.details;
     machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
     
-    // Updated handling of linkedCourseId - only set to undefined if explicitly empty or 'none'
-    if (linkedCourseId !== undefined) {
-      if (linkedCourseId === '' || linkedCourseId === 'none') {
-        machine.linkedCourseId = undefined;
-        console.log(`Removed linkedCourseId for machine ${id}`);
-      } else {
-        machine.linkedCourseId = linkedCourseId;
-        console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
-      }
+    // Critical fix for linkedCourseId handling
+    if (linkedCourseId === '' || linkedCourseId === 'none' || linkedCourseId === null) {
+      console.log(`Clearing linkedCourseId for machine ${id}`);
+      machine.linkedCourseId = undefined;
+    } else if (linkedCourseId !== undefined) {
+      console.log(`Setting linkedCourseId for machine ${id} to: ${linkedCourseId}`);
+      machine.linkedCourseId = linkedCourseId;
     }
     
-    // Updated handling of linkedQuizId - only set to undefined if explicitly empty or 'none'
-    if (linkedQuizId !== undefined) {
-      if (linkedQuizId === '' || linkedQuizId === 'none') {
-        machine.linkedQuizId = undefined;
-        console.log(`Removed linkedQuizId for machine ${id}`);
-      } else {
-        machine.linkedQuizId = linkedQuizId;
-        console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
-      }
+    // Critical fix for linkedQuizId handling
+    if (linkedQuizId === '' || linkedQuizId === 'none' || linkedQuizId === null) {
+      console.log(`Clearing linkedQuizId for machine ${id}`);
+      machine.linkedQuizId = undefined;
+    } else if (linkedQuizId !== undefined) {
+      console.log(`Setting linkedQuizId for machine ${id} to: ${linkedQuizId}`);
+      machine.linkedQuizId = linkedQuizId;
     }
     
     if (status) {
@@ -330,6 +329,15 @@ export const updateMachine = async (req: Request, res: Response) => {
       }
       machine.status = normalizedStatus;
     }
+    
+    console.log("About to save machine with data:", {
+      name: machine.name,
+      type: machine.type,
+      status: machine.status,
+      requiresCertification: machine.requiresCertification,
+      linkedCourseId: machine.linkedCourseId,
+      linkedQuizId: machine.linkedQuizId
+    });
     
     const updatedMachine = await machine.save();
     console.log("Machine updated successfully:", updatedMachine);

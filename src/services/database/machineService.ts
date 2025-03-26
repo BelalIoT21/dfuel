@@ -77,16 +77,16 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Clean empty strings for linkedCourseId and linkedQuizId
+      // Handle empty string values for linkedCourseId and linkedQuizId
       if (cleanedData.linkedCourseId === '') {
-        cleanedData.linkedCourseId = null;
+        cleanedData.linkedCourseId = undefined;
       }
       
       if (cleanedData.linkedQuizId === '') {
-        cleanedData.linkedQuizId = null;
+        cleanedData.linkedQuizId = undefined;
       }
 
-      // CRITICAL FIX: Always convert requiresCertification to boolean
+      // CRITICAL: Always convert requiresCertification to boolean
       cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       
       console.log("Cleaned machine data for creation:", cleanedData);
@@ -142,28 +142,30 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // CRITICAL FIX: Always explicitly set requiresCertification to a boolean value
+      // CRITICAL: Always explicitly set requiresCertification to a boolean value if present
       if ('requiresCertification' in cleanedData) {
         cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
         console.log(`requiresCertification explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
       }
       
-      // Handle linked course ID with "in" operator to check if property exists
+      // Handle linkedCourseId correctly - use undefined for empty/none values
       if ('linkedCourseId' in cleanedData) {
-        // Empty string should be converted to undefined
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
           cleanedData.linkedCourseId = undefined;
+          console.log(`Clearing linkedCourseId for machine ${machineId}`);
+        } else {
+          console.log(`Setting linkedCourseId to: ${cleanedData.linkedCourseId}`);
         }
-        console.log(`Setting linkedCourseId to: ${cleanedData.linkedCourseId}`);
       }
       
-      // Handle linked quiz ID with "in" operator to check if property exists
+      // Handle linkedQuizId correctly - use undefined for empty/none values
       if ('linkedQuizId' in cleanedData) {
-        // Empty string should be converted to undefined
         if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
           cleanedData.linkedQuizId = undefined;
+          console.log(`Clearing linkedQuizId for machine ${machineId}`);
+        } else {
+          console.log(`Setting linkedQuizId to: ${cleanedData.linkedQuizId}`);
         }
-        console.log(`Setting linkedQuizId to: ${cleanedData.linkedQuizId}`);
       }
       
       // Handle certification instructions - empty string is valid
@@ -175,7 +177,13 @@ export class MachineDatabaseService extends BaseService {
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
       
-      const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
+      // Explicitly add content-type header for large payloads
+      const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       console.log(`Update response for machine ${machineId}:`, response);
       
       // Ensure the response has both image properties
@@ -279,10 +287,14 @@ export class MachineDatabaseService extends BaseService {
   async linkMachineCourseAndQuiz(machineId: string, courseId: string, quizId: string): Promise<boolean> {
     try {
       console.log(`Linking machine ${machineId} with course ${courseId} and quiz ${quizId}`);
-      const result = await this.updateMachine(machineId, {
-        linkedCourseId: courseId,
-        linkedQuizId: quizId
-      });
+      const updateData = {
+        linkedCourseId: courseId || undefined,
+        linkedQuizId: quizId || undefined
+      };
+      
+      console.log("Update data for linking:", updateData);
+      
+      const result = await this.updateMachine(machineId, updateData);
       
       return !!result;
     } catch (error) {

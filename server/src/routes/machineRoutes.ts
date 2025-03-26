@@ -15,9 +15,10 @@ import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
-// Configure middleware for handling large uploads (50MB limit)
-const jsonParser = express.json({ limit: '50mb' });
-const urlencodedParser = express.urlencoded({ limit: '50mb', extended: true });
+// Increase the payload size limit substantially for machine operations
+// Configure middleware for handling large uploads (100MB limit)
+const jsonParser = express.json({ limit: '100mb' });
+const urlencodedParser = express.urlencoded({ limit: '100mb', extended: true });
 
 // Rate limiting for sensitive endpoints
 const updateLimiter = rateLimit({
