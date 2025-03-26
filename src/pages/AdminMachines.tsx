@@ -21,13 +21,11 @@ const AdminMachines = () => {
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [quizzesList, setQuizzesList] = useState<any[]>([]);
   
-  // Helper function to ensure image paths are correct
   const getProperImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/placeholder.svg';
     
-    // If the image URL starts with /utils/images, make sure it's properly prefixed
     if (imageUrl.startsWith('/utils/images')) {
-      return `${import.meta.env.VITE_API_URL || ''}${imageUrl}`;
+      return `${import.meta.env.VITE_API_URL || ''}/api${imageUrl}`;
     }
     
     return imageUrl;
@@ -79,14 +77,12 @@ const AdminMachines = () => {
     
     const fetchCoursesAndQuizzes = async () => {
       try {
-        // Fetch courses
         const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
         if (response.ok) {
           const courses = await response.json();
           setCoursesList(courses);
         }
         
-        // Fetch quizzes
         const quizResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/quizzes`);
         if (quizResponse.ok) {
           const quizzes = await quizResponse.json();
@@ -145,7 +141,6 @@ const AdminMachines = () => {
         description: "The machine has been deleted successfully."
       });
       
-      // Remove the machine from the local state immediately
       setMachinesList(prev => prev.filter(m => m.id !== id && m._id !== id));
     } catch (error) {
       console.error("Error deleting machine:", error);

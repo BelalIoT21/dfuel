@@ -48,7 +48,7 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     if (url.startsWith('/utils/images')) {
       // For React Native, we need to use the full URL
       const apiUrl = 'http://localhost:5000'; // Adjust this based on your config
-      return `${apiUrl}${url}`;
+      return `${apiUrl}/api${url}`;
     }
     
     return url;

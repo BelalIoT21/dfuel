@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,18 @@ const AdminMachineEdit = () => {
   });
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
+
+  // Helper function to format image URLs
+  const formatImageUrl = (url?: string) => {
+    if (!url) return '';
+    
+    // For server paths, return as is (don't add API prefix here)
+    if (url.startsWith('/utils/images')) {
+      return url;
+    }
+    
+    return url;
+  };
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -60,7 +73,7 @@ const AdminMachineEdit = () => {
               status: status,
               requiresCertification: requiresCertification,
               difficulty: machine.difficulty || 'Beginner',
-              imageUrl: machine.imageUrl || '',
+              imageUrl: formatImageUrl(machine.imageUrl || machine.image || ''),
               details: machine.details || '',
               specifications: machine.specifications || '',
               certificationInstructions: machine.certificationInstructions || '',

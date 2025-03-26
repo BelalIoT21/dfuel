@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -13,8 +14,8 @@ export interface MachineData {
   details?: string;
   specifications?: string;
   certificationInstructions?: string;
-  linkedCourseId?: string;
-  linkedQuizId?: string;
+  linkedCourseId?: string | null;
+  linkedQuizId?: string | null;
 }
 
 /**
@@ -79,11 +80,11 @@ export class MachineDatabaseService extends BaseService {
       }
       
       // Explicitly handle linkedCourseId and linkedQuizId (empty string -> null)
-      if (cleanedData.linkedCourseId === '') {
+      if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
         cleanedData.linkedCourseId = null;
       }
       
-      if (cleanedData.linkedQuizId === '') {
+      if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
         cleanedData.linkedQuizId = null;
       }
 

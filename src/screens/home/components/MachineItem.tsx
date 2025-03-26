@@ -78,7 +78,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     if (url.startsWith('/utils/images')) {
       // For React Native, we need to use the full URL
       const apiUrl = 'http://localhost:5000'; // Adjust this based on your configuration
-      return `${apiUrl}${url}`;
+      return `${apiUrl}/api${url}`;
     }
     
     return url;

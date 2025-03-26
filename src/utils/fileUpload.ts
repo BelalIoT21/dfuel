@@ -61,8 +61,8 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - increased to 20MB for images
-export const MAX_IMAGE_SIZE_MB = 20;
+// Maximum file sizes - increased to 30MB for images
+export const MAX_IMAGE_SIZE_MB = 30;
 export const MAX_VIDEO_SIZE_MB = 50;
 
 /**
@@ -74,8 +74,8 @@ export const MAX_VIDEO_SIZE_MB = 50;
  */
 export const compressImageIfNeeded = async (
   dataUrl: string, 
-  targetSizeMB: number = 2,
-  quality: number = 0.8
+  targetSizeMB: number = 5, // Increased default target size
+  quality: number = 0.9 // Increased initial quality
 ): Promise<string> => {
   // Get the current size of the data URL in MB
   const currentSizeMB = dataUrl.length / (1024 * 1024);
@@ -113,8 +113,8 @@ export const compressImageIfNeeded = async (
   let width = img.width;
   let height = img.height;
   
-  // Max dimensions for very large images
-  const MAX_DIMENSION = 2048;
+  // Max dimensions for very large images (increased)
+  const MAX_DIMENSION = 3072; // Increased from 2048
   
   if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
     if (width > height) {
@@ -137,7 +137,7 @@ export const compressImageIfNeeded = async (
   // Try to compress the image
   let compressedDataUrl = '';
   let currentQuality = quality;
-  const minQuality = 0.3; // Don't compress below this quality
+  const minQuality = 0.5; // Higher min quality than before (0.3)
   
   // Try a few quality levels until we hit target size or minimum quality
   while (currentQuality >= minQuality) {
@@ -154,8 +154,8 @@ export const compressImageIfNeeded = async (
       return compressedDataUrl;
     }
     
-    // Reduce quality for next attempt
-    currentQuality -= 0.1;
+    // Reduce quality for next attempt (with smaller steps)
+    currentQuality -= 0.05; // Smaller steps for more gradual quality reduction
   }
   
   // If we couldn't get it under target size, return the most compressed version

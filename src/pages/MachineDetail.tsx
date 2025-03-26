@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,17 @@ const MachineDetail = () => {
   const [machineStatus, setMachineStatus] = useState('unknown');
   const [isCertified, setIsCertified] = useState(false);
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
+
+  const getProperImageUrl = (url: string) => {
+    if (!url) return '/placeholder.svg';
+    
+    if (url.startsWith('/utils/images')) {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      return `${apiUrl}/api${url}`;
+    }
+    
+    return url;
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -56,12 +66,10 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            // Check if user is certified for this machine
             const certificationResult = await certificationService.checkCertification(user.id, id);
             setIsCertified(certificationResult);
             console.log(`User certification status for machine ${id}: ${certificationResult}`);
             
-            // Check if user has safety certification (ID: 6)
             const safetyCertResult = await certificationService.checkCertification(user.id, '6');
             setHasSafetyCertification(safetyCertResult);
             console.log(`User has safety certification: ${safetyCertResult}`);
@@ -130,7 +138,6 @@ const MachineDetail = () => {
   const handleTakeCourse = () => {
     if (!id) return;
     
-    // Don't navigate to course if machine doesn't have a linked course
     if (!machine?.linkedCourseId) {
       toast({
         title: "No Course Available",
@@ -146,7 +153,6 @@ const MachineDetail = () => {
   const handleTakeQuiz = () => {
     if (!id) return;
     
-    // Don't navigate to quiz if machine doesn't have a linked quiz
     if (!machine?.linkedQuizId) {
       toast({
         title: "No Quiz Available",
@@ -182,13 +188,8 @@ const MachineDetail = () => {
     );
   }
 
-  // Check if certification is required
   const requiresCertification = machine?.requiresCertification !== false;
-
-  // Check if machine has a valid linked course
   const hasLinkedCourse = !!machine?.linkedCourseId;
-  
-  // Check if machine has a valid linked quiz
   const hasLinkedQuiz = !!machine?.linkedQuizId;
 
   return (
@@ -227,14 +228,9 @@ const MachineDetail = () => {
         </CardHeader>
         
         <CardContent className="space-y-6 pt-6">
-          {/* Machine Image */}
           <div className="rounded-md overflow-hidden">
             <img 
-              src={
-                machine?.imageUrl || 
-                machine?.image || 
-                '/placeholder.svg'
-              } 
+              src={getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg')}
               alt={machine?.name} 
               className="w-full h-64 object-cover"
               onError={(e) => {
@@ -244,13 +240,11 @@ const MachineDetail = () => {
             />
           </div>
           
-          {/* Description */}
           <div>
             <h3 className="font-medium text-gray-800 mb-2">Description</h3>
             <p className="text-gray-600">{machine?.description}</p>
           </div>
           
-          {/* Specifications */}
           {machine?.specifications && (
             <div>
               <h3 className="font-medium text-gray-800 mb-2">Specifications</h3>
@@ -258,7 +252,6 @@ const MachineDetail = () => {
             </div>
           )}
           
-          {/* Certification Status - only show if certification is required */}
           {requiresCertification && (
             <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
@@ -275,7 +268,6 @@ const MachineDetail = () => {
             </div>
           )}
           
-          {/* Actions */}
           <div className="flex flex-col md:flex-row gap-3 pt-2">
             {requiresCertification && (
               <>

@@ -28,9 +28,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxSizeMB = MAX_IMAGE_SIZE_MB,
   allowedTypes = IMAGE_TYPES,
   compressImages = true,
-  targetCompressedSizeMB = 2
+  targetCompressedSizeMB = 5 // Increased from 2MB to 5MB
 }) => {
-  const [preview, setPreview] = useState<string | null>(existingUrl || null);
+  // Format existing URL if it's a server path
+  const formatExistingUrl = (url?: string) => {
+    if (!url) return null;
+    
+    if (url.startsWith('/utils/images')) {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      return `${apiUrl}/api${url}`;
+    }
+    
+    return url;
+  };
+
+  const [preview, setPreview] = useState<string | null>(formatExistingUrl(existingUrl) || null);
   const [isUploading, setIsUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
@@ -74,7 +86,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         console.log(`Attempting to compress image from ${fileSizeMB} MB to target ${targetCompressedSizeMB} MB`);
         
         // Compress the image
-        const compressedDataUrl = await compressImageIfNeeded(dataUrl, targetCompressedSizeMB);
+        const compressedDataUrl = await compressImageIfNeeded(dataUrl, targetCompressedSizeMB, 0.9); // Higher initial quality
         
         // Calculate the new size and update
         finalSize = (compressedDataUrl.length / (1024 * 1024)).toFixed(2);
@@ -124,16 +136,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const isImageType = allowedTypes.every(type => type.startsWith('image/'));
 
+  // Properly display existing images
+  const displayPreview = preview || (existingUrl ? formatExistingUrl(existingUrl) : null);
+
   return (
     <div className="space-y-2">
-      {preview ? (
+      {displayPreview ? (
         <div className="relative border border-gray-200 rounded-md overflow-hidden">
           {isImageType && (
             <div className="relative aspect-video">
               <img
-                src={preview}
+                src={displayPreview}
                 alt="Preview"
                 className="w-full h-full object-contain bg-gray-50"
+                onError={(e) => {
+                  console.error(`Failed to load image: ${displayPreview}`);
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
               />
             </div>
           )}
