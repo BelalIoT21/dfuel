@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -183,6 +184,7 @@ const AdminMachineEdit = () => {
       if (isEditing && id) {
         // Update existing machine
         try {
+          // Critical change: explicitly set machineId as the first parameter
           const updatedMachine = await machineDatabaseService.updateMachine(id, dataToSubmit);
           
           if (updatedMachine) {

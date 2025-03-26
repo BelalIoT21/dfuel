@@ -150,7 +150,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
     console.log(`Handling select change for ${id}: ${value}`);
     
     if (id === 'linkedCourseId' || id === 'linkedQuizId') {
-      // If "none" is selected, set to empty string
+      // If "none" is selected, set to empty string to ensure it gets sent as null/undefined to API
       const finalValue = value === 'none' ? '' : value;
       console.log(`Setting ${id} to:`, finalValue || 'empty string');
       setFormData((prev) => ({ ...prev, [id]: finalValue }));
@@ -395,18 +395,15 @@ const MachineForm: React.FC<MachineFormProps> = ({
           
           <TabsContent value="certification" className="space-y-4">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="requiresCertification"
-                    checked={Boolean(formData.requiresCertification)}
-                    onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
-                  />
-                  <Label htmlFor="requiresCertification" className="cursor-pointer">Requires Certification</Label>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Current value: {formData.requiresCertification ? 'Yes' : 'No'} ({typeof formData.requiresCertification})
-                </div>
+              <div className="flex items-center w-full">
+                <Switch
+                  id="requiresCertification"
+                  checked={Boolean(formData.requiresCertification)}
+                  onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
+                />
+                <Label htmlFor="requiresCertification" className="cursor-pointer ml-2">
+                  Requires Certification
+                </Label>
               </div>
             </div>
             

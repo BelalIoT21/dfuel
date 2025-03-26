@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -78,7 +79,7 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Clean empty strings for linkedCourseId and linkedQuizId
+      // Explicitly handle linkedCourseId and linkedQuizId (empty string -> null)
       if (cleanedData.linkedCourseId === '') {
         cleanedData.linkedCourseId = null;
       }
@@ -119,6 +120,11 @@ export class MachineDatabaseService extends BaseService {
       const cleanedData = JSON.parse(JSON.stringify(machineData));
       console.log(`Original update data for machine ${machineId}:`, cleanedData);
       
+      // Ensure we're updating the correct machine - don't allow ID to be overridden
+      if (cleanedData._id && cleanedData._id !== machineId) {
+        delete cleanedData._id; // Don't allow changing the machine ID
+      }
+      
       // Normalize the status field (convert UI format to API format)
       if (cleanedData.status) {
         let apiStatus = cleanedData.status;
@@ -136,19 +142,18 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.image = this.defaultImageMap[machineId];
       }
       
-      // Handle linked course ID with "in" operator to check if property exists
+      // Explicitly handle empty/undefined linkedCourseId and linkedQuizId values
       if ('linkedCourseId' in cleanedData) {
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
-          cleanedData.linkedCourseId = undefined;
-          console.log(`Setting linkedCourseId to undefined for machine ${machineId}`);
+          cleanedData.linkedCourseId = null; // Set to null explicitly for the API
+          console.log(`Setting linkedCourseId to null for machine ${machineId}`);
         }
       }
       
-      // Handle linked quiz ID with "in" operator to check if property exists
       if ('linkedQuizId' in cleanedData) {
         if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
-          cleanedData.linkedQuizId = undefined;
-          console.log(`Setting linkedQuizId to undefined for machine ${machineId}`);
+          cleanedData.linkedQuizId = null; // Set to null explicitly for the API
+          console.log(`Setting linkedQuizId to null for machine ${machineId}`);
         }
       }
       

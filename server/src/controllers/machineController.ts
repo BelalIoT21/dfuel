@@ -302,26 +302,22 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (details !== undefined) machine.details = details;
     if (certificationInstructions !== undefined) machine.certificationInstructions = certificationInstructions;
     
-    // Critical fix: Set linkedCourseId to undefined when 'none' is selected
-    if (linkedCourseId !== undefined) {
-      if (linkedCourseId === '' || linkedCourseId === 'none') {
-        machine.linkedCourseId = undefined;
-        console.log(`Removed linkedCourseId for machine ${id}`);
-      } else {
-        machine.linkedCourseId = linkedCourseId;
-        console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
-      }
+    // Explicit handling of linkedCourseId and linkedQuizId - null handling
+    if (linkedCourseId === null || linkedCourseId === '' || linkedCourseId === 'none') {
+      machine.linkedCourseId = undefined;
+      console.log(`Removed linkedCourseId for machine ${id}`);
+    } else if (linkedCourseId !== undefined) {
+      machine.linkedCourseId = linkedCourseId;
+      console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
     }
     
-    // Critical fix: Set linkedQuizId to undefined when 'none' is selected
-    if (linkedQuizId !== undefined) {
-      if (linkedQuizId === '' || linkedQuizId === 'none') {
-        machine.linkedQuizId = undefined;
-        console.log(`Removed linkedQuizId for machine ${id}`);
-      } else {
-        machine.linkedQuizId = linkedQuizId;
-        console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
-      }
+    // Explicit handling of linkedQuizId - null handling
+    if (linkedQuizId === null || linkedQuizId === '' || linkedQuizId === 'none') {
+      machine.linkedQuizId = undefined;
+      console.log(`Removed linkedQuizId for machine ${id}`);
+    } else if (linkedQuizId !== undefined) {
+      machine.linkedQuizId = linkedQuizId;
+      console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
     }
     
     if (status) {
