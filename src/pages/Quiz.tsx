@@ -39,7 +39,8 @@ const Quiz = () => {
   const [certificationProcessing, setCertificationProcessing] = useState(false);
   const [certificationAdded, setCertificationAdded] = useState(false);
   const [relatedMachineIds, setRelatedMachineIds] = useState<string[]>([]);
-  const isAdminRoute = location.pathname.includes('/admin');
+  
+  const isAdminRoute = location.pathname.includes('/admin') || window.location.pathname.includes('/admin');
 
   useEffect(() => {
     if (!id) return;
@@ -251,15 +252,8 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    if (isAdminRoute) {
-      console.log('Navigating to admin machines page from admin route');
-      navigate('/admin/machines');
-      return;
-    }
-    
-    const currentPath = window.location.pathname;
-    if (currentPath.includes('/admin')) {
-      console.log('Navigating to admin machines page based on window path');
+    if (isAdminRoute || user?.isAdmin) {
+      console.log('Navigating to admin machines page from admin context');
       navigate('/admin/machines');
       return;
     }
