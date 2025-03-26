@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +30,6 @@ const AdminMachines = () => {
             const id = machine.id || machine._id;
             return id !== '5' && id !== '6';
           }).map(machine => {
-            // Ensure machine has both imageUrl and image properties with consistent values
             const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
             return {
               ...machine,
@@ -67,10 +65,8 @@ const AdminMachines = () => {
       }
     };
     
-    // Function to ensure Machine 1 has course and quiz
     const ensureMachine1HasCourseAndQuiz = async () => {
       try {
-        // Link Machine 1 with Course ID 5 and Quiz ID 100
         await machineDatabaseService.linkMachineCourseAndQuiz('1', '5', '100');
         console.log("Successfully linked Machine 1 with course and quiz");
       } catch (error) {
@@ -193,9 +189,7 @@ const AdminMachines = () => {
                 </div>
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
-                  // Ensure we're using the correct ID
                   const machineId = machine.id || machine._id;
-                  // Ensure we have a consistent image URL
                   const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
                   
                   return (
@@ -231,13 +225,13 @@ const AdminMachines = () => {
                           <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                             Bookings: {getBookingsThisMonth(machineId)}
                           </div>
-                          {/* Only show these badges for machines other than Machine 1 */}
-                          {machine.linkedCourseId && machineId !== '1' && (
+                          
+                          {(machine.linkedCourseId && machine.linkedCourseId !== 'none' && machine.linkedCourseId !== '') && (
                             <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
                               Has Course
                             </div>
                           )}
-                          {machine.linkedQuizId && machineId !== '1' && (
+                          {(machine.linkedQuizId && machine.linkedQuizId !== 'none' && machine.linkedQuizId !== '') && (
                             <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
                               Has Quiz
                             </div>

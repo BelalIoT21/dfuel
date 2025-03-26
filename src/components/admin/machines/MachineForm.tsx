@@ -40,7 +40,6 @@ interface MachineFormProps {
   submitLabel: string;
 }
 
-// Component for required field label with asterisk
 const RequiredFieldLabel = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
   <Label htmlFor={htmlFor} className="flex items-center">
     {children}
@@ -73,7 +72,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
           quizDatabaseService.getAllQuizzes()
         ]);
         
-        // Sort courses and quizzes by ID to ensure they appear in the correct order
         const sortedCourses = (fetchedCourses || []).sort((a, b) => {
           const idA = parseInt(a._id || a.id) || 0;
           const idB = parseInt(b._id || b.id) || 0;
@@ -112,7 +110,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleSelectChange = (id: string, value: string) => {
-    // Handle empty values for linkedCourseId and linkedQuizId
     let finalValue = value;
     if ((id === 'linkedCourseId' || id === 'linkedQuizId') && value === 'none') {
       finalValue = '';
@@ -124,7 +121,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const handleSwitchChange = (id: string, checked: boolean) => {
     console.log(`Setting ${id} to:`, checked);
-    setFormData((prev) => ({ ...prev, [id]: checked }));
+    setFormData((prev) => ({ ...prev, [id]: Boolean(checked) }));
   };
 
   const handleImageChange = (dataUrl: string | null) => {
@@ -135,11 +132,9 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }));
   };
 
-  // Find the matching course for this machine based on ID
   const getRecommendedCourse = () => {
     if (!formData._id) return null;
     
-    // Direct mapping for machines 1-4
     if (formData._id === "1") {
       return courses.find(course => course._id === "1" || course.id === "1");
     } else if (formData._id === "2") {
@@ -153,11 +148,9 @@ const MachineForm: React.FC<MachineFormProps> = ({
     return null;
   };
 
-  // Find the matching quiz for this machine based on ID
   const getRecommendedQuiz = () => {
     if (!formData._id) return null;
     
-    // Direct mapping for machines 1-4
     if (formData._id === "1") {
       return quizzes.find(quiz => quiz._id === "1" || quiz.id === "1");
     } else if (formData._id === "2") {

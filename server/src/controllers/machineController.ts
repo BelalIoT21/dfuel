@@ -282,8 +282,12 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.type = type || machine.type;
     machine.description = description || machine.description;
     
-    // Important: Handle boolean field explicitly
-    machine.requiresCertification = requiresCertification !== undefined ? requiresCertification : machine.requiresCertification;
+    // Critical fix: Handle requiresCertification correctly
+    // Check if it's undefined first, then assign the value
+    if (requiresCertification !== undefined) {
+      machine.requiresCertification = Boolean(requiresCertification);
+      console.log(`Setting requiresCertification to ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
+    }
     
     machine.difficulty = difficulty || machine.difficulty;
     
@@ -303,15 +307,15 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.details = details !== undefined ? details : machine.details;
     machine.certificationInstructions = certificationInstructions !== undefined ? certificationInstructions : machine.certificationInstructions;
     
-    // Fix for course and quiz relationships
+    // Fix for course and quiz relationships - handle explicitly to allow for removing connections
     if (linkedCourseId !== undefined) {
-      machine.linkedCourseId = linkedCourseId;
-      console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId}`);
+      machine.linkedCourseId = linkedCourseId || null;
+      console.log(`Updated linkedCourseId for machine ${id} to: ${linkedCourseId || 'null'}`);
     }
     
     if (linkedQuizId !== undefined) {
-      machine.linkedQuizId = linkedQuizId;
-      console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId}`);
+      machine.linkedQuizId = linkedQuizId || null;
+      console.log(`Updated linkedQuizId for machine ${id} to: ${linkedQuizId || 'null'}`);
     }
     
     // Convert status to proper format (first letter capitalized)

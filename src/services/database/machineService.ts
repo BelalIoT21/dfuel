@@ -122,18 +122,24 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
-      // Explicitly handle certificates, courses, and quizzes
+      // Fix: Handle courses and quizzes with explicit property checks
       
-      // Handle linked course ID - empty string should be converted to null
-      if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
-        cleanedData.linkedCourseId = null;
-        console.log('Setting linkedCourseId to null');
+      // Handle linked course ID with "in" operator to check if property exists
+      if ('linkedCourseId' in cleanedData) {
+        // Empty string should be converted to null
+        if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
+          cleanedData.linkedCourseId = null;
+        }
+        console.log(`Setting linkedCourseId to: ${cleanedData.linkedCourseId}`);
       }
       
-      // Handle linked quiz ID - empty string should be converted to null
-      if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
-        cleanedData.linkedQuizId = null;
-        console.log('Setting linkedQuizId to null');
+      // Handle linked quiz ID with "in" operator to check if property exists
+      if ('linkedQuizId' in cleanedData) {
+        // Empty string should be converted to null
+        if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
+          cleanedData.linkedQuizId = null;
+        }
+        console.log(`Setting linkedQuizId to: ${cleanedData.linkedQuizId}`);
       }
       
       // Handle certification instructions - empty string is valid
@@ -144,11 +150,14 @@ export class MachineDatabaseService extends BaseService {
       }
 
       // Explicitly handle requiresCertification as a boolean
-      if (typeof cleanedData.requiresCertification === 'string') {
-        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
-      } else {
-        // Make sure it's a boolean
-        cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
+      if ('requiresCertification' in cleanedData) {
+        if (typeof cleanedData.requiresCertification === 'string') {
+          cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
+        } else {
+          // Make sure it's a boolean
+          cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
+        }
+        console.log(`Setting requiresCertification to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);

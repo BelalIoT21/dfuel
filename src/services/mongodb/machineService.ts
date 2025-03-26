@@ -253,7 +253,14 @@ class MongoMachineService {
       if (updates.type !== undefined) updateData.type = updates.type;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.status !== undefined) updateData.status = updates.status;
-      if (updates.requiresCertification !== undefined) updateData.requiresCertification = updates.requiresCertification;
+      
+      // Ensure requiresCertification is properly handled - explicitly setting to boolean
+      if (updates.requiresCertification !== undefined) {
+        // Convert to explicit boolean to ensure consistent storage
+        updateData.requiresCertification = Boolean(updates.requiresCertification);
+        console.log(`Setting requiresCertification to: ${updateData.requiresCertification} (${typeof updateData.requiresCertification})`);
+      }
+      
       if (updates.difficulty !== undefined) updateData.difficulty = updates.difficulty;
       if (updates.imageUrl !== undefined) updateData.imageUrl = updates.imageUrl;
       if (updates.specifications !== undefined) updateData.specifications = updates.specifications;
@@ -261,15 +268,15 @@ class MongoMachineService {
       if (updates.maintenanceNote !== undefined) updateData.maintenanceNote = updates.maintenanceNote;
       if (updates.certificationInstructions !== undefined) updateData.certificationInstructions = updates.certificationInstructions;
       
-      // Important fix for linkedCourseId and linkedQuizId
-      if (updates.linkedCourseId !== undefined) {
-        updateData.linkedCourseId = updates.linkedCourseId;
-        console.log(`Setting linkedCourseId to: ${updates.linkedCourseId}`);
+      // Important fix for linkedCourseId and linkedQuizId - allow null values to clear the field
+      if ('linkedCourseId' in updates) {
+        updateData.linkedCourseId = updates.linkedCourseId || null;
+        console.log(`Setting linkedCourseId to: ${updates.linkedCourseId || 'null'}`);
       }
       
-      if (updates.linkedQuizId !== undefined) {
-        updateData.linkedQuizId = updates.linkedQuizId;
-        console.log(`Setting linkedQuizId to: ${updates.linkedQuizId}`);
+      if ('linkedQuizId' in updates) {
+        updateData.linkedQuizId = updates.linkedQuizId || null;
+        console.log(`Setting linkedQuizId to: ${updates.linkedQuizId || 'null'}`);
       }
       
       const result = await this.machinesCollection.updateOne(
