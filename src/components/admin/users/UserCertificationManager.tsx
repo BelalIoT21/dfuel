@@ -328,6 +328,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               </div>
             )}
 
+            {/* Always show the Clear All button if there are certifications */}
             {userCertifications.length > 0 && (
               <div className="mt-4 border-t pt-4">
                 <Button 

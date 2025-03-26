@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 
 class CertificationDatabaseService {
@@ -161,17 +160,27 @@ class CertificationDatabaseService {
 
   async clearUserCertifications(userId: string): Promise<boolean> {
     try {
-      console.log(`Clearing all certifications for user ${userId}`);
-      const response = await apiService.delete(`certifications/user/${userId}/clear`);
+      console.log(`CertificationDatabaseService: Clearing all certifications for user ${userId}`);
       
-      if (response.error) {
-        console.error('Error clearing certifications:', response.error);
+      if (!userId) {
+        console.error("Invalid userId passed to clearUserCertifications");
         return false;
       }
       
-      return response.data?.success || false;
+      // Use the API service to send a request to clear the user's certifications
+      const response = await apiService.request(`certifications/user/${userId}/clear`, 'DELETE', undefined, true);
+      
+      if (response.data && response.data.success) {
+        console.log(`Successfully cleared all certifications for user ${userId}`);
+        return true;
+      } else if (response.error) {
+        console.error(`Error clearing certifications: ${response.error}`);
+        return false;
+      }
+      
+      return false;
     } catch (error) {
-      console.error('Error clearing certifications:', error);
+      console.error(`Error clearing certifications: ${error}`);
       return false;
     }
   }

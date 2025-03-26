@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -189,6 +188,11 @@ class ApiService {
     return this.request(`certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
   }
 
+  // Clear all certifications for a user
+  async clearUserCertifications(userId: string): Promise<any> {
+    return this.request(`certifications/user/${userId}/clear`, 'DELETE', undefined, true);
+  }
+  
   // Get admin dashboard data
   async getAdminDashboard(): Promise<any> {
     return this.request('admin/dashboard', 'GET', undefined, true);
