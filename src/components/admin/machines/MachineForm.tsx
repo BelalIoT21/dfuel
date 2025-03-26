@@ -389,29 +389,14 @@ const MachineForm: React.FC<MachineFormProps> = ({
             
             <div className="space-y-2">
               <Label htmlFor="image">Machine Image</Label>
-              <div className="flex flex-col space-y-2">
-                {imagePreview && (
-                  <div className="relative w-full h-40 bg-gray-100 rounded-md overflow-hidden mb-2">
-                    <img 
-                      src={getImageUrl(imagePreview)}
-                      alt="Machine preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error("Failed to load image preview:", imagePreview);
-                        // Don't set a fallback to avoid infinite error loop
-                      }}
-                    />
-                  </div>
-                )}
-                <FileUpload 
-                  id="image"
-                  onFileChange={handleImageChange}
-                  existingUrl={formData.imageUrl}
-                  accept="image/*"
-                  maxSizeMB={5}
-                  label="Upload Machine Image"
-                />
-              </div>
+              <FileUpload 
+                id="image"
+                onFileChange={handleImageChange}
+                existingUrl={formData.imageUrl}
+                accept="image/*"
+                maxSizeMB={5}
+                label="Upload Machine Image"
+              />
             </div>
           </TabsContent>
           
