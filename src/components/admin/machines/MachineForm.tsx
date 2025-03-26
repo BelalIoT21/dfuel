@@ -70,14 +70,14 @@ const MachineForm: React.FC<MachineFormProps> = ({
       requiresCertification: `${formData.requiresCertification} (${typeof formData.requiresCertification})`,
       linkedCourseId: formData.linkedCourseId || "none",
       linkedQuizId: formData.linkedQuizId || "none",
-      status: formData.status
+      status: formData.status,
+      imageUrl: formData.imageUrl ? `[Image URL of length ${formData.imageUrl.length}]` : 'none'
     });
     
-    // Set initial image preview if one exists
     if (formData.imageUrl && !imagePreview) {
       setImagePreview(formData.imageUrl);
     }
-  }, [formData]);
+  }, [formData, imagePreview]);
 
   useEffect(() => {
     if (formData && formData.status) {
@@ -159,16 +159,13 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
-  // Modified handleSwitchChange to preserve linked course/quiz when toggling certification
   const handleSwitchChange = (id: string, checked: boolean) => {
     console.log(`Setting ${id} to:`, checked, typeof checked);
     
     if (id === 'requiresCertification') {
-      // Keep the existing linkedCourseId and linkedQuizId values regardless of the certification toggle
       setFormData(prev => ({
         ...prev,
         requiresCertification: Boolean(checked)
-        // We don't modify linkedCourseId or linkedQuizId here
       }));
     } else {
       setFormData(prev => ({
@@ -178,39 +175,36 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
-  // Simplified image change handler that works consistently with FileUpload component
   const handleImageChange = (dataUrl: string | null) => {
     console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl?.length} bytes]` : 'null');
     if (dataUrl) {
       setImagePreview(dataUrl);
       setFormData(prev => ({
         ...prev,
-        imageUrl: dataUrl
+        imageUrl: dataUrl,
+        image: dataUrl
       }));
     } else {
       setImagePreview(null);
       setFormData(prev => ({
         ...prev,
-        imageUrl: ''
+        imageUrl: '',
+        image: ''
       }));
     }
   };
 
-  // Utility function to properly display image URLs
   const getImageUrl = (url: string) => {
     if (!url) return null;
     
-    // For data URLs
     if (url.startsWith('data:')) {
       return url;
     }
     
-    // For complete URLs
     if (url.startsWith('http')) {
       return url;
     }
     
-    // For server paths from API
     if (url.startsWith('/utils/images')) {
       return `http://localhost:4000${url}`;
     }

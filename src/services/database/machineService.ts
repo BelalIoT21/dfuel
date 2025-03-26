@@ -88,6 +88,25 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.status = apiStatus;
       }
       
+      // IMPORTANT: Ensure both imageUrl and image fields are set for consistency
+      // This is critical for ensuring new uploads work during machine creation
+      if (cleanedData.imageUrl && !cleanedData.image) {
+        cleanedData.image = cleanedData.imageUrl;
+        console.log("Added missing image field from imageUrl for new machine");
+      } else if (cleanedData.image && !cleanedData.imageUrl) {
+        cleanedData.imageUrl = cleanedData.image;
+        console.log("Added missing imageUrl field from image for new machine");
+      }
+      
+      // Log image info for debugging
+      if (cleanedData.imageUrl) {
+        if (cleanedData.imageUrl.startsWith('data:')) {
+          console.log(`Image data URL detected for new machine, length: ${cleanedData.imageUrl.length}`);
+        } else {
+          console.log(`Image URL for new machine: ${cleanedData.imageUrl}`);
+        }
+      }
+      
       // Ensure both imageUrl and image fields are set to the same value
       if (cleanedData.imageUrl && !cleanedData.image) {
         cleanedData.image = cleanedData.imageUrl;
@@ -107,7 +126,11 @@ export class MachineDatabaseService extends BaseService {
       // CRITICAL FIX: Always convert requiresCertification to boolean
       cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       
-      console.log("Cleaned machine data for creation:", cleanedData);
+      console.log("Cleaned machine data for creation:", {
+        ...cleanedData,
+        imageUrl: cleanedData.imageUrl ? `[Image URL of length ${cleanedData.imageUrl.length}]` : 'none',
+        image: cleanedData.image ? `[Image data of length ${cleanedData.image.length}]` : 'none'
+      });
       console.log("requiresCertification:", cleanedData.requiresCertification, typeof cleanedData.requiresCertification);
       console.log("status:", cleanedData.status);
       

@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -166,6 +167,7 @@ export const createMachine = async (req: Request, res: Response) => {
       requiresCertification,
       difficulty = 'Beginner',
       imageUrl = '',
+      image = '', // Now explicitly accepting image field as well
       specifications = '',
       details = '',
       certificationInstructions = '',
@@ -173,8 +175,19 @@ export const createMachine = async (req: Request, res: Response) => {
       linkedQuizId = ''
     } = req.body;
 
-    let normalizedImageUrl = imageUrl;
-    if (normalizedImageUrl && !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {
+    // Use either imageUrl or image field, whichever is provided
+    let normalizedImageUrl = imageUrl || image || '';
+    
+    // Check if it's a data URL (uploaded image) and log for debugging
+    if (normalizedImageUrl && normalizedImageUrl.startsWith('data:')) {
+      console.log("Image data URL detected during machine creation, length:", normalizedImageUrl.length);
+    } else if (normalizedImageUrl) {
+      console.log("Using provided image URL:", normalizedImageUrl);
+    }
+    
+    // Ensure URL has proper format if it's a path and not a data URL
+    if (normalizedImageUrl && !normalizedImageUrl.startsWith('data:') &&
+        !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {
       normalizedImageUrl = '/' + normalizedImageUrl;
     }
 
@@ -211,7 +224,7 @@ export const createMachine = async (req: Request, res: Response) => {
       status,
       requiresCertification: normalizedRequiresCertification,
       difficulty,
-      imageUrl: normalizedImageUrl,
+      imageUrl: normalizedImageUrl, // Store the normalized image URL
       specifications,
       details,
       certificationInstructions,
@@ -223,10 +236,14 @@ export const createMachine = async (req: Request, res: Response) => {
     const createdMachine = await machine.save();
     console.log(`Created new machine: ${name} with ID: ${createdMachine._id}`);
 
+    // Always use the provided image if available, or a default
     let finalImageUrl = normalizedImageUrl || '';
     if ((!finalImageUrl || finalImageUrl === '') && createdMachine._id in DEFAULT_MACHINE_IMAGES) {
       finalImageUrl = DEFAULT_MACHINE_IMAGES[createdMachine._id as keyof typeof DEFAULT_MACHINE_IMAGES];
     }
+
+    // For debugging
+    console.log(`Final image URL for machine ${createdMachine._id}: ${finalImageUrl.substring(0, 50)}${finalImageUrl.length > 50 ? '...' : ''}`);
 
     const machineWithImage = {
       ...createdMachine.toObject(),
