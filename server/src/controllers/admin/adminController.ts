@@ -212,27 +212,30 @@ export const seedAdminUser = async (req: Request, res: Response) => {
     // Check if admin user already exists
     const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail) {
-      return res.status(400).json({
+      res.status(400).json({
         message: 'ADMIN_EMAIL is not defined in environment variables'
       });
+      return;
     }
     
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (existingAdmin) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         message: 'Admin user already exists',
         adminEmail: existingAdmin.email
       });
+      return;
     }
 
     // Get admin details from environment variables
     const adminPassword = process.env.ADMIN_PASSWORD;
     
     if (!adminPassword) {
-      return res.status(400).json({
+      res.status(400).json({
         message: 'ADMIN_PASSWORD is not defined in environment variables'
       });
+      return;
     }
     
     // Create admin user with all certifications
@@ -247,14 +250,14 @@ export const seedAdminUser = async (req: Request, res: Response) => {
     
     await adminUser.save();
     
-    return res.status(201).json({ 
+    res.status(201).json({ 
       message: 'Admin user created successfully',
       email: adminUser.email,
       certifications: adminUser.certifications
     });
   } catch (error) {
     console.error('Error in seedAdminUser:', error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
