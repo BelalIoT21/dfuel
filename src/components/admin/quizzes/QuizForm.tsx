@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +55,7 @@ const QuizForm: React.FC<QuizFormProps> = ({
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,10 +88,28 @@ const QuizForm: React.FC<QuizFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    
+    // Clear error for this field if it exists
+    if (formErrors[id]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
   };
 
   const handleSelectChange = (id: string, value: string) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
+    
+    // Clear error for this field if it exists
+    if (formErrors[id]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
   };
 
   const handleMachineToggle = (machineId: string) => {
@@ -140,6 +160,15 @@ const QuizForm: React.FC<QuizFormProps> = ({
       };
       return { ...prev, questions: updatedQuestions };
     });
+    
+    // Clear question error if it exists
+    if (formErrors[`question-${index}`]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[`question-${index}`];
+        return newErrors;
+      });
+    }
   };
 
   const updateOption = (questionIndex: number, optionIndex: number, value: string) => {
@@ -182,6 +211,40 @@ const QuizForm: React.FC<QuizFormProps> = ({
     });
   };
 
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = "Title is required";
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    }
+    
+    // Validate all questions
+    formData.questions.forEach((question, index) => {
+      if (!question.question.trim()) {
+        errors[`question-${index}`] = "Question text is required";
+      }
+      
+      // Check if all options have values
+      const emptyOptions = question.options.filter(opt => !opt.trim()).length;
+      if (emptyOptions > 0) {
+        errors[`question-${index}-options`] = "All options must have values";
+      }
+    });
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSubmit();
+    }
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -198,23 +261,31 @@ const QuizForm: React.FC<QuizFormProps> = ({
           
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Quiz Title</Label>
+              <Label htmlFor="title">Quiz Title <span className="text-red-500">*</span></Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Enter quiz title"
+                className={formErrors.title ? "border-red-500" : ""}
               />
+              {formErrors.title && (
+                <p className="text-sm text-red-500 mt-1">{formErrors.title}</p>
+              )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter quiz description"
+                className={formErrors.description ? "border-red-500" : ""}
               />
+              {formErrors.description && (
+                <p className="text-sm text-red-500 mt-1">{formErrors.description}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -300,7 +371,7 @@ const QuizForm: React.FC<QuizFormProps> = ({
                         key={index} 
                         className={`p-3 flex justify-between items-center border-b cursor-pointer ${
                           index === activeQuestionIndex ? 'bg-primary text-white' : 'hover:bg-gray-50'
-                        }`}
+                        } ${formErrors[`question-${index}`] ? 'border-l-4 border-l-red-500' : ''}`}
                         onClick={() => setActiveQuestionIndex(index)}
                       >
                         <div className="truncate">
@@ -327,17 +398,21 @@ const QuizForm: React.FC<QuizFormProps> = ({
                   {formData.questions[activeQuestionIndex] && (
                     <div className="border rounded-md p-4 space-y-4">
                       <div className="space-y-2">
-                        <Label>Question</Label>
+                        <Label>Question <span className="text-red-500">*</span></Label>
                         <Textarea
                           value={formData.questions[activeQuestionIndex].question}
                           onChange={(e) => updateQuestion(activeQuestionIndex, 'question', e.target.value)}
                           placeholder="Enter question"
+                          className={formErrors[`question-${activeQuestionIndex}`] ? "border-red-500" : ""}
                         />
+                        {formErrors[`question-${activeQuestionIndex}`] && (
+                          <p className="text-sm text-red-500 mt-1">{formErrors[`question-${activeQuestionIndex}`]}</p>
+                        )}
                       </div>
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <Label>Options</Label>
+                          <Label>Options <span className="text-red-500">*</span></Label>
                           <Button
                             size="sm"
                             variant="outline"
@@ -364,6 +439,7 @@ const QuizForm: React.FC<QuizFormProps> = ({
                                   value={option}
                                   onChange={(e) => updateOption(activeQuestionIndex, optIndex, e.target.value)}
                                   placeholder={`Option ${optIndex + 1}`}
+                                  className={formErrors[`question-${activeQuestionIndex}-options`] ? "border-red-500" : ""}
                                 />
                               </div>
                               <Button
@@ -377,6 +453,9 @@ const QuizForm: React.FC<QuizFormProps> = ({
                               </Button>
                             </div>
                           ))}
+                          {formErrors[`question-${activeQuestionIndex}-options`] && (
+                            <p className="text-sm text-red-500 mt-1">{formErrors[`question-${activeQuestionIndex}-options`]}</p>
+                          )}
                         </div>
                       </div>
                       
@@ -456,7 +535,7 @@ const QuizForm: React.FC<QuizFormProps> = ({
         </Tabs>
         
         <div className="flex gap-2 pt-4 border-t mt-4">
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : submitLabel}
           </Button>
           <Button variant="outline" onClick={onCancel}>Cancel</Button>

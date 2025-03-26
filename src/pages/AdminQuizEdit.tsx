@@ -80,6 +80,36 @@ const AdminQuizEdit = () => {
     try {
       setIsSubmitting(true);
       
+      // Ensure required fields have at least minimal content
+      if (!formData.title.trim()) {
+        throw new Error('Title is required');
+      }
+      
+      if (!formData.description.trim()) {
+        throw new Error('Description is required');
+      }
+      
+      // Validate questions
+      if (!formData.questions || formData.questions.length === 0) {
+        throw new Error('At least one question is required');
+      }
+      
+      for (const question of formData.questions) {
+        if (!question.question.trim()) {
+          throw new Error('All questions must have content');
+        }
+        
+        if (!question.options || question.options.length < 2) {
+          throw new Error('Each question must have at least 2 options');
+        }
+        
+        for (const option of question.options) {
+          if (!option.trim()) {
+            throw new Error('All options must have content');
+          }
+        }
+      }
+      
       if (isEditing && id) {
         // Update existing quiz
         const success = await quizDatabaseService.updateQuiz(id, formData);

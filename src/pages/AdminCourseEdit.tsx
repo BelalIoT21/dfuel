@@ -70,6 +70,19 @@ const AdminCourseEdit = () => {
     try {
       setIsSubmitting(true);
       
+      // Ensure required fields have at least minimal content
+      if (!formData.title.trim()) {
+        throw new Error('Title is required');
+      }
+      
+      if (!formData.description.trim()) {
+        throw new Error('Description is required');
+      }
+      
+      if (!formData.content.trim()) {
+        throw new Error('Content is required');
+      }
+      
       if (isEditing && id) {
         // Update existing course
         const success = await courseDatabaseService.updateCourse(id, formData);

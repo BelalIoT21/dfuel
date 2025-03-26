@@ -47,6 +47,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const [machines, setMachines] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,10 +73,28 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    
+    // Clear error for this field if it exists
+    if (formErrors[id]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
   };
 
   const handleSelectChange = (id: string, value: string) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
+    
+    // Clear error for this field if it exists
+    if (formErrors[id]) {
+      setFormErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[id];
+        return newErrors;
+      });
+    }
   };
 
   const handleMachineToggle = (machineId: string) => {
@@ -87,6 +106,31 @@ const CourseForm: React.FC<CourseFormProps> = ({
         return { ...prev, relatedMachineIds: [...currentIds, machineId] };
       }
     });
+  };
+
+  const validateForm = (): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.title.trim()) {
+      errors.title = "Title is required";
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    }
+    
+    if (!formData.content.trim()) {
+      errors.content = "Content is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      onSubmit();
+    }
   };
 
   return (
@@ -105,23 +149,31 @@ const CourseForm: React.FC<CourseFormProps> = ({
           
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Course Title</Label>
+              <Label htmlFor="title">Course Title <span className="text-red-500">*</span></Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Enter course title"
+                className={formErrors.title ? "border-red-500" : ""}
               />
+              {formErrors.title && (
+                <p className="text-sm text-red-500 mt-1">{formErrors.title}</p>
+              )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Enter course description"
+                className={formErrors.description ? "border-red-500" : ""}
               />
+              {formErrors.description && (
+                <p className="text-sm text-red-500 mt-1">{formErrors.description}</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -174,14 +226,17 @@ const CourseForm: React.FC<CourseFormProps> = ({
           
           <TabsContent value="content" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="content">Course Content (Markdown)</Label>
+              <Label htmlFor="content">Course Content (Markdown) <span className="text-red-500">*</span></Label>
               <Textarea
                 id="content"
                 value={formData.content}
                 onChange={handleInputChange}
                 placeholder="Enter course content in Markdown format"
-                className="min-h-[300px] font-mono"
+                className={`min-h-[300px] font-mono ${formErrors.content ? "border-red-500" : ""}`}
               />
+              {formErrors.content && (
+                <p className="text-sm text-red-500 mt-1">{formErrors.content}</p>
+              )}
               <p className="text-xs text-gray-500">You can use Markdown formatting for rich content.</p>
             </div>
           </TabsContent>
@@ -243,7 +298,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
         </Tabs>
         
         <div className="flex gap-2 pt-4 border-t mt-4">
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : submitLabel}
           </Button>
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
