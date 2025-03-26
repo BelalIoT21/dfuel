@@ -1,6 +1,24 @@
 
 import { Course } from '../../models/Course';
 
+// Define an interface for course template objects
+interface CourseTemplate {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  content: string;
+  imageUrl: string;
+  relatedMachineIds: string[];
+  quizId: string;
+  difficulty: string;
+}
+
+// Define a type for the templates object with string keys
+interface CourseTemplates {
+  [key: string]: CourseTemplate;
+}
+
 // Function to update course images
 export async function updateCourseImages() {
   try {
@@ -68,7 +86,7 @@ export async function checkAndSeedCourses() {
 // Function to seed missing courses
 async function seedMissingCourses(missingIds: string[]) {
   try {
-    const courseTemplates = {
+    const courseTemplates: CourseTemplates = {
       '1': {
         _id: '1',
         title: 'Laser Cutter Safety Course',
@@ -117,10 +135,11 @@ async function seedMissingCourses(missingIds: string[]) {
 
     // Create the missing courses
     for (const id of missingIds) {
-      if (courseTemplates[id]) {
-        const newCourse = new Course(courseTemplates[id]);
+      if (id in courseTemplates) {
+        const courseTemplate = courseTemplates[id];
+        const newCourse = new Course(courseTemplate);
         await newCourse.save();
-        console.log(`Created missing course: ${courseTemplates[id].title} (ID: ${id})`);
+        console.log(`Created missing course: ${courseTemplate.title} (ID: ${id})`);
       } else {
         console.warn(`No template found for course ID: ${id}`);
       }
