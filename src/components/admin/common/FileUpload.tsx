@@ -3,7 +3,13 @@ import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fileToDataUrl, validateFile, IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from '@/utils/fileUpload';
+import { 
+  fileToDataUrl, 
+  validateFile, 
+  IMAGE_TYPES, 
+  MAX_IMAGE_SIZE_MB,
+  compressImageIfNeeded 
+} from '@/utils/fileUpload';
 
 interface FileUploadProps {
   existingUrl?: string;
@@ -11,6 +17,8 @@ interface FileUploadProps {
   label?: string;
   maxSizeMB?: number;
   allowedTypes?: string[];
+  compressImages?: boolean;
+  targetCompressedSizeMB?: number;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -19,11 +27,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
   label = 'Upload File',
   maxSizeMB = MAX_IMAGE_SIZE_MB,
   allowedTypes = IMAGE_TYPES,
+  compressImages = true,
+  targetCompressedSizeMB = 2
 }) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [isUploading, setIsUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
+  const [originalSize, setOriginalSize] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -37,7 +48,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       // Calculate and format file size
       const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      setFileSize(`${fileSizeMB} MB`);
+      setOriginalSize(`${fileSizeMB} MB`);
       
       console.log(`Processing file: ${file.name}, size: ${fileSizeMB} MB, type: ${file.type}`);
 
@@ -53,18 +64,40 @@ const FileUpload: React.FC<FileUploadProps> = ({
         return;
       }
 
-      // Use a more optimized approach for large files
-      const dataUrl = await fileToDataUrl(file);
+      // Convert file to data URL
+      let dataUrl = await fileToDataUrl(file);
+      let finalSize = fileSizeMB;
       
-      // For large files, log size info but not the entire content
-      console.log(`File converted to data URL (length: ${dataUrl.length}, approximate size: ${(dataUrl.length / 1.37 / 1024 / 1024).toFixed(2)} MB)`);
+      // Compress image if it's an image and compression is enabled
+      const isImage = allowedTypes.every(type => type.startsWith('image/'));
+      if (isImage && compressImages && parseFloat(fileSizeMB) > targetCompressedSizeMB) {
+        console.log(`Attempting to compress image from ${fileSizeMB} MB to target ${targetCompressedSizeMB} MB`);
+        
+        // Compress the image
+        const compressedDataUrl = await compressImageIfNeeded(dataUrl, targetCompressedSizeMB);
+        
+        // Calculate the new size and update
+        finalSize = (compressedDataUrl.length / (1024 * 1024)).toFixed(2);
+        console.log(`Image compressed from ${fileSizeMB} MB to ${finalSize} MB`);
+        
+        // Use the compressed version
+        dataUrl = compressedDataUrl;
+        
+        if (parseFloat(finalSize) < parseFloat(fileSizeMB)) {
+          toast({
+            title: 'Image Compressed',
+            description: `Reduced from ${fileSizeMB} MB to ${finalSize} MB`,
+          });
+        }
+      }
       
+      setFileSize(`${finalSize} MB`);
       setPreview(dataUrl);
       onFileChange(dataUrl);
       
       toast({
         title: 'File Uploaded',
-        description: `${file.name} (${fileSizeMB} MB) uploaded successfully`,
+        description: `${file.name} uploaded successfully`,
       });
     } catch (error) {
       console.error('Error processing file:', error);
@@ -82,6 +115,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     setPreview(null);
     setFileName(null);
     setFileSize(null);
+    setOriginalSize(null);
     onFileChange(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -107,7 +141,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
           <div className="p-2 bg-gray-50 flex justify-between items-center">
             <div className="text-sm">
               {fileName && <p className="font-medium truncate">{fileName}</p>}
-              {fileSize && <p className="text-xs text-gray-500">{fileSize}</p>}
+              {fileSize && (
+                <p className="text-xs text-gray-500">
+                  {fileSize}
+                  {originalSize && originalSize !== fileSize && ` (original: ${originalSize})`}
+                </p>
+              )}
               {!fileName && existingUrl && <p className="text-xs text-gray-500">Existing file</p>}
             </div>
             <Button 
@@ -150,6 +189,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 ? `Supports ${allowedTypes.map(t => t.split('/')[1]).join(', ')} up to ${maxSizeMB}MB`
                 : `Max file size: ${maxSizeMB}MB`}
             </p>
+            {compressImages && isImageType && (
+              <p className="text-xs text-gray-500">
+                Large images will be compressed automatically
+              </p>
+            )}
           </div>
         </div>
       )}

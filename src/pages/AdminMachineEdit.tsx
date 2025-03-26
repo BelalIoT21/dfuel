@@ -18,7 +18,7 @@ const AdminMachineEdit = () => {
     name: '',
     description: '',
     type: 'Machine',
-    status: 'Available',
+    status: 'Available', // Set a default status
     requiresCertification: false,
     difficulty: 'Beginner',
     imageUrl: '',
@@ -42,6 +42,12 @@ const AdminMachineEdit = () => {
           if (machine) {
             console.log("Loaded machine data:", machine);
             
+            // Normalize status from API format to UI format
+            let status = machine.status || 'Available';
+            if (status === 'available') status = 'Available';
+            if (status === 'maintenance') status = 'Maintenance';
+            if (status === 'in-use') status = 'Out of Order';
+            
             // CRITICAL FIX: Ensure requiresCertification is a proper boolean
             const requiresCertification = Boolean(machine.requiresCertification);
             console.log("Setting requiresCertification to:", requiresCertification, typeof requiresCertification);
@@ -50,7 +56,7 @@ const AdminMachineEdit = () => {
               name: machine.name || '',
               description: machine.description || '',
               type: machine.type || 'Machine',
-              status: machine.status || 'Available',
+              status: status,
               requiresCertification: requiresCertification,
               difficulty: machine.difficulty || 'Beginner',
               imageUrl: machine.imageUrl || '',
@@ -155,6 +161,7 @@ const AdminMachineEdit = () => {
       
       console.log("Submitting machine data:", dataToSubmit);
       console.log("requiresCertification:", dataToSubmit.requiresCertification, typeof dataToSubmit.requiresCertification);
+      console.log("status:", dataToSubmit.status, typeof dataToSubmit.status);
       
       // Convert empty string values to null/undefined for the backend
       if (dataToSubmit.linkedCourseId === '') {

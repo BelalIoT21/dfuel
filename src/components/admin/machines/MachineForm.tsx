@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,9 +69,35 @@ const MachineForm: React.FC<MachineFormProps> = ({
       ...formData,
       requiresCertification: `${formData.requiresCertification} (${typeof formData.requiresCertification})`,
       linkedCourseId: formData.linkedCourseId || "none",
-      linkedQuizId: formData.linkedQuizId || "none"
+      linkedQuizId: formData.linkedQuizId || "none",
+      status: formData.status
     });
   }, [formData]);
+
+  // Fix for the status field - ensure it's properly normalized
+  useEffect(() => {
+    if (formData && formData.status) {
+      // Normalize status if it's in lowercase or different format
+      let normalizedStatus = formData.status;
+      
+      if (formData.status === 'available') {
+        normalizedStatus = 'Available';
+      } else if (formData.status === 'maintenance') {
+        normalizedStatus = 'Maintenance';
+      } else if (formData.status === 'in-use' || formData.status === 'in use') {
+        normalizedStatus = 'Out of Order';
+      }
+      
+      // Only update if it's different to avoid infinite loop
+      if (normalizedStatus !== formData.status) {
+        console.log(`Normalizing status from "${formData.status}" to "${normalizedStatus}"`);
+        setFormData(prev => ({
+          ...prev,
+          status: normalizedStatus
+        }));
+      }
+    }
+  }, [formData.status, setFormData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -132,7 +157,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const handleSwitchChange = (id: string, checked: boolean) => {
     console.log(`Setting ${id} to:`, checked, typeof checked);
-    setFormData((prev) => ({ ...prev, [id]: checked }));
+    setFormData((prev) => ({ ...prev, [id]: Boolean(checked) }));
   };
 
   const handleImageChange = (dataUrl: string | null) => {
@@ -264,7 +289,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 onValueChange={(value) => handleSelectChange('status', value)}
                 required
               >
-                <SelectTrigger>
+                <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -273,6 +298,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
                   <SelectItem value="Out of Order">Out of Order</SelectItem>
                 </SelectContent>
               </Select>
+              {!formData.status && (
+                <p className="text-xs text-red-500 mt-1">
+                  Please select a status
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -299,6 +329,8 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 existingUrl={formData.imageUrl}
                 onFileChange={handleImageChange}
                 label="Upload Machine Image"
+                compressImages={true}
+                targetCompressedSizeMB={2}
               />
               {formData._id && formData._id >= "1" && formData._id <= "4" && !formData.imageUrl && (
                 <p className="text-xs text-amber-600 mt-1">
@@ -338,7 +370,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="requiresCertification"
-                    checked={formData.requiresCertification}
+                    checked={Boolean(formData.requiresCertification)}
                     onCheckedChange={(checked) => handleSwitchChange('requiresCertification', checked)}
                   />
                   <Label htmlFor="requiresCertification" className="cursor-pointer">Requires Certification</Label>

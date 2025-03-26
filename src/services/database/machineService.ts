@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -60,6 +61,15 @@ export class MachineDatabaseService extends BaseService {
       // Create a deep copy to work with
       const cleanedData = JSON.parse(JSON.stringify(machineData));
       
+      // Normalize the status field (convert UI format to API format)
+      if (cleanedData.status) {
+        let apiStatus = cleanedData.status;
+        if (apiStatus === 'Out of Order') {
+          apiStatus = 'In Use';
+        }
+        cleanedData.status = apiStatus;
+      }
+      
       // Ensure both imageUrl and image fields are set to the same value
       if (cleanedData.imageUrl && !cleanedData.image) {
         cleanedData.image = cleanedData.imageUrl;
@@ -81,6 +91,7 @@ export class MachineDatabaseService extends BaseService {
       
       console.log("Cleaned machine data for creation:", cleanedData);
       console.log("requiresCertification:", cleanedData.requiresCertification, typeof cleanedData.requiresCertification);
+      console.log("status:", cleanedData.status);
       
       const response = await apiService.request('machines', 'POST', cleanedData, true);
       console.log("Create machine response:", response);
@@ -106,6 +117,16 @@ export class MachineDatabaseService extends BaseService {
       // Make a deep copy of the machine data to avoid modifying the original
       const cleanedData = JSON.parse(JSON.stringify(machineData));
       console.log("Original update data:", cleanedData);
+      
+      // Normalize the status field (convert UI format to API format)
+      if (cleanedData.status) {
+        let apiStatus = cleanedData.status;
+        if (apiStatus === 'Out of Order') {
+          apiStatus = 'In Use';
+        }
+        cleanedData.status = apiStatus;
+        console.log(`Normalized status to: ${apiStatus}`);
+      }
       
       // For standard machines (1-4), ensure we use the correct image if none is provided
       if (['1', '2', '3', '4'].includes(machineId) && (!cleanedData.imageUrl || cleanedData.imageUrl === '')) {
