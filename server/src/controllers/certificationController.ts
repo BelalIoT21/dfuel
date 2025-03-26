@@ -21,27 +21,38 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
   }
   
   try {
-    // Try finding user with numeric ID first
+    // Try finding user with ID
+    console.log(`Looking for user with ID: ${userId}`);
     let user = await User.findById(userId);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
-      res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-      return;
+      console.log(`User not found with ID: ${userId}, trying with string ID`);
+      // If ID is not found as ObjectId, try with string ID
+      user = await User.findOne({ _id: userId });
+      
+      if (!user) {
+        console.log(`User still not found with ID: ${userId}`);
+        res.status(404).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+        return;
+      }
     }
     
     // Ensure certifications array exists
     if (!user.certifications) {
+      console.log(`Creating certifications array for user ${userId}`);
       user.certifications = [];
     }
     
     console.log("User's existing certifications:", user.certifications);
     
+    // Convert machineId to string for comparison
+    const machineIdStr = String(machineId);
+    
     // Check if user already has this certification
-    if (user.certifications.includes(machineId)) {
+    if (user.certifications.includes(machineIdStr)) {
       console.log(`User ${userId} already has certification ${machineId}`);
       res.status(200).json({ 
         success: true, 
@@ -51,7 +62,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     }
     
     // Add the certification and store the current date
-    user.certifications.push(machineId);
+    user.certifications.push(machineIdStr);
     
     // Ensure certificationDates exists
     if (!user.certificationDates) {
@@ -59,7 +70,7 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     }
     
     // Record certification date
-    user.certificationDates[machineId] = new Date();
+    user.certificationDates[machineIdStr] = new Date();
     
     console.log(`Saving user with updated certifications: ${user.certifications}`);
     await user.save();

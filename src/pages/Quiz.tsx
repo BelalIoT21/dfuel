@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
+import { certificationDatabaseService } from '@/services/database/certificationService'; 
 import { ChevronLeft, Loader2, CheckCircle, XCircle, Award } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ interface Question {
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, addCertification } = useAuth();
   const { toast } = useToast();
 
   const [machine, setMachine] = useState<any>(null);
@@ -36,6 +36,8 @@ const Quiz = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
+  const [certificationProcessing, setCertificationProcessing] = useState(false);
+  const [certificationAdded, setCertificationAdded] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -148,7 +150,7 @@ const Quiz = () => {
     return answers.every(answer => answer !== -1);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isQuizComplete()) {
       toast({
         title: "Incomplete Quiz",
@@ -175,18 +177,53 @@ const Quiz = () => {
     setPassed(hasPassed);
     
     // If passed, grant certification
-    if (hasPassed && user && machine && machine.id) {
-      certificationService.addCertification(user.id, machine.id)
-        .then(success => {
-          if (success) {
-            console.log(`Certification added for user ${user.id} and machine ${machine.id}`);
-          } else {
-            console.error(`Failed to add certification for user ${user.id} and machine ${machine.id}`);
-          }
-        })
-        .catch(error => {
-          console.error('Error adding certification:', error);
+    if (hasPassed && user && machineId) {
+      setCertificationProcessing(true);
+      
+      console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
+      
+      try {
+        // Try using certificationDatabaseService first (more reliable)
+        let success = await certificationDatabaseService.addCertification(user.id, machineId);
+        
+        // If that fails, fall back to other service
+        if (!success) {
+          console.log('First certification attempt failed, trying alternative method');
+          success = await certificationService.addCertification(user.id, machineId);
+        }
+        
+        // If that also fails, try using the context method
+        if (!success && addCertification) {
+          console.log('Second certification attempt failed, trying context method');
+          success = await addCertification(machineId);
+        }
+        
+        if (success) {
+          console.log('Successfully added certification');
+          setCertificationAdded(true);
+          toast({
+            title: "Certification Granted",
+            description: "You have been certified for this machine!",
+            variant: "default"
+          });
+        } else {
+          console.error('All certification attempts failed');
+          toast({
+            title: "Certification Issue",
+            description: "Your quiz was passed, but there was an issue adding the certification. Please contact an administrator.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error adding certification:', error);
+        toast({
+          title: "Certification Error",
+          description: "An error occurred while adding your certification.",
+          variant: "destructive"
         });
+      } finally {
+        setCertificationProcessing(false);
+      }
     }
     
     setSubmitted(true);
@@ -282,10 +319,23 @@ const Quiz = () => {
                     <CheckCircle className="h-16 w-16 text-green-500" />
                     <h2 className="text-2xl font-bold text-green-600">Congratulations!</h2>
                     <p className="text-lg">You passed the quiz with a score of {score.toFixed(0)}%</p>
-                    <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
-                      <Award className="h-5 w-5" />
-                      <span className="font-medium">You are now certified to use this machine</span>
-                    </div>
+                    
+                    {certificationProcessing ? (
+                      <div className="flex items-center gap-2 text-blue-600 mt-4 bg-blue-50 p-3 px-4 rounded-md">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span className="font-medium">Processing your certification...</span>
+                      </div>
+                    ) : certificationAdded ? (
+                      <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
+                        <Award className="h-5 w-5" />
+                        <span className="font-medium">You are now certified to use this machine</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
+                        <Award className="h-5 w-5" />
+                        <span className="font-medium">You are now certified to use this machine</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">
