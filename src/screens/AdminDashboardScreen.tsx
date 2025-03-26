@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Title, Paragraph, Button, List } from 'react-native-paper';
@@ -33,7 +32,7 @@ const AdminDashboardScreen = ({ navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Learnit Platform Management</Text>
+        <Text style={styles.headerSubtitle}>Dfuel Platform Management</Text>
       </View>
 
       {/* Stats Overview */}
