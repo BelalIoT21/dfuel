@@ -1,12 +1,14 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, Info, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { machineService } from '@/services/machineService';
+import BookingDetailsDialog from './BookingDetailsDialog';
 
 const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking }) => {
   const [machineStatuses, setMachineStatuses] = useState({});
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   
   useEffect(() => {
     // Fetch machine statuses for all machines in the bookings
@@ -115,6 +117,15 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
     );
   };
 
+  const handleViewBooking = (booking) => {
+    setSelectedBooking(booking);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+  };
+
   return (
     <div className="space-y-4">
       {bookings.map((booking) => {
@@ -153,7 +164,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
                   variant="outline" 
                   size="sm" 
                   className="border-purple-200 hover:bg-purple-50"
-                  onClick={() => onViewDetails(booking)}
+                  onClick={() => handleViewBooking(booking)}
                 >
                   <Info size={16} className="mr-1" />
                   View Booking
@@ -173,6 +184,15 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
           </div>
         );
       })}
+
+      {/* Booking Details Dialog */}
+      <BookingDetailsDialog
+        booking={selectedBooking}
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onCancel={onDeleteBooking}
+        canCancel={true}
+      />
     </div>
   );
 };

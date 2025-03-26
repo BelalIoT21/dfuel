@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import BookingDetailsDialog from '@/components/profile/BookingDetailsDialog';
 
 const ActiveBookings = () => {
   const navigate = useNavigate();
@@ -15,6 +15,8 @@ const ActiveBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     console.log("ActiveBookings component mounted");
@@ -128,6 +130,15 @@ const ActiveBookings = () => {
     return '/home';
   };
 
+  const handleViewBookingDetails = (booking: any) => {
+    setSelectedBooking(booking);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+  };
+
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -208,7 +219,7 @@ const ActiveBookings = () => {
                       variant="outline" 
                       size="sm" 
                       className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                      onClick={() => navigate('/bookings')}
+                      onClick={() => handleViewBookingDetails(booking)}
                     >
                       View Booking
                     </Button>
@@ -217,6 +228,15 @@ const ActiveBookings = () => {
               ))}
             </div>
           )}
+
+          {/* Booking Details Dialog */}
+          <BookingDetailsDialog
+            booking={selectedBooking}
+            open={dialogOpen}
+            onClose={handleCloseDialog}
+            onCancel={(booking) => handleCancelBooking(booking.id || booking._id)}
+            canCancel={true}
+          />
         </CardContent>
       </Card>
     </div>

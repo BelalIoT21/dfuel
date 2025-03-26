@@ -61,8 +61,9 @@ const BookingsCard = () => {
   };
 
   const handleViewDetails = (booking) => {
-    // Navigate to bookings page instead of machine page
-    navigate(`/bookings`);
+    // We no longer need to navigate to a different page since we'll show a dialog
+    // The dialog handling is now in BookingsList
+    console.log("View booking details for:", booking);
   };
 
   const handleDeleteBooking = async (booking) => {
