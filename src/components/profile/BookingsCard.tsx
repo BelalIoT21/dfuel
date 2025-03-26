@@ -61,9 +61,8 @@ const BookingsCard = () => {
   };
 
   const handleViewDetails = (booking) => {
-    if (booking.machineId) {
-      navigate(`/machine/${booking.machineId}`);
-    }
+    // Navigate to bookings page instead of machine page
+    navigate(`/bookings`);
   };
 
   const handleDeleteBooking = async (booking) => {

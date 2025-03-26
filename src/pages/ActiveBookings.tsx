@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -162,7 +163,7 @@ const ActiveBookings = () => {
                   ? 'There are no active bookings in the system' 
                   : 'You don\'t have any active bookings'}
               </p>
-              <Button onClick={() => navigate('/home')} className="bg-purple-600 hover:bg-purple-700">
+              <Button onClick={() => navigate('/profile?tab=certifications')} className="bg-purple-600 hover:bg-purple-700">
                 Browse Machines
               </Button>
             </div>
@@ -207,7 +208,7 @@ const ActiveBookings = () => {
                       variant="outline" 
                       size="sm" 
                       className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                      onClick={() => handleViewMachine(booking.machineId)}
+                      onClick={() => navigate('/bookings')}
                     >
                       View Booking
                     </Button>
