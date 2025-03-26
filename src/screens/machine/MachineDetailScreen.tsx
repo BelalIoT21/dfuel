@@ -83,6 +83,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
     return <ErrorState onGoBack={() => navigation.goBack()} />;
   }
 
+  // Check if machine requires certification - default to true if not specified
   const requiresCertification = machine.requiresCertification !== false;
 
   return (

@@ -29,7 +29,6 @@ const BookMachineButton = ({
   const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
-    console.log(`Navigating to certification tab for machine ${machineId}`);
     // Navigate to the certifications tab on the profile page
     navigate(`/profile?tab=certifications`);
   };

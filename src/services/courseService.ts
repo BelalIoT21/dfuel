@@ -39,10 +39,12 @@ class CourseService {
       // For large payloads, log the size
       if (imageUrl) {
         const sizeKB = (imageUrl.length / 1024).toFixed(2);
-        console.log(`Image size being sent: ${sizeKB}KB`);
+        const sizeMB = (imageUrl.length / (1024 * 1024)).toFixed(2);
+        console.log(`Image size being sent: ${sizeKB}KB (${sizeMB}MB)`);
         
-        if (imageUrl.length > 100000) { // 100KB
-          console.warn(`Image size (${sizeKB}KB) may be too large for stable upload`);
+        if (imageUrl.length > 5 * 1024 * 1024) { // 5MB
+          console.warn(`Image size (${sizeMB}MB) exceeds recommended maximum (5MB)`);
+          return { error: "Image exceeds maximum size of 5MB" };
         }
       }
       

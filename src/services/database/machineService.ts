@@ -65,6 +65,22 @@ export class MachineDatabaseService extends BaseService {
         machineData.imageUrl = machineData.image;
       }
       
+      // Clean empty strings for linkedCourseId and linkedQuizId
+      if (machineData.linkedCourseId === '') {
+        machineData.linkedCourseId = undefined;
+      }
+      
+      if (machineData.linkedQuizId === '') {
+        machineData.linkedQuizId = undefined;
+      }
+
+      // Cast requiresCertification to boolean if it's a string
+      if (typeof machineData.requiresCertification === 'string') {
+        machineData.requiresCertification = machineData.requiresCertification === 'true';
+      }
+      
+      console.log("Cleaned machine data for creation:", machineData);
+      
       const response = await apiService.request('machines', 'POST', machineData, true);
       console.log("Create machine response:", response);
       
@@ -100,8 +116,23 @@ export class MachineDatabaseService extends BaseService {
         machineData.imageUrl = machineData.image;
       }
       
-      console.log(`Updating machine ${machineId} with data:`, machineData);
+      // Clean empty strings for linkedCourseId and linkedQuizId
+      if (machineData.linkedCourseId === '') {
+        machineData.linkedCourseId = undefined;
+      }
+      
+      if (machineData.linkedQuizId === '') {
+        machineData.linkedQuizId = undefined;
+      }
+
+      // Cast requiresCertification to boolean if it's a string
+      if (typeof machineData.requiresCertification === 'string') {
+        machineData.requiresCertification = machineData.requiresCertification === 'true';
+      }
+      
+      console.log(`Updating machine ${machineId} with cleaned data:`, machineData);
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
+      console.log(`Update response for machine ${machineId}:`, response);
       
       // Ensure the response has both image properties
       if (response.data) {
