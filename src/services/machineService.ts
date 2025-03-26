@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 export class MachineService {
@@ -42,6 +41,11 @@ export class MachineService {
       if (!machineId) {
         console.error("Invalid machineId passed to getMachineStatus");
         return 'available';
+      }
+      
+      // Special handling for Safety Cabinet and Machine Safety Course
+      if (machineId === "5" || machineId === "6") {
+        return 'available'; // Always available
       }
 
       // Use the dedicated status endpoint
@@ -118,6 +122,35 @@ export class MachineService {
         return null;
       }
       
+      // Special handling for safety machines
+      if (machineId === "5") {
+        return {
+          id: "5",
+          _id: "5",
+          name: "Safety Cabinet",
+          type: "Safety Equipment",
+          description: "For safely storing hazardous materials",
+          status: "available",
+          linkedCourseId: "5",
+          linkedQuizId: "5",
+          requiresCertification: true
+        };
+      }
+      
+      if (machineId === "6") {
+        return {
+          id: "6",
+          _id: "6",
+          name: "Machine Safety Course",
+          type: "Safety Course",
+          description: "Essential safety training for all machine users",
+          status: "available",
+          linkedCourseId: "6",
+          linkedQuizId: "6",
+          requiresCertification: true
+        };
+      }
+      
       // Use API to get machine by ID
       try {
         const response = await apiService.get(`machines/${machineId}`);
@@ -141,7 +174,7 @@ export class MachineService {
     }
   }
   
-  // Get machines - API only
+  // Get machines - API only - Don't filter out machines 5 & 6
   async getMachines(timestamp?: number): Promise<any[]> {
     try {
       console.log("Getting machines, timestamp:", timestamp || "none");
@@ -155,12 +188,45 @@ export class MachineService {
           console.log(`Retrieved ${response.data.length} machines from API`);
           
           // Ensure each machine has an id field (might be _id in MongoDB)
-          return response.data.map(machine => ({
+          const machines = response.data.map(machine => ({
             ...machine,
             id: machine.id || machine._id,
             type: machine.type || "Machine",
             status: machine.status?.toLowerCase() || 'available'
           }));
+          
+          // Add special machines if they don't exist
+          const specialMachines = [
+            {
+              id: "5",
+              name: "Safety Cabinet",
+              type: "Safety Equipment",
+              description: "For safely storing hazardous materials",
+              status: "available",
+              linkedCourseId: "5",
+              linkedQuizId: "5",
+              requiresCertification: true
+            },
+            {
+              id: "6",
+              name: "Machine Safety Course",
+              type: "Safety Course",
+              description: "Essential safety training for all machine users",
+              status: "available",
+              linkedCourseId: "6",
+              linkedQuizId: "6",
+              requiresCertification: true
+            }
+          ];
+          
+          // Check if the special machines already exist
+          for (const specialMachine of specialMachines) {
+            if (!machines.some(m => m.id === specialMachine.id)) {
+              machines.push(specialMachine);
+            }
+          }
+          
+          return machines;
         } else {
           console.error("API returned invalid data format for machines:", response.data);
         }
@@ -189,12 +255,45 @@ export class MachineService {
           console.log(`Retrieved ${response.data.length} machines from API (unfiltered)`);
           
           // Ensure each machine has an id field (might be _id in MongoDB)
-          return response.data.map(machine => ({
+          const machines = response.data.map(machine => ({
             ...machine,
             id: machine.id || machine._id,
             type: machine.type || "Machine",
             status: machine.status?.toLowerCase() || 'available'
           }));
+          
+          // Add special machines if they don't exist
+          const specialMachines = [
+            {
+              id: "5",
+              name: "Safety Cabinet",
+              type: "Safety Equipment",
+              description: "For safely storing hazardous materials",
+              status: "available",
+              linkedCourseId: "5",
+              linkedQuizId: "5",
+              requiresCertification: true
+            },
+            {
+              id: "6",
+              name: "Machine Safety Course",
+              type: "Safety Course",
+              description: "Essential safety training for all machine users",
+              status: "available",
+              linkedCourseId: "6",
+              linkedQuizId: "6",
+              requiresCertification: true
+            }
+          ];
+          
+          // Check if the special machines already exist
+          for (const specialMachine of specialMachines) {
+            if (!machines.some(m => m.id === specialMachine.id)) {
+              machines.push(specialMachine);
+            }
+          }
+          
+          return machines;
         } else {
           console.error("API returned invalid data format for machines:", response.data);
         }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -83,35 +82,23 @@ const CertificationsCard = () => {
         }
       }
       
-      // Include special machines
-      const specialMachines = [
-        {
-          _id: "5",
-          id: "5",
-          name: "Safety Cabinet",
-          type: "Safety",
-          description: "For safely storing hazardous materials",
-          status: "available",
-          linkedCourseId: "5",
-          linkedQuizId: "5",
-          requiresCertification: true
-        },
-        {
-          _id: "6",
-          id: "6",
-          name: "Machine Safety Course",
-          type: "Safety",
-          description: "Essential safety training for all machine users",
-          status: "available",
-          linkedCourseId: "6",
-          linkedQuizId: "6",
-          requiresCertification: true
-        }
-      ];
-      
-      // Add special machines if they don't exist
-      for (const specialMachine of specialMachines) {
-        if (!databaseMachines.some(m => String(m.id) === String(specialMachine.id))) {
+      // Include special machines if not already present
+      for (const specialMachineId of SPECIAL_MACHINE_IDS) {
+        if (!databaseMachines.some(m => String(m.id) === specialMachineId || String(m._id) === specialMachineId)) {
+          // Add default data for special machines
+          const specialMachine = {
+            _id: specialMachineId,
+            id: specialMachineId,
+            name: specialMachineId === "5" ? "Safety Cabinet" : "Machine Safety Course",
+            type: specialMachineId === "5" ? "Safety" : "Safety Course",
+            description: specialMachineId === "5" 
+              ? "For safely storing hazardous materials" 
+              : "Essential safety training for all machine users",
+            status: "available",
+            linkedCourseId: specialMachineId,
+            linkedQuizId: specialMachineId,
+            requiresCertification: true
+          };
           databaseMachines.push(specialMachine);
         }
       }
@@ -270,7 +257,7 @@ const CertificationsCard = () => {
             <p className="text-gray-500 mb-4">You're not certified for any machines yet.</p>
             {hasCompletedSafetyCourse ? (
               <Button onClick={() => navigate('/machines')}>
-                View Available Machines
+                Find Machines to Get Certified
               </Button>
             ) : safetyCourse ? (
               <Button onClick={() => navigateToCourse(safetyCourse.linkedCourseId)}>
@@ -279,12 +266,12 @@ const CertificationsCard = () => {
               </Button>
             ) : (
               <Button onClick={() => navigate('/machines')}>
-                View Machines
+                Browse Machines
               </Button>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
             {displayMachines.map((machine) => {
               const machineStatus = machineStatuses[machine.id] || machine.status || 'unknown';
               const requiresCertification = machine.requiresCertification !== false;
@@ -313,7 +300,7 @@ const CertificationsCard = () => {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3">
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -361,14 +348,6 @@ const CertificationsCard = () => {
                 </div>
               );
             })}
-            
-            <Button 
-              variant="outline" 
-              className="w-full mt-4"
-              onClick={() => navigate('/machines')}
-            >
-              View All Machines
-            </Button>
           </div>
         )}
       </CardContent>

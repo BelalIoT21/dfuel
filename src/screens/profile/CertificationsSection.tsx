@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { List, ActivityIndicator } from 'react-native-paper';
@@ -80,6 +81,12 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         setAvailableMachineIds(SPECIAL_MACHINE_IDS);
       }
       
+      // Manually add special machines
+      names["5"] = "Safety Cabinet";
+      types["5"] = "Safety Equipment";
+      names["6"] = "Machine Safety Course";
+      types["6"] = "Safety Course";
+      
       // Get the latest certifications
       const certifications = await fetchCertifications();
       
@@ -95,14 +102,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
             try {
               // Check if this is a special machine ID
               if (SPECIAL_MACHINE_IDS.includes(certId)) {
-                if (certId === "5") {
-                  names[certId] = "Safety Cabinet";
-                  types[certId] = "Safety";
-                } else if (certId === "6") {
-                  names[certId] = "Safety Course";
-                  types[certId] = "Course";
-                }
-                continue;
+                continue; // Already added above
               }
               
               const machine = await machineService.getMachineById(certId);
@@ -164,42 +164,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
 
   const sortedCertifications = filterCertifications(userCertifications);
 
-  // Clean up stale certifications (for machines that no longer exist)
-  useEffect(() => {
-    const cleanupStaleCertifications = async () => {
-      if (!user?.id || userCertifications.length === 0 || availableMachineIds.length === 0) {
-        return;
-      }
-      
-      const staleCertifications = userCertifications.filter(certId => {
-        // Don't remove special machine certifications
-        if (SPECIAL_MACHINE_IDS.includes(certId)) {
-          return false;
-        }
-        
-        // Find certifications for machines that no longer exist
-        return !availableMachineIds.includes(certId) || !machineNames[certId];
-      });
-      
-      if (staleCertifications.length > 0) {
-        console.log(`Found ${staleCertifications.length} stale certifications to remove:`, staleCertifications);
-        
-        for (const certId of staleCertifications) {
-          try {
-            await certificationService.removeCertification(user.id, certId);
-            console.log(`Removed stale certification for machine ${certId}`);
-          } catch (error) {
-            console.error(`Failed to remove stale certification for machine ${certId}:`, error);
-          }
-        }
-        
-        // Refresh certifications after cleanup
-        fetchCertifications();
-      }
-    };
-    
-    cleanupStaleCertifications();
-  }, [userCertifications, availableMachineIds, user?.id, machineNames]);
+  // Check if user has safety certification
+  const hasSafetyCertification = userCertifications.includes('6');
 
   return (
     <View style={styles.section}>
@@ -214,6 +180,15 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
         </TouchableOpacity>
       </View>
       
+      {!hasSafetyCertification && (
+        <View style={styles.safetyAlert}>
+          <Text style={styles.safetyAlertTitle}>Safety Course Required</Text>
+          <Text style={styles.safetyAlertText}>
+            You need to complete the Machine Safety Course to get certified for other machines.
+          </Text>
+        </View>
+      )}
+      
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color="#7c3aed" size="small" />
@@ -224,6 +199,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          style={styles.scrollContainer}
         >
           <List.Section>
             {sortedCertifications.map((certId) => (
@@ -272,6 +248,9 @@ const styles = StyleSheet.create({
     color: '#7c3aed',
     fontSize: 14,
   },
+  scrollContainer: {
+    maxHeight: 300,
+  },
   emptyContainer: {
     alignItems: 'center',
     padding: 20,
@@ -296,6 +275,23 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 8,
+  },
+  safetyAlert: {
+    backgroundColor: '#fff9db',
+    borderColor: '#ffd43b',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  safetyAlertTitle: {
+    fontWeight: 'bold',
+    color: '#e67700',
+    marginBottom: 4,
+  },
+  safetyAlertText: {
+    color: '#805500',
+    fontSize: 14,
   },
 });
 
