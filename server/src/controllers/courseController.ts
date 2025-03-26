@@ -43,9 +43,9 @@ export const createCourse = async (req: Request, res: Response) => {
   try {
     const { title, description, category, content, imageUrl, relatedMachineIds, quizId, difficulty } = req.body;
 
-    // Generate a new ID based on the count of courses + 100 (to avoid conflicts with default IDs)
+    // Generate a new ID based on the count of courses + 104 (to start after 4)
     const count = await Course.countDocuments();
-    const newId = String(count + 100);
+    const newId = String(count + 104);
 
     const course = new Course({
       _id: newId,
