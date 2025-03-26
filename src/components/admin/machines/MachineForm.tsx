@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { courseDatabaseService } from '@/services/database/courseService';
 import { quizDatabaseService } from '@/services/database/quizService';
 import { Asterisk } from 'lucide-react';
+import FileUpload from '../common/FileUpload';
 
 export interface MachineFormData {
   name: string;
@@ -105,6 +106,13 @@ const MachineForm: React.FC<MachineFormProps> = ({
 
   const handleSwitchChange = (id: string, checked: boolean) => {
     setFormData((prev) => ({ ...prev, [id]: checked }));
+  };
+
+  const handleImageChange = (dataUrl: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: dataUrl || ''
+    }));
   };
 
   // Find the matching course for this machine based on ID
@@ -243,12 +251,11 @@ const MachineForm: React.FC<MachineFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleInputChange}
-                placeholder="Enter image URL"
+              <Label htmlFor="imageUpload">Machine Image</Label>
+              <FileUpload
+                existingUrl={formData.imageUrl}
+                onFileChange={handleImageChange}
+                label="Upload Machine Image"
               />
             </div>
           </TabsContent>

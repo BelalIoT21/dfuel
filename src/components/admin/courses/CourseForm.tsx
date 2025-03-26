@@ -1,16 +1,16 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { machineDatabaseService } from '@/services/database/machineService';
 import { quizDatabaseService } from '@/services/database/quizService';
-import { useEffect, useState } from 'react';
-import { CheckboxItem } from '../../ui/checkbox';
+import { Asterisk } from 'lucide-react';
+import FileUpload from '../common/FileUpload';
+import CourseSlideEditor, { Slide } from './CourseSlideEditor';
 
 export interface CourseFormData {
   title: string;
@@ -21,6 +21,7 @@ export interface CourseFormData {
   relatedMachineIds?: string[];
   quizId?: string;
   difficulty: string;
+  slides?: Slide[];
 }
 
 interface CourseFormProps {
@@ -33,6 +34,14 @@ interface CourseFormProps {
   description: string;
   submitLabel: string;
 }
+
+// Required field label component
+const RequiredFieldLabel = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
+  <Label htmlFor={htmlFor} className="flex items-center">
+    {children}
+    <Asterisk className="h-3 w-3 ml-1 text-red-600" />
+  </Label>
+);
 
 const CourseForm: React.FC<CourseFormProps> = ({
   formData,
@@ -48,8 +57,34 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [slides, setSlides] = useState<Slide[]>([
+    { id: '1', type: 'heading', content: '', headingLevel: 1 }
+  ]);
 
   useEffect(() => {
+    // Initialize slides from content if available
+    if (formData.content && !formData.slides) {
+      try {
+        // Try to parse slides from content
+        const parsedSlides = JSON.parse(formData.content);
+        if (Array.isArray(parsedSlides)) {
+          setSlides(parsedSlides);
+        } else {
+          // If content exists but isn't valid JSON, create a text slide with it
+          setSlides([
+            { id: '1', type: 'heading', content: formData.title || '', headingLevel: 1 },
+            { id: '2', type: 'text', content: formData.content }
+          ]);
+        }
+      } catch (e) {
+        // If content exists but isn't valid JSON, create a text slide with it
+        setSlides([
+          { id: '1', type: 'heading', content: formData.title || '', headingLevel: 1 },
+          { id: '2', type: 'text', content: formData.content }
+        ]);
+      }
+    }
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -68,7 +103,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
     };
     
     fetchData();
-  }, []);
+  }, [formData.content, formData.title]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -108,6 +143,25 @@ const CourseForm: React.FC<CourseFormProps> = ({
     });
   };
 
+  const handleSlidesChange = (newSlides: Slide[]) => {
+    setSlides(newSlides);
+    
+    // Convert slides to JSON string and store in content field
+    const slidesJson = JSON.stringify(newSlides);
+    setFormData(prev => ({
+      ...prev,
+      content: slidesJson,
+      slides: newSlides
+    }));
+  };
+  
+  const handleImageChange = (dataUrl: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: dataUrl || ''
+    }));
+  };
+
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
     
@@ -119,7 +173,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
       errors.description = "Description is required";
     }
     
-    if (!formData.content.trim()) {
+    if (!formData.content) {
       errors.content = "Content is required";
     }
     
@@ -149,7 +203,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
           
           <TabsContent value="basic" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Course Title <span className="text-red-500">*</span></Label>
+              <RequiredFieldLabel htmlFor="title">Course Title</RequiredFieldLabel>
               <Input
                 id="title"
                 value={formData.title}
@@ -163,8 +217,8 @@ const CourseForm: React.FC<CourseFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
-              <Textarea
+              <RequiredFieldLabel htmlFor="description">Description</RequiredFieldLabel>
+              <Input
                 id="description"
                 value={formData.description}
                 onChange={handleInputChange}
@@ -214,30 +268,25 @@ const CourseForm: React.FC<CourseFormProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={formData.imageUrl || ''}
-                onChange={handleInputChange}
-                placeholder="Enter image URL"
+              <Label htmlFor="courseImage">Course Image</Label>
+              <FileUpload
+                existingUrl={formData.imageUrl}
+                onFileChange={handleImageChange}
+                label="Upload Course Cover Image"
               />
             </div>
           </TabsContent>
           
           <TabsContent value="content" className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="content">Course Content (Markdown) <span className="text-red-500">*</span></Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={handleInputChange}
-                placeholder="Enter course content in Markdown format"
-                className={`min-h-[300px] font-mono ${formErrors.content ? "border-red-500" : ""}`}
+              <RequiredFieldLabel htmlFor="content">Course Content</RequiredFieldLabel>
+              <CourseSlideEditor 
+                slides={slides}
+                onChange={handleSlidesChange}
               />
               {formErrors.content && (
                 <p className="text-sm text-red-500 mt-1">{formErrors.content}</p>
               )}
-              <p className="text-xs text-gray-500">You can use Markdown formatting for rich content.</p>
             </div>
           </TabsContent>
           

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import CourseForm, { CourseFormData } from '@/components/admin/courses/CourseForm';
 import { courseDatabaseService } from '@/services/database/courseService';
+import { Slide } from '@/components/admin/courses/CourseSlideEditor';
 
 const AdminCourseEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ const AdminCourseEdit = () => {
     content: '',
     difficulty: 'Beginner',
     relatedMachineIds: [],
+    slides: [{ id: '1', type: 'heading', content: '', headingLevel: 1 }],
   });
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
@@ -37,6 +39,30 @@ const AdminCourseEdit = () => {
           const course = await courseDatabaseService.getCourseById(id);
           
           if (course) {
+            // Try to parse slides from content
+            let slides: Slide[] = [{ id: '1', type: 'heading', content: course.title || '', headingLevel: 1 }];
+            
+            if (course.content) {
+              try {
+                const parsedSlides = JSON.parse(course.content);
+                if (Array.isArray(parsedSlides)) {
+                  slides = parsedSlides;
+                } else {
+                  // If content exists but isn't valid JSON, create a text slide with it
+                  slides = [
+                    { id: '1', type: 'heading', content: course.title || '', headingLevel: 1 },
+                    { id: '2', type: 'text', content: course.content }
+                  ];
+                }
+              } catch (e) {
+                // If content exists but isn't valid JSON, create a text slide with it
+                slides = [
+                  { id: '1', type: 'heading', content: course.title || '', headingLevel: 1 },
+                  { id: '2', type: 'text', content: course.content }
+                ];
+              }
+            }
+            
             setFormData({
               title: course.title || '',
               description: course.description || '',
@@ -46,6 +72,7 @@ const AdminCourseEdit = () => {
               imageUrl: course.imageUrl || '',
               relatedMachineIds: course.relatedMachineIds || [],
               quizId: course.quizId || '',
+              slides,
             });
           }
         } catch (error) {
