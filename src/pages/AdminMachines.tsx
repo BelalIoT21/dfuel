@@ -231,12 +231,13 @@ const AdminMachines = () => {
                           <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                             Bookings: {getBookingsThisMonth(machineId)}
                           </div>
-                          {machine.linkedCourseId && (
+                          {/* Only show these badges for machines other than Machine 1 */}
+                          {machine.linkedCourseId && machineId !== '1' && (
                             <div className="text-xs px-2 py-1 rounded bg-amber-100 text-amber-800">
                               Has Course
                             </div>
                           )}
-                          {machine.linkedQuizId && (
+                          {machine.linkedQuizId && machineId !== '1' && (
                             <div className="text-xs px-2 py-1 rounded bg-cyan-100 text-cyan-800">
                               Has Quiz
                             </div>
