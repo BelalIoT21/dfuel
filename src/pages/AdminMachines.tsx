@@ -66,8 +66,20 @@ const AdminMachines = () => {
       }
     };
     
+    // Function to ensure Machine 1 has course and quiz
+    const ensureMachine1HasCourseAndQuiz = async () => {
+      try {
+        // Link Machine 1 with Course ID 5 and Quiz ID 100
+        await machineDatabaseService.linkMachineCourseAndQuiz('1', '5', '100');
+        console.log("Successfully linked Machine 1 with course and quiz");
+      } catch (error) {
+        console.error("Error linking machine 1 with course and quiz:", error);
+      }
+    };
+    
     fetchMachines();
     fetchUsers();
+    ensureMachine1HasCourseAndQuiz();
   }, []);
   
   if (!user?.isAdmin) {

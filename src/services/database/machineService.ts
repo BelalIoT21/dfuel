@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -112,6 +111,22 @@ export class MachineDatabaseService extends BaseService {
     } catch (error) {
       console.error(`API error, could not get machine ${machineId}:`, error);
       return null;
+    }
+  }
+  
+  // Add a utility method to link a machine with a course and quiz
+  async linkMachineCourseAndQuiz(machineId: string, courseId: string, quizId: string): Promise<boolean> {
+    try {
+      console.log(`Linking machine ${machineId} with course ${courseId} and quiz ${quizId}`);
+      const result = await this.updateMachine(machineId, {
+        linkedCourseId: courseId,
+        linkedQuizId: quizId
+      });
+      
+      return !!result;
+    } catch (error) {
+      console.error(`Error linking machine ${machineId} with course and quiz:`, error);
+      return false;
     }
   }
 }

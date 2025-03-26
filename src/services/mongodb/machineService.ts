@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -334,7 +333,9 @@ class MongoMachineService {
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
             difficulty: 'Advanced',
-            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png'
+            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
+            linkedCourseId: '5', // Adding course link
+            linkedQuizId: '100'  // Adding quiz link
           },
           { 
             _id: '2', 
@@ -398,7 +399,9 @@ class MongoMachineService {
             _id: '1', 
             name: 'Laser Cutter', 
             type: 'Laser Cutter',
-            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png'
+            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
+            linkedCourseId: '5', // Adding course link
+            linkedQuizId: '100'  // Adding quiz link
           },
           { 
             _id: '2', 
