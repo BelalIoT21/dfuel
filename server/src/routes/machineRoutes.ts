@@ -11,26 +11,12 @@ import {
   getMachineStatus 
 } from '../controllers/machineController';
 import { protect, admin } from '../middleware/authMiddleware';
-import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
 
 // Configure middleware for handling large uploads (50MB limit)
 const jsonParser = express.json({ limit: '50mb' });
 const urlencodedParser = express.urlencoded({ limit: '50mb', extended: true });
-
-// Rate limiting for sensitive endpoints
-const updateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // Increased from 5 to 50 requests per windowMs
-  message: { 
-    message: 'Too many machine status updates. Please wait 15 minutes before trying again.',
-    error: 'RATE_LIMIT_EXCEEDED',
-    retryAfter: 15 // minutes
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 // Get all machines
 router.get('/', getMachines);
@@ -68,7 +54,7 @@ router.put(
   updateMachine
 );
 
-// Update machine status (admin only) - Reduced rate limiting
+// Update machine status (admin only) - Removed rate limiting
 router.put(
   '/:id/status',
   protect,

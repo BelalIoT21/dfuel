@@ -28,9 +28,12 @@ const app = express();
 
 // Serve the images folder for machine images
 // First, make the utils/images directory available publicly
-app.use('/utils/images', express.static(path.join(__dirname, './utils/images')));
+const imagesPath = path.join(__dirname, './utils/images');
+console.log('Images directory path:', imagesPath);
+app.use('/utils/images', express.static(imagesPath));
+
 // Also serve it at an alternative URL for better client compatibility
-app.use('/api/utils/images', express.static(path.join(__dirname, './utils/images')));
+app.use('/api/utils/images', express.static(imagesPath));
 
 // Set up higher limits for request payload size
 app.use(express.json({ limit: '50mb' }));

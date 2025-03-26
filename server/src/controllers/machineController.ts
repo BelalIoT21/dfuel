@@ -269,7 +269,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.type = type || machine.type;
     machine.description = description || machine.description;
     
-    console.log(`Original requiresCertification: ${requiresCertification} (${typeof requiresCertification})`);
+    console.log(`Original requiresCertification for machine ${id}: ${requiresCertification} (${typeof requiresCertification})`);
     
     if (requiresCertification !== undefined) {
       let normalizedValue: boolean;
@@ -282,7 +282,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       }
       
       machine.requiresCertification = normalizedValue;
-      console.log(`Setting requiresCertification to ${normalizedValue} (${typeof normalizedValue})`);
+      console.log(`Setting requiresCertification for machine ${id} to ${normalizedValue} (${typeof normalizedValue})`);
     }
     
     machine.difficulty = difficulty || machine.difficulty;
@@ -343,7 +343,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     }
     
     const updatedMachine = await machine.save();
-    console.log("Machine updated successfully:", updatedMachine);
+    console.log(`Machine ${id} updated successfully:`, updatedMachine);
     
     let normalizedImageUrl = updatedMachine.imageUrl || '';
     if (normalizedImageUrl && !normalizedImageUrl.startsWith('/') && !normalizedImageUrl.startsWith('http')) {

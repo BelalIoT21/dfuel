@@ -285,7 +285,7 @@ class MongoMachineService {
         } else {
           updateData.requiresCertification = Boolean(updates.requiresCertification);
         }
-        console.log(`Setting requiresCertification to: ${updateData.requiresCertification} (${typeof updateData.requiresCertification})`);
+        console.log(`Setting requiresCertification for machine ${machineId} to: ${updateData.requiresCertification} (${typeof updateData.requiresCertification})`);
       }
       
       if (updates.difficulty !== undefined) updateData.difficulty = updates.difficulty;
@@ -300,10 +300,10 @@ class MongoMachineService {
         // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedCourseId === '' || updates.linkedCourseId === 'none') {
           updateData.linkedCourseId = undefined;
-          console.log(`Setting linkedCourseId to undefined`);
+          console.log(`Removed linkedCourseId for machine ${machineId}`);
         } else if (updates.linkedCourseId) {
           updateData.linkedCourseId = updates.linkedCourseId;
-          console.log(`Setting linkedCourseId to: ${updates.linkedCourseId}`);
+          console.log(`Updated linkedCourseId for machine ${machineId} to: ${updates.linkedCourseId}`);
         }
       }
       
@@ -311,19 +311,20 @@ class MongoMachineService {
         // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedQuizId === '' || updates.linkedQuizId === 'none') {
           updateData.linkedQuizId = undefined;
-          console.log(`Setting linkedQuizId to undefined`);
+          console.log(`Removed linkedQuizId for machine ${machineId}`);
         } else if (updates.linkedQuizId) {
           updateData.linkedQuizId = updates.linkedQuizId;
-          console.log(`Setting linkedQuizId to: ${updates.linkedQuizId}`);
+          console.log(`Updated linkedQuizId for machine ${machineId} to: ${updates.linkedQuizId}`);
         }
       }
       
+      // Only update the specific machineId, never any other machine
       const result = await this.machinesCollection.updateOne(
-        { _id: machineId },
+        { _id: machineId },  // Be explicit about the ID to prevent updates to other machines
         { $set: updateData }
       );
       
-      console.log(`Machine update result: ${JSON.stringify({
+      console.log(`Machine ${machineId} update result: ${JSON.stringify({
         acknowledged: result.acknowledged,
         modifiedCount: result.modifiedCount,
         matchedCount: result.matchedCount,
@@ -341,7 +342,7 @@ class MongoMachineService {
       
       return result.acknowledged && result.matchedCount > 0;
     } catch (error) {
-      console.error("Error updating machine in MongoDB:", error);
+      console.error(`Error updating machine ${machineId} in MongoDB:`, error);
       return false;
     }
   }

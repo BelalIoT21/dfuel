@@ -118,7 +118,7 @@ export class MachineDatabaseService extends BaseService {
     try {
       // Make a deep copy of the machine data to avoid modifying the original
       const cleanedData = JSON.parse(JSON.stringify(machineData));
-      console.log("Original update data:", cleanedData);
+      console.log(`Original update data for machine ${machineId}:`, cleanedData);
       
       // Normalize the status field (convert UI format to API format)
       if (cleanedData.status) {
@@ -127,7 +127,7 @@ export class MachineDatabaseService extends BaseService {
           apiStatus = 'In Use';
         }
         cleanedData.status = apiStatus;
-        console.log(`Normalized status to: ${apiStatus}`);
+        console.log(`Normalized status for machine ${machineId} to: ${apiStatus}`);
       }
       
       // For standard machines (1-4), ensure we use the correct image if none is provided
@@ -147,7 +147,7 @@ export class MachineDatabaseService extends BaseService {
       // CRITICAL FIX: Always explicitly set requiresCertification to a boolean value
       if ('requiresCertification' in cleanedData) {
         cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
-        console.log(`requiresCertification explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+        console.log(`requiresCertification for machine ${machineId} explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
       }
       
       // Handle linked course ID with "in" operator to check if property exists
@@ -156,7 +156,7 @@ export class MachineDatabaseService extends BaseService {
         if (cleanedData.linkedCourseId === '' || cleanedData.linkedCourseId === 'none') {
           cleanedData.linkedCourseId = undefined;
         }
-        console.log(`Setting linkedCourseId to: ${cleanedData.linkedCourseId}`);
+        console.log(`Setting linkedCourseId for machine ${machineId} to: ${cleanedData.linkedCourseId}`);
       }
       
       // Handle linked quiz ID with "in" operator to check if property exists
@@ -165,7 +165,7 @@ export class MachineDatabaseService extends BaseService {
         if (cleanedData.linkedQuizId === '' || cleanedData.linkedQuizId === 'none') {
           cleanedData.linkedQuizId = undefined;
         }
-        console.log(`Setting linkedQuizId to: ${cleanedData.linkedQuizId}`);
+        console.log(`Setting linkedQuizId for machine ${machineId} to: ${cleanedData.linkedQuizId}`);
       }
       
       // Handle certification instructions - empty string is valid
