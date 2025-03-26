@@ -29,7 +29,7 @@ const BookMachineButton = ({
   const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
-    // Navigate directly to the booking page instead of machine page
+    // Always navigate directly to the booking page
     navigate(`/booking/${machineId}`);
   };
 

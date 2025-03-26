@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +22,7 @@ interface Question {
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -39,6 +39,7 @@ const Quiz = () => {
   const [certificationProcessing, setCertificationProcessing] = useState(false);
   const [certificationAdded, setCertificationAdded] = useState(false);
   const [relatedMachineIds, setRelatedMachineIds] = useState<string[]>([]);
+  const isAdminRoute = location.pathname.includes('/admin');
 
   useEffect(() => {
     if (!id) return;
@@ -50,7 +51,6 @@ const Quiz = () => {
         
         console.log(`Fetching quiz data for ID: ${id}`);
         
-        // Try to get the quiz directly first
         try {
           const quizData = await quizDatabaseService.getQuizById(id);
           
@@ -58,7 +58,6 @@ const Quiz = () => {
             console.log('Retrieved quiz data directly:', quizData);
             setQuiz(quizData);
             
-            // If quiz has relatedMachineIds, store them for certification
             if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
               console.log('Quiz has related machine IDs:', quizData.relatedMachineIds);
               setRelatedMachineIds(quizData.relatedMachineIds.map(id => String(id)));
@@ -68,7 +67,6 @@ const Quiz = () => {
               setQuestions(quizData.questions);
               setAnswers(new Array(quizData.questions.length).fill(-1));
               
-              // Try to find the machine that links to this quiz
               try {
                 const allMachines = await machineService.getAllMachines();
                 const linkedMachine = allMachines.find(m => m.linkedQuizId === id);
@@ -81,7 +79,6 @@ const Quiz = () => {
                 }
               } catch (err) {
                 console.error('Error finding linked machine:', err);
-                // Continue anyway since we have the quiz
               }
               
               setLoading(false);
@@ -93,10 +90,8 @@ const Quiz = () => {
           }
         } catch (err) {
           console.log('Error fetching quiz directly:', err);
-          // Continue with machine lookup
         }
         
-        // If not a direct quiz ID, try to get the machine and its linked quiz
         try {
           const machineData = await machineService.getMachineById(id);
           
@@ -107,7 +102,6 @@ const Quiz = () => {
             setMachineId(machineIdStr);
             console.log('Set machine ID to:', machineIdStr);
 
-            // Check if the machine has a linked quiz
             if (machineData.linkedQuizId) {
               try {
                 console.log(`Machine has linked quiz: ${machineData.linkedQuizId}`);
@@ -117,7 +111,6 @@ const Quiz = () => {
                   console.log('Retrieved linked quiz data:', quizData);
                   setQuiz(quizData);
                   
-                  // If quiz has relatedMachineIds, store them for certification
                   if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
                     console.log('Quiz has related machine IDs:', quizData.relatedMachineIds);
                     setRelatedMachineIds(quizData.relatedMachineIds.map(id => String(id)));
@@ -178,7 +171,6 @@ const Quiz = () => {
       return;
     }
     
-    // Calculate score
     let correctCount = 0;
     questions.forEach((question, index) => {
       if (answers[index] === question.correctAnswer) {
@@ -189,16 +181,13 @@ const Quiz = () => {
     const finalScore = (correctCount / questions.length) * 100;
     setScore(finalScore);
     
-    // Determine if passed (use quiz passing score if available, otherwise 80%)
     const passingThreshold = quiz && quiz.passingScore ? quiz.passingScore : 80;
     const hasPassed = finalScore >= passingThreshold;
     setPassed(hasPassed);
     
-    // If passed, grant certification
     if (hasPassed && user) {
       setCertificationProcessing(true);
       
-      // First try to use machine ID
       let certSuccess = false;
       if (machineId) {
         console.log(`User passed quiz. Adding certification for machine ${machineId}`);
@@ -210,7 +199,6 @@ const Quiz = () => {
         }
       }
 
-      // If that didn't work or there was no machineId, try related machine IDs
       if (!certSuccess && relatedMachineIds && relatedMachineIds.length > 0) {
         console.log('Using related machine IDs for certification:', relatedMachineIds);
         
@@ -221,7 +209,6 @@ const Quiz = () => {
             if (success) {
               console.log(`Successfully added certification for related machine ${relatedId}`);
               certSuccess = true;
-              // If no machineId was set before, set it now so return to machine page works
               if (!machineId) {
                 setMachineId(relatedId);
               }
@@ -264,26 +251,30 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    // Modified to go to admin machines page if coming from admin section
+    if (isAdminRoute) {
+      console.log('Navigating to admin machines page from admin route');
+      navigate('/admin/machines');
+      return;
+    }
+    
     const currentPath = window.location.pathname;
     if (currentPath.includes('/admin')) {
-      console.log('Navigating to admin machines page');
+      console.log('Navigating to admin machines page based on window path');
       navigate('/admin/machines');
-    } else if (machine && (machine.id || machine._id)) {
-      // Use the actual machine ID we have saved
+      return;
+    }
+    
+    if (machine && (machine.id || machine._id)) {
       const targetId = machine.id || machine._id;
       console.log(`Navigating to machine page for ID: ${targetId}`);
       navigate(`/machine/${targetId}`);
     } else if (machineId) {
-      // Use our saved machineId if machine object is not available
       console.log(`Navigating to machine page for saved machineId: ${machineId}`);
       navigate(`/machine/${machineId}`);
     } else if (relatedMachineIds && relatedMachineIds.length > 0) {
-      // Use the first related machine ID as fallback
       console.log(`Navigating to machine page for related machineId: ${relatedMachineIds[0]}`);
       navigate(`/machine/${relatedMachineIds[0]}`);
     } else {
-      // Fallback to ID from params if nothing else is available
       console.log(`Fallback navigation to machine page for ID: ${id}`);
       navigate(`/machine/${id}`);
     }
@@ -312,7 +303,6 @@ const Quiz = () => {
     );
   }
 
-  // If we have no questions to display, show an error
   if (!questions || questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">

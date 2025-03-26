@@ -30,25 +30,31 @@ export interface IMachine extends mongoose.Document {
 async function getNextId(): Promise<string> {
   try {
     // Find the highest numeric ID in the collection
-    const machines = await mongoose.model('Machine').find({}, '_id').sort({ _id: -1 }).limit(10);
+    const machines = await mongoose.model('Machine').find({}, '_id').sort({ _id: -1 }).limit(20);
     
-    // Start with ID 5 as base (since you mentioned special IDs like 5 and 6)
+    // Start with ID 4 as base (since IDs 1-4 are reserved)
     let highestId = 4;
     
     // Find the highest numeric ID
     for (const machine of machines) {
-      const idNum = parseInt(machine._id.toString(), 10);
-      if (!isNaN(idNum) && idNum > highestId) {
-        highestId = idNum;
+      const idStr = machine._id.toString();
+      // Only consider numeric IDs
+      if (/^\d+$/.test(idStr)) {
+        const idNum = parseInt(idStr, 10);
+        if (!isNaN(idNum) && idNum > highestId) {
+          highestId = idNum;
+        }
       }
     }
     
-    // Return the next ID
-    return (highestId + 1).toString();
+    // Return the next ID, ensuring it's at least 5
+    const nextId = Math.max(highestId + 1, 5);
+    console.log(`Generated next machine ID: ${nextId} (from highest: ${highestId})`);
+    return nextId.toString();
   } catch (error) {
     console.error('Error generating next machine ID:', error);
-    // Fallback to timestamp-based ID if there's an error
-    return Date.now().toString();
+    // Fallback to minimum ID 5 if there's an error
+    return "5";
   }
 }
 
