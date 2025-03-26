@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { getDashboardData, updateAdminCredentials, seedAdminUser, updateMachineCourseLinks } from '../controllers/adminController';
+import { getDashboardData, updateAdminCredentials, seedAdminUser, updateMachineCourseLinks } from '../controllers/admin/adminController';
 import { protect, admin } from '../middleware/authMiddleware';
 
 const router = express.Router();

@@ -19,6 +19,7 @@ import {
 } from './seeds/courseSeeder';
 import { seedQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
+import { createAdminUser } from '../controllers/admin/adminController';
 
 dotenv.config();
 
@@ -33,6 +34,10 @@ export class SeedService {
       const bookingCount = await Booking.countDocuments();
       const courseCount = await Course.countDocuments();
       const quizCount = await Quiz.countDocuments();
+
+      // Always ensure admin user exists first
+      console.log('Ensuring admin user exists...');
+      await createAdminUser();
 
       // Get existing machine IDs
       const existingMachines = await Machine.find({}, '_id');

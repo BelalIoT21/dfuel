@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import User from '../../models/User';
 import { Booking } from '../../models/Booking';
@@ -34,6 +35,13 @@ export const createAdminUser = async () => {
         adminUser.certifications = ['1', '2', '3', '4', '5', '6'];
         await adminUser.save();
         console.log('Updated admin user with all certifications');
+      }
+      
+      // Ensure admin flag is set
+      if (!adminUser.isAdmin) {
+        adminUser.isAdmin = true;
+        await adminUser.save();
+        console.log('Ensured admin flag is set');
       }
       return;
     }
@@ -260,6 +268,53 @@ export const seedAdminUser = async (req: Request, res: Response) => {
     res.status(500).json({ 
       message: 'Server error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+// Controller to update all machine course/quiz links
+export const updateMachineCourseLinks = async (req: Request, res: Response) => {
+  try {
+    // Default course and quiz mappings with explicit type declaration and string index signature
+    const defaultLinks: Record<string, { courseId: string; quizId: string }> = {
+      '1': { courseId: '1', quizId: '1' }, // Ensure machine 1 has course 1 and quiz 1
+      '2': { courseId: '2', quizId: '2' },
+      '3': { courseId: '3', quizId: '3' },
+      '4': { courseId: '4', quizId: '4' },
+      '5': { courseId: '5', quizId: '5' },
+      '6': { courseId: '6', quizId: '6' }
+    };
+    
+    console.log("Updating all machine course and quiz links...");
+    
+    // Get all machines
+    const machines = await Machine.find();
+    let updatedCount = 0;
+    
+    // Update each machine
+    for (const machine of machines) {
+      const machineId = machine._id.toString();
+      // Use defaultLinks with proper typesafe index access
+      const link = defaultLinks[machineId] || { courseId: machineId, quizId: machineId };
+      
+      if (!machine.linkedCourseId || !machine.linkedQuizId) {
+        machine.linkedCourseId = machine.linkedCourseId || link.courseId;
+        machine.linkedQuizId = machine.linkedQuizId || link.quizId;
+        await machine.save();
+        updatedCount++;
+      }
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      message: `Updated ${updatedCount} machines with course and quiz links`
+    });
+  } catch (error) {
+    console.error('Error updating machine course/quiz links:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update machine links', 
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };

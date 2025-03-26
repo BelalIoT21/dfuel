@@ -30,29 +30,58 @@ class MongoSeedService {
     if (!this.usersCollection) return;
     
     try {
-      const userCount = await this.usersCollection.countDocuments();
-      if (userCount > 0) {
-        console.log(`${userCount} users already exist in the database, skipping user seeding`);
-        return;
-      }
+      // Check if admin user exists
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@dfuel.com';
+      const adminUser = await this.usersCollection.findOne({ email: adminEmail });
       
-      console.log("Seeding users...");
-      
-      const salt = await bcrypt.genSalt(10);
-      const adminPassword = await bcrypt.hash('Admin123', salt);
-      
-      const users: MongoUser[] = [
-        {
+      if (adminUser) {
+        console.log(`Admin user ${adminEmail} already exists, skipping admin creation`);
+        
+        // Ensure admin has all certifications
+        if (!adminUser.certifications || adminUser.certifications.length < 6) {
+          await this.usersCollection.updateOne(
+            { email: adminEmail },
+            { $set: { certifications: ['1', '2', '3', '4', '5', '6'] } }
+          );
+          console.log('Updated admin with all certifications');
+        }
+        
+        // Check for regular users
+        const userCount = await this.usersCollection.countDocuments({ isAdmin: { $ne: true } });
+        if (userCount > 0) {
+          console.log(`${userCount} regular users already exist in the database, skipping user seeding`);
+          return;
+        }
+      } else {
+        console.log(`Admin user ${adminEmail} not found. Creating admin user...`);
+        
+        const salt = await bcrypt.genSalt(10);
+        const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123';
+        const hashedPassword = await bcrypt.hash(adminPassword, salt);
+        
+        const admin: MongoUser = {
           id: '1', // Use string ID for consistency
           name: 'Administrator',
-          email: 'admin@dfuel.com', // Match email to .env
-          password: adminPassword,
+          email: adminEmail,
+          password: hashedPassword,
           isAdmin: true,
           certifications: ['1', '2', '3', '4', '5', '6'],
           bookings: [],
           lastLogin: new Date().toISOString()
-        },
-        {
+        };
+        
+        await this.usersCollection.insertOne(admin);
+        console.log(`Successfully created admin user: ${adminEmail}`);
+      }
+      
+      // Add a regular user for testing if no regular users exist
+      const regularUserCount = await this.usersCollection.countDocuments({ isAdmin: { $ne: true } });
+      
+      if (regularUserCount === 0) {
+        console.log("No regular users found. Creating a test user...");
+        
+        const salt = await bcrypt.genSalt(10);
+        const testUser: MongoUser = {
           id: '2',
           name: 'Regular User',
           email: 'user@dfuel.com',
@@ -61,11 +90,11 @@ class MongoSeedService {
           certifications: [],
           bookings: [],
           lastLogin: new Date().toISOString()
-        }
-      ];
-      
-      await this.usersCollection.insertMany(users);
-      console.log(`Successfully seeded ${users.length} users`);
+        };
+        
+        await this.usersCollection.insertOne(testUser);
+        console.log(`Successfully created test user: ${testUser.email}`);
+      }
     } catch (error) {
       console.error("Error seeding users:", error);
     }

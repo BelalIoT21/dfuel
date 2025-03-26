@@ -18,6 +18,7 @@ import certificationRoutes from './routes/certificationRoutes';
 import courseRoutes from './routes/courseRoutes';
 import quizRoutes from './routes/quizRoutes';
 import { SeedService } from './utils/seed';
+import { createAdminUser } from './controllers/admin/adminController';
 
 dotenv.config();
 
@@ -81,13 +82,19 @@ app.use('/api/quizzes', quizRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Seed the database
-SeedService.seedDatabase()
+// Create admin user independently to ensure it's done regardless of seed process
+console.log('Ensuring admin user exists before starting seed process...');
+createAdminUser()
+  .then(() => {
+    console.log('Admin user check complete, continuing with database seeding...');
+    // Seed the database
+    return SeedService.seedDatabase();
+  })
   .then(() => {
     console.log('Database seeding complete');
   })
   .catch((error) => {
-    console.error('Error seeding database:', error);
+    console.error('Error in startup process:', error);
   });
 
 const PORT = process.env.PORT || 5000;
