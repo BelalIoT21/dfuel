@@ -153,13 +153,16 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
+  // Modified handleSwitchChange to preserve linked course/quiz when toggling certification
   const handleSwitchChange = (id: string, checked: boolean) => {
     console.log(`Setting ${id} to:`, checked, typeof checked);
     
     if (id === 'requiresCertification') {
+      // Keep the existing linkedCourseId and linkedQuizId values regardless of the certification toggle
       setFormData(prev => ({
         ...prev,
         requiresCertification: Boolean(checked)
+        // We don't modify linkedCourseId or linkedQuizId here
       }));
     } else {
       setFormData(prev => ({

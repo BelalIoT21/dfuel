@@ -40,39 +40,46 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     }
   };
 
-  // Get the image URL, making sure it's properly formatted for the API
-  const getProperImageUrl = (url: string) => {
-    if (!url) return 'https://placeholder.com/200x200';
+  // Get the image URL with proper fallbacks
+  const getImageSource = () => {
+    // Check for machine ID to use local images
+    const machineId = machine?.id || machine?._id;
     
-    // If the URL starts with /utils/images, ensure it has the API URL prefix
-    if (url.startsWith('/utils/images')) {
-      // For React Native, we need to use the full URL
-      // Make sure to use a consistent API URL across the app
-      const apiUrl = 'http://localhost:5000'; // Adjust this based on your config
-      return `${apiUrl}/api${url}`;
+    if (machineId) {
+      // Use local images for known machine IDs
+      switch(String(machineId)) {
+        case '1': return require('../../../assets/images/IMG_7814.jpg');
+        case '2': return require('../../../assets/images/IMG_7773.jpg');
+        case '3': return require('../../../assets/images/IMG_7768.jpg');
+        case '4': return require('../../../assets/images/IMG_7769.jpg');
+        case '5': return require('../../../assets/images/IMG_7775.jpg');
+        case '6': return require('../../../assets/images/IMG_7821.jpg');
+      }
     }
     
-    // Handle base64 data URLs directly
-    if (url.startsWith('data:')) {
-      return url;
+    // If we have a valid imageUrl or image, use it
+    if (machine.imageUrl) {
+      return { uri: machine.imageUrl };
     }
     
-    return url;
+    if (machine.image) {
+      return { uri: machine.image };
+    }
+    
+    // Default fallback image
+    return require('../../../assets/images/placeholder.jpg');
   };
   
-  // Get the image URL, preferring imageUrl but falling back to image
-  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || 'https://placeholder.com/200x200');
-  
-  console.log('MachineHeader - Image URL:', imageUrl);
+  console.log('MachineHeader - Machine:', machine);
 
   return (
     <>
       <Image 
-        source={{ uri: imageUrl }}
+        source={getImageSource()}
         style={styles.machineImage}
         resizeMode="cover"
         onError={(e) => {
-          console.error('Failed to load image:', imageUrl);
+          console.error('Failed to load image');
         }}
       />
       

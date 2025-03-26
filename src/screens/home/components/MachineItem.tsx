@@ -70,29 +70,29 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Check if user is certified for this machine
   const isCertified = certsArray.includes(machineId);
   
-  // Format image URL correctly
-  const getProperImageUrl = (url: string) => {
-    if (!url) return 'https://placeholder.com/200x200';
-    
-    // If the URL starts with /utils/images, ensure it has the API URL prefix
-    if (url.startsWith('/utils/images')) {
-      // For React Native, we need to use the full URL
-      const apiUrl = 'http://localhost:5000'; // Make sure this is consistent with your environment
-      return `${apiUrl}/api${url}`;
+  // Get appropriate image source based on machine ID
+  const getImageSource = () => {
+    // Use local images for known machine IDs
+    switch(machineId) {
+      case '1': return require('../../../assets/images/IMG_7814.jpg');
+      case '2': return require('../../../assets/images/IMG_7773.jpg');
+      case '3': return require('../../../assets/images/IMG_7768.jpg');
+      case '4': return require('../../../assets/images/IMG_7769.jpg');
+      case '5': return require('../../../assets/images/IMG_7775.jpg');
+      case '6': return require('../../../assets/images/IMG_7821.jpg');
+      default:
+        // For custom machines use the provided image URL or default placeholder
+        if (machine.imageUrl) {
+          return { uri: machine.imageUrl };
+        } else if (machine.image) {
+          return { uri: machine.image };
+        } else {
+          return require('../../../assets/images/placeholder.jpg');
+        }
     }
-    
-    // Handle base64 data URLs directly
-    if (url.startsWith('data:')) {
-      return url;
-    }
-    
-    return url;
   };
-  
-  // Get a consistent image URL (prefer imageUrl, fall back to image)
-  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || 'https://placeholder.com/200x200');
 
-  console.log(`Machine ${machineId} (${machineName}) - Image URL:`, imageUrl);
+  console.log(`Machine ${machineId} (${machineName}) - Using local image`);
 
   return (
     <TouchableOpacity
@@ -104,10 +104,10 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
     >
       <Card style={styles.card}>
         <Card.Cover 
-          source={{ uri: imageUrl }} 
+          source={getImageSource()} 
           style={styles.cardImage} 
           onError={(e) => {
-            console.error(`Failed to load image for machine ${machineId}:`, imageUrl);
+            console.error(`Failed to load image for machine ${machineId}`);
           }}
         />
         <Card.Content>

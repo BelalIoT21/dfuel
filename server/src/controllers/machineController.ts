@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -286,7 +285,7 @@ export const updateMachine = async (req: Request, res: Response) => {
       machine.requiresCertification = normalizedValue;
       console.log(`Setting requiresCertification for machine ${id} to ${normalizedValue} (${typeof normalizedValue})`);
       
-      // IMPORTANT: We don't clear linkedCourseId or linkedQuizId when requiresCertification is turned off
+      // IMPORTANT: Never clear linkedCourseId or linkedQuizId when requiresCertification is turned off
       // Only clear them if they are explicitly set to null, empty string, or 'none'
     }
     
