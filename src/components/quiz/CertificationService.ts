@@ -27,11 +27,25 @@ export async function addUserCertification(userId: string, machineId: string): P
       body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
     });
     
-    const directResult = await directResponse.json();
+    let directResult;
+    try {
+      const responseText = await directResponse.text();
+      console.log('Direct API response text:', responseText);
+      
+      if (responseText) {
+        directResult = JSON.parse(responseText);
+      } else {
+        directResult = { success: directResponse.ok };
+      }
+    } catch (parseError) {
+      console.error('Error parsing API response:', parseError);
+      directResult = { success: directResponse.ok };
+    }
+    
     certificationAttempts.push({method: "direct API", response: directResult});
     console.log('Direct API call response:', directResult);
     
-    if (directResponse.ok || directResult.success) {
+    if (directResponse.ok || (directResult && directResult.success)) {
       success = true;
       console.log('Direct API call successful');
     }
@@ -66,29 +80,54 @@ export async function addUserCertification(userId: string, machineId: string): P
     }
   }
   
-  // Method 4: Emergency fallback - extreme case last resort
+  // Method 4: Emergency fallback using additional endpoint paths
   if (!success) {
-    console.log('Method 4: Trying emergency endpoint');
-    try {
-      const emergencyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-      });
-      
-      const emergencyResult = await emergencyResponse.json();
-      certificationAttempts.push({method: "emergency API", response: emergencyResult});
-      console.log('Emergency API call response:', emergencyResult);
-      
-      if (emergencyResponse.ok || emergencyResult.success) {
-        success = true;
+    console.log('Method 4: Trying alternative endpoints');
+    
+    const endpointsToTry = [
+      `${import.meta.env.VITE_API_URL}/api/certifications`,
+      `${import.meta.env.VITE_API_URL}/certifications/add`,
+      `${import.meta.env.VITE_API_URL}/api/certifications/add`
+    ];
+    
+    for (const endpoint of endpointsToTry) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        const emergencyResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+        });
+        
+        let emergencyResult;
+        try {
+          const responseText = await emergencyResponse.text();
+          console.log(`${endpoint} response text:`, responseText);
+          
+          if (responseText) {
+            emergencyResult = JSON.parse(responseText);
+          } else {
+            emergencyResult = { success: emergencyResponse.ok };
+          }
+        } catch (parseError) {
+          console.error('Error parsing API response:', parseError);
+          emergencyResult = { success: emergencyResponse.ok };
+        }
+        
+        certificationAttempts.push({method: `emergency API (${endpoint})`, response: emergencyResult});
+        
+        if (emergencyResponse.ok || (emergencyResult && emergencyResult.success)) {
+          success = true;
+          console.log(`Emergency API call to ${endpoint} successful`);
+          break;
+        }
+      } catch (emergencyError) {
+        console.error(`Emergency API call to ${endpoint} failed:`, emergencyError);
+        certificationAttempts.push({method: `emergency API (${endpoint})`, error: String(emergencyError)});
       }
-    } catch (emergencyError) {
-      console.error('Emergency API call failed:', emergencyError);
-      certificationAttempts.push({method: "emergency API", error: String(emergencyError)});
     }
   }
   

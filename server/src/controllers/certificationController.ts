@@ -32,24 +32,47 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     let user = await User.findById(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userIdStr}, trying with string ID`);
-      // If ID is not found as ObjectId, try with string ID
+      console.log(`User not found with ID: ${userIdStr}, trying alternative approaches`);
+      
+      // Try finding by ID as string
       user = await User.findOne({ _id: userIdStr });
       
       if (!user) {
-        // Try finding by ID field if _id doesn't work
+        // Try finding by ID field
         user = await User.findOne({ id: userIdStr });
         
         if (!user) {
-          console.log(`User still not found with ID: ${userIdStr}`);
-          res.status(404).json({ 
-            success: false, 
-            message: 'User not found' 
-          });
-          return;
+          // Last resort: try numeric conversion
+          try {
+            const numericId = parseInt(userIdStr);
+            if (!isNaN(numericId)) {
+              user = await User.findById(numericId);
+              
+              if (!user) {
+                user = await User.findOne({ _id: numericId });
+              }
+              
+              if (!user) {
+                user = await User.findOne({ id: numericId });
+              }
+            }
+          } catch (err) {
+            console.error('Error trying numeric ID:', err);
+          }
+          
+          if (!user) {
+            console.log(`User not found with any method for ID: ${userIdStr}`);
+            res.status(404).json({ 
+              success: false, 
+              message: 'User not found' 
+            });
+            return;
+          }
         }
       }
     }
+    
+    console.log(`User found: ${user._id}, checking certifications`);
     
     // Ensure certifications array exists
     if (!user.certifications) {

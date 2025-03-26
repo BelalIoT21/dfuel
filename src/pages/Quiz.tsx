@@ -68,8 +68,9 @@ const Quiz = () => {
                 if (linkedMachine) {
                   console.log('Found linked machine:', linkedMachine);
                   setMachine(linkedMachine);
-                  setMachineId(linkedMachine.id || linkedMachine._id);
-                  console.log('Set machine ID to:', linkedMachine.id || linkedMachine._id);
+                  const machineIdStr = String(linkedMachine.id || linkedMachine._id);
+                  setMachineId(machineIdStr);
+                  console.log('Set machine ID to:', machineIdStr);
                 }
               } catch (err) {
                 console.error('Error finding linked machine:', err);
@@ -95,8 +96,9 @@ const Quiz = () => {
           if (machineData && machineData._id) {
             console.log('Retrieved machine data:', machineData);
             setMachine(machineData);
-            setMachineId(machineData.id || machineData._id || id);
-            console.log('Set machine ID to:', machineData.id || machineData._id || id);
+            const machineIdStr = String(machineData.id || machineData._id || id);
+            setMachineId(machineIdStr);
+            console.log('Set machine ID to:', machineIdStr);
 
             // Check if the machine has a linked quiz
             if (machineData.linkedQuizId) {
@@ -174,7 +176,7 @@ const Quiz = () => {
     setScore(finalScore);
     
     // Determine if passed (use quiz passing score if available, otherwise 80%)
-    const passingThreshold = quiz ? quiz.passingScore : 80;
+    const passingThreshold = quiz && quiz.passingScore ? quiz.passingScore : 80;
     const hasPassed = finalScore >= passingThreshold;
     setPassed(hasPassed);
     
@@ -185,7 +187,13 @@ const Quiz = () => {
       console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
       
       try {
-        const success = await addUserCertification(user.id, machineId);
+        // Ensure IDs are strings
+        const userId = String(user.id);
+        const certMachineId = String(machineId);
+        
+        console.log(`Attempting certification with userId=${userId}, machineId=${certMachineId}`);
+        
+        const success = await addUserCertification(userId, certMachineId);
         
         if (success) {
           console.log('Successfully added certification');
@@ -226,22 +234,21 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    // Navigate to the correct machine page, not dashboard
-    const targetId = machineId || (machine && (machine.id || machine._id));
-    
-    if (!targetId) {
-      toast({
-        title: "Navigation Error",
-        description: "Could not determine which machine page to return to",
-        variant: "destructive"
-      });
-      // Navigate to machines page if we can't find the specific machine
-      navigate('/machines');
-      return;
+    // Navigate to the correct machine page
+    if (machine && (machine.id || machine._id)) {
+      // Use the actual machine ID we have saved
+      const targetId = machine.id || machine._id;
+      console.log(`Navigating to machine page for ID: ${targetId}`);
+      navigate(`/machine/${targetId}`);
+    } else if (machineId) {
+      // Use our saved machineId if machine object is not available
+      console.log(`Navigating to machine page for saved machineId: ${machineId}`);
+      navigate(`/machine/${machineId}`);
+    } else {
+      // Fallback to ID from params if nothing else is available
+      console.log(`Fallback navigation to machine page for ID: ${id}`);
+      navigate(`/machine/${id}`);
     }
-    
-    console.log(`Navigating to machine page for ID: ${targetId}`);
-    navigate(`/machine/${targetId}`);
   };
 
   if (loading) {
@@ -305,7 +312,7 @@ const Quiz = () => {
             <QuizResult 
               score={score}
               passed={passed}
-              passingScore={quiz ? quiz.passingScore : 80}
+              passingScore={quiz && quiz.passingScore ? quiz.passingScore : 80}
               onRetake={handleRetakeQuiz}
               onViewMachine={handleViewMachine}
               certificationProcessing={certificationProcessing}
