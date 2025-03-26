@@ -143,7 +143,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       value: isLoading ? '...' : bookingsCount, 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
       change: '',
-      link: '/admin/bookings'
+      link: '/bookings'  // Changed from '/admin/bookings' to '/bookings'
     },
   ];
 
