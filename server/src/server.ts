@@ -26,10 +26,7 @@ connectDB();
 
 const app = express();
 
-// Serve the "images" folder as a static directory
-app.use('/images', express.static(path.join(__dirname, '../images')));
-
-// Also serve the utils/images folder for machine images
+// serve the utils/images folder for machine images
 app.use('/utils/images', express.static(path.join(__dirname, './utils/images')));
 
 // Set up higher limits for request payload size
