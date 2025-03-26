@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -314,7 +313,7 @@ class MongoMachineService {
             description: 'Precision laser cutting machine for detailed work on various materials.', 
             requiresCertification: true,
             difficulty: 'Advanced',
-            imageUrl: '/machines/laser-cutter.jpg'
+            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png'
           },
           { 
             _id: '2', 
@@ -324,7 +323,7 @@ class MongoMachineService {
             description: 'FDM 3D printing for rapid prototyping and model creation.', 
             requiresCertification: true,
             difficulty: 'Intermediate',
-            imageUrl: '/machines/3d-printer.jpg'
+            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png'
           },
           { 
             _id: '3', 
@@ -334,7 +333,7 @@ class MongoMachineService {
             description: 'Carbon fiber 3D printer for high-strength parts.', 
             requiresCertification: true,
             difficulty: 'Advanced',
-            imageUrl: '/machines/carbon-3d.jpg'
+            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
           },
           { 
             _id: '4', 
@@ -370,25 +369,45 @@ class MongoMachineService {
         
         console.log("Successfully seeded default machines to MongoDB");
       } else {
-        console.log(`Found ${count} existing machines in MongoDB, checking names and types...`);
+        console.log(`Found ${count} existing machines in MongoDB, updating images and metadata...`);
         
-        // Make sure machine IDs have the correct names
+        // Update machine data, especially images
         const updates = [
-          { _id: '1', name: 'Laser Cutter', type: 'Laser Cutter' },
-          { _id: '2', name: 'Ultimaker', type: '3D Printer' },
-          { _id: '3', name: 'X1 E Carbon 3D Printer', type: '3D Printer' },
-          { _id: '4', name: 'Bambu Lab X1 E', type: '3D Printer' }
+          { 
+            _id: '1', 
+            name: 'Laser Cutter', 
+            type: 'Laser Cutter',
+            imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png'
+          },
+          { 
+            _id: '2', 
+            name: 'Ultimaker', 
+            type: '3D Printer',
+            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png'
+          },
+          { 
+            _id: '3', 
+            name: 'X1 E Carbon 3D Printer', 
+            type: '3D Printer',
+            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
+          },
+          { 
+            _id: '4', 
+            name: 'Bambu Lab X1 E', 
+            type: '3D Printer'
+          }
         ];
         
         for (const update of updates) {
           await this.machinesCollection.updateOne(
             { _id: update._id },
-            { $set: { name: update.name, type: update.type } },
+            { $set: update },
             { upsert: true }
           );
+          console.log(`Updated machine: ${update.name} (ID: ${update._id})`);
         }
         
-        console.log("Updated machine names and types if needed");
+        console.log("Updated machine images and data");
       }
     } catch (error) {
       console.error("Error seeding default machines to MongoDB:", error);

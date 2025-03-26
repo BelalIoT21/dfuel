@@ -1,8 +1,15 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
 import User from '../models/User';
+
+// Default image mappings for standard machines
+const DEFAULT_MACHINE_IMAGES = {
+  '1': '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png', // Laser Cutter
+  '2': '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png', // Ultimaker
+  '3': '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png', // X1 E Carbon 3D Printer
+  '4': '/machines/bambu-lab.jpg' // Bambu Lab
+};
 
 // Get all machines
 export const getMachines = async (req: Request, res: Response) => {
@@ -240,10 +247,16 @@ export const updateMachine = async (req: Request, res: Response) => {
     
     machine.difficulty = difficulty || machine.difficulty;
     
-    // Only update imageUrl if it's provided and not empty
-    if (imageUrl !== undefined && imageUrl !== "") {
+    // Special handling for imageUrl
+    if (imageUrl && imageUrl !== "") {
+      // User provided an image, use it
       machine.imageUrl = imageUrl;
+    } else if (DEFAULT_MACHINE_IMAGES[id] && (!machine.imageUrl || machine.imageUrl === "")) {
+      // Use default image for standard machines if no image exists
+      machine.imageUrl = DEFAULT_MACHINE_IMAGES[id];
+      console.log(`Applied default image for machine ${id}: ${machine.imageUrl}`);
     }
+    // Otherwise keep the existing image
     
     machine.specifications = specifications !== undefined ? specifications : machine.specifications;
     machine.details = details !== undefined ? details : machine.details;

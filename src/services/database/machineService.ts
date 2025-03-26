@@ -21,6 +21,14 @@ export interface MachineData {
  * Service that handles all machine-related database operations.
  */
 export class MachineDatabaseService extends BaseService {
+  // Define default image mappings for standard machines
+  private defaultImageMap = {
+    '1': '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png', // Laser Cutter
+    '2': '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png', // Ultimaker
+    '3': '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png', // X1 E Carbon 3D Printer
+    '4': '/machines/bambu-lab.jpg' // Bambu Lab
+  };
+
   async getMachineStatus(machineId: string): Promise<string> {
     try {
       const response = await apiService.getMachineStatus(machineId);
@@ -59,6 +67,12 @@ export class MachineDatabaseService extends BaseService {
 
   async updateMachine(machineId: string, machineData: Partial<MachineData>): Promise<any> {
     try {
+      // For standard machines (1-4), ensure we use the correct image if none is provided
+      if (['1', '2', '3', '4'].includes(machineId) && (!machineData.imageUrl || machineData.imageUrl === '')) {
+        console.log(`Using default image for machine ${machineId}`);
+        machineData.imageUrl = this.defaultImageMap[machineId];
+      }
+      
       console.log(`Updating machine ${machineId} with data:`, machineData);
       const response = await apiService.request(`machines/${machineId}`, 'PUT', machineData, true);
       return response.data;
