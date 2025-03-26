@@ -131,7 +131,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.addCertification(userId, certificationId);
       
       if (success) {
-        // Refresh certifications instead of manually updating state
+        // Add the certification to local state immediately for UI responsiveness
+        setUserCertifications(prev => {
+          if (!prev.includes(certificationId)) {
+            return [...prev, certificationId];
+          }
+          return prev;
+        });
+        
+        // Also refresh to ensure we have the latest state from the server
         await refreshCertifications();
         onCertificationAdded();
         
@@ -170,7 +178,10 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.removeCertification(userId, certificationId);
       
       if (success) {
-        // Refresh certifications instead of manually updating state
+        // Remove the certification from local state immediately for UI responsiveness
+        setUserCertifications(prev => prev.filter(id => id !== certificationId));
+        
+        // Also refresh to ensure we have the latest state from the server
         await refreshCertifications();
         onCertificationAdded();
         
@@ -209,7 +220,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       const success = await certificationDatabaseService.clearUserCertifications(userId);
       
       if (success) {
-        // Refresh certifications instead of manually updating state
+        // Clear certifications in local state immediately for UI responsiveness
         setUserCertifications([]);
         onCertificationAdded();
         
