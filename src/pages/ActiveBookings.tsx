@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,10 @@ const ActiveBookings = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("ActiveBookings component mounted");
+    
     if (!user) {
+      console.log("No user found, redirecting to login");
       toast({
         title: "Authentication Required",
         description: "Please log in to view your bookings",

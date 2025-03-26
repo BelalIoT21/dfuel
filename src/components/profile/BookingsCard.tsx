@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -123,7 +122,12 @@ const BookingsCard = () => {
 
   const handleViewAllBookings = () => {
     console.log("Navigating to bookings page");
-    navigate('/bookings');
+    try {
+      navigate('/bookings', { replace: false });
+    } catch (err) {
+      console.error("Navigation error:", err);
+      window.location.href = '/bookings';
+    }
   };
 
   const handleViewBookingDetails = (booking) => {
@@ -471,3 +475,4 @@ const BookingsCard = () => {
 };
 
 export default BookingsCard;
+

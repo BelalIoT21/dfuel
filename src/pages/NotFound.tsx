@@ -17,6 +17,10 @@ const NotFound = () => {
     if (user) {
       if (location.pathname.startsWith('/admin') && user.isAdmin) {
         setRedirectPath('/admin');
+      } else if (location.pathname === '/bookings' || location.pathname.startsWith('/booking/')) {
+        // If trying to access bookings, redirect to home page
+        setRedirectPath('/home');
+        console.log("Redirecting from bookings to home page");
       } else if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
