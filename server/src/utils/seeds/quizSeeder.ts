@@ -147,7 +147,7 @@ export async function seedAllQuizzes() {
         title: 'X1 E Carbon 3D Printer Certification Quiz',
         description: 'Test your knowledge of carbon fiber 3D printing',
         category: 'Equipment',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
         questions: [
           {
             question: 'What type of materials can the X1 E Carbon 3D Printer use?',
@@ -215,7 +215,7 @@ export async function seedAllQuizzes() {
         title: 'Bambu Lab 3D Printer Certification Quiz',
         description: 'Test your knowledge about Bambu Lab printer operation',
         category: 'Equipment',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
         questions: [
           {
             question: 'What is a key feature of the Bambu Lab 3D printer?',

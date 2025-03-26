@@ -209,7 +209,7 @@ export async function seedAllCourses() {
         description: 'Advanced training for carbon fiber composite printing',
         category: 'Equipment',
         content: x1CarbonCourseContent,
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
         relatedMachineIds: ['3'],
         quizId: '3',
         difficulty: 'Advanced'
@@ -220,7 +220,7 @@ export async function seedAllCourses() {
         description: 'Learn to use the Bambu Lab printer for high-quality prints',
         category: 'Equipment',
         content: bambuLabCourseContent,
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
         relatedMachineIds: ['4'],
         quizId: '4',
         difficulty: 'Intermediate'
