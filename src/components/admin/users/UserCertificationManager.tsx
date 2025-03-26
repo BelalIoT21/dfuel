@@ -239,6 +239,36 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       setIsClearing(false);
     }
   };
+  
+  // Compare two arrays of certification IDs (handling both string and non-string types)
+  const certificationArraysMatch = (arr1: any[], arr2: any[]): boolean => {
+    const normalized1 = arr1.map(item => item?.toString() || '').sort();
+    const normalized2 = arr2.map(item => item?.toString() || '').sort();
+    
+    if (normalized1.length !== normalized2.length) return false;
+    
+    for (let i = 0; i < normalized1.length; i++) {
+      if (normalized1[i] !== normalized2[i]) return false;
+    }
+    
+    return true;
+  };
+  
+  // Check if a certification is already added for this user
+  const isCertificationAdded = (certId: string): boolean => {
+    if (!certId) return false;
+    
+    // First check our local state
+    const inLocalState = userCertifications.some(id => id.toString() === certId.toString());
+    if (inLocalState) return true;
+    
+    // Then check user object directly (as a fallback)
+    if (user && user.certifications && Array.isArray(user.certifications)) {
+      return user.certifications.some((id: any) => id?.toString() === certId.toString());
+    }
+    
+    return false;
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -264,7 +294,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
             ) : (
               <div className="grid grid-cols-1 gap-2">
                 {availableMachines.map(machine => {
-                  const isCertified = userCertifications.includes(machine.id);
+                  const isCertified = isCertificationAdded(machine.id);
                   return (
                     <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
                       <span>{machine.name}</span>
