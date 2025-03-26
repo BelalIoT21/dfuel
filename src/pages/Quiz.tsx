@@ -20,126 +20,6 @@ interface Question {
   explanation?: string;
 }
 
-const defaultSafetyQuestions: Question[] = [
-  {
-    id: 1,
-    question: "What should you always wear when operating machinery?",
-    options: [
-      "Jewelry and loose clothing",
-      "Appropriate Personal Protective Equipment (PPE)",
-      "Headphones",
-      "Nothing special is required"
-    ],
-    correctAnswer: 1
-  },
-  {
-    id: 2,
-    text: "What should you do before operating a machine?",
-    options: [
-      "Check your email",
-      "Have a snack",
-      "Ensure you are certified and the machine is in working order",
-      "Call a friend"
-    ],
-    correctAnswer: 2
-  },
-  {
-    id: 3,
-    text: "What should you do if you notice a machine is malfunctioning?",
-    options: [
-      "Try to fix it yourself",
-      "Ignore it and continue working",
-      "Use it carefully",
-      "Report it immediately and do not use it"
-    ],
-    correctAnswer: 3
-  },
-  {
-    id: 4,
-    text: "Where should food and drinks be kept?",
-    options: [
-      "Next to the machine while working",
-      "Away from machine work areas",
-      "Anywhere convenient",
-      "On top of electronic equipment"
-    ],
-    correctAnswer: 1
-  },
-  {
-    id: 5,
-    text: "What should you do after finishing with a machine?",
-    options: [
-      "Leave it as is for the next person",
-      "Turn it off only if it's making noise",
-      "Clean up, return tools, and follow proper shutdown procedures",
-      "Lock the room"
-    ],
-    correctAnswer: 2
-  }
-];
-
-const generateMachineQuestions = (machine: any): Question[] => {
-  const machineName = machine.name || 'this machine';
-  
-  return [
-    {
-      id: 1,
-      question: `What should you always do before operating the ${machineName}?`,
-      options: [
-        "Check your phone",
-        "Ensure the work area is clean and the machine is in working order",
-        "Play music",
-        "Nothing special is required"
-      ],
-      correctAnswer: 1
-    },
-    {
-      id: 2,
-      text: `When using the ${machineName}, what PPE is typically required?`,
-      options: [
-        "No PPE is necessary",
-        "Only gloves",
-        "Safety glasses at minimum, and other PPE as specified",
-        "Headphones"
-      ],
-      correctAnswer: 2
-    },
-    {
-      id: 3,
-      text: "What should you do if the machine makes an unusual noise?",
-      options: [
-        "Increase the speed to overcome the noise",
-        "Ignore it if the machine still works",
-        "Stop immediately, turn off the machine, and report the issue",
-        "Hit the machine gently to fix it"
-      ],
-      correctAnswer: 2
-    },
-    {
-      id: 4,
-      text: "When is it appropriate to leave a machine running unattended?",
-      options: [
-        "When you need to go to lunch",
-        "When you need to use the bathroom",
-        "When another person is nearby",
-        "Never leave a machine running unattended"
-      ],
-      correctAnswer: 3
-    },
-    {
-      id: 5,
-      text: `What is the proper procedure when you've finished using the ${machineName}?`,
-      options: [
-        "Turn it off and leave immediately",
-        "Clean the machine, return tools, and follow shutdown procedures",
-        "Let the next user deal with cleanup",
-        "Just log out of your account"
-      ],
-      correctAnswer: 1
-    }
-  ];
-};
-
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -164,13 +44,30 @@ const Quiz = () => {
         setLoading(true);
         setError(null);
         
-        console.log(`Fetching quiz data for machine ID: ${id}`);
+        console.log(`Fetching quiz data for ID: ${id}`);
         
-        // First, get the machine
+        // Check if the ID is for a quiz directly
+        try {
+          const quizData = await quizDatabaseService.getQuizById(id);
+          
+          if (quizData && quizData.questions && quizData.questions.length > 0) {
+            console.log('Retrieved quiz data directly:', quizData);
+            setQuiz(quizData);
+            setQuestions(quizData.questions);
+            setAnswers(new Array(quizData.questions.length).fill(-1));
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.log('Not a direct quiz ID, trying machine lookup');
+          // Continue with machine lookup
+        }
+        
+        // If not a direct quiz ID, try to get the machine and its linked quiz
         const machineData = await machineService.getMachineById(id);
         
         if (!machineData) {
-          console.error(`Machine with ID ${id} not found`);
+          console.error(`Machine or quiz with ID ${id} not found`);
           setError('Quiz not found');
           setLoading(false);
           return;
@@ -193,25 +90,17 @@ const Quiz = () => {
               setLoading(false);
               return;
             } else {
-              console.log('Linked quiz has no questions, falling back to generated questions');
+              console.log('Linked quiz has no questions or could not be loaded');
             }
           } catch (err) {
             console.error('Error fetching linked quiz:', err);
-            // Continue with generated questions if there's an error
           }
-        }
-        
-        // Generate default questions based on machine type if no linked quiz
-        if (id === '6') {
-          // Safety course
-          setQuestions(defaultSafetyQuestions);
         } else {
-          // Regular machine quiz
-          setQuestions(generateMachineQuestions(machineData));
+          console.log('Machine has no linked quiz ID');
         }
         
-        // Initialize answers array
-        setAnswers(new Array(5).fill(-1));
+        // Set error if we couldn't load any quiz
+        setError('No quiz available for this machine or ID');
       } catch (err) {
         console.error('Error fetching quiz data:', err);
         setError('Failed to load quiz');
@@ -260,13 +149,13 @@ const Quiz = () => {
     setPassed(hasPassed);
     
     // If passed, grant certification
-    if (hasPassed && user && id) {
-      certificationService.addCertification(user.id, id)
+    if (hasPassed && user && machine && machine.id) {
+      certificationService.addCertification(user.id, machine.id)
         .then(success => {
           if (success) {
-            console.log(`Certification added for user ${user.id} and machine ${id}`);
+            console.log(`Certification added for user ${user.id} and machine ${machine.id}`);
           } else {
-            console.error(`Failed to add certification for user ${user.id} and machine ${id}`);
+            console.error(`Failed to add certification for user ${user.id} and machine ${machine.id}`);
           }
         })
         .catch(error => {
@@ -285,9 +174,9 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    if (!id) return;
+    if (!machine) return;
     
-    navigate(`/machine/${id}`);
+    navigate(`/machine/${machine.id || machine._id}`);
   };
 
   if (loading) {
@@ -305,6 +194,21 @@ const Quiz = () => {
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
           <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => navigate('/home')}>
+            Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If we have no questions to display, show an error
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">No Questions Available</h1>
+          <p className="text-gray-600 mb-4">This quiz has no questions configured.</p>
           <Button onClick={() => navigate('/home')}>
             Return to Home
           </Button>
