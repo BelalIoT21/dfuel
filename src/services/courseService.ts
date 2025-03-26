@@ -29,12 +29,21 @@ class CourseService {
       console.log(`Updating course ${courseId} image:`, imageUrl ? "New image" : "Removing image");
       
       // Check if imageUrl is too large
-      if (imageUrl && imageUrl.length > 5000000) { // Increased threshold
+      if (imageUrl && imageUrl.length > 10000000) { // Increased threshold further
         console.warn("Image is very large, processing may take longer");
+        
+        // For extremely large images, let the request go through but warn about it
+        console.log("Processing large image, this may take some time");
       }
       
       const data = imageUrl === null ? { imageUrl: null } : { imageUrl };
       const response = await apiService.put(`/courses/${courseId}`, data);
+      
+      if (response.error) {
+        console.error(`Error updating course image: ${response.error}`);
+        return null;
+      }
+      
       return response.data;
     } catch (error) {
       console.error(`Error updating course ${courseId} image:`, error);

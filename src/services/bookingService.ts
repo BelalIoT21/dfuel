@@ -1,6 +1,7 @@
 
 import { apiService } from './apiService';
 import { machineService } from './machineService';
+import { toast } from '@/components/ui/use-toast';
 
 class BookingService {
   async getAllBookings() {
@@ -98,6 +99,25 @@ class BookingService {
       return true;
     } catch (error) {
       console.error('Error cancelling booking:', error);
+      return false;
+    }
+  }
+  
+  async deleteBooking(bookingId: string) {
+    try {
+      console.log(`Deleting booking ${bookingId}`);
+      // Try the API's delete endpoint
+      const response = await apiService.delete(`bookings/${bookingId}`);
+      
+      if (response.error) {
+        console.error('Error deleting booking:', response.error);
+        // Try cancellation as fallback
+        return this.cancelBooking(bookingId);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting booking:', error);
       return false;
     }
   }

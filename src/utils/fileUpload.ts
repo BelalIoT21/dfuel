@@ -49,8 +49,8 @@ export const VIDEO_TYPES = [
 ];
 
 // Maximum file sizes - increased limits further
-export const MAX_IMAGE_SIZE_MB = 15; // Increased from 10MB to 15MB
-export const MAX_VIDEO_SIZE_MB = 150; // Increased from 100MB to 150MB
+export const MAX_IMAGE_SIZE_MB = 25; // Increased from 15MB to 25MB
+export const MAX_VIDEO_SIZE_MB = 200; // Increased from 150MB to 200MB
 
 // Function to compress an image if needed
 export const compressImageIfNeeded = async (dataUrl: string, maxSizeMB: number = MAX_IMAGE_SIZE_MB): Promise<string> => {

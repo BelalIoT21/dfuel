@@ -6,8 +6,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
+import { bookingDatabaseService } from '@/services/database/bookingService';
 import { machineService } from '@/services/machineService';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import BookingsList from './BookingsList';
 
 const BookingsCard = () => {
@@ -79,24 +80,24 @@ const BookingsCard = () => {
         return;
       }
       
-      const success = await bookingService.cancelBooking(bookingId);
+      const success = await bookingDatabaseService.deleteBooking(bookingId);
       
       if (success) {
         toast({
           title: "Success",
-          description: "Booking cancelled successfully"
+          description: "Booking deleted successfully"
         });
         // Remove the booking from state
         setBookings(bookings.filter(b => (b.id || b._id) !== bookingId));
       } else {
         toast({
           title: "Error",
-          description: "Failed to cancel booking",
+          description: "Failed to delete booking",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error("Error cancelling booking:", error);
+      console.error("Error deleting booking:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",

@@ -91,6 +91,7 @@ export class BookingDatabaseService extends BaseService {
   async deleteBooking(bookingId: string): Promise<boolean> {
     console.log(`Attempting to delete booking ${bookingId}`);
     try {
+      // First try API's delete endpoint
       const response = await apiService.delete(`bookings/${bookingId}`);
       
       if (response.data && response.data.success) {
@@ -98,8 +99,18 @@ export class BookingDatabaseService extends BaseService {
         return true;
       }
       
-      console.error("Failed to delete booking:", response.error);
-      return false;
+      // If that fails, try auth/bookings delete endpoint
+      console.log("First deletion attempt failed, trying auth/bookings endpoint");
+      const authResponse = await apiService.delete(`auth/bookings/${bookingId}`);
+      
+      if (authResponse.data && authResponse.data.success) {
+        console.log("Successfully deleted booking via auth API");
+        return true;
+      }
+      
+      // If both fail, try cancellation as a last resort
+      console.log("Both deletion attempts failed, trying to cancel instead");
+      return this.cancelBooking(bookingId);
     } catch (error) {
       console.error("API error in deleteBooking:", error);
       toast({

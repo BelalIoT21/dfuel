@@ -1,14 +1,19 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, Info, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { machineService } from '@/services/machineService';
 import BookingDetailsDialog from './BookingDetailsDialog';
+import { bookingDatabaseService } from '@/services/database/bookingService';
+import { useToast } from '@/hooks/use-toast';
 
 const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking }) => {
   const [machineStatuses, setMachineStatuses] = useState({});
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [processingDelete, setProcessingDelete] = useState(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Fetch machine statuses for all machines in the bookings
@@ -18,7 +23,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
       const statuses = {};
       for (const booking of bookings) {
         const machineId = getBookingMachineId(booking);
-        if (machineId && !statuses[machineId]) {
+        if (machineId && !statuses[machineId] && typeof machineId === 'string') {
           try {
             const status = await machineService.getMachineStatus(machineId);
             statuses[machineId] = status;
@@ -75,7 +80,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
   };
   
   const getStatusIcon = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'approved':
         return <CheckCircle size={16} className="text-green-600" />;
       case 'rejected':
@@ -126,13 +131,59 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
     setDialogOpen(false);
   };
 
+  const handleDeleteBooking = async (booking) => {
+    try {
+      const bookingId = booking.id || booking._id;
+      
+      if (!bookingId) {
+        toast({
+          title: "Error",
+          description: "Booking ID is missing",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setProcessingDelete(bookingId);
+      
+      // First try database service
+      const success = await bookingDatabaseService.deleteBooking(bookingId);
+      
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Booking deleted successfully"
+        });
+        // Call the parent component's callback to update state
+        onDeleteBooking(booking);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete booking",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting booking:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingDelete(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {bookings.map((booking) => {
         const machineId = getBookingMachineId(booking);
+        const bookingId = booking.id || booking._id;
+        const isProcessing = processingDelete === bookingId;
         
         return (
-          <div key={booking.id || booking._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
+          <div key={bookingId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-purple-100 pb-4 last:border-0 gap-2">
             <div>
               <p className="font-medium text-purple-800">
                 {booking.machineName || getMachineName(machineId)}
@@ -174,10 +225,20 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
                   variant="outline" 
                   size="sm" 
                   className="border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={() => onDeleteBooking(booking)}
+                  onClick={() => handleDeleteBooking(booking)}
+                  disabled={isProcessing}
                 >
-                  <Trash2 size={16} className="mr-1" />
-                  Delete
+                  {isProcessing ? (
+                    <span className="flex items-center">
+                      <Clock size={16} className="mr-1 animate-spin" />
+                      Deleting...
+                    </span>
+                  ) : (
+                    <>
+                      <Trash2 size={16} className="mr-1" />
+                      Delete
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
