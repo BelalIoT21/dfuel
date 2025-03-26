@@ -1,3 +1,4 @@
+
 import { Quiz } from '../../models/Quiz';
 import mongoose from 'mongoose';
 
@@ -143,78 +144,10 @@ export async function seedAllQuizzes() {
       },
       {
         _id: '3',
-        title: 'CNC Router Certification Quiz',
-        description: 'Test your knowledge about CNC router safety and operation',
-        category: 'Equipment',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
-        questions: [
-          {
-            question: 'What personal protective equipment is required when operating a CNC router?',
-            options: [
-              'Only gloves',
-              'Safety glasses only',
-              'Safety glasses, hearing protection, and dust mask',
-              'No protective equipment is necessary'
-            ],
-            correctAnswer: 2,
-            explanation: 'Safety glasses protect from debris, hearing protection from noise, and a dust mask from particulates.'
-          },
-          {
-            question: 'How should material be secured to the CNC router bed?',
-            options: [
-              'It doesn\'t need to be secured',
-              'Hold it by hand during cutting',
-              'Using appropriate clamps or vacuum hold-down',
-              'With double-sided tape only'
-            ],
-            correctAnswer: 2,
-            explanation: 'Material must be securely clamped to prevent movement during cutting.'
-          },
-          {
-            question: 'What should you do if you hear unusual noises during CNC operation?',
-            options: [
-              'Ignore it and continue',
-              'Immediately press the emergency stop button',
-              'Turn up the speed to finish faster',
-              'Wait until the job is done to check'
-            ],
-            correctAnswer: 1,
-            explanation: 'Unusual noises may indicate a problem that could damage the machine or material or cause injury.'
-          },
-          {
-            question: 'What is the proper procedure when a CNC job is complete?',
-            options: [
-              'Immediately remove the material while the machine is still running',
-              'Wait for the spindle to stop completely before approaching',
-              'Turn off the main power immediately',
-              'Leave everything as is for the next person'
-            ],
-            correctAnswer: 1,
-            explanation: 'Always wait for moving parts to come to a complete stop before approaching the machine.'
-          },
-          {
-            question: 'What should you check before starting a CNC router job?',
-            options: [
-              'Only verify the power is on',
-              'Just make sure your design file is loaded',
-              'Ensure proper tool installation, material securing, and that the cutting path is clear of obstructions',
-              'Check that the dust collection is turned off'
-            ],
-            correctAnswer: 2,
-            explanation: 'A thorough check of the setup helps ensure safe and successful operation.'
-          }
-        ],
-        passingScore: 85,
-        relatedMachineIds: ['3'],
-        relatedCourseId: '3',
-        difficulty: 'Advanced'
-      },
-      {
-        _id: '4',
         title: 'X1 E Carbon 3D Printer Certification Quiz',
         description: 'Test your knowledge of carbon fiber 3D printing',
         category: 'Equipment',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
         questions: [
           {
             question: 'What type of materials can the X1 E Carbon 3D Printer use?',
@@ -273,9 +206,77 @@ export async function seedAllQuizzes() {
           }
         ],
         passingScore: 80,
+        relatedMachineIds: ['3'],
+        relatedCourseId: '3',
+        difficulty: 'Advanced'
+      },
+      {
+        _id: '4',
+        title: 'Bambu Lab 3D Printer Certification Quiz',
+        description: 'Test your knowledge about Bambu Lab printer operation',
+        category: 'Equipment',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
+        questions: [
+          {
+            question: 'What is a key feature of the Bambu Lab 3D printer?',
+            options: [
+              'Manual bed leveling only',
+              'Single material printing only',
+              'Automatic bed leveling and multi-material capability',
+              'No temperature control'
+            ],
+            correctAnswer: 2,
+            explanation: 'The Bambu Lab printer features automatic bed leveling and can print with multiple materials.'
+          },
+          {
+            question: 'What software is recommended for preparing prints for Bambu Lab printers?',
+            options: [
+              'Microsoft Word',
+              'Bambu Studio',
+              'Photoshop',
+              'Excel'
+            ],
+            correctAnswer: 1,
+            explanation: 'Bambu Studio is the dedicated software for preparing models for Bambu Lab printers.'
+          },
+          {
+            question: 'What is a unique monitoring feature of Bambu Lab printers?',
+            options: [
+              'Manual check only',
+              'AI camera monitoring system',
+              'No monitoring options',
+              'Sound detection'
+            ],
+            correctAnswer: 1,
+            explanation: 'Bambu Lab printers include an AI camera system that monitors print progress and can detect issues.'
+          },
+          {
+            question: 'What should you do before starting a print on the Bambu Lab printer?',
+            options: [
+              'Nothing, just start printing',
+              'Apply glue stick to the entire build plate',
+              'Ensure the build plate is clean and the filament is properly loaded',
+              'Remove the build plate completely'
+            ],
+            correctAnswer: 2,
+            explanation: 'Always ensure the build plate is clean and that filament is properly loaded before starting a print.'
+          },
+          {
+            question: 'What is a benefit of using the Bambu Lab ecosystem?',
+            options: [
+              'It only works with one type of material',
+              'It requires manual calibration for every print',
+              'It integrates cloud connectivity and remote monitoring',
+              'It can only print very small objects'
+            ],
+            correctAnswer: 2,
+            explanation: 'The Bambu Lab ecosystem offers integrated cloud connectivity and remote monitoring capabilities.'
+          }
+        ],
+        passingScore: 80,
         relatedMachineIds: ['4'],
         relatedCourseId: '4',
-        difficulty: 'Advanced'
+        difficulty: 'Intermediate'
       },
       {
         _id: '5',

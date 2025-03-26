@@ -1,3 +1,4 @@
+
 import { Course } from '../../models/Course';
 import mongoose from 'mongoose';
 
@@ -120,34 +121,6 @@ This course teaches you how to use the Ultimaker 3D printer effectively.
 5. Print not sticking to the build plate
 `;
 
-const cncRouterCourseContent = `
-# CNC Router Course
-
-## Introduction
-This course covers the safe and effective use of the CNC router.
-
-## Safety First
-1. Always wear proper PPE (eye protection, hearing protection, dust mask)
-2. Never wear loose clothing, jewelry, or gloves around the machine
-3. Keep hands away from the cutting area
-4. Ensure material is properly secured
-5. Know the location of emergency stops
-
-## Machine Setup
-1. Mounting your material
-2. Tool selection and installation
-3. Setting work coordinates
-4. Setting up your CAM program
-5. Verifying your tool paths
-
-## Operation
-1. Starting the machine
-2. Monitoring the cut
-3. Emergency procedures
-4. Completing the job
-5. Machine shutdown
-`;
-
 const x1CarbonCourseContent = `
 # X1 E Carbon 3D Printer Course
 
@@ -173,6 +146,34 @@ This course covers the operation of the X1 E Carbon 3D printer for advanced comp
 3. Part finishing techniques
 4. Strength testing considerations
 5. Disposal of waste materials
+`;
+
+const bambuLabCourseContent = `
+# Bambu Lab 3D Printer Course
+
+## Introduction
+This course covers the operation of the Bambu Lab 3D printer for efficient and high-quality printing.
+
+## Printer Features
+1. Auto bed leveling system
+2. Multi-material capability
+3. High-speed printing technology
+4. AI camera monitoring
+5. Cloud connectivity
+
+## Print Setup
+1. Using Bambu Studio software
+2. Material selection and profiles
+3. Support generation
+4. Print parameter optimization
+5. Remote monitoring setup
+
+## Advanced Techniques
+1. Multi-color printing
+2. Material combinations
+3. Time-lapse creation
+4. Print quality troubleshooting
+5. Post-processing techniques
 `;
 
 // Function to seed all courses
@@ -204,10 +205,10 @@ export async function seedAllCourses() {
       },
       {
         _id: '3',
-        title: 'CNC Router Basics',
-        description: 'Learn the fundamentals of CNC routing for precision cutting',
+        title: 'X1 E Carbon 3D Printer',
+        description: 'Advanced training for carbon fiber composite printing',
         category: 'Equipment',
-        content: cncRouterCourseContent,
+        content: x1CarbonCourseContent,
         imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
         relatedMachineIds: ['3'],
         quizId: '3',
@@ -215,14 +216,14 @@ export async function seedAllCourses() {
       },
       {
         _id: '4',
-        title: 'X1 E Carbon 3D Printer',
-        description: 'Advanced training for carbon fiber composite printing',
+        title: 'Bambu Lab 3D Printer',
+        description: 'Learn to use the Bambu Lab printer for high-quality prints',
         category: 'Equipment',
-        content: x1CarbonCourseContent,
+        content: bambuLabCourseContent,
         imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
         relatedMachineIds: ['4'],
         quizId: '4',
-        difficulty: 'Advanced'
+        difficulty: 'Intermediate'
       },
       {
         _id: '5',
