@@ -14,8 +14,8 @@ export interface MachineTemplate {
   imageUrl: string;
   bookedTimeSlots?: any[];
   specifications?: string;
-  linkedCourseId?: string;
-  linkedQuizId?: string;
+  linkedCourseId: string;  // Changed to required
+  linkedQuizId: string;    // Changed to required
   maintenanceNote?: string;
 }
 
@@ -55,7 +55,7 @@ export async function updateMachineImages() {
 
 // Function to seed missing machines with proper type definition
 export async function seedMissingMachines(missingIds: string[]): Promise<MachineTemplate[]> {
-  // Define machine templates with the new image URLs
+  // Define machine templates with the new image URLs and ensure all have course and quiz IDs
   const machineTemplates: Record<string, MachineTemplate> = {
     '1': {
       _id: '1',
@@ -66,7 +66,9 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       requiresCertification: true,
       difficulty: 'Advanced',
       imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-      bookedTimeSlots: []
+      bookedTimeSlots: [],
+      linkedCourseId: '1',  // Added course ID
+      linkedQuizId: '1'     // Added quiz ID
     },
     '2': {
       _id: '2',
@@ -77,7 +79,9 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       requiresCertification: true,
       difficulty: 'Intermediate',
       imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
-      bookedTimeSlots: []
+      bookedTimeSlots: [],
+      linkedCourseId: '2',  // Added course ID
+      linkedQuizId: '2'     // Added quiz ID
     },
     '3': {
       _id: '3',
@@ -88,7 +92,9 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       requiresCertification: true,
       difficulty: 'Advanced',
       imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
-      bookedTimeSlots: []
+      bookedTimeSlots: [],
+      linkedCourseId: '3',  // Added course ID
+      linkedQuizId: '3'     // Added quiz ID
     },
     '4': {
       _id: '4',
@@ -100,8 +106,8 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       difficulty: 'Intermediate',
       imageUrl: '/machines/bambu-lab.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS, PC',
-      linkedCourseId: '4',
-      linkedQuizId: '4'
+      linkedCourseId: '4',  // Added course ID
+      linkedQuizId: '4'     // Added quiz ID
     },
     '5': {
       _id: '5',
@@ -112,7 +118,9 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       requiresCertification: false,
       difficulty: 'Basic',
       imageUrl: '/machines/safety-cabinet.jpg',
-      specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours'
+      specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
+      linkedCourseId: '5',  // Added course ID
+      linkedQuizId: '5'     // Added quiz ID
     },
     '6': {
       _id: '6',
@@ -123,7 +131,9 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       requiresCertification: false,
       difficulty: 'Basic',
       imageUrl: '/machines/safety-course.jpg',
-      specifications: 'Duration: 1 hour, Required for all makerspace users'
+      specifications: 'Duration: 1 hour, Required for all makerspace users',
+      linkedCourseId: '6',  // Added course ID
+      linkedQuizId: '6'     // Added quiz ID
     },
   };
 
@@ -178,6 +188,8 @@ export async function seedAllMachines() {
       difficulty: 'Intermediate',
       imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
       specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
+      linkedCourseId: '1',  // Added course ID
+      linkedQuizId: '1'     // Added quiz ID
     },
     {
       _id: '2',
@@ -189,6 +201,8 @@ export async function seedAllMachines() {
       difficulty: 'Intermediate',
       imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
       specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
+      linkedCourseId: '2',  // Added course ID
+      linkedQuizId: '2'     // Added quiz ID
     },
     {
       _id: '3',
@@ -200,6 +214,8 @@ export async function seedAllMachines() {
       difficulty: 'Intermediate',
       imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
+      linkedCourseId: '3',  // Added course ID
+      linkedQuizId: '3'     // Added quiz ID
     },
     {
       _id: '4',
@@ -211,6 +227,8 @@ export async function seedAllMachines() {
       difficulty: 'Advanced',
       imageUrl: '/machines/bambu-lab.jpg',
       specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
+      linkedCourseId: '4',  // Added course ID
+      linkedQuizId: '4'     // Added quiz ID
     },
     {
       _id: '5',
@@ -222,6 +240,8 @@ export async function seedAllMachines() {
       difficulty: 'Basic',
       imageUrl: '/machines/safety-cabinet.jpg',
       specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
+      linkedCourseId: '5',  // Added course ID
+      linkedQuizId: '5'     // Added quiz ID
     },
     {
       _id: '6',
@@ -233,6 +253,8 @@ export async function seedAllMachines() {
       difficulty: 'Basic',
       imageUrl: '/machines/safety-course.jpg',
       specifications: 'Duration: 1 hour, Required for all makerspace users',
+      linkedCourseId: '6',  // Added course ID
+      linkedQuizId: '6'     // Added quiz ID
     },
   ];
 

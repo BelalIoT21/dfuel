@@ -349,7 +349,7 @@ class MongoMachineService {
       const existingMachineIds = existingMachines.map(m => m._id);
       
       // Define expected machine IDs
-      const expectedMachineIds = ['1', '2', '3', '4'];
+      const expectedMachineIds = ['1', '2', '3', '4', '5', '6']; // Added machines 5 and 6
       
       // Check if any expected machine IDs are missing
       const missingMachineIds = expectedMachineIds.filter(id => !existingMachineIds.includes(id));
@@ -379,7 +379,9 @@ class MongoMachineService {
             description: 'FDM 3D printing for rapid prototyping and model creation.', 
             requiresCertification: true,
             difficulty: 'Intermediate',
-            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png'
+            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
+            linkedCourseId: '2', // Adding course link
+            linkedQuizId: '2'  // Adding quiz link
           },
           { 
             _id: '3', 
@@ -389,7 +391,9 @@ class MongoMachineService {
             description: 'Carbon fiber 3D printer for high-strength parts.', 
             requiresCertification: true,
             difficulty: 'Advanced',
-            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
+            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
+            linkedCourseId: '3', // Adding course link
+            linkedQuizId: '3'  // Adding quiz link
           },
           { 
             _id: '4', 
@@ -399,7 +403,33 @@ class MongoMachineService {
             description: 'Fast and accurate multi-material 3D printer.', 
             requiresCertification: true,
             difficulty: 'Intermediate',
-            imageUrl: '/machines/bambu-lab.jpg'
+            imageUrl: '/machines/bambu-lab.jpg',
+            linkedCourseId: '4', // Adding course link
+            linkedQuizId: '4'  // Adding quiz link
+          },
+          { 
+            _id: '5', 
+            name: 'Safety Cabinet', 
+            type: 'Safety Equipment', 
+            status: 'Available', 
+            description: 'Store hazardous materials safely.', 
+            requiresCertification: true,
+            difficulty: 'Basic',
+            imageUrl: '/machines/safety-cabinet.jpg',
+            linkedCourseId: '5', // Adding course link
+            linkedQuizId: '5'  // Adding quiz link
+          },
+          { 
+            _id: '6', 
+            name: 'Safety Course', 
+            type: 'Certification', 
+            status: 'Available', 
+            description: 'Basic safety training for the makerspace.', 
+            requiresCertification: false,
+            difficulty: 'Basic',
+            imageUrl: '/machines/safety-course.jpg',
+            linkedCourseId: '6', // Adding course link
+            linkedQuizId: '6'  // Adding quiz link
           }
         ];
         
@@ -427,7 +457,7 @@ class MongoMachineService {
       } else {
         console.log(`Found ${count} existing machines in MongoDB, updating images and metadata...`);
         
-        // Update machine data, especially images
+        // Update machine data, especially images and course/quiz links
         const updates = [
           { 
             _id: '1', 
@@ -441,18 +471,38 @@ class MongoMachineService {
             _id: '2', 
             name: 'Ultimaker', 
             type: '3D Printer',
-            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png'
+            imageUrl: '/lovable-uploads/82f38bc9-30e8-4f58-9ad4-93d158cacf88.png',
+            linkedCourseId: '2', // Adding course link
+            linkedQuizId: '2'  // Adding quiz link
           },
           { 
             _id: '3', 
             name: 'X1 E Carbon 3D Printer', 
             type: '3D Printer',
-            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
+            imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png',
+            linkedCourseId: '3', // Adding course link
+            linkedQuizId: '3'  // Adding quiz link
           },
           { 
             _id: '4', 
             name: 'Bambu Lab X1 E', 
-            type: '3D Printer'
+            type: '3D Printer',
+            linkedCourseId: '4', // Adding course link
+            linkedQuizId: '4'  // Adding quiz link
+          },
+          { 
+            _id: '5', 
+            name: 'Safety Cabinet', 
+            type: 'Safety Equipment',
+            linkedCourseId: '5', // Adding course link
+            linkedQuizId: '5'  // Adding quiz link
+          },
+          { 
+            _id: '6', 
+            name: 'Safety Course', 
+            type: 'Certification',
+            linkedCourseId: '6', // Adding course link
+            linkedQuizId: '6'  // Adding quiz link
           }
         ];
         

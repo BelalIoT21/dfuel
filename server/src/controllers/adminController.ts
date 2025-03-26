@@ -1,9 +1,9 @@
-
 import { Request, Response } from 'express';
+import asyncHandler from 'express-async-handler';
 import User from '../models/User';
-import { Booking } from '../models/Booking';
-import { Machine } from '../models/Machine';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { Machine } from '../models/Machine';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -187,3 +187,49 @@ export const seedAdminUser = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Controller to update all machine course/quiz links
+export const updateMachineCourseLinks = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    // Default course and quiz mappings
+    const defaultLinks = {
+      '1': { courseId: '5', quizId: '100' },
+      '2': { courseId: '2', quizId: '2' },
+      '3': { courseId: '3', quizId: '3' },
+      '4': { courseId: '4', quizId: '4' },
+      '5': { courseId: '5', quizId: '5' },
+      '6': { courseId: '6', quizId: '6' }
+    };
+    
+    console.log("Updating all machine course and quiz links...");
+    
+    // Get all machines
+    const machines = await Machine.find();
+    let updatedCount = 0;
+    
+    // Update each machine
+    for (const machine of machines) {
+      const machineId = machine._id.toString();
+      const link = defaultLinks[machineId] || { courseId: machineId, quizId: machineId };
+      
+      if (!machine.linkedCourseId || !machine.linkedQuizId) {
+        machine.linkedCourseId = machine.linkedCourseId || link.courseId;
+        machine.linkedQuizId = machine.linkedQuizId || link.quizId;
+        await machine.save();
+        updatedCount++;
+      }
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      message: `Updated ${updatedCount} machines with course and quiz links`
+    });
+  } catch (error) {
+    console.error('Error updating machine course/quiz links:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update machine links', 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});

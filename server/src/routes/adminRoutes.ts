@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { getDashboardData, updateAdminCredentials, seedAdminUser } from '../controllers/adminController';
+import { getDashboardData, updateAdminCredentials, seedAdminUser, updateMachineCourseLinks } from '../controllers/adminController';
 import { protect, admin } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -13,5 +13,8 @@ router.put('/credentials', protect, admin, updateAdminCredentials);
 
 // Seed admin user (only available during setup)
 router.post('/seed', seedAdminUser);
+
+// Update all machine course/quiz links
+router.post('/update-machine-links', protect, admin, updateMachineCourseLinks);
 
 export default router;

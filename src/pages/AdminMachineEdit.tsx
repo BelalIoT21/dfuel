@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,8 @@ const AdminMachineEdit = () => {
     requiresCertification: false,
     difficulty: 'Beginner',
     imageUrl: '',
+    linkedCourseId: '', // Ensure these fields are initialized
+    linkedQuizId: ''    // Ensure these fields are initialized
   });
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
@@ -87,6 +88,13 @@ const AdminMachineEdit = () => {
           setLoading(false);
         }
       } else {
+        // For new machines, initialize with default course and quiz IDs
+        const defaultId = Math.floor(Math.random() * 1000 + 7).toString(); // Random ID for new machine
+        setFormData(prev => ({
+          ...prev,
+          linkedCourseId: defaultId,
+          linkedQuizId: defaultId
+        }));
         setLoading(false);
       }
     };
