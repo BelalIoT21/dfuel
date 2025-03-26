@@ -21,10 +21,11 @@ const BookMachineButton = ({
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
 
-  const isAvailable = machineStatus === 'available';
+  const isAvailable = machineStatus?.toLowerCase() === 'available';
   const canBook = isCertified && isAvailable;
   
   const handleBooking = () => {
+    console.log(`Navigating to booking page for machine ${machineId}`);
     navigate(`/booking/${machineId}`);
   };
 

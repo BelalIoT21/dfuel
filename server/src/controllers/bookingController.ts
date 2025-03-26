@@ -19,6 +19,9 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   }
   
   try {
+    // Log for debugging
+    console.log(`Creating booking with userId: ${userId}, machineId: ${machineId}, date: ${date}, time: ${time}`);
+    
     // Check if this time slot is already booked
     const bookingDate = new Date(date);
     const startOfDay = new Date(bookingDate);
@@ -27,8 +30,11 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     const endOfDay = new Date(bookingDate);
     endOfDay.setHours(23, 59, 59, 999);
     
+    // Convert machineId to string to ensure consistent comparison
+    const machineIdStr = String(machineId);
+    
     const existingBooking = await Booking.findOne({
-      machine: machineId,
+      machine: machineIdStr,
       date: {
         $gte: startOfDay,
         $lt: endOfDay
@@ -38,23 +44,33 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     });
     
     if (existingBooking) {
+      console.log(`Time slot already booked: Machine ${machineIdStr}, Date: ${date}, Time: ${time}`);
       res.status(400);
       throw new Error('This time slot is already booked');
     }
     
     // Find user and machine
     const user = await User.findById(userId);
-    const machine = await Machine.findById(machineId);
+    const machine = await Machine.findById(machineIdStr);
     
-    if (!user || !machine) {
+    if (!user) {
+      console.log(`User not found: ${userId}`);
       res.status(404);
-      throw new Error('User or machine not found');
+      throw new Error('User not found');
     }
+    
+    if (!machine) {
+      console.log(`Machine not found: ${machineIdStr}`);
+      res.status(404);
+      throw new Error('Machine not found');
+    }
+    
+    console.log(`Creating booking for user ${user.name} and machine ${machine.name}`);
     
     // ALWAYS create booking with 'Pending' status, regardless of user role
     const booking = await Booking.create({
       user: userId,
-      machine: machineId,
+      machine: machineIdStr,
       date: bookingDate,
       time,
       status: 'Pending', // Always set to Pending
@@ -68,7 +84,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     const timeSlotKey = `${date.substring(0, 10)}-${time}`;
     
     await Machine.findByIdAndUpdate(
-      machineId,
+      machineIdStr,
       { $addToSet: { bookedTimeSlots: timeSlotKey } }
     );
     

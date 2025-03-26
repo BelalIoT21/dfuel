@@ -3,14 +3,15 @@ import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip } from 'react-native-paper';
 
-// Define consistent machine data
+// Define consistent machine types
 const MACHINE_TYPES = {
   "1": "Laser Cutter",
   "2": "3D Printer",
   "3": "3D Printer",
   "4": "3D Printer",
   "5": "Safety Equipment",
-  "6": "Certification"
+  "6": "Safety Course"
+  // No need to define future machine IDs as they will be handled dynamically
 };
 
 // Define consistent machine names
@@ -21,6 +22,7 @@ const MACHINE_NAMES = {
   "4": "Bambu Lab X1 E",
   "5": "Safety Cabinet",
   "6": "Safety Course"
+  // No need to define future machine IDs as they will be handled dynamically
 };
 
 const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
@@ -52,8 +54,10 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
 
   // Get the correct machine name and type based on ID
   const machineId = String(machine.id || machine._id);
-  const machineName = MACHINE_NAMES[machineId] || machine.name;
-  const machineType = MACHINE_TYPES[machineId] || machine.type || "Machine";
+  
+  // Prioritize name and type from the machine object, fall back to constants only if needed
+  const machineName = machine.name || MACHINE_NAMES[machineId] || "Unknown Machine";
+  const machineType = machine.type || MACHINE_TYPES[machineId] || "Machine";
   
   // Only display machineType chip if there's an actual value
   const showMachineType = machineType && machineType.trim() !== '';

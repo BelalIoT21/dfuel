@@ -147,6 +147,42 @@ class ApiService {
   async getAllBookings(): Promise<any> {
     return this.request('bookings', 'GET', undefined, true);
   }
+  
+  // Get user bookings
+  async getUserBookings(userId?: string): Promise<any> {
+    return this.request('bookings', 'GET', undefined, true);
+  }
+  
+  // Add booking
+  async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
+    console.log(`API: Adding booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
+    return this.request('bookings', 'POST', { 
+      userId, 
+      machineId, 
+      date, 
+      time 
+    }, true);
+  }
+  
+  // Update booking status
+  async updateBookingStatus(bookingId: string, status: string): Promise<any> {
+    return this.request(`bookings/${bookingId}/status`, 'PUT', { status }, true);
+  }
+  
+  // Cancel booking
+  async cancelBooking(bookingId: string): Promise<any> {
+    return this.request(`bookings/${bookingId}/cancel`, 'PUT', {}, true);
+  }
+  
+  // Add certification
+  async addCertification(userId: string, certificationId: string): Promise<any> {
+    return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);
+  }
+  
+  // Remove certification
+  async removeCertification(userId: string, certificationId: string): Promise<any> {
+    return this.request(`certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
+  }
 
   // Get admin dashboard data
   async getAdminDashboard(): Promise<any> {
