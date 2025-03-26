@@ -21,6 +21,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
+  const [allMachines, setAllMachines] = useState<any[]>([]);
   
   const fetchCertifications = async () => {
     try {
@@ -53,7 +54,8 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
       // Fetch all machines from database
       let databaseMachines: any[] = [];
       try {
-        databaseMachines = await machineService.getMachines();
+        // Use getAllMachines to ensure we get every machine
+        databaseMachines = await machineService.getAllMachines();
         console.log(`Got ${databaseMachines.length} machines from database`);
         
         // Process machines to get names and types
@@ -62,6 +64,9 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           names[id] = machine.name;
           types[id] = machine.type || 'Machine';
         });
+        
+        // Store all machines for reference
+        setAllMachines(databaseMachines);
         
         // Extract machine IDs
         const machineIds = databaseMachines.map(machine => 
@@ -110,12 +115,16 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
                 names[certId] = machine.name;
                 types[certId] = machine.type || 'Machine';
               } else {
-                // If machine not found, mark for cleanup but don't add to display
-                console.log(`Machine ${certId} no longer exists, will be filtered out`);
+                // If machine not found, still add an entry with a default name
+                names[certId] = `Machine ${certId}`;
+                types[certId] = 'Unknown Type';
+                console.log(`Machine ${certId} not found in initial load, added generic name`);
               }
             } catch (error) {
               console.error(`Error fetching machine ${certId}:`, error);
-              // Don't add to names/types - will effectively filter it out
+              // Add a default name to ensure it displays
+              names[certId] = `Machine ${certId}`;
+              types[certId] = 'Unknown Type';
             }
           }
         }
@@ -139,7 +148,15 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
     fetchMachineNames();
   };
 
-  // Filter certifications - only show certifications for machines that exist in the database
+  // Show all machines if user is certified for safety course (ID 6)
+  const hasSafetyCertification = userCertifications.includes('6');
+
+  // Get all certificates to display - show all available machines if user has safety cert
+  const displayCertifications = hasSafetyCertification
+    ? availableMachineIds
+    : userCertifications;
+
+  // Filter certifications to only include valid ones
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
@@ -162,10 +179,7 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   console.log("Available machine IDs:", availableMachineIds);
   console.log("Machine names keys:", Object.keys(machineNames));
 
-  const sortedCertifications = filterCertifications(userCertifications);
-
-  // Check if user has safety certification
-  const hasSafetyCertification = userCertifications.includes('6');
+  const sortedCertifications = filterCertifications(displayCertifications);
 
   return (
     <View style={styles.section}>
@@ -202,14 +216,23 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           style={styles.scrollContainer}
         >
           <List.Section>
-            {sortedCertifications.map((certId) => (
-              <List.Item
-                key={certId}
-                title={machineNames[certId] || `Machine ${certId}`}
-                description={machineTypes[certId] || "Machine"}
-                left={(props) => <List.Icon {...props} icon="certificate" color="#7c3aed" />}
-              />
-            ))}
+            {sortedCertifications.map((machineId) => {
+              const isCertified = userCertifications.includes(machineId);
+              return (
+                <List.Item
+                  key={machineId}
+                  title={machineNames[machineId] || `Machine ${machineId}`}
+                  description={`${machineTypes[machineId] || "Machine"} ${isCertified ? '(Certified)' : '(Not Certified)'}`}
+                  left={(props) => (
+                    <List.Icon 
+                      {...props} 
+                      icon="certificate" 
+                      color={isCertified ? "#7c3aed" : "#9ca3af"} 
+                    />
+                  )}
+                />
+              );
+            })}
           </List.Section>
         </ScrollView>
       ) : (

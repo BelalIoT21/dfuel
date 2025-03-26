@@ -14,6 +14,13 @@ export const AdminHeader = () => {
       <div className="flex flex-col md:flex-row gap-2">
         <Button 
           variant="outline" 
+          onClick={() => navigate('/admin/machines')} 
+          className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full md:w-auto"
+        >
+          Machines
+        </Button>
+        <Button 
+          variant="outline" 
           onClick={() => navigate('/profile')} 
           className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full md:w-auto"
         >

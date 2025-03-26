@@ -61,6 +61,7 @@ const CertificationsCard = () => {
       
       let databaseMachines: any[] = [];
       try {
+        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
       } catch (error) {
@@ -107,7 +108,7 @@ const CertificationsCard = () => {
         }
       }
       
-      // Process machines with certifications
+      // Process machines - important to include ALL machines, not just certified ones
       const processedMachines = databaseMachines.map(machine => {
         const machineId = String(machine.id || machine._id);
         const isCertified = userCertifications.includes(machineId);
@@ -139,6 +140,9 @@ const CertificationsCard = () => {
       setMachineStatuses(statuses);
       setMachines(processedMachines);
       setAvailableMachineIds(processedMachines.map(m => m.id));
+      
+      // Log the machines for debugging
+      console.log("All machines after processing:", processedMachines.map(m => ({ id: m.id, name: m.name })));
     } catch (error) {
       console.error("Error in fetchMachinesAndCertifications:", error);
       toast({
@@ -197,14 +201,15 @@ const CertificationsCard = () => {
   const hasCompletedSafetyCourse = hasSafetyCertification;
   const hasCompletedSafetyCabinet = hasSafetyCabinetCertification;
   
-  // Filter machines to show:
-  // 1. Machines the user is certified for
-  // 2. Safety machine (id 5 and 6) even if not certified
-  const displayMachines = machines.filter(machine => 
-    machine.isCertified || // Show machines user is certified for
-    machine.id === "5" ||  // Always show safety cabinet
-    machine.id === "6"     // Always show safety course
-  );
+  // Modified to show ALL machines if user has completed safety course
+  // This allows users to see machines they're not certified for yet
+  const displayMachines = hasCompletedSafetyCourse
+    ? machines // Show all machines if user has safety certification
+    : machines.filter(machine => 
+        machine.isCertified || // Show machines user is certified for
+        machine.id === "5" ||  // Always show safety cabinet
+        machine.id === "6"     // Always show safety course
+      );
 
   return (
     <Card>

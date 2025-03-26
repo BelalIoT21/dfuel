@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -59,18 +58,15 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log("Fetching available machines for certification");
       
-      // Fetch machines from database
-      const machines = await machineService.getMachines();
+      // Fetch ALL machines from database
+      const machines = await machineService.getAllMachines();
       console.log(`Fetched ${machines.length} machines from database`);
       
       // Add special machines (Safety Cabinet and Safety Course) if they're not in the database
       const specialMachineIds = SPECIAL_MACHINE_IDS.map(id => id.toString());
       
-      // Filter out any machines named "cnc mill"
-      const filteredMachines = machines.filter(machine => {
-        const machineName = machine.name?.toLowerCase();
-        return !machineName || machineName !== "cnc mill";
-      });
+      // Don't filter out any machines - show all of them
+      const filteredMachines = machines;
       
       // Ensure each machine has an ID
       const processedMachines = filteredMachines.map(machine => ({
@@ -93,6 +89,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         }
       }
       
+      console.log("Available machines for certification:", processedMachines.map(m => ({ id: m.id, name: m.name })));
       setAvailableMachines(processedMachines);
     } catch (error) {
       console.error("Error fetching available machines:", error);
