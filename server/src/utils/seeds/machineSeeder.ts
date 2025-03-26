@@ -125,7 +125,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/utils/images/IMG_7775.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
       specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
       linkedCourseId: '5',  // Added course ID
       linkedQuizId: '5'     // Added quiz ID
@@ -138,7 +138,7 @@ export async function seedMissingMachines(missingIds: string[]): Promise<Machine
       status: 'Available',
       requiresCertification: false,
       difficulty: 'Basic',
-      imageUrl: '/utils/images/IMG_7821.jpg',
+      imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
       specifications: 'Duration: 1 hour, Required for all makerspace users',
       linkedCourseId: '6',  // Added course ID
       linkedQuizId: '6'     // Added quiz ID

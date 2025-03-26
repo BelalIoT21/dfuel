@@ -16,7 +16,7 @@ export async function seedSafetyQuizzes() {
         title: 'Safety Cabinet Quiz',
         description: 'Test your knowledge about proper safety cabinet usage',
         category: 'Safety',
-        imageUrl: '/utils/images/IMG_7775.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
         questions: [
           {
             question: 'Where should heavier items be stored in a safety cabinet?',
@@ -93,7 +93,7 @@ export async function seedSafetyQuizzes() {
         title: 'Machine Safety Fundamentals Quiz',
         description: 'Test your knowledge of basic machine safety principles',
         category: 'Safety',
-        imageUrl: '/utils/images/IMG_7821.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
         questions: [
           {
             question: 'What should you do before operating any machine?',

@@ -80,7 +80,7 @@ export async function seedSafetyCourses() {
         description: 'Learn how to properly use and store materials in the safety cabinet',
         category: 'Safety',
         content: safetyCabinetCourseContent,
-        imageUrl: '/utils/images/IMG_7775.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
         relatedMachineIds: ['5'],
         quizId: '5',
         difficulty: 'Basic'
@@ -100,7 +100,7 @@ export async function seedSafetyCourses() {
         description: 'Essential safety training required for all makerspace users',
         category: 'Safety',
         content: machineSafetyCourseContent,
-        imageUrl: '/utils/images/IMG_7821.jpg',
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
         relatedMachineIds: ['6'],
         quizId: '6',
         difficulty: 'Basic'
