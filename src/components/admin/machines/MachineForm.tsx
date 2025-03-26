@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,7 +178,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
     }
   };
 
-  // Fix: Changed onFileSelect to onFileChange to match the FileUpload component API
+  // Simplified image change handler that works consistently with FileUpload component
   const handleImageChange = (dataUrl: string | null) => {
     console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl?.length} bytes]` : 'null');
     if (dataUrl) {
@@ -188,7 +187,35 @@ const MachineForm: React.FC<MachineFormProps> = ({
         ...prev,
         imageUrl: dataUrl
       }));
+    } else {
+      setImagePreview(null);
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: ''
+      }));
     }
+  };
+
+  // Utility function to properly display image URLs
+  const getImageUrl = (url: string) => {
+    if (!url) return null;
+    
+    // For data URLs
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    
+    // For complete URLs
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    // For server paths from API
+    if (url.startsWith('/utils/images')) {
+      return `http://localhost:4000${url}`;
+    }
+    
+    return url;
   };
 
   const getRecommendedCourse = () => {
@@ -395,7 +422,6 @@ const MachineForm: React.FC<MachineFormProps> = ({
                     />
                   </div>
                 )}
-                {/* Fix: Changed onFileSelect to onFileChange to match the FileUpload component API */}
                 <FileUpload 
                   id="image"
                   onFileChange={handleImageChange}

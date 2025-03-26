@@ -8,6 +8,8 @@ interface MachineHeaderProps {
     name: string;
     image?: string;
     imageUrl?: string;
+    id?: string;
+    _id?: string;
   };
   machineStatus: string;
   isCertified: boolean;
@@ -40,12 +42,12 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     }
   };
 
-  // Get the image URL with proper fallbacks
+  // Get the image URL with proper fallbacks - simplified to match CourseForm behavior
   const getImageSource = () => {
     console.log('MachineHeader - Machine:', machine);
     console.log('MachineHeader - Image source:', machine.imageUrl || machine.image || 'none');
     
-    // Check for machine ID to use local images
+    // Check for machine ID to use local images for known machines
     const machineId = machine?.id || machine?._id;
     
     if (machineId) {
@@ -60,33 +62,36 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
       }
     }
     
-    // If we have a valid imageUrl that starts with data:, use it directly
-    if (machine.imageUrl && machine.imageUrl.startsWith('data:')) {
+    // Simply use the imageUrl or image property if it exists
+    if (machine.imageUrl) {
+      // For data URLs and complete URLs
+      if (machine.imageUrl.startsWith('data:') || machine.imageUrl.startsWith('http')) {
+        return { uri: machine.imageUrl };
+      }
+      
+      // For server paths
+      if (machine.imageUrl.startsWith('/utils/images')) {
+        return { uri: `http://localhost:4000${machine.imageUrl}` };
+      }
+      
+      // For any other case, try to use it directly
       return { uri: machine.imageUrl };
     }
     
-    // If we have a valid imageUrl that starts with http, use it directly
-    if (machine.imageUrl && machine.imageUrl.startsWith('http')) {
-      return { uri: machine.imageUrl };
-    }
-    
-    // If we have a server path imageUrl that starts with /utils/images
-    if (machine.imageUrl && machine.imageUrl.startsWith('/utils/images')) {
-      return { uri: `http://localhost:4000${machine.imageUrl}` };
-    }
-    
-    // Same checks for image property
-    if (machine.image && machine.image.startsWith('data:')) {
+    // Same logic for image property as fallback
+    if (machine.image) {
+      // For data URLs and complete URLs
+      if (machine.image.startsWith('data:') || machine.image.startsWith('http')) {
+        return { uri: machine.image };
+      }
+      
+      // For server paths
+      if (machine.image.startsWith('/utils/images')) {
+        return { uri: `http://localhost:4000${machine.image}` };
+      }
+      
+      // For any other case, try to use it directly
       return { uri: machine.image };
-    }
-    
-    if (machine.image && machine.image.startsWith('http')) {
-      return { uri: machine.image };
-    }
-    
-    // If we have a server path image property that starts with /utils/images
-    if (machine.image && machine.image.startsWith('/utils/images')) {
-      return { uri: `http://localhost:4000${machine.image}` };
     }
     
     // Default fallback image
