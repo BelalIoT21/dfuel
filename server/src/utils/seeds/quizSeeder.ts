@@ -170,3 +170,38 @@ export async function seedSafetyQuizzes() {
     return { success: false, error };
   }
 }
+
+// Add a function to debug quiz access issues
+export async function debugQuizAccess(quizId: string) {
+  try {
+    console.log(`Debugging quiz access for ID: ${quizId}`);
+    const quiz = await Quiz.findById(quizId);
+    
+    if (quiz) {
+      console.log(`Quiz found: ${quiz.title} (ID: ${quiz._id})`);
+      console.log(`Quiz has ${quiz.questions?.length || 0} questions`);
+      return true;
+    } else {
+      console.log(`Quiz with ID ${quizId} not found`);
+      
+      // Try to find by string ID if MongoDB ObjectId fails
+      const quizByString = await Quiz.findOne({ _id: quizId });
+      if (quizByString) {
+        console.log(`Quiz found by string ID: ${quizByString.title}`);
+        return true;
+      }
+      
+      console.log(`Checking all quizzes in database...`);
+      const allQuizzes = await Quiz.find();
+      console.log(`Total quizzes in database: ${allQuizzes.length}`);
+      allQuizzes.forEach(q => {
+        console.log(`- Quiz: ${q.title} (ID: ${q._id})`);
+      });
+      
+      return false;
+    }
+  } catch (error) {
+    console.error(`Error debugging quiz access:`, error);
+    return false;
+  }
+}

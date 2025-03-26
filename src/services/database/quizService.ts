@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -26,17 +25,49 @@ export interface QuizData {
  */
 export class QuizDatabaseService extends BaseService {
   async getAllQuizzes(): Promise<any[]> {
-    return this.apiRequest(
+    console.log('Fetching all quizzes from API');
+    const quizzes = await this.apiRequest(
       async () => await apiService.request('quizzes', 'GET', undefined, true),
       'Could not get all quizzes'
     ) || [];
+    
+    console.log(`Retrieved ${quizzes.length} quizzes from API`);
+    return quizzes;
   }
 
   async getQuizById(quizId: string): Promise<any> {
-    return this.apiRequest(
-      async () => await apiService.request(`quizzes/${quizId}`, 'GET', undefined, true),
-      `Could not get quiz ${quizId}`
-    );
+    console.log(`Fetching quiz ${quizId} from API`);
+    try {
+      const quiz = await this.apiRequest(
+        async () => await apiService.request(`quizzes/${quizId}`, 'GET', undefined, true),
+        `Could not get quiz ${quizId}`
+      );
+      
+      if (quiz) {
+        console.log(`Successfully retrieved quiz: ${quiz.title} (ID: ${quiz._id})`);
+        return quiz;
+      } else {
+        console.log(`Quiz ${quizId} not found, trying alternative lookup methods`);
+        
+        // Try getting all quizzes and finding the one with matching ID
+        const allQuizzes = await this.getAllQuizzes();
+        const matchingQuiz = allQuizzes.find(q => 
+          String(q._id) === String(quizId) || 
+          String(q.id) === String(quizId)
+        );
+        
+        if (matchingQuiz) {
+          console.log(`Found quiz in all quizzes list: ${matchingQuiz.title}`);
+          return matchingQuiz;
+        }
+        
+        console.log(`Quiz ${quizId} not found after trying alternative methods`);
+        return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching quiz ${quizId}:`, error);
+      return null;
+    }
   }
 
   async createQuiz(quizData: QuizData): Promise<any> {

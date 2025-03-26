@@ -6,7 +6,9 @@ import mongoose from 'mongoose';
 // Get all quizzes
 export const getQuizzes = async (req: Request, res: Response) => {
   try {
+    console.log('Getting all quizzes');
     const quizzes = await Quiz.find();
+    console.log(`Found ${quizzes.length} quizzes`);
     res.status(200).json(quizzes);
   } catch (error) {
     console.error('Error in getQuizzes:', error);
@@ -18,19 +20,40 @@ export const getQuizzes = async (req: Request, res: Response) => {
 export const getQuizById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log(`Getting quiz by ID: ${id}`);
 
-    // Handle string IDs properly
-    let quiz;
+    // Try different approaches to find the quiz
+    let quiz = null;
+    
+    // First try by MongoDB ObjectId if valid
     if (mongoose.Types.ObjectId.isValid(id)) {
       quiz = await Quiz.findById(id);
-    } else {
+      console.log(`Quiz lookup by ObjectId: ${quiz ? 'Found' : 'Not found'}`);
+    } 
+    
+    // If not found, try by string ID
+    if (!quiz) {
       quiz = await Quiz.findOne({ _id: id });
+      console.log(`Quiz lookup by string ID: ${quiz ? 'Found' : 'Not found'}`);
+    }
+    
+    // If still not found and id is numeric, try other approaches
+    if (!quiz && /^\d+$/.test(id)) {
+      // Try without leading zeros
+      const numericId = String(parseInt(id, 10));
+      if (numericId !== id) {
+        quiz = await Quiz.findOne({ _id: numericId });
+        console.log(`Quiz lookup by numeric ID without leading zeros: ${quiz ? 'Found' : 'Not found'}`);
+      }
     }
 
+    // If no quiz found, return 404
     if (!quiz) {
+      console.log(`Quiz with ID ${id} not found after all lookup attempts`);
       return res.status(404).json({ message: 'Quiz not found' });
     }
 
+    console.log(`Found quiz: ${quiz.title} (ID: ${quiz._id})`);
     res.status(200).json(quiz);
   } catch (error) {
     console.error('Error in getQuizById:', error);
@@ -41,6 +64,7 @@ export const getQuizById = async (req: Request, res: Response) => {
 // Create new quiz
 export const createQuiz = async (req: Request, res: Response) => {
   try {
+    console.log('Creating new quiz:', req.body.title);
     const { title, description, category, imageUrl, questions, passingScore, relatedMachineIds, relatedCourseId, difficulty } = req.body;
 
     // Basic validation
@@ -73,10 +97,10 @@ export const createQuiz = async (req: Request, res: Response) => {
     // Find the highest numeric ID, default to 4 if none found
     const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
     
-    // New ID should be the highest + 1, but never less than 5
-    const newId = String(Math.max(highestId + 1, 5));
+    // New ID should be the highest + 1, but never less than 7 (since 5 and 6 are reserved)
+    const newId = String(Math.max(highestId + 1, 7));
     
-    console.log(`Creating new quiz with ID: ${newId} (enforced minimum of 5)`);
+    console.log(`Creating new quiz with ID: ${newId} (after safety quizzes 5 and 6)`);
 
     const quiz = new Quiz({
       _id: newId,
@@ -92,7 +116,7 @@ export const createQuiz = async (req: Request, res: Response) => {
     });
 
     const savedQuiz = await quiz.save();
-    console.log('Quiz created successfully:', savedQuiz);
+    console.log('Quiz created successfully:', savedQuiz._id);
     res.status(201).json(savedQuiz);
   } catch (error) {
     console.error('Error in createQuiz:', error);

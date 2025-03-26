@@ -39,6 +39,7 @@ const Quiz = () => {
   const [certificationProcessing, setCertificationProcessing] = useState(false);
   const [certificationAdded, setCertificationAdded] = useState(false);
   const [relatedMachineIds, setRelatedMachineIds] = useState<string[]>([]);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   
   const isAdminRoute = location.pathname.includes('/admin') || window.location.pathname.includes('/admin');
 
@@ -50,14 +51,14 @@ const Quiz = () => {
         setLoading(true);
         setError(null);
         
-        console.log(`Fetching quiz data for ID: ${id}`);
+        console.log(`Fetching quiz data for ID: ${id} (Attempt ${loadAttempts + 1})`);
         
         // First try to get the quiz directly by its ID
         try {
           const quizData = await quizDatabaseService.getQuizById(id);
           
           if (quizData && quizData._id) {
-            console.log('Retrieved quiz data directly:', quizData);
+            console.log('Retrieved quiz data directly:', quizData.title);
             setQuiz(quizData);
             
             if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
@@ -79,11 +80,10 @@ const Quiz = () => {
                 );
                 
                 if (linkedMachine) {
-                  console.log('Found linked machine:', linkedMachine);
+                  console.log('Found linked machine:', linkedMachine.name);
                   setMachine(linkedMachine);
                   const machineIdStr = String(linkedMachine.id || linkedMachine._id);
                   setMachineId(machineIdStr);
-                  console.log('Set machine ID to:', machineIdStr);
                 }
               } catch (err) {
                 console.error('Error finding linked machine:', err);
@@ -93,6 +93,11 @@ const Quiz = () => {
               return;
             } else {
               console.log('Quiz found but has no questions');
+              if (isAdminRoute) {
+                setQuestions([]);
+                setLoading(false);
+                return;
+              }
               setError('This quiz has no questions.');
             }
           }
@@ -100,16 +105,53 @@ const Quiz = () => {
           console.log('Error fetching quiz directly:', err);
         }
 
-        // If we can't get the quiz directly, try to get a machine and then its linked quiz
+        // Try getting all quizzes and finding a match
+        try {
+          console.log("Fetching all quizzes to find a match");
+          const allQuizzes = await quizDatabaseService.getAllQuizzes();
+          console.log(`Found ${allQuizzes.length} quizzes total`);
+          
+          const matchingQuiz = allQuizzes.find(q => 
+            String(q._id) === String(id) || 
+            String(q.id) === String(id)
+          );
+          
+          if (matchingQuiz) {
+            console.log('Found matching quiz in all quizzes list:', matchingQuiz.title);
+            setQuiz(matchingQuiz);
+            
+            if (matchingQuiz.relatedMachineIds && matchingQuiz.relatedMachineIds.length > 0) {
+              setRelatedMachineIds(matchingQuiz.relatedMachineIds.map(id => String(id)));
+            }
+            
+            if (matchingQuiz.questions && matchingQuiz.questions.length > 0) {
+              setQuestions(matchingQuiz.questions);
+              setAnswers(new Array(matchingQuiz.questions.length).fill(-1));
+              setLoading(false);
+              return;
+            } else {
+              console.log('Matching quiz has no questions');
+              if (isAdminRoute) {
+                setQuestions([]);
+                setLoading(false);
+                return;
+              }
+              setError('This quiz has no questions.');
+            }
+          }
+        } catch (listErr) {
+          console.error('Error fetching all quizzes:', listErr);
+        }
+
+        // Try to get a machine and then its linked quiz as last resort
         try {
           const machineData = await machineService.getMachineById(id);
           
           if (machineData && (machineData._id || machineData.id)) {
-            console.log('Retrieved machine data:', machineData);
+            console.log('Retrieved machine data:', machineData.name);
             setMachine(machineData);
             const machineIdStr = String(machineData.id || machineData._id || id);
             setMachineId(machineIdStr);
-            console.log('Set machine ID to:', machineIdStr);
 
             if (machineData.linkedQuizId) {
               try {
@@ -117,7 +159,7 @@ const Quiz = () => {
                 const quizData = await quizDatabaseService.getQuizById(machineData.linkedQuizId);
                 
                 if (quizData && quizData.questions && quizData.questions.length > 0) {
-                  console.log('Retrieved linked quiz data:', quizData);
+                  console.log('Retrieved linked quiz data:', quizData.title);
                   setQuiz(quizData);
                   
                   if (quizData.relatedMachineIds && Array.isArray(quizData.relatedMachineIds) && quizData.relatedMachineIds.length > 0) {
@@ -141,42 +183,17 @@ const Quiz = () => {
               console.log('Machine has no linked quiz ID');
               setError('This machine does not have a quiz associated with it.');
             }
-          } else {
-            console.log('Machine not found or incomplete data');
-            setError('Could not find a machine or quiz with this ID.');
           }
         } catch (err) {
           console.error('Error fetching machine:', err);
-          
-          // Last attempt - try to get all quizzes and find the one matching the ID
-          try {
-            const allQuizzes = await quizDatabaseService.getAllQuizzes();
-            const matchingQuiz = allQuizzes.find(q => String(q._id) === String(id) || String(q.id) === String(id));
-            
-            if (matchingQuiz) {
-              console.log('Found quiz in all quizzes list:', matchingQuiz);
-              setQuiz(matchingQuiz);
-              
-              if (matchingQuiz.questions && matchingQuiz.questions.length > 0) {
-                setQuestions(matchingQuiz.questions);
-                setAnswers(new Array(matchingQuiz.questions.length).fill(-1));
-                
-                if (matchingQuiz.relatedMachineIds && matchingQuiz.relatedMachineIds.length > 0) {
-                  setRelatedMachineIds(matchingQuiz.relatedMachineIds.map(id => String(id)));
-                }
-                
-                setLoading(false);
-                return;
-              } else {
-                setError('This quiz has no questions.');
-              }
-            } else {
-              setError('Could not find a machine or quiz with this ID.');
-            }
-          } catch (listErr) {
-            console.error('Error fetching all quizzes:', listErr);
-            setError('Could not find a machine or quiz with this ID.');
-          }
+        }
+        
+        // If we've failed to load the quiz multiple times, try an alternative approach
+        if (loadAttempts < 2) {
+          setLoadAttempts(prev => prev + 1);
+          console.log(`Retrying quiz load with different approach (attempt ${loadAttempts + 1})`);
+        } else {
+          setError('Could not find a quiz with this ID. Please try again or contact an administrator.');
         }
       } catch (err) {
         console.error('Error fetching quiz data:', err);
@@ -187,7 +204,7 @@ const Quiz = () => {
     };
 
     fetchQuizData();
-  }, [id]);
+  }, [id, loadAttempts, isAdminRoute]);
 
   const handleAnswerChange = (questionIndex: number, answerIndex: number) => {
     const newAnswers = [...answers];
@@ -362,7 +379,7 @@ const Quiz = () => {
       <Card className="shadow-lg border-purple-100">
         <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
           <CardTitle className="text-2xl text-purple-800">
-            {quiz ? quiz.title : `${machine?.name} Certification Quiz`}
+            {quiz ? quiz.title : `${machine?.name || 'Quiz'} Certification Quiz`}
           </CardTitle>
         </CardHeader>
         
@@ -385,22 +402,48 @@ const Quiz = () => {
                 </div>
               )}
               
-              {questions.map((question, index) => (
-                <QuizQuestion
-                  key={question.id || index}
-                  question={question}
-                  index={index}
-                  answer={answers[index]}
-                  onAnswerChange={handleAnswerChange}
-                  submitted={false}
-                />
-              ))}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+                  <p className="text-gray-600">Loading quiz questions...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-8">
+                  <p className="text-red-500 mb-4">{error}</p>
+                  <Button onClick={() => setLoadAttempts(prev => prev + 1)}>
+                    Try Again
+                  </Button>
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">This quiz has no questions.</p>
+                  {isAdminRoute && (
+                    <Button 
+                      onClick={() => navigate(`/admin/quizzes/edit/${id}`)}
+                      className="mt-4"
+                    >
+                      Add Questions
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                questions.map((question, index) => (
+                  <QuizQuestion
+                    key={question.id || index}
+                    question={question}
+                    index={index}
+                    answer={answers[index]}
+                    onAnswerChange={handleAnswerChange}
+                    submitted={false}
+                  />
+                ))
+              )}
             </div>
           )}
         </CardContent>
         
         <CardFooter className="flex justify-end gap-3 pt-4 pb-6">
-          {!submitted && (
+          {!submitted && !loading && !error && questions.length > 0 && (
             <Button 
               onClick={handleSubmit}
               disabled={!isQuizComplete()}
