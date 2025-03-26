@@ -122,6 +122,18 @@ export class MachineDatabaseService extends BaseService {
         cleanedData.imageUrl = cleanedData.image;
       }
       
+      // Critical fix for certification requirements - always include the value in the update
+      // Make sure to explicitly check for the property to ensure null values are properly passed
+      if ('requiresCertification' in cleanedData) {
+        // Convert to boolean, regardless of input type
+        if (typeof cleanedData.requiresCertification === 'string') {
+          cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
+        } else {
+          cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
+        }
+        console.log(`Setting requiresCertification to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+      }
+      
       // Fix: Handle courses and quizzes with explicit property checks
       
       // Handle linked course ID with "in" operator to check if property exists
@@ -147,18 +159,6 @@ export class MachineDatabaseService extends BaseService {
         // Don't modify if not provided
       } else if (cleanedData.certificationInstructions === null) {
         cleanedData.certificationInstructions = '';
-      }
-
-      // Explicitly handle requiresCertification as a boolean
-      if ('requiresCertification' in cleanedData) {
-        // Ensure requiresCertification is a boolean, regardless of its input type
-        if (typeof cleanedData.requiresCertification === 'string') {
-          cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
-        } else {
-          // Ensure it's a proper boolean value
-          cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
-        }
-        console.log(`Setting requiresCertification to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);

@@ -38,10 +38,9 @@ const FileUpload = ({
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Display file size for debugging
+    // Display file size for debugging - showing in MB for clarity
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    const fileSizeKB = (file.size / 1024).toFixed(2);
-    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB (${fileSizeKB}KB), type: ${file.type}`);
+    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
     
     // Validate file
     const validationError = validateFile(file, allowedTypes, maxSizeMB);
@@ -60,8 +59,7 @@ const FileUpload = ({
       const dataUrl = await fileToDataUrl(file);
       
       const dataUrlSizeMB = (dataUrl.length / (1024 * 1024)).toFixed(2);
-      const dataUrlSizeKB = (dataUrl.length / 1024).toFixed(2);
-      console.log(`File converted to data URL, size: ${dataUrlSizeMB}MB (${dataUrlSizeKB}KB)`);
+      console.log(`File converted to data URL, size: ${dataUrlSizeMB}MB`);
       
       // Update the preview and notify parent component
       setPreview(dataUrl);

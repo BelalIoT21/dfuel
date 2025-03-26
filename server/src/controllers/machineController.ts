@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -283,6 +282,7 @@ export const updateMachine = async (req: Request, res: Response) => {
     machine.description = description || machine.description;
     
     // Critical fix: Handle requiresCertification correctly, ensuring it's always stored as a boolean
+    // This is a critical part that handles certification changes
     if (requiresCertification !== undefined) {
       if (typeof requiresCertification === 'string') {
         machine.requiresCertification = requiresCertification === 'true';

@@ -255,9 +255,13 @@ class MongoMachineService {
       if (updates.status !== undefined) updateData.status = updates.status;
       
       // Ensure requiresCertification is properly handled - explicitly setting to boolean
-      if (updates.requiresCertification !== undefined) {
+      if ('requiresCertification' in updates) {
         // Convert to explicit boolean to ensure consistent storage
-        updateData.requiresCertification = Boolean(updates.requiresCertification);
+        if (typeof updates.requiresCertification === 'string') {
+          updateData.requiresCertification = updates.requiresCertification === 'true';
+        } else {
+          updateData.requiresCertification = Boolean(updates.requiresCertification);
+        }
         console.log(`Setting requiresCertification to: ${updateData.requiresCertification} (${typeof updateData.requiresCertification})`);
       }
       
@@ -449,3 +453,4 @@ class MongoMachineService {
 // Create a singleton instance
 const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;
+

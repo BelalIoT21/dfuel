@@ -59,9 +59,9 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes - 5MB for images
-export const MAX_IMAGE_SIZE_MB = 5; // 5MB for reliable uploads
-export const MAX_VIDEO_SIZE_MB = 10; // 10MB for reliable uploads
+// Maximum file sizes - increased to 10MB for images
+export const MAX_IMAGE_SIZE_MB = 10; // Increased from 5MB to 10MB
+export const MAX_VIDEO_SIZE_MB = 20; // Increased from 10MB to 20MB
 
 // No compression - just return the original data URL
 export const compressImageIfNeeded = async (dataUrl: string): Promise<string> => {
