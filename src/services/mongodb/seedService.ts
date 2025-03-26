@@ -1,20 +1,21 @@
-
 import { Collection } from 'mongodb';
-import { MongoUser, MongoMachine } from './types';
+import { MongoUser, MongoMachine, MongoQuiz } from './types';
 import mongoConnectionService from './connectionService';
 import bcrypt from 'bcryptjs';
 
 class MongoSeedService {
   private usersCollection: Collection<MongoUser> | null = null;
   private machinesCollection: Collection<MongoMachine> | null = null;
+  private quizzesCollection: Collection<MongoQuiz> | null = null;
   
   async initCollections(): Promise<void> {
     try {
-      if (!this.usersCollection || !this.machinesCollection) {
+      if (!this.usersCollection || !this.machinesCollection || !this.quizzesCollection) {
         const db = await mongoConnectionService.connect();
         if (db) {
           this.usersCollection = db.collection<MongoUser>('users');
           this.machinesCollection = db.collection<MongoMachine>('machines');
+          this.quizzesCollection = db.collection<MongoQuiz>('quizzes');
           console.log(`MongoDB Collections initialized for seeding`);
         } else {
           console.error("Failed to connect to MongoDB database for seeding");
@@ -201,6 +202,40 @@ class MongoSeedService {
       console.log("All machines now have course and quiz IDs");
     } catch (error) {
       console.error("Error updating machine course/quiz links:", error);
+    }
+  }
+  
+  async ensureDefaultQuizzesExist(): Promise<void> {
+    await this.initCollections();
+    if (!this.quizzesCollection) {
+      console.error("Quizzes collection not initialized");
+      return;
+    }
+    
+    try {
+      console.log("Ensuring all default quizzes exist...");
+      
+      const defaultQuizzes = [
+        { _id: '1', title: 'Laser Cutter Certification Quiz' },
+        { _id: '2', title: 'Ultimaker Certification Quiz' },
+        { _id: '3', title: 'X1 E Carbon 3D Printer Certification' },
+        { _id: '4', title: 'Bambu Lab X1 E Certification Quiz' }
+      ];
+      
+      const existingQuizzes = await this.quizzesCollection.find({}, { projection: { _id: 1 } }).toArray();
+      const existingQuizIds = existingQuizzes.map(q => q._id.toString());
+      
+      console.log(`Existing quiz IDs: ${existingQuizIds.join(', ')}`);
+      
+      for (const quiz of defaultQuizzes) {
+        if (!existingQuizIds.includes(quiz._id)) {
+          console.log(`Missing quiz ID ${quiz._id}: ${quiz.title}. Please check server-side seeding.`);
+        }
+      }
+      
+      console.log("Quiz check complete");
+    } catch (error) {
+      console.error("Error checking default quizzes:", error);
     }
   }
 }

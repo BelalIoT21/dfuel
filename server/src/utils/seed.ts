@@ -17,7 +17,10 @@ import {
   updateCourseImages,
   checkAndSeedCourses
 } from './seeds/courseSeeder';
-import { seedQuizzes } from './seeds/quizSeeder';
+import { 
+  seedQuizzes, 
+  checkAndSeedQuizzes 
+} from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
 import { createAdminUser } from '../controllers/admin/adminController';
 
@@ -86,10 +89,27 @@ export class SeedService {
         await updateCourseImages();
       }
 
-      // Check if we need to seed quizzes
-      if (quizCount === 0) {
-        console.log('No quizzes found. Seeding quizzes...');
-        await seedQuizzes();
+      // Get existing quiz IDs
+      const existingQuizzes = await Quiz.find({}, '_id');
+      const existingQuizIds = existingQuizzes.map(q => q._id.toString());
+      
+      console.log('Existing quiz IDs:', existingQuizIds);
+      
+      // Define expected quiz IDs (1-4)
+      const expectedQuizIds = ['1', '2', '3', '4'];
+      
+      // Check if any expected quiz IDs are missing
+      const missingQuizIds = expectedQuizIds.filter(id => !existingQuizIds.includes(id));
+      
+      if (missingQuizIds.length > 0 || quizCount === 0) {
+        console.log(`Missing quiz IDs: ${missingQuizIds.join(', ')}. Seeding quizzes...`);
+        if (quizCount === 0) {
+          await seedQuizzes();
+        } else {
+          await checkAndSeedQuizzes();
+        }
+      } else {
+        console.log('All expected quizzes found. No reseeding needed.');
       }
 
       if (userCount > 0 && machineCount > 0 && bookingCount > 0 && courseCount > 0 && quizCount > 0) {
@@ -103,3 +123,4 @@ export class SeedService {
     }
   }
 }
+

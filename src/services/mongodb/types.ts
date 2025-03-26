@@ -1,59 +1,57 @@
-
-// MongoDB types
 export interface MongoUser {
   id: string;
-  email: string;
-  password: string;
   name: string;
+  email: string;
+  password?: string;
   isAdmin: boolean;
   certifications: string[];
-  bookings: {
-    id: string;
-    machineId: string;
-    date: string;
-    time: string;
-    status: 'Pending' | 'Approved' | 'Completed' | 'Canceled';
-  }[];
+  bookings: string[];
   lastLogin: string;
-  resetCode?: {
-    code: string;
-    expiry: string;
-  };
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export interface MongoMachineStatus {
+export interface MongoBooking {
+  id: string;
+  userId: string;
   machineId: string;
-  status: string;
-  note?: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface MongoMachine {
   _id: string;
   name: string;
-  type: string;
   description: string;
-  status: string;
-  requiresCertification: boolean;
-  difficulty: string;
-  maintenanceNote?: string;
   imageUrl?: string;
-  details?: string;
-  specifications?: string;
+  status: 'available' | 'maintenance' | 'in-use';
+  type: string;
+  requiresCertification: boolean;
   certificationInstructions?: string;
   linkedCourseId?: string;
   linkedQuizId?: string;
+  displayOrder?: number;
 }
 
-export interface MongoBooking {
-  _id?: string;
-  user: string;
-  machine: string;
-  date: Date;
-  time: string;
-  status: 'Pending' | 'Approved' | 'Completed' | 'Canceled' | 'Rejected';
-  userName?: string;
-  machineName?: string;
-  clientId?: string;
+export interface MongoQuiz {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl?: string;
+  questions: {
+    question: string;
+    options: string[];
+    correctAnswer: number;
+    explanation?: string;
+  }[];
+  passingScore: number;
+  relatedMachineIds?: string[];
+  relatedCourseId?: string;
+  difficulty: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -63,33 +61,12 @@ export interface MongoCourse {
   title: string;
   description: string;
   category: string;
-  content: string;
   imageUrl?: string;
+  lessons: {
+    title: string;
+    content: string;
+  }[];
   relatedMachineIds?: string[];
-  quizId?: string;
-  difficulty: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface MongoQuizQuestion {
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation?: string;
-}
-
-export interface MongoQuiz {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  imageUrl?: string;
-  questions: MongoQuizQuestion[];
-  passingScore: number;
-  relatedMachineIds?: string[];
-  relatedCourseId?: string;
-  difficulty: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
