@@ -1,341 +1,285 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../hooks/use-toast';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, Award, Book, Calendar, CheckCircle, ChevronLeft, ClipboardCheck, HelpCircle, Lock } from 'lucide-react';
-import { machines } from '../utils/data';
-import { apiService } from '../services/apiService';
-import { certificationService } from '../services/certificationService';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
+import { machineService } from '@/services/machineService';
+import { certificationService } from '@/services/certificationService';
+import { ChevronLeft, Loader2, Calendar, Award } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import BookMachineButton from '@/components/profile/BookMachineButton';
 
 const MachineDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [machine, setMachine] = useState<any>(null);
-  const [machineStatus, setMachineStatus] = useState('available');
-  const [isCertified, setIsCertified] = useState(false);
-  const [hasSafetyCourse, setHasSafetyCourse] = useState(false);
 
-  // Safety course has ID 6
-  const SAFETY_COURSE_ID = '6';
+  const [machine, setMachine] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [machineStatus, setMachineStatus] = useState('unknown');
+  const [isCertified, setIsCertified] = useState(false);
+  const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
+    if (!id) return;
 
-    const loadMachineDetails = async () => {
+    const fetchMachineData = async () => {
       try {
         setLoading(true);
-        console.log("Loading machine details for ID:", id);
+        setError(null);
         
-        // Try to get machine from API first
-        let machineData;
-        try {
-          // Use a timestamp to prevent caching
-          const timestamp = new Date().getTime();
-          const response = await apiService.request(`machines/${id}?t=${timestamp}`, 'GET');
-          console.log("API response for machine:", response);
-          if (response.data) {
-            machineData = response.data;
-          }
-        } catch (apiError) {
-          console.error('Error fetching machine from API:', apiError);
-        }
-
-        // If API fails, fall back to static data
-        if (!machineData) {
-          machineData = machines.find(m => m.id === id);
-        }
+        console.log(`Fetching machine with ID: ${id}`);
+        const machineData = await machineService.getMachineById(id);
         
         if (!machineData) {
-          toast({
-            title: 'Error',
-            description: 'Machine not found',
-            variant: 'destructive',
-          });
-          navigate('/home');
+          console.error(`Machine with ID ${id} not found`);
+          setError('Machine not found');
+          setLoading(false);
           return;
         }
         
-        console.log("Machine data loaded:", machineData);
-        
-        // Get machine status - make sure to fetch it directly to get the latest status
-        try {
-          // Using specific endpoint for machine status to ensure we get the freshest data
-          const timestamp = new Date().getTime();
-          const statusResponse = await apiService.request(`machines/${id}/status?t=${timestamp}`, 'GET');
-          if (statusResponse.data && statusResponse.data.status) {
-            console.log(`Fetched machine status from API: ${statusResponse.data.status}`);
-            setMachineStatus(statusResponse.data.status.toLowerCase());
-          } else if (machineData.status) {
-            // If specific status endpoint fails but we have status in machine data
-            console.log(`Using status from machine data: ${machineData.status}`);
-            setMachineStatus(typeof machineData.status === 'string' ? machineData.status.toLowerCase() : 'available');
-          }
-        } catch (statusError) {
-          console.error('Error fetching machine status:', statusError);
-          // If there's an error, use the status from the machine data if available
-          if (machineData.status) {
-            console.log(`Fallback to machine data status: ${machineData.status}`);
-            setMachineStatus(typeof machineData.status === 'string' ? machineData.status.toLowerCase() : 'available');
-          } else {
-            setMachineStatus('available');
-          }
-        }
-        
+        console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
-        // Check if user is certified for this machine
+        try {
+          const status = await machineService.getMachineStatus(id);
+          setMachineStatus(status.toLowerCase());
+          console.log(`Machine status: ${status}`);
+        } catch (statusError) {
+          console.error('Error fetching machine status:', statusError);
+          setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
+        }
+        
         if (user) {
           try {
-            const isUserCertified = await certificationService.checkCertification(user.id, id || '');
-            setIsCertified(isUserCertified);
+            // Check if user is certified for this machine
+            const certificationResult = await certificationService.checkCertification(user.id, id);
+            setIsCertified(certificationResult);
+            console.log(`User certification status for machine ${id}: ${certificationResult}`);
+            
+            // Check if user has safety certification (ID: 6)
+            const safetyCertResult = await certificationService.checkCertification(user.id, '6');
+            setHasSafetyCertification(safetyCertResult);
+            console.log(`User has safety certification: ${safetyCertResult}`);
           } catch (certError) {
             console.error('Error checking certification:', certError);
-            
-            // Fallback to user object if API fails
-            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(id)) {
-              setIsCertified(true);
-            }
-          }
-          
-          // Check if user has safety course certification (ID 6)
-          try {
-            const hasSafety = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
-            setHasSafetyCourse(hasSafety);
-          } catch (safetyCertError) {
-            console.error('Error checking safety certification:', safetyCertError);
-            
-            // Fallback to user object
-            if (user.certifications && Array.isArray(user.certifications) && user.certifications.includes(SAFETY_COURSE_ID)) {
-              setHasSafetyCourse(true);
-            }
           }
         }
-      } catch (error) {
-        console.error('Error loading machine details:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load machine details',
-          variant: 'destructive',
-        });
+      } catch (err) {
+        console.error('Error fetching machine details:', err);
+        setError('Failed to load machine details');
       } finally {
         setLoading(false);
       }
     };
 
-    loadMachineDetails();
-  }, [id, user, navigate, toast]);
+    fetchMachineData();
+  }, [id, user]);
+
+  const handleGetCertified = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to get certified",
+        variant: "destructive"
+      });
+      navigate('/login', { state: { from: `/machine/${id}` } });
+      return;
+    }
+
+    if (!hasSafetyCertification && id !== '6') {
+      toast({
+        title: "Safety Certification Required",
+        description: "You need to complete the safety course before getting certified for this machine",
+        variant: "destructive"
+      });
+      navigate('/machine/6');
+      return;
+    }
+
+    try {
+      const success = await certificationService.addCertification(user.id, id || '');
+      
+      if (success) {
+        setIsCertified(true);
+        toast({
+          title: "Certification Successful",
+          description: `You are now certified to use the ${machine.name}`,
+        });
+      } else {
+        toast({
+          title: "Certification Failed",
+          description: "Unable to add certification. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error getting certified:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleTakeCourse = () => {
+    if (!id) return;
+    
     navigate(`/course/${id}`);
   };
 
   const handleTakeQuiz = () => {
+    if (!id) return;
+    
     navigate(`/quiz/${id}`);
-  };
-
-  const handleBookMachine = () => {
-    navigate(`/booking/${id}`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
-          <p className="text-purple-700">Loading machine details...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+        <p className="text-gray-600">Loading machine details...</p>
       </div>
     );
   }
 
-  if (!machine) {
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Machine not found</h1>
-          <Link to="/home">
-            <Button className="bg-purple-600 hover:bg-purple-700">Return to Home</Button>
-          </Link>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => navigate('/home')}>
+            Return to Home
+          </Button>
         </div>
       </div>
     );
   }
-
-  const isMaintenance = machineStatus === 'maintenance';
-  const isBookable = !isMaintenance && isCertified && machine.id !== '5' && machine.id !== '6';
-  
-  // Check if the current machine is the safety course itself
-  const isSafetyCourse = id === SAFETY_COURSE_ID;
-  
-  // Determine if the machine requires safety course
-  // The safety course itself doesn't require the safety course (would be circular)
-  const requiresSafetyCourse = !isSafetyCourse && id !== '5';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto page-transition">
-        <Link to="/profile?tab=certifications" className="inline-flex items-center text-purple-600 hover:text-purple-800 mb-6">
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Certifications
-        </Link>
+    <div className="container mx-auto max-w-4xl p-4 py-8">
+      <Button
+        variant="ghost"
+        className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        onClick={() => navigate(-1)}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
 
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-          <div className="relative">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-32 md:h-48 flex items-end p-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{machine.name}</h1>
+      <Card className="shadow-lg border-purple-100">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl text-purple-800">{machine?.name}</CardTitle>
+              <CardDescription className="text-sm mt-1">{machine?.type}</CardDescription>
             </div>
-            
-            {isCertified && (
-              <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Certified
-              </div>
-            )}
-            
-            {isMaintenance && (
-              <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Under Maintenance
-              </div>
-            )}
+            <Badge 
+              variant="outline" 
+              className={`
+                ${machineStatus === 'available' ? 'bg-green-100 text-green-800 border-green-200' : 
+                  machineStatus === 'maintenance' ? 'bg-red-100 text-red-800 border-red-200' : 
+                  machineStatus === 'in-use' ? 'bg-blue-100 text-blue-800 border-blue-200' : 
+                  'bg-gray-100 text-gray-800 border-gray-200'}
+              `}
+            >
+              {machineStatus === 'available' ? 'Available' : 
+                machineStatus === 'maintenance' ? 'Maintenance' : 
+                machineStatus === 'in-use' ? 'In Use' : 
+                'Unknown'}
+            </Badge>
           </div>
-          
-          <div className="p-6">
-            <p className="text-gray-700 mb-6">{machine.description}</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2 text-purple-800">Machine Type</h3>
-                <p>{machine.type || 'Standard Equipment'}</p>
-              </div>
-              
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2 text-purple-800">Status</h3>
-                <p className={`capitalize ${
-                  machineStatus === 'available' ? 'text-green-600' : 
-                  machineStatus === 'maintenance' ? 'text-yellow-600' : 
-                  machineStatus === 'in-use' ? 'text-blue-600' : 'text-gray-600'
-                }`}>
-                  {machineStatus.replace('-', ' ')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Book className="h-5 w-5 text-purple-600" />
-                Training Course
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-6">Complete the training course to learn how to use this machine safely and effectively.</p>
-              <Button 
-                onClick={handleTakeCourse} 
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={requiresSafetyCourse && !hasSafetyCourse}
-              >
-                <Book className="mr-2 h-4 w-4" />
-                Take Course
-              </Button>
-              
-              {requiresSafetyCourse && !hasSafetyCourse && (
-                <div className="mt-4 text-amber-600 text-sm flex items-center">
-                  <Lock className="h-4 w-4 mr-1" />
-                  Complete Safety Course first
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-purple-600" />
-                Safety Quiz
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-6">Take the safety quiz to demonstrate your knowledge of proper machine operation.</p>
-              <Button 
-                onClick={handleTakeQuiz} 
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={requiresSafetyCourse && !hasSafetyCourse}
-              >
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Take Quiz
-              </Button>
-              
-              {requiresSafetyCourse && !hasSafetyCourse && (
-                <div className="mt-4 text-amber-600 text-sm flex items-center">
-                  <Lock className="h-4 w-4 mr-1" />
-                  Complete Safety Course first
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {isCertified && isBookable && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-purple-600" />
-                Book This Machine
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-6">
-                You're certified to use this machine! Book a time slot to use it.
-              </p>
-              <Button 
-                onClick={handleBookMachine} 
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isMaintenance}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                Book Now
-              </Button>
-              
-              {isMaintenance && (
-                <div className="mt-4 text-amber-600 text-sm flex items-center">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  Machine is currently under maintenance
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        </CardHeader>
         
-        {isCertified && !isBookable && machine.id !== '5' && machine.id !== '6' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                Certification Complete
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>
-                You're certified to use this equipment! This specific machine doesn't require booking.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+        <CardContent className="space-y-6 pt-6">
+          {/* Machine Image */}
+          {machine?.imageUrl && (
+            <div className="rounded-md overflow-hidden">
+              <img 
+                src={machine.imageUrl.startsWith('/') ? machine.imageUrl : `/${machine.imageUrl}`} 
+                alt={machine.name} 
+                className="w-full h-64 object-cover"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Description */}
+          <div>
+            <h3 className="font-medium text-gray-800 mb-2">Description</h3>
+            <p className="text-gray-600">{machine?.description}</p>
+          </div>
+          
+          {/* Specifications */}
+          {machine?.specifications && (
+            <div>
+              <h3 className="font-medium text-gray-800 mb-2">Specifications</h3>
+              <p className="text-gray-600">{machine.specifications}</p>
+            </div>
+          )}
+          
+          {/* Certification Status */}
+          <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
+            <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
+            {isCertified ? (
+              <div className="flex items-center text-green-600">
+                <Award className="mr-2 h-5 w-5" />
+                <span>You are certified to use this machine</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-amber-600">
+                <span>You need to get certified before using this machine</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Actions */}
+          <div className="flex flex-col md:flex-row gap-3 pt-2">
+            <Button 
+              onClick={handleTakeCourse} 
+              variant="outline"
+              className="flex-1"
+            >
+              Take Course
+            </Button>
+            
+            <Button 
+              onClick={handleTakeQuiz} 
+              variant="outline"
+              className="flex-1"
+            >
+              Take Quiz
+            </Button>
+            
+            {!isCertified && (
+              <Button 
+                onClick={handleGetCertified} 
+                variant="outline"
+                className="flex-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                disabled={!hasSafetyCertification && id !== '6'}
+              >
+                Get Certified
+              </Button>
+            )}
+            
+            <BookMachineButton 
+              machineId={id || ''}
+              isCertified={isCertified}
+              machineStatus={machineStatus}
+              className="flex-1"
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -174,6 +174,11 @@ class ApiService {
     return this.request(`bookings/${bookingId}/cancel`, 'PUT', {}, true);
   }
   
+  // Get user certifications
+  async getUserCertifications(userId: string): Promise<any> {
+    return this.request(`certifications/user/${userId}`, 'GET', undefined, true);
+  }
+  
   // Add certification
   async addCertification(userId: string, certificationId: string): Promise<any> {
     return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);

@@ -1,213 +1,233 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, BookOpen, CheckCircle } from 'lucide-react';
-import { courses, machines } from '../utils/data';
-import { useToast } from '@/hooks/use-toast';
-import { apiService } from '../services/apiService';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import { machineService } from '@/services/machineService';
+import { ChevronLeft, Loader2, BookOpen } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
 
 const Course = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [loading, setLoading] = useState(true);
+
   const [machine, setMachine] = useState<any>(null);
-  const [course, setCourse] = useState<any>(null);
-  
+  const [courseContent, setCourseContent] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const loadData = async () => {
+    if (!id) return;
+
+    const fetchCourseData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        // Try to get machine from API first
-        let machineData;
-        try {
-          const response = await apiService.getMachineById(id || '');
-          if (response.data) {
-            machineData = response.data;
-          }
-        } catch (apiError) {
-          console.error('Error fetching machine from API:', apiError);
-        }
-
-        // If API fails, fall back to static data
-        if (!machineData) {
-          machineData = machines.find(m => m.id === id);
-        }
+        console.log(`Fetching course data for machine ID: ${id}`);
+        
+        // First, get the machine
+        const machineData = await machineService.getMachineById(id);
         
         if (!machineData) {
-          toast({
-            title: 'Error',
-            description: 'Machine not found',
-            variant: 'destructive',
-          });
-          navigate('/home');
+          console.error(`Machine with ID ${id} not found`);
+          setError('Course not found');
+          setLoading(false);
           return;
         }
         
+        console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
-        // Get course content
-        const courseData = courses[id as keyof typeof courses] || courses['default'];
-        setCourse(courseData);
-      } catch (error) {
-        console.error('Error loading course data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load course data',
-          variant: 'destructive',
-        });
+        // Generate course content if not available
+        let content = machineData.courseContent;
+        
+        if (!content) {
+          if (id === '6') {
+            // Safety course
+            content = generateSafetyCourseContent();
+          } else {
+            // Regular machine course
+            content = generateMachineCourseContent(machineData);
+          }
+        }
+        
+        setCourseContent(content);
+      } catch (err) {
+        console.error('Error fetching course data:', err);
+        setError('Failed to load course');
       } finally {
         setLoading(false);
       }
     };
+
+    fetchCourseData();
+  }, [id]);
+
+  const generateSafetyCourseContent = () => {
+    return `
+      <h2>Safety Guidelines for Machine Shop</h2>
+      <p>Welcome to the essential safety course for our machine shop. This course covers the fundamental safety practices that all users must follow.</p>
+      
+      <h3>General Safety Rules</h3>
+      <ul>
+        <li>Always wear appropriate Personal Protective Equipment (PPE)</li>
+        <li>No loose clothing, long hair must be tied back</li>
+        <li>No jewelry or watches when operating machinery</li>
+        <li>No food or drinks in the machine shop area</li>
+        <li>Never operate machinery while impaired or tired</li>
+        <li>Report all accidents and incidents immediately</li>
+      </ul>
+      
+      <h3>Emergency Procedures</h3>
+      <p>Familiarize yourself with:</p>
+      <ul>
+        <li>Location of emergency stops</li>
+        <li>Fire extinguisher locations</li>
+        <li>First aid kit locations</li>
+        <li>Emergency exit routes</li>
+        <li>Emergency contact numbers</li>
+      </ul>
+      
+      <h3>Machine Shop Etiquette</h3>
+      <ul>
+        <li>Clean up after yourself</li>
+        <li>Return tools to their proper places</li>
+        <li>Report damaged or malfunctioning equipment</li>
+        <li>Be respectful of others using the space</li>
+        <li>Follow the booking system procedures</li>
+      </ul>
+      
+      <p>After completing this course and passing the quiz, you'll be certified to move on to machine-specific certifications.</p>
+    `;
+  };
+
+  const generateMachineCourseContent = (machine: any) => {
+    const machineName = machine.name || 'this machine';
+    const machineType = machine.type || 'equipment';
     
-    loadData();
-  }, [id, navigate, toast]);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
-          <p className="text-purple-700">Loading course content...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  if (!machine || !course) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Course not found</h1>
-          <Link to="/home">
-            <Button className="bg-purple-600 hover:bg-purple-700">Return to Home</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const totalSlides = course.slides.length;
-  const progress = Math.round(((currentSlide + 1) / totalSlides) * 100);
-
-  const handleNext = () => {
-    if (currentSlide < totalSlides - 1) {
-      setCurrentSlide(currentSlide + 1);
-    }
+    return `
+      <h2>Training Course: ${machineName}</h2>
+      <p>Welcome to the ${machineName} training course. This course will guide you through the proper operation, safety procedures, and maintenance for this ${machineType}.</p>
+      
+      <h3>About the ${machineName}</h3>
+      <p>${machine.description || 'This is a specialized piece of equipment in our facility.'}</p>
+      
+      <h3>Technical Specifications</h3>
+      <p>${machine.specifications || 'Specifications for this machine are available upon request from staff.'}</p>
+      
+      <h3>Safety Precautions</h3>
+      <ul>
+        <li>Always wear appropriate PPE including eye protection</li>
+        <li>Ensure the work area is clean and free of obstructions</li>
+        <li>Never leave the machine unattended while in operation</li>
+        <li>Do not attempt to modify or bypass any safety features</li>
+        <li>Follow proper shutdown procedures when finished</li>
+      </ul>
+      
+      <h3>Operating Instructions</h3>
+      <ol>
+        <li>Turn on the machine using the main power switch</li>
+        <li>Allow the machine to initialize completely</li>
+        <li>Set up your project parameters according to guidelines</li>
+        <li>Double-check all settings before starting operation</li>
+        <li>Monitor the process throughout the operation</li>
+        <li>When finished, follow proper shutdown procedures</li>
+      </ol>
+      
+      <h3>Troubleshooting</h3>
+      <p>If you encounter any issues with the machine:</p>
+      <ul>
+        <li>Stop the operation using the appropriate procedure</li>
+        <li>Refer to the troubleshooting guide next to the machine</li>
+        <li>If unable to resolve, contact a staff member</li>
+        <li>Do not attempt to fix mechanical or electrical issues yourself</li>
+      </ul>
+      
+      <p>After completing this course, take the quiz to test your knowledge and get certified to use the ${machineName}.</p>
+    `;
   };
 
-  const handlePrevious = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
-
-  const handleComplete = () => {
-    // In a real app, this would call an API to mark the course as completed
-    toast({
-      title: "Course completed",
-      description: "You can now take the safety quiz."
-    });
+  const handleTakeQuiz = () => {
+    if (!id) return;
+    
     navigate(`/quiz/${id}`);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-4xl mx-auto page-transition">
-        <div className="mb-6 flex justify-between items-center">
-          <Link to={`/machine/${id}`} className="text-purple-600 hover:underline flex items-center gap-1">
-            <ChevronLeft className="h-4 w-4" />
-            Back to {machine.name}
-          </Link>
-          <div className="text-sm text-gray-500">Slide {currentSlide + 1} of {totalSlides}</div>
-        </div>
-        
-        <div className="flex items-center gap-2 mb-4">
-          <BookOpen className="h-6 w-6 text-purple-600" />
-          <h1 className="text-3xl font-bold">{course.title}</h1>
-        </div>
-        <p className="text-gray-600 mb-6">Duration: {course.duration}</p>
-        <Progress value={progress} className="mb-8 h-2 bg-purple-100" indicatorClassName="bg-purple-600" />
-        
-        <Card className="overflow-hidden shadow-lg border-purple-100">
-          <CardContent className="p-0">
-            <div className="relative">
-              {/* Slide Content */}
-              <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                <img 
-                  src={course.slides[currentSlide].image} 
-                  alt={course.slides[currentSlide].title}
-                  className="max-w-full max-h-full object-contain"
-                />
-              </div>
-              
-              {/* Navigation Arrows */}
-              {currentSlide > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 rounded-full bg-white shadow-md"
-                  onClick={handlePrevious}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-              
-              {currentSlide < totalSlides - 1 && (
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 rounded-full bg-white shadow-md"
-                  onClick={handleNext}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">{course.slides[currentSlide].title}</h2>
-              <p className="text-gray-700 mb-8 leading-relaxed">{course.slides[currentSlide].content}</p>
-              
-              <div className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrevious}
-                  disabled={currentSlide === 0}
-                  className="border-purple-200 text-purple-700"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </Button>
-                
-                {currentSlide < totalSlides - 1 ? (
-                  <Button 
-                    onClick={handleNext}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handleComplete}
-                    className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Complete Course
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+        <p className="text-gray-600">Loading course content...</p>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => navigate('/home')}>
+            Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto max-w-4xl p-4 py-8">
+      <Button
+        variant="ghost"
+        className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        onClick={() => navigate(-1)}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
+
+      <Card className="shadow-lg border-purple-100">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-purple-600" />
+            <CardTitle className="text-2xl text-purple-800">
+              {machine?.name} Course
+            </CardTitle>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pt-6">
+          <div 
+            className="prose max-w-none" 
+            dangerouslySetInnerHTML={{ __html: courseContent }}
+          />
+          
+          <Separator className="my-8" />
+          
+          <div className="rounded-md border border-blue-100 bg-blue-50 p-4">
+            <h3 className="text-blue-800 font-medium mb-2">Important Note</h3>
+            <p className="text-blue-700 text-sm">
+              After studying this material, please take the quiz to test your knowledge.
+              Passing the quiz is required to gain certification for this machine.
+            </p>
+          </div>
+        </CardContent>
+        
+        <CardFooter className="flex justify-end pt-2 pb-6">
+          <Button 
+            onClick={handleTakeQuiz}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            Take Quiz Now
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

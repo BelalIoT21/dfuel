@@ -1,286 +1,166 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { ChevronLeft, Loader2, ClipboardList } from 'lucide-react';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'Pending':
-      return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-    case 'Approved':
-      return 'bg-green-100 text-green-800 hover:bg-green-200';
-    case 'Completed':
-      return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-    case 'Canceled':
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-    case 'Rejected':
-      return 'bg-red-100 text-red-800 hover:bg-red-200';
-    default:
-      return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
-  }
-};
 
 const ActiveBookings = () => {
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const fetchBookings = async () => {
-    try {
-      setRefreshing(true);
-      console.log('Fetching bookings directly from MongoDB');
-      
-      // Admin gets all bookings, regular user gets their own
-      const allBookings = user?.isAdmin 
-        ? await bookingService.getAllBookings()
-        : await bookingService.getUserBookings(user?.id || user?._id);
-      
-      console.log(`Found ${allBookings.length} bookings in MongoDB`);
-      
-      if (allBookings.length === 0) {
-        console.log('Falling back to bookingService');
-        const serviceBookings = await bookingService.getAllBookings();
-        console.log(`Found ${serviceBookings.length} total bookings via bookingService`);
-        setBookings(serviceBookings);
-      } else {
-        setBookings(allBookings);
-      }
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
+  useEffect(() => {
+    if (!user) {
       toast({
-        title: 'Error',
-        description: 'Failed to load bookings',
-        variant: 'destructive',
+        title: "Authentication Required",
+        description: "Please log in to view your bookings",
+        variant: "destructive"
       });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      navigate('/');
+      return;
     }
-  };
 
-  useEffect(() => {
-    if (user) {
-      fetchBookings();
-    } else {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
-  const pendingBookings = useMemo(() => {
-    console.log('All bookings before filtering:', bookings);
-    const filtered = bookings.filter(booking => booking.status === 'Pending');
-    console.log(`Found ${filtered.length} pending bookings:`, filtered);
-    return filtered;
-  }, [bookings]);
-
-  // Auto refresh pending bookings every 5 seconds
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (pendingBookings.length > 0) {
-        console.log('Auto-refreshing pending bookings');
-        fetchBookings();
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching bookings for user:', user.id);
+        const userBookings = await bookingService.getUserBookings(user.id);
+        console.log('Retrieved bookings:', userBookings);
+        
+        // Sort bookings by date and time
+        const sortedBookings = [...userBookings].sort((a, b) => {
+          const dateA = new Date(`${a.date} ${a.time}`);
+          const dateB = new Date(`${b.date} ${b.time}`);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        setBookings(sortedBookings);
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your bookings",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    }, 5000);
+    };
 
-    return () => clearInterval(intervalId);
-  }, [pendingBookings]);
+    fetchBookings();
+  }, [user, navigate, toast]);
 
-  const handleCancelBooking = async (bookingId) => {
+  const handleCancelBooking = async (bookingId: string) => {
     try {
       const success = await bookingService.cancelBooking(bookingId);
       if (success) {
         toast({
-          title: 'Booking Canceled',
-          description: 'Your booking has been successfully canceled',
+          title: "Booking Cancelled",
+          description: "Your booking has been successfully cancelled",
         });
-        fetchBookings();
+        // Update the booking list
+        setBookings(bookings.filter(booking => booking.id !== bookingId));
       } else {
         toast({
-          title: 'Error',
-          description: 'Failed to cancel booking',
-          variant: 'destructive',
+          title: "Error",
+          description: "Failed to cancel booking",
+          variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Error canceling booking:', error);
+      console.error('Error cancelling booking:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to cancel booking',
-        variant: 'destructive',
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
       });
     }
   };
 
-  const formatDate = (dateString) => {
-    try {
-      return format(new Date(dateString), 'MMMM d, yyyy');
-    } catch (e) {
-      console.error('Date formatting error:', e);
-      return dateString;
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'canceled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-        <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
-        <p className="text-gray-600">Loading bookings...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-4 py-8">
-      <div className="flex items-center mb-6">
-        <Button
-          variant="ghost"
-          className="mr-4"
-          onClick={() => navigate(-1)}
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <h1 className="text-2xl font-bold flex-1">
-          {user?.isAdmin ? 'All Bookings' : 'My Bookings'}
-        </h1>
-        <Button 
-          onClick={fetchBookings} 
-          variant="outline" 
-          disabled={refreshing}
-          className="ml-2"
-        >
-          {refreshing ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Refreshing...
-            </>
-          ) : 'Refresh'}
-        </Button>
-      </div>
+    <div className="container mx-auto max-w-4xl p-4 py-8">
+      <Button
+        variant="ghost"
+        className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        onClick={() => navigate(-1)}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <ClipboardList className="h-5 w-5 mr-2" />
-            {user?.isAdmin ? 'All Machine Bookings' : 'Your Machine Bookings'}
-          </CardTitle>
-          <CardDescription>
-            View and manage your machine reservations
-          </CardDescription>
+      <Card className="shadow-lg border-purple-100">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+          <CardTitle className="text-2xl text-purple-800">Your Bookings</CardTitle>
+          <CardDescription>Manage your machine booking appointments</CardDescription>
         </CardHeader>
-        <CardContent>
-          {bookings.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-gray-500 mb-4">No bookings found</p>
-              <Link to="/home">
-                <Button>Browse Machines</Button>
-              </Link>
+        <CardContent className="pt-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+              <p className="text-gray-600">Loading your bookings...</p>
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-lg text-gray-500 mb-4">You don't have any active bookings</p>
+              <Button onClick={() => navigate('/home')} className="bg-purple-600 hover:bg-purple-700">
+                Browse Machines
+              </Button>
             </div>
           ) : (
-            <Table>
-              <TableCaption>
-                {user?.isAdmin 
-                  ? 'All machine bookings in the system' 
-                  : 'Your machine booking history'}
-              </TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Machine</TableHead>
-                  {user?.isAdmin && <TableHead>User</TableHead>}
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bookings.map((booking) => (
-                  <TableRow key={booking._id || booking.id}>
-                    <TableCell className="font-medium">
-                      {booking.machineName || 'Unknown Machine'}
-                    </TableCell>
-                    {user?.isAdmin && (
-                      <TableCell>
-                        {booking.userName || 'Unknown User'}
-                      </TableCell>
-                    )}
-                    <TableCell>{formatDate(booking.date)}</TableCell>
-                    <TableCell>{booking.time}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(booking.status)}>
-                        {booking.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {booking.status === 'Pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancelBooking(booking._id || booking.id)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                      {user?.isAdmin && booking.status === 'Pending' && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              const success = await bookingService.updateBookingStatus(
-                                booking._id || booking.id,
-                                'Approved'
-                              );
-                              if (success) {
-                                toast({
-                                  title: 'Booking Approved',
-                                  description: 'The booking has been approved',
-                                });
-                                fetchBookings();
-                              }
-                            }}
-                            className="text-green-600 border-green-200 hover:bg-green-50 ml-2"
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              const success = await bookingService.updateBookingStatus(
-                                booking._id || booking.id,
-                                'Rejected'
-                              );
-                              if (success) {
-                                toast({
-                                  title: 'Booking Rejected',
-                                  description: 'The booking has been rejected',
-                                });
-                                fetchBookings();
-                              }
-                            }}
-                            className="text-red-600 border-red-200 hover:bg-red-50 ml-2"
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="space-y-4">
+              {bookings.map(booking => (
+                <div key={booking.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                    <h3 className="font-medium text-lg">{booking.machineName}</h3>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mb-3">
+                    <div>
+                      <span className="text-gray-500 text-sm">Date: </span>
+                      <span>{format(new Date(booking.date), 'MMMM d, yyyy')}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 text-sm">Time: </span>
+                      <span>{booking.time}</span>
+                    </div>
+                  </div>
+                  {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                      onClick={() => handleCancelBooking(booking.id)}
+                    >
+                      Cancel Booking
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

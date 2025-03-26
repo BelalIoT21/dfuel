@@ -1,434 +1,421 @@
-import { useState, useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import { machineService } from '@/services/machineService';
+import { certificationService } from '@/services/certificationService';
+import { ChevronLeft, Loader2, CheckCircle, XCircle, Award } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, AlertTriangle, Trophy, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '../context/AuthContext';
-import { quizzes, defaultQuiz } from '../utils/data';
-import { apiService } from '../services/apiService';
-import { certificationService } from '../services/certificationService';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+
+interface Question {
+  id: number;
+  text: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+const defaultSafetyQuestions: Question[] = [
+  {
+    id: 1,
+    text: "What should you always wear when operating machinery?",
+    options: [
+      "Jewelry and loose clothing",
+      "Appropriate Personal Protective Equipment (PPE)",
+      "Headphones",
+      "Nothing special is required"
+    ],
+    correctAnswer: 1
+  },
+  {
+    id: 2,
+    text: "What should you do before operating a machine?",
+    options: [
+      "Check your email",
+      "Have a snack",
+      "Ensure you are certified and the machine is in working order",
+      "Call a friend"
+    ],
+    correctAnswer: 2
+  },
+  {
+    id: 3,
+    text: "What should you do if you notice a machine is malfunctioning?",
+    options: [
+      "Try to fix it yourself",
+      "Ignore it and continue working",
+      "Use it carefully",
+      "Report it immediately and do not use it"
+    ],
+    correctAnswer: 3
+  },
+  {
+    id: 4,
+    text: "Where should food and drinks be kept?",
+    options: [
+      "Next to the machine while working",
+      "Away from machine work areas",
+      "Anywhere convenient",
+      "On top of electronic equipment"
+    ],
+    correctAnswer: 1
+  },
+  {
+    id: 5,
+    text: "What should you do after finishing with a machine?",
+    options: [
+      "Leave it as is for the next person",
+      "Turn it off only if it's making noise",
+      "Clean up, return tools, and follow proper shutdown procedures",
+      "Lock the room"
+    ],
+    correctAnswer: 2
+  }
+];
+
+const generateMachineQuestions = (machine: any): Question[] => {
+  const machineName = machine.name || 'this machine';
+  
+  return [
+    {
+      id: 1,
+      text: `What should you always do before operating the ${machineName}?`,
+      options: [
+        "Check your phone",
+        "Ensure the work area is clean and the machine is in working order",
+        "Play music",
+        "Nothing special is required"
+      ],
+      correctAnswer: 1
+    },
+    {
+      id: 2,
+      text: `When using the ${machineName}, what PPE is typically required?`,
+      options: [
+        "No PPE is necessary",
+        "Only gloves",
+        "Safety glasses at minimum, and other PPE as specified",
+        "Headphones"
+      ],
+      correctAnswer: 2
+    },
+    {
+      id: 3,
+      text: "What should you do if the machine makes an unusual noise?",
+      options: [
+        "Increase the speed to overcome the noise",
+        "Ignore it if the machine still works",
+        "Stop immediately, turn off the machine, and report the issue",
+        "Hit the machine gently to fix it"
+      ],
+      correctAnswer: 2
+    },
+    {
+      id: 4,
+      text: "When is it appropriate to leave a machine running unattended?",
+      options: [
+        "When you need to go to lunch",
+        "When you need to use the bathroom",
+        "When another person is nearby",
+        "Never leave a machine running unattended"
+      ],
+      correctAnswer: 3
+    },
+    {
+      id: 5,
+      text: `What is the proper procedure when you've finished using the ${machineName}?`,
+      options: [
+        "Turn it off and leave immediately",
+        "Clean the machine, return tools, and follow shutdown procedures",
+        "Let the next user deal with cleanup",
+        "Just log out of your account"
+      ],
+      correctAnswer: 1
+    }
+  ];
+};
 
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
-  
-  const [quizData, setQuizData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
-  const [quizCompleted, setQuizCompleted] = useState(false);
+  const { toast } = useToast();
+
+  const [machine, setMachine] = useState<any>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [isPassing, setIsPassing] = useState(false);
-  const [certificateAwarded, setCertificateAwarded] = useState(false);
+  const [passed, setPassed] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentSelectedAnswer, setCurrentSelectedAnswer] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
+    if (!id) return;
 
-    const loadQuiz = async () => {
+    const fetchQuizData = async () => {
       try {
         setLoading(true);
+        setError(null);
         
-        let quiz = null;
+        console.log(`Fetching quiz data for machine ID: ${id}`);
         
-        try {
-          const response = await apiService.getQuiz(id || '');
-          if (response.data) {
-            quiz = response.data;
-          }
-        } catch (apiError) {
-          console.error('Error fetching quiz from API:', apiError);
+        // First, get the machine
+        const machineData = await machineService.getMachineById(id);
+        
+        if (!machineData) {
+          console.error(`Machine with ID ${id} not found`);
+          setError('Quiz not found');
+          setLoading(false);
+          return;
         }
         
-        if (!quiz) {
-          quiz = quizzes[id || ''];
+        console.log('Retrieved machine data:', machineData);
+        setMachine(machineData);
+        
+        // Generate questions based on machine type
+        if (id === '6') {
+          // Safety course
+          setQuestions(defaultSafetyQuestions);
+        } else {
+          // Regular machine quiz
+          setQuestions(generateMachineQuestions(machineData));
         }
         
-        if (!quiz || !quiz.questions || quiz.questions.length === 0) {
-          console.log('No quiz found, using default quiz');
-          quiz = {
-            id: id,
-            machineId: id,
-            questions: defaultQuiz
-          };
-        }
-        
-        setQuizData(quiz);
-        setSelectedAnswers(new Array(quiz.questions.length).fill(undefined));
-      } catch (error) {
-        console.error('Error loading quiz:', error);
-        setError('Failed to load quiz. Please try again later.');
+        // Initialize answers array
+        setAnswers(new Array(5).fill(-1));
+      } catch (err) {
+        console.error('Error fetching quiz data:', err);
+        setError('Failed to load quiz');
       } finally {
         setLoading(false);
       }
     };
 
-    loadQuiz();
-  }, [id, user, navigate]);
+    fetchQuizData();
+  }, [id]);
 
-  useEffect(() => {
-    if (selectedAnswers && selectedAnswers.length > currentQuestion) {
-      setCurrentSelectedAnswer(selectedAnswers[currentQuestion]);
-    } else {
-      setCurrentSelectedAnswer(undefined);
-    }
-  }, [currentQuestion, selectedAnswers]);
-
-  const handleSelectAnswer = (index: number) => {
-    setCurrentSelectedAnswer(index);
-    
-    const newSelectedAnswers = [...selectedAnswers];
-    newSelectedAnswers[currentQuestion] = index;
-    setSelectedAnswers(newSelectedAnswers);
+  const handleAnswerChange = (questionIndex: number, answerIndex: number) => {
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = answerIndex;
+    setAnswers(newAnswers);
   };
 
-  const handleNext = () => {
-    if (currentSelectedAnswer !== undefined) {
-      const newSelectedAnswers = [...selectedAnswers];
-      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
-      setSelectedAnswers(newSelectedAnswers);
-    }
-    
-    setCurrentQuestion(prev => prev + 1);
+  const isQuizComplete = () => {
+    return answers.every(answer => answer !== -1);
   };
 
-  const handlePrevious = () => {
-    if (currentSelectedAnswer !== undefined) {
-      const newSelectedAnswers = [...selectedAnswers];
-      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
-      setSelectedAnswers(newSelectedAnswers);
+  const handleSubmit = () => {
+    if (!isQuizComplete()) {
+      toast({
+        title: "Incomplete Quiz",
+        description: "Please answer all questions before submitting",
+        variant: "destructive"
+      });
+      return;
     }
     
-    setCurrentQuestion(prev => Math.max(0, prev - 1));
-  };
-
-  const handleSubmit = async () => {
-    if (currentSelectedAnswer !== undefined) {
-      const newSelectedAnswers = [...selectedAnswers];
-      newSelectedAnswers[currentQuestion] = currentSelectedAnswer;
-      setSelectedAnswers(newSelectedAnswers);
-    }
-    
+    // Calculate score
     let correctCount = 0;
-    for (let i = 0; i < quizData.questions.length; i++) {
-      if (selectedAnswers[i] === quizData.questions[i].correctAnswer) {
+    questions.forEach((question, index) => {
+      if (answers[index] === question.correctAnswer) {
         correctCount++;
       }
-    }
+    });
     
-    const calculatedScore = Math.round((correctCount / quizData.questions.length) * 100);
-    const passed = calculatedScore >= 70;
+    const finalScore = (correctCount / questions.length) * 100;
+    setScore(finalScore);
     
-    setScore(calculatedScore);
-    setIsPassing(passed);
-    setQuizCompleted(true);
+    // Determine if passed (80% or higher)
+    const hasPassed = finalScore >= 80;
+    setPassed(hasPassed);
     
-    if (passed && user) {
-      try {
-        const success = await certificationService.addCertification(user.id, id || '');
-        setCertificateAwarded(success);
-        
-        if (success) {
-          toast({
-            title: 'Certification Awarded',
-            description: 'You have been certified for this machine!',
-          });
-        }
-      } catch (error) {
-        console.error('Error adding certification:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to award certification. Please contact support.',
-          variant: 'destructive',
+    // If passed, grant certification
+    if (hasPassed && user && id) {
+      certificationService.addCertification(user.id, id)
+        .then(success => {
+          if (success) {
+            console.log(`Certification added for user ${user.id} and machine ${id}`);
+          } else {
+            console.error(`Failed to add certification for user ${user.id} and machine ${id}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error adding certification:', error);
         });
-      }
     }
+    
+    setSubmitted(true);
   };
 
-  const handleReturnToMachine = () => {
-    navigate(`/machine/${id}`);
-  };
-
-  const handleReturnToCourse = () => {
-    navigate(`/course/${id}`);
-  };
-
-  const handleRetry = () => {
-    setCurrentQuestion(0);
-    setSelectedAnswers(new Array(quizData.questions.length).fill(undefined));
-    setCurrentSelectedAnswer(undefined);
-    setQuizCompleted(false);
+  const handleRetakeQuiz = () => {
+    setAnswers(new Array(questions.length).fill(-1));
+    setSubmitted(false);
     setScore(0);
-    setIsPassing(false);
-    setCertificateAwarded(false);
+    setPassed(false);
+  };
+
+  const handleViewMachine = () => {
+    if (!id) return;
+    
+    navigate(`/machine/${id}`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto mb-4"></div>
-          <p className="text-purple-700">Loading quiz...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+        <p className="text-gray-600">Loading quiz questions...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              Error Loading Quiz
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">{error}</p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleReturnToMachine} className="bg-purple-600 hover:bg-purple-700">
-              Return to Machine
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!quizData || !quizData.questions) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Quiz Not Available
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">No quiz is available for this machine at the moment. Please check back later.</p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleReturnToMachine} className="bg-purple-600 hover:bg-purple-700">
-              Return to Machine
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
-  if (quizCompleted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
-        <div className="max-w-3xl mx-auto page-transition">
-          <Button 
-            variant="ghost" 
-            onClick={handleReturnToMachine}
-            className="mb-6 flex items-center text-gray-600"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Return to Machine
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => navigate('/home')}>
+            Return to Home
           </Button>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className={`h-6 w-6 ${isPassing ? 'text-green-500' : 'text-red-500'}`} />
-                Quiz Results
-              </CardTitle>
-              <CardDescription>
-                {quizData.title || `Safety Quiz for Machine #${id}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center mb-8">
-                <div className={`inline-flex items-center justify-center rounded-full h-20 w-20 mb-4 ${
-                  isPassing ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                }`}>
-                  {isPassing ? (
-                    <CheckCircle className="h-10 w-10" />
-                  ) : (
-                    <XCircle className="h-10 w-10" />
-                  )}
-                </div>
-                
-                <h2 className="text-2xl font-bold mb-2">
-                  {isPassing ? 'Congratulations!' : 'Not Quite There'}
-                </h2>
-                
-                <p className="text-gray-600 mb-4">
-                  {isPassing 
-                    ? 'You passed the quiz and are now certified to use this machine.' 
-                    : 'You did not pass the quiz. Review the course material and try again.'}
-                </p>
-                
-                <div className="text-4xl font-bold mb-2">
-                  {score}%
-                </div>
-                
-                <p className="text-sm text-gray-500">
-                  Passing score: 70%
-                </p>
-              </div>
-              
-              <Separator className="my-6" />
-              
-              {isPassing ? (
-                <Alert className="bg-green-50 border-green-200 text-green-800">
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertTitle>Certification Awarded</AlertTitle>
-                  <AlertDescription>
-                    You have demonstrated proficiency with this machine and have been awarded certification.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Review Suggested</AlertTitle>
-                  <AlertDescription>
-                    We recommend reviewing the course material before attempting the quiz again.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row gap-2 justify-end items-stretch pb-6">
-              {!isPassing && (
-                <>
-                  <Button variant="outline" onClick={handleReturnToCourse} className="w-full sm:w-auto">
-                    Review Course
-                  </Button>
-                  <Button onClick={handleRetry} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700">
-                    Retry Quiz
-                  </Button>
-                </>
-              )}
-              
-              <Button 
-                onClick={handleReturnToMachine} 
-                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700"
-              >
-                Return to Machine
-              </Button>
-            </CardFooter>
-          </Card>
         </div>
       </div>
     );
   }
 
-  const currentQuizQuestion = quizData?.questions[currentQuestion];
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-purple-50 p-4 md:p-6">
-      <div className="max-w-3xl mx-auto page-transition">
-        <Button 
-          variant="ghost" 
-          onClick={handleReturnToMachine}
-          className="mb-6 flex items-center text-gray-600"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Return to Machine
-        </Button>
+    <div className="container mx-auto max-w-4xl p-4 py-8">
+      <Button
+        variant="ghost"
+        className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        onClick={() => navigate(-1)}
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
+
+      <Card className="shadow-lg border-purple-100">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
+          <CardTitle className="text-2xl text-purple-800">
+            {machine?.name} Certification Quiz
+          </CardTitle>
+        </CardHeader>
         
-        <Card className="mb-16 sm:mb-0">
-          <CardHeader>
-            <CardTitle>Safety Quiz</CardTitle>
-            <CardDescription>
-              {quizData?.title || `Quiz for Machine #${id}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-500">Question {currentQuestion + 1} of {quizData?.questions.length}</span>
-                <span className="text-sm font-medium bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                  {Math.round(((currentQuestion + 1) / quizData?.questions.length) * 100)}% Complete
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-purple-600 h-2 rounded-full" 
-                  style={{ width: `${((currentQuestion + 1) / quizData?.questions.length) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-            
+        <CardContent className="pt-6">
+          {submitted ? (
             <div className="space-y-6">
-              <h3 className="text-lg font-medium">{currentQuizQuestion?.question}</h3>
+              <div className="text-center p-4">
+                {passed ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <CheckCircle className="h-16 w-16 text-green-500" />
+                    <h2 className="text-2xl font-bold text-green-600">Congratulations!</h2>
+                    <p className="text-lg">You passed the quiz with a score of {score.toFixed(0)}%</p>
+                    <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
+                      <Award className="h-5 w-5" />
+                      <span className="font-medium">You are now certified to use this machine</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <XCircle className="h-16 w-16 text-red-500" />
+                    <h2 className="text-2xl font-bold text-red-600">Not Quite There</h2>
+                    <p className="text-lg">Your score of {score.toFixed(0)}% didn't meet the 80% passing requirement</p>
+                    <p className="text-gray-500 mt-2">Review the course material and try again</p>
+                  </div>
+                )}
+              </div>
               
-              <RadioGroup
-                value={currentSelectedAnswer !== undefined ? currentSelectedAnswer.toString() : ""}
-                className="space-y-3"
-                onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
-              >
-                {currentQuizQuestion?.options.map((option: string, index: number) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-center space-x-2 rounded-lg border p-4 cursor-pointer transition-all duration-200 
-                      ${currentSelectedAnswer === index 
-                        ? 'bg-purple-100 border-purple-300 shadow-sm' 
-                        : 'hover:bg-gray-50 border-gray-200'}`}
-                  >
-                    <RadioGroupItem 
-                      value={index.toString()} 
-                      id={`option-${index}`}
-                      className={currentSelectedAnswer === index ? 'text-purple-600' : ''}
-                    />
-                    <Label 
-                      htmlFor={`option-${index}`} 
-                      className={`flex-grow cursor-pointer font-medium ${currentSelectedAnswer === index ? 'text-purple-900' : 'text-gray-700'}`}
-                    >
-                      {option}
-                    </Label>
+              <div className="space-y-4 mt-8">
+                {questions.map((question, index) => (
+                  <div key={question.id} className="border rounded-md p-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-1 flex-shrink-0 ${
+                        answers[index] === question.correctAnswer 
+                          ? 'text-green-500' 
+                          : 'text-red-500'
+                      }`}>
+                        {answers[index] === question.correctAnswer 
+                          ? <CheckCircle className="h-5 w-5" /> 
+                          : <XCircle className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{question.text}</p>
+                        <ul className="mt-2 space-y-1">
+                          {question.options.map((option, optionIndex) => (
+                            <li 
+                              key={optionIndex} 
+                              className={`text-sm py-1 px-2 rounded ${
+                                optionIndex === question.correctAnswer 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : optionIndex === answers[index] 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : ''
+                              }`}
+                            >
+                              {option}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 ))}
-              </RadioGroup>
+              </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-between sticky bottom-0 bg-white border-t p-4 z-10">
+          ) : (
+            <div className="space-y-8">
+              {questions.map((question, index) => (
+                <div key={question.id} className="border rounded-md p-4">
+                  <p className="font-medium mb-4">{question.text}</p>
+                  <RadioGroup 
+                    value={answers[index].toString()} 
+                    onValueChange={(value) => handleAnswerChange(index, parseInt(value))}
+                  >
+                    {question.options.map((option, optionIndex) => (
+                      <div key={optionIndex} className="flex items-center space-x-2 my-2">
+                        <RadioGroupItem value={optionIndex.toString()} id={`q${index}-o${optionIndex}`} />
+                        <Label htmlFor={`q${index}-o${optionIndex}`}>{option}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+        
+        <CardFooter className="flex justify-end gap-3 pt-4 pb-6">
+          {submitted ? (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={handleRetakeQuiz}
+              >
+                Retake Quiz
+              </Button>
+              <Button 
+                onClick={handleViewMachine}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                Return to Machine Page
+              </Button>
+            </>
+          ) : (
             <Button 
-              variant="outline" 
-              onClick={handlePrevious}
-              disabled={currentQuestion === 0}
-              className="min-w-[80px]"
+              onClick={handleSubmit}
+              disabled={!isQuizComplete()}
+              className="bg-purple-600 hover:bg-purple-700"
             >
-              Previous
+              Submit Answers
             </Button>
-            <div>
-              {currentQuestion < quizData?.questions.length - 1 ? (
-                <Button 
-                  onClick={handleNext}
-                  className="bg-purple-600 hover:bg-purple-700 min-w-[80px]"
-                >
-                  Next
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={!selectedAnswers.every(answer => answer !== undefined)}
-                  className="bg-purple-600 hover:bg-purple-700 min-w-[80px]"
-                >
-                  Submit Quiz
-                </Button>
-              )}
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+          )}
+        </CardFooter>
+      </Card>
     </div>
   );
 };
