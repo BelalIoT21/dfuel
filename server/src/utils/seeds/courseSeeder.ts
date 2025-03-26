@@ -1,4 +1,3 @@
-
 import { Course } from '../../models/Course';
 import mongoose from 'mongoose';
 
@@ -65,7 +64,211 @@ This course covers the essential safety protocols for all machines in the makers
 4. Report any issues to staff
 `;
 
-// Function to seed courses for machines 5 and 6
+// Define content for courses 1-4
+const laserCutterCourseContent = `
+# Laser Cutter Course
+
+## Introduction
+This course will teach you how to safely and effectively use the laser cutter.
+
+## Safety Precautions
+1. Never leave the laser cutter unattended while in operation
+2. Always use the ventilation system
+3. Never cut materials that produce toxic fumes (PVC, vinyl, etc.)
+4. Keep the area around the laser cutter clean and free of flammable materials
+5. Know the location of the fire extinguisher and how to use it
+
+## Operating Procedures
+1. Prepare your design in appropriate software
+2. Set up the material on the cutting bed
+3. Focus the laser
+4. Set appropriate power and speed settings
+5. Start the job and monitor progress
+
+## Maintenance
+1. Clean the cutting bed after each use
+2. Check and clean the lens regularly
+3. Empty the debris tray when full
+4. Report any issues to staff immediately
+`;
+
+const ultimakerCourseContent = `
+# Ultimaker 3D Printer Course
+
+## Introduction
+This course teaches you how to use the Ultimaker 3D printer effectively.
+
+## Printer Components
+1. Build plate
+2. Extruder
+3. Filament feeder
+4. Control panel
+5. Filament spool holder
+
+## Printing Process
+1. Prepare your 3D model in slicing software
+2. Select appropriate material and settings
+3. Load filament
+4. Start your print
+5. Remove and post-process your print
+
+## Troubleshooting
+1. Adhesion problems
+2. Stringing
+3. Layer shifting
+4. Clogged nozzle
+5. Print not sticking to the build plate
+`;
+
+const cncRouterCourseContent = `
+# CNC Router Course
+
+## Introduction
+This course covers the safe and effective use of the CNC router.
+
+## Safety First
+1. Always wear proper PPE (eye protection, hearing protection, dust mask)
+2. Never wear loose clothing, jewelry, or gloves around the machine
+3. Keep hands away from the cutting area
+4. Ensure material is properly secured
+5. Know the location of emergency stops
+
+## Machine Setup
+1. Mounting your material
+2. Tool selection and installation
+3. Setting work coordinates
+4. Setting up your CAM program
+5. Verifying your tool paths
+
+## Operation
+1. Starting the machine
+2. Monitoring the cut
+3. Emergency procedures
+4. Completing the job
+5. Machine shutdown
+`;
+
+const x1CarbonCourseContent = `
+# X1 E Carbon 3D Printer Course
+
+## Introduction
+This course covers the operation of the X1 E Carbon 3D printer for advanced composite printing.
+
+## Material Handling
+1. Carbon fiber reinforced materials
+2. Proper storage of materials
+3. Loading and unloading fiber rolls
+4. Safety considerations for carbon fiber
+
+## Print Preparation
+1. Designing for fiber reinforcement
+2. Setting up fiber paths
+3. Optimizing part strength
+4. Build plate preparation
+5. Printer calibration
+
+## Post-Processing
+1. Safe part removal
+2. Support structure removal
+3. Part finishing techniques
+4. Strength testing considerations
+5. Disposal of waste materials
+`;
+
+// Function to seed all courses
+export async function seedAllCourses() {
+  try {
+    // Check if courses already exist
+    const courses = [
+      {
+        _id: '1',
+        title: 'Laser Cutter Training',
+        description: 'Learn how to safely operate the lab\'s laser cutter',
+        category: 'Equipment',
+        content: laserCutterCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
+        relatedMachineIds: ['1'],
+        quizId: '1',
+        difficulty: 'Intermediate'
+      },
+      {
+        _id: '2',
+        title: 'Ultimaker 3D Printer Training',
+        description: 'Learn how to use the Ultimaker 3D printer effectively',
+        category: 'Equipment',
+        content: ultimakerCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
+        relatedMachineIds: ['2'],
+        quizId: '2',
+        difficulty: 'Basic'
+      },
+      {
+        _id: '3',
+        title: 'CNC Router Basics',
+        description: 'Learn the fundamentals of CNC routing for precision cutting',
+        category: 'Equipment',
+        content: cncRouterCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7816.jpg',
+        relatedMachineIds: ['3'],
+        quizId: '3',
+        difficulty: 'Advanced'
+      },
+      {
+        _id: '4',
+        title: 'X1 E Carbon 3D Printer',
+        description: 'Advanced training for carbon fiber composite printing',
+        category: 'Equipment',
+        content: x1CarbonCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7817.jpg',
+        relatedMachineIds: ['4'],
+        quizId: '4',
+        difficulty: 'Advanced'
+      },
+      {
+        _id: '5',
+        title: 'Safety Cabinet Usage',
+        description: 'Learn how to properly use and store materials in the safety cabinet',
+        category: 'Safety',
+        content: safetyCabinetCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
+        relatedMachineIds: ['5'],
+        quizId: '5',
+        difficulty: 'Basic'
+      },
+      {
+        _id: '6',
+        title: 'Machine Safety Fundamentals',
+        description: 'Essential safety training required for all makerspace users',
+        category: 'Safety',
+        content: machineSafetyCourseContent,
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
+        relatedMachineIds: ['6'],
+        quizId: '6',
+        difficulty: 'Basic'
+      }
+    ];
+
+    for (const courseData of courses) {
+      const existingCourse = await Course.findById(courseData._id);
+      
+      if (!existingCourse) {
+        const course = new Course(courseData);
+        await course.save();
+        console.log(`Created course: ${courseData.title} with ID: ${courseData._id}`);
+      } else {
+        console.log(`Course ${courseData.title} already exists with ID: ${courseData._id}`);
+      }
+    }
+    
+    console.log('Courses seeding completed successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('Error seeding courses:', error);
+    return { success: false, error };
+  }
+}
+
+// Keep the original safety courses function for backward compatibility
 export async function seedSafetyCourses() {
   try {
     // Check if courses already exist

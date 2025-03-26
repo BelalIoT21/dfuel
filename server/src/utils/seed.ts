@@ -12,8 +12,8 @@ import {
   updateMachineImages, 
   seedAllMachines 
 } from './seeds/machineSeeder';
-import { seedSafetyCourses } from './seeds/courseSeeder';
-import { seedSafetyQuizzes } from './seeds/quizSeeder';
+import { seedSafetyCourses, seedAllCourses } from './seeds/courseSeeder';
+import { seedSafetyQuizzes, seedAllQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
 import { createAdminUser } from '../controllers/admin/adminController';
 import { seedUsers } from './seeds/userSeeder';
@@ -64,12 +64,12 @@ export class SeedService {
         await seedUsers();
       }
 
-      // Seed safety courses and quizzes
-      console.log('Ensuring safety courses exist...');
-      await seedSafetyCourses();
+      // Seed all courses and quizzes (1-6)
+      console.log('Ensuring all courses (1-6) exist...');
+      await seedAllCourses();
       
-      console.log('Ensuring safety quizzes exist...');
-      await seedSafetyQuizzes();
+      console.log('Ensuring all quizzes (1-6) exist...');
+      await seedAllQuizzes();
 
       console.log('Database seeding complete!');
     } catch (error) {
