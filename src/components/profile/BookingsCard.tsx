@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import EmptyBookingsView from './EmptyBookingsView';
 import { format, parseISO } from 'date-fns';
 
 const BookingsCard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -28,7 +28,6 @@ const BookingsCard = () => {
   const [bookings, setBookings] = useState([]);
   const { toast } = useToast();
   
-  // Fetch bookings when component mounts or user changes
   useEffect(() => {
     const loadBookings = async () => {
       if (user && user.id) {
@@ -119,6 +118,10 @@ const BookingsCard = () => {
 
   const handleBookMachine = () => {
     setSearchParams({ tab: 'certifications' });
+  };
+
+  const handleViewAllBookings = () => {
+    navigate('/bookings');
   };
 
   const handleViewBookingDetails = (booking) => {
@@ -317,20 +320,31 @@ const BookingsCard = () => {
                 <CardDescription className="text-sm mt-1">Recent and upcoming machine reservations</CardDescription>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefreshBookings}
-              disabled={isRefreshing}
-              className="flex items-center gap-1 flex-shrink-0 ml-2"
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshBookings}
+                disabled={isRefreshing}
+                className="flex items-center gap-1 flex-shrink-0"
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleViewAllBookings}
+                className="flex items-center gap-1 flex-shrink-0"
+              >
+                <span>View All</span>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">

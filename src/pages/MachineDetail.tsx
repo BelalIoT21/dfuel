@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -259,17 +258,6 @@ const MachineDetail = () => {
             >
               Take Quiz
             </Button>
-            
-            {!isCertified && (
-              <Button 
-                onClick={handleGetCertified} 
-                variant="outline"
-                className="flex-1 border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
-                disabled={!hasSafetyCertification && id !== '6'}
-              >
-                Get Certified
-              </Button>
-            )}
             
             <BookMachineButton 
               machineId={id || ''}
