@@ -1,7 +1,7 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
+import User from '../models/User';
 
 // Get all machines
 export const getMachines = async (req: Request, res: Response) => {
@@ -317,6 +317,31 @@ export const deleteMachine = async (req: Request, res: Response) => {
 
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
+    }
+
+    // Find all users with this machine certification
+    const machineId = id.toString();
+    console.log(`Finding users with certification for machine ${machineId}`);
+    
+    try {
+      // Remove this certification from all users
+      const updateResult = await User.updateMany(
+        { certifications: machineId },
+        { $pull: { certifications: machineId } }
+      );
+      
+      console.log(`Removed certification ${machineId} from ${updateResult.modifiedCount} users`);
+      
+      // Also remove certification dates for this machine
+      const dateUpdateResult = await User.updateMany(
+        {},
+        { $unset: { [`certificationDates.${machineId}`]: "" } }
+      );
+      
+      console.log(`Removed certification dates for machine ${machineId} from ${dateUpdateResult.modifiedCount} users`);
+    } catch (error) {
+      console.error("Error removing certifications:", error);
+      // Continue with machine deletion even if certification removal fails
     }
 
     // Delete the machine

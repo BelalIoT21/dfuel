@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
 import { List, ActivityIndicator } from 'react-native-paper';
@@ -94,19 +93,37 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
           // Try to fetch each unknown machine
           for (const certId of unknownCertIds) {
             try {
+              // Check if this is a special machine ID
+              if (SPECIAL_MACHINE_IDS.includes(certId)) {
+                if (certId === "5") {
+                  names[certId] = "Safety Cabinet";
+                  types[certId] = "Safety";
+                } else if (certId === "6") {
+                  names[certId] = "Safety Course";
+                  types[certId] = "Course";
+                }
+                continue;
+              }
+              
               const machine = await machineService.getMachineById(certId);
               if (machine) {
                 names[certId] = machine.name;
                 types[certId] = machine.type || 'Machine';
               } else {
-                // If machine not found, use generic name
-                names[certId] = `Machine ${certId}`;
-                types[certId] = 'Machine';
+                // If machine not found, use generic name but mark for cleanup
+                names[certId] = `Machine ${certId} (Deleted)`;
+                types[certId] = 'Deleted Machine';
+                
+                // If machine doesn't exist anymore, remove certification
+                if (!SPECIAL_MACHINE_IDS.includes(certId)) {
+                  console.log(`Machine ${certId} no longer exists, will be filtered out`);
+                  // We'll filter it out in the filterCertifications function
+                }
               }
             } catch (error) {
               console.error(`Error fetching machine ${certId}:`, error);
-              names[certId] = `Machine ${certId}`;
-              types[certId] = 'Machine';
+              names[certId] = `Machine ${certId} (Unknown)`;
+              types[certId] = 'Unknown';
             }
           }
         }
@@ -134,14 +151,14 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   const filterCertifications = (certifications: string[]) => {
     if (!certifications) return [];
     
-    // Filter out certifications that don't exist in available machines
+    // Filter out certifications for machines that don't exist anymore
     const validCertifications = certifications.filter(certId => {
       // Always include special machines (Safety Cabinet and Safety Course)
       if (SPECIAL_MACHINE_IDS.includes(certId)) {
         return true;
       }
       
-      // Include if machine exists in the database
+      // Include only if machine exists in the available machines list
       return availableMachineIds.includes(certId);
     });
     
@@ -153,6 +170,43 @@ const CertificationsSection = ({ user }: CertificationsSectionProps) => {
   console.log("Available machine IDs:", availableMachineIds);
 
   const sortedCertifications = filterCertifications(userCertifications);
+
+  // Clean up stale certifications (for machines that no longer exist)
+  useEffect(() => {
+    const cleanupStaleCertifications = async () => {
+      if (!user?.id || userCertifications.length === 0 || availableMachineIds.length === 0) {
+        return;
+      }
+      
+      const staleCertifications = userCertifications.filter(certId => {
+        // Don't remove special machine certifications
+        if (SPECIAL_MACHINE_IDS.includes(certId)) {
+          return false;
+        }
+        
+        // Find certifications for machines that no longer exist
+        return !availableMachineIds.includes(certId);
+      });
+      
+      if (staleCertifications.length > 0) {
+        console.log(`Found ${staleCertifications.length} stale certifications to remove:`, staleCertifications);
+        
+        for (const certId of staleCertifications) {
+          try {
+            await certificationService.removeCertification(user.id, certId);
+            console.log(`Removed stale certification for machine ${certId}`);
+          } catch (error) {
+            console.error(`Failed to remove stale certification for machine ${certId}:`, error);
+          }
+        }
+        
+        // Refresh certifications after cleanup
+        fetchCertifications();
+      }
+    };
+    
+    cleanupStaleCertifications();
+  }, [userCertifications, availableMachineIds, user?.id]);
 
   return (
     <View style={styles.section}>

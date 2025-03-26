@@ -85,22 +85,76 @@ const CertificationsCard = () => {
       }
       setMachineStatuses(statuses);
       
-      // Format the machines for display
-      const formattedMachines = allCertifications.map(machine => {
-        const machineId = machine.id.toString();
-        const certDate = user?.certificationDates?.[machineId] 
-          ? new Date(user.certificationDates[machineId])
-          : new Date();
+      // Add special machines (Safety Cabinet and Safety Course) if they're not already included
+      const specialMachines = [];
+      if (!allCertifications.some(m => (m.id || m._id).toString() === "5")) {
+        specialMachines.push({
+          id: "5",
+          name: "Safety Cabinet",
+          type: "Safety",
+          status: "available"
+        });
+      }
+      
+      if (!allCertifications.some(m => (m.id || m._id).toString() === "6")) {
+        specialMachines.push({
+          id: "6",
+          name: "Safety Course",
+          type: "Course",
+          status: "available"
+        });
+      }
+      
+      const combinedMachines = [...allCertifications, ...specialMachines];
+      
+      // Clean up stale certifications (for machines that don't exist anymore)
+      if (userCerts.length > 0) {
+        const validMachineIds = [...databaseMachineIds, ...SPECIAL_MACHINE_IDS];
+        const staleCertifications = userCerts.filter(cert => !validMachineIds.includes(cert));
         
-        return {
-          id: machineId,
-          name: machine.name,
-          certified: userCerts.includes(machineId),
-          date: format(certDate, 'dd/MM/yyyy'),
-          bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
-          status: statuses[machineId] || 'unknown'
-        };
-      });
+        if (staleCertifications.length > 0) {
+          console.log(`Found ${staleCertifications.length} stale certifications to remove:`, staleCertifications);
+          
+          for (const certId of staleCertifications) {
+            try {
+              await certificationService.removeCertification(user.id, certId);
+              console.log(`Removed stale certification for machine ${certId}`);
+            } catch (error) {
+              console.error(`Failed to remove stale certification for machine ${certId}:`, error);
+            }
+          }
+          
+          // Get updated user certifications after cleanup
+          try {
+            userCerts = await certificationService.getUserCertifications(user.id);
+            console.log("Updated certifications after cleanup:", userCerts);
+          } catch (err) {
+            console.error("Error fetching updated certifications:", err);
+          }
+        }
+      }
+      
+      // Format the machines for display, including only machines that still exist or special machines
+      const formattedMachines = combinedMachines
+        .filter(machine => {
+          const machineId = machine.id?.toString() || machine._id?.toString();
+          return SPECIAL_MACHINE_IDS.includes(machineId) || databaseMachineIds.includes(machineId);
+        })
+        .map(machine => {
+          const machineId = (machine.id || machine._id).toString();
+          const certDate = user?.certificationDates?.[machineId] 
+            ? new Date(user.certificationDates[machineId])
+            : new Date();
+          
+          return {
+            id: machineId,
+            name: machine.name,
+            certified: userCerts.includes(machineId),
+            date: format(certDate, 'dd/MM/yyyy'),
+            bookable: !SPECIAL_MACHINE_IDS.includes(machineId), // Safety Cabinet and Safety Course aren't bookable
+            status: statuses[machineId] || (SPECIAL_MACHINE_IDS.includes(machineId) ? 'available' : 'unknown')
+          };
+        });
       
       console.log(`Displaying machines: ${formattedMachines.map(m => m.name).join(', ')}`);
       setMachines(formattedMachines);
