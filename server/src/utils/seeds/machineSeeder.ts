@@ -25,27 +25,27 @@ export async function updateMachineImages() {
     const machineUpdates = [
       {
         _id: '1',
-        imageUrl: '/utils/images/IMG_7814.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg'
       },
       {
         _id: '2',
-        imageUrl: '/utils/images/IMG_7773.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg'
       },
       {
         _id: '3',
-        imageUrl: '/utils/images/IMG_7768.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7768.jpg'
       },
       {
         _id: '4',
-        imageUrl: '/utils/images/IMG_7769.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7769.jpg'
       },
       {
         _id: '5',
-        imageUrl: '/utils/images/IMG_7775.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7775.jpg'
       },
       {
         _id: '6',
-        imageUrl: '/utils/images/IMG_7821.jpg'
+        imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg'
       }
     ];
 
