@@ -54,6 +54,15 @@ const FileUpload = ({
       const dataUrl = await fileToDataUrl(file);
       setPreview(dataUrl);
       onFileChange(dataUrl);
+      
+      // Inform the user about large files
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Large File",
+          description: "This file is quite large. Processing might take longer than usual.",
+          duration: 5000
+        });
+      }
     } catch (error) {
       console.error("Error processing file:", error);
       toast({

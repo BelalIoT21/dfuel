@@ -48,6 +48,7 @@ export const VIDEO_TYPES = [
   'video/ogg'
 ];
 
-// Maximum file sizes
-export const MAX_IMAGE_SIZE_MB = 5;
-export const MAX_VIDEO_SIZE_MB = 50;
+// Maximum file sizes - increased limits
+export const MAX_IMAGE_SIZE_MB = 10; // Increased from 5MB to 10MB
+export const MAX_VIDEO_SIZE_MB = 100; // Increased from 50MB to 100MB
+

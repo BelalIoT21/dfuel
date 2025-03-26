@@ -27,6 +27,12 @@ class CourseService {
   async updateCourseImage(courseId: string, imageUrl: string | null) {
     try {
       console.log(`Updating course ${courseId} image:`, imageUrl ? "New image" : "Removing image");
+      
+      // Check if imageUrl is too large
+      if (imageUrl && imageUrl.length > 2000000) {
+        console.warn("Image is very large, processing may take longer");
+      }
+      
       const data = imageUrl === null ? { imageUrl: null } : { imageUrl };
       const response = await apiService.put(`/courses/${courseId}`, data);
       return response.data;

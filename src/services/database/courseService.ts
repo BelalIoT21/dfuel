@@ -33,7 +33,7 @@ export class CourseDatabaseService extends BaseService {
 
   async createCourse(courseData: CourseData): Promise<any> {
     // Check if imageUrl is too large
-    if (courseData.imageUrl && courseData.imageUrl.length > 1000000) {
+    if (courseData.imageUrl && courseData.imageUrl.length > 2000000) { // Increased threshold for large images
       console.warn("Course image is very large, it may cause issues with the API");
       
       // Extract base64 data without metadata
@@ -56,7 +56,7 @@ export class CourseDatabaseService extends BaseService {
     const payload = { ...courseData };
     
     // Check if we're trying to update with a large image
-    if (payload.imageUrl && payload.imageUrl.length > 1000000) {
+    if (payload.imageUrl && payload.imageUrl.length > 2000000) { // Increased threshold
       console.warn("Course image is very large, it may cause issues with the API");
     }
     
@@ -69,7 +69,7 @@ export class CourseDatabaseService extends BaseService {
     
     // Split the request if the payload is too large
     const contentLength = JSON.stringify(payload).length;
-    if (contentLength > 1000000) {
+    if (contentLength > 2000000) { // Increased threshold
       console.warn(`Payload is very large (${contentLength} bytes), splitting the request`);
       
       // First, try updating without content if it exists
