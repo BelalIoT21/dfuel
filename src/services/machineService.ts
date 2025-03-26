@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 export class MachineService {
@@ -140,12 +139,6 @@ export class MachineService {
       try {
         const response = await apiService.get(`machines/${machineId}`);
         if (response.data) {
-          // Filter out machines 5 and 6
-          if (machineId === "5" || machineId === "6") {
-            console.log(`Machine ${machineId} is filtered out`);
-            return null;
-          }
-          
           return {
             ...response.data,
             id: response.data._id || response.data.id,
