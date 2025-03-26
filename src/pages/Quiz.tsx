@@ -1,16 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
-import { certificationService } from '@/services/certificationService';
-import { certificationDatabaseService } from '@/services/database/certificationService'; 
-import { ChevronLeft, Loader2, CheckCircle, XCircle, Award } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { quizDatabaseService } from '@/services/database/quizService';
+import QuizQuestion from '@/components/quiz/QuizQuestion';
+import QuizResult from '@/components/quiz/QuizResult';
+import { addUserCertification } from '@/components/quiz/CertificationService';
 
 interface Question {
   id?: number;
@@ -23,7 +23,7 @@ interface Question {
 const Quiz = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, addCertification } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const [machine, setMachine] = useState<any>(null);
@@ -185,108 +185,7 @@ const Quiz = () => {
       console.log(`User passed quiz. Adding certification for user ${user.id} and machine ${machineId}`);
       
       try {
-        // FIXED: Always ensure IDs are strings to prevent conversion issues
-        const userIdStr = String(user.id);
-        const machineIdStr = String(machineId);
-        
-        console.log(`Attempting certification with userID=${userIdStr}, machineID=${machineIdStr}`);
-        
-        // More detailed tracking of attempts
-        const certificationAttempts = [];
-        let success = false;
-        
-        // Method 1: Direct API call - most reliable method first
-        try {
-          console.log('Attempting direct API call to add certification');
-          const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-          });
-          
-          const directResult = await directResponse.json();
-          certificationAttempts.push({method: "direct API", response: directResult});
-          console.log('Direct API call response:', directResult);
-          
-          if (directResponse.ok || directResult.success) {
-            success = true;
-            console.log('Direct API call successful');
-          }
-        } catch (directError) {
-          console.error('Direct API call failed:', directError);
-          certificationAttempts.push({method: "direct API", error: String(directError)});
-        }
-        
-        // Method 2: Use certificationDatabaseService if Method 1 fails
-        if (!success) {
-          console.log('First attempt failed, trying certificationDatabaseService');
-          try {
-            success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
-            certificationAttempts.push({method: "certificationDatabaseService", success});
-            console.log(`Database service attempt result: ${success ? 'success' : 'failed'}`);
-          } catch (err) {
-            console.error("Error with certificationDatabaseService:", err);
-            certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
-          }
-        }
-        
-        // Method 3: Use certificationService if Method 1 and 2 fail
-        if (!success) {
-          console.log('Previous certification attempts failed, trying certificationService');
-          try {
-            success = await certificationService.addCertification(userIdStr, machineIdStr);
-            certificationAttempts.push({method: "certificationService", success});
-            console.log(`certificationService attempt result: ${success ? 'success' : 'failed'}`);
-          } catch (err) {
-            console.error("Error with certificationService:", err);
-            certificationAttempts.push({method: "certificationService", error: String(err)});
-          }
-        }
-        
-        // Method 4: Use context method if all previous methods fail
-        if (!success && addCertification) {
-          console.log('All service attempts failed, trying context method');
-          try {
-            success = await addCertification(machineIdStr);
-            certificationAttempts.push({method: "context addCertification", success});
-            console.log(`Context method attempt result: ${success ? 'success' : 'failed'}`);
-          } catch (err) {
-            console.error("Error with context addCertification:", err);
-            certificationAttempts.push({method: "context addCertification", error: String(err)});
-          }
-        }
-        
-        // Method 5: Emergency fallback - extreme case last resort
-        if (!success) {
-          console.log('All standard methods failed, trying emergency endpoint');
-          try {
-            const emergencyResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              },
-              body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-            });
-            
-            const emergencyResult = await emergencyResponse.json();
-            certificationAttempts.push({method: "emergency API", response: emergencyResult});
-            console.log('Emergency API call response:', emergencyResult);
-            
-            if (emergencyResponse.ok || emergencyResult.success) {
-              success = true;
-            }
-          } catch (emergencyError) {
-            console.error('Emergency API call failed:', emergencyError);
-            certificationAttempts.push({method: "emergency API", error: String(emergencyError)});
-          }
-        }
-        
-        // Log all attempts for debugging
-        console.log("All certification attempts:", JSON.stringify(certificationAttempts, null, 2));
+        const success = await addUserCertification(user.id, machineId);
         
         if (success) {
           console.log('Successfully added certification');
@@ -327,7 +226,7 @@ const Quiz = () => {
   };
 
   const handleViewMachine = () => {
-    // FIXED: Ensure we navigate to the correct machine page
+    // Navigate to the correct machine page, not dashboard
     const targetId = machineId || (machine && (machine.id || machine._id));
     
     if (!targetId) {
@@ -336,8 +235,8 @@ const Quiz = () => {
         description: "Could not determine which machine page to return to",
         variant: "destructive"
       });
-      // FIXED: Navigate to home instead of dashboard if we can't find the machine
-      navigate('/home');
+      // Navigate to machines page if we can't find the specific machine
+      navigate('/machines');
       return;
     }
     
@@ -360,8 +259,8 @@ const Quiz = () => {
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={() => navigate('/home')}>
-            Return to Home
+          <Button onClick={() => navigate('/machines')}>
+            Return to Machines
           </Button>
         </div>
       </div>
@@ -375,8 +274,8 @@ const Quiz = () => {
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-red-600 mb-2">No Questions Available</h1>
           <p className="text-gray-600 mb-4">This quiz has no questions configured.</p>
-          <Button onClick={() => navigate('/home')}>
-            Return to Home
+          <Button onClick={() => navigate('/machines')}>
+            Return to Machines
           </Button>
         </div>
       </div>
@@ -403,83 +302,15 @@ const Quiz = () => {
         
         <CardContent className="pt-6">
           {submitted ? (
-            <div className="space-y-6">
-              <div className="text-center p-4">
-                {passed ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <CheckCircle className="h-16 w-16 text-green-500" />
-                    <h2 className="text-2xl font-bold text-green-600">Congratulations!</h2>
-                    <p className="text-lg">You passed the quiz with a score of {score.toFixed(0)}%</p>
-                    
-                    {certificationProcessing ? (
-                      <div className="flex items-center gap-2 text-blue-600 mt-4 bg-blue-50 p-3 px-4 rounded-md">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="font-medium">Processing your certification...</span>
-                      </div>
-                    ) : certificationAdded ? (
-                      <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
-                        <Award className="h-5 w-5" />
-                        <span className="font-medium">You are now certified to use this machine</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-green-600 mt-4 bg-green-50 p-3 px-4 rounded-md">
-                        <Award className="h-5 w-5" />
-                        <span className="font-medium">You are now certified to use this machine</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <XCircle className="h-16 w-16 text-red-500" />
-                    <h2 className="text-2xl font-bold text-red-600">Not Quite There</h2>
-                    <p className="text-lg">Your score of {score.toFixed(0)}% didn't meet the {quiz ? quiz.passingScore : 80}% passing requirement</p>
-                    <p className="text-gray-500 mt-2">Review the course material and try again</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-4 mt-8">
-                {questions.map((question, index) => (
-                  <div key={question.id || index} className="border rounded-md p-4">
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-1 flex-shrink-0 ${
-                        answers[index] === question.correctAnswer 
-                          ? 'text-green-500' 
-                          : 'text-red-500'
-                      }`}>
-                        {answers[index] === question.correctAnswer 
-                          ? <CheckCircle className="h-5 w-5" /> 
-                          : <XCircle className="h-5 w-5" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{question.question}</p>
-                        <ul className="mt-2 space-y-1">
-                          {question.options.map((option, optionIndex) => (
-                            <li 
-                              key={optionIndex} 
-                              className={`text-sm py-1 px-2 rounded ${
-                                optionIndex === question.correctAnswer 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : optionIndex === answers[index] 
-                                    ? 'bg-red-100 text-red-800' 
-                                    : ''
-                              }`}
-                            >
-                              {option}
-                            </li>
-                          ))}
-                        </ul>
-                        {question.explanation && (
-                          <div className="mt-2 text-sm bg-blue-50 p-2 rounded text-blue-700">
-                            <strong>Explanation:</strong> {question.explanation}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <QuizResult 
+              score={score}
+              passed={passed}
+              passingScore={quiz ? quiz.passingScore : 80}
+              onRetake={handleRetakeQuiz}
+              onViewMachine={handleViewMachine}
+              certificationProcessing={certificationProcessing}
+              certificationAdded={certificationAdded}
+            />
           ) : (
             <div className="space-y-8">
               {quiz && quiz.description && (
@@ -489,42 +320,21 @@ const Quiz = () => {
               )}
               
               {questions.map((question, index) => (
-                <div key={question.id || index} className="border rounded-md p-4">
-                  <p className="font-medium mb-4">{question.question}</p>
-                  <RadioGroup 
-                    value={answers[index] >= 0 ? answers[index].toString() : ""} 
-                    onValueChange={(value) => handleAnswerChange(index, parseInt(value))}
-                  >
-                    {question.options.map((option, optionIndex) => (
-                      <div key={optionIndex} className="flex items-center space-x-2 my-2">
-                        <RadioGroupItem value={optionIndex.toString()} id={`q${index}-o${optionIndex}`} />
-                        <Label htmlFor={`q${index}-o${optionIndex}`}>{option}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
+                <QuizQuestion
+                  key={question.id || index}
+                  question={question}
+                  index={index}
+                  answer={answers[index]}
+                  onAnswerChange={handleAnswerChange}
+                  submitted={false}
+                />
               ))}
             </div>
           )}
         </CardContent>
         
         <CardFooter className="flex justify-end gap-3 pt-4 pb-6">
-          {submitted ? (
-            <>
-              <Button 
-                variant="outline" 
-                onClick={handleRetakeQuiz}
-              >
-                Retake Quiz
-              </Button>
-              <Button 
-                onClick={handleViewMachine}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Return to Machine Page
-              </Button>
-            </>
-          ) : (
+          {!submitted && (
             <Button 
               onClick={handleSubmit}
               disabled={!isQuizComplete()}

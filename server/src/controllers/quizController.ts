@@ -73,10 +73,10 @@ export const createQuiz = async (req: Request, res: Response) => {
     // Find the highest numeric ID, default to 4 if none found
     const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
     
-    // New ID should be the highest + 1, starting at least from 5
+    // New ID should be the highest + 1, but never less than 5
     const newId = String(Math.max(highestId + 1, 5));
     
-    console.log(`Creating new quiz with ID: ${newId}`);
+    console.log(`Creating new quiz with ID: ${newId} (enforced minimum of 5)`);
 
     const quiz = new Quiz({
       _id: newId,

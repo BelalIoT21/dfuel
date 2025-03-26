@@ -71,7 +71,7 @@ class MongoCourseService {
     try {
       // Generate a new ID for the course starting at 5
       if (!course._id) {
-        // Get all existing courses
+        // Force ID to start from 5
         const existingCourses = await this.coursesCollection.find({}, { projection: { _id: 1 } }).toArray();
         
         // Convert IDs to numbers for comparison (filter out non-numeric IDs)
@@ -80,12 +80,12 @@ class MongoCourseService {
           .filter(id => /^\d+$/.test(id))
           .map(id => parseInt(id));
         
-        // Find the highest numeric ID
+        // Find the highest numeric ID, default to 4 if none found
         const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
         
-        // FIXED: Ensure new ID is at least 5
+        // Set new ID to highest + 1, but minimum 5
         course._id = String(Math.max(highestId + 1, 5));
-        console.log(`Generated new course ID: ${course._id}`);
+        console.log(`Generated new course ID: ${course._id} (enforced minimum of 5)`);
       }
       
       console.log(`Adding new course to MongoDB: ${course.title} (ID: ${course._id})`);

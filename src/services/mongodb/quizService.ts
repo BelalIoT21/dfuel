@@ -69,9 +69,8 @@ class MongoQuizService {
     }
     
     try {
-      // Generate appropriate ID starting at 5
+      // Explicit ID generation with enforced minimum of 5
       if (!quiz._id) {
-        // Get all existing quizzes
         const existingQuizzes = await this.quizzesCollection.find({}, { projection: { _id: 1 } }).toArray();
         
         // Extract numeric IDs
@@ -80,14 +79,15 @@ class MongoQuizService {
           .filter(id => /^\d+$/.test(id))
           .map(id => parseInt(id));
         
-        // Find the highest numeric ID, defaulting to 4 if none found
-        // This ensures new IDs start at 5
+        // Find the highest numeric ID, default to 4 if none found
+        // Enforce minimum ID of 5
         const highestId = numericIds.length > 0 ? Math.max(...numericIds) : 4;
+        const newId = Math.max(highestId + 1, 5);
         
-        // FIXED: Ensure new ID is at least 5
-        quiz._id = String(Math.max(highestId + 1, 5));
+        // Set the new ID as a string
+        quiz._id = String(newId);
         
-        console.log(`Generated new quiz ID: ${quiz._id}`);
+        console.log(`Generated new quiz ID: ${quiz._id} (enforced minimum of 5)`);
       }
       
       console.log(`Adding new quiz to MongoDB: ${quiz.title} (ID: ${quiz._id})`);

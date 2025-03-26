@@ -33,7 +33,7 @@ class CertificationDatabaseService {
       const stringUserId = String(userId);
       const stringMachineId = String(machineId);
       
-      console.log(`Calling API to add certification: userId=${stringUserId}, machineId=${stringMachineId}`);
+      console.log(`Normalized IDs for certification: userId=${stringUserId}, machineId=${stringMachineId}`);
       
       // First attempt - direct API call
       try {
@@ -47,10 +47,26 @@ class CertificationDatabaseService {
           body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
         });
         
-        const responseData = await directResponse.json();
-        console.log("Direct fetch API response:", responseData);
+        // Log full details of the response
+        console.log("Direct API call status:", directResponse.status);
+        console.log("Direct API call headers:", Object.fromEntries([...directResponse.headers]));
         
-        if (directResponse.ok || responseData.success) {
+        // Clone the response for text and json parsing
+        const responseClone = directResponse.clone();
+        const responseText = await responseClone.text();
+        console.log("Direct API call response text:", responseText);
+        
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (e) {
+          console.log("Response was not valid JSON");
+          responseData = { error: "Not JSON" };
+        }
+        
+        console.log("Direct fetch API response data:", responseData);
+        
+        if (directResponse.ok || (responseData && responseData.success)) {
           console.log("Direct API call successful");
           return true;
         }
@@ -100,6 +116,15 @@ class CertificationDatabaseService {
           },
           body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
         });
+        
+        // Try to get response text
+        let responseText = "";
+        try {
+          responseText = await alternativeResponse.text();
+          console.log("Alternative endpoint response text:", responseText);
+        } catch (e) {
+          console.error("Could not read alternative endpoint response text:", e);
+        }
         
         if (alternativeResponse.ok) {
           console.log("Alternative API endpoint successful");
