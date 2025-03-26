@@ -1,154 +1,154 @@
 
-import { ChangeEvent, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Image, File, X } from 'lucide-react';
+import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  validateFile, 
-  fileToDataUrl, 
-  IMAGE_TYPES, 
-  MAX_IMAGE_SIZE_MB
-} from '@/utils/fileUpload';
+import { fileToDataUrl, validateFile, IMAGE_TYPES, MAX_IMAGE_SIZE_MB } from '@/utils/fileUpload';
 
 interface FileUploadProps {
-  onFileChange: (dataUrl: string | null) => void;
   existingUrl?: string;
+  onFileChange: (dataUrl: string | null) => void;
   label?: string;
-  accept?: string;
-  allowedTypes?: string[];
   maxSizeMB?: number;
-  className?: string;
+  allowedTypes?: string[];
 }
 
-const FileUpload = ({
-  onFileChange,
+const FileUpload: React.FC<FileUploadProps> = ({
   existingUrl,
-  label = "Upload Image",
-  accept = "image/*",
-  allowedTypes = IMAGE_TYPES,
+  onFileChange,
+  label = 'Upload File',
   maxSizeMB = MAX_IMAGE_SIZE_MB,
-  className = "",
-}: FileUploadProps) => {
+  allowedTypes = IMAGE_TYPES,
+}) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
-  const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
-    
-    // Display file size for debugging - showing in MB for clarity
-    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    console.log(`Processing file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
-    setFileSize(`${fileSizeMB}MB`);
-    
-    // Validate file
-    const validationError = validateFile(file, allowedTypes, maxSizeMB);
-    if (validationError) {
-      toast({
-        title: "Error",
-        description: validationError,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setLoading(true);
+
     try {
-      // Get data URL directly without compression
+      setIsUploading(true);
+      setFileName(file.name);
+      
+      // Calculate and format file size
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      setFileSize(`${fileSizeMB} MB`);
+      
+      console.log(`Processing file: ${file.name}, size: ${fileSizeMB} MB, type: ${file.type}`);
+
+      // Validate file type and size
+      const validationError = validateFile(file, allowedTypes, maxSizeMB);
+      if (validationError) {
+        toast({
+          title: 'Invalid File',
+          description: validationError,
+          variant: 'destructive',
+        });
+        setIsUploading(false);
+        return;
+      }
+
+      // Convert file to data URL
       const dataUrl = await fileToDataUrl(file);
+      console.log(`File converted to data URL (length: ${dataUrl.length})`);
       
-      const dataUrlSizeMB = (dataUrl.length / (1024 * 1024)).toFixed(2);
-      console.log(`File converted to data URL, size: ${dataUrlSizeMB}MB`);
-      
-      // Update the preview and notify parent component
       setPreview(dataUrl);
       onFileChange(dataUrl);
       
       toast({
-        title: "File Uploaded",
-        description: `Successfully processed ${file.name} (${fileSizeMB}MB)`,
-        duration: 3000
+        title: 'File Uploaded',
+        description: `${file.name} (${fileSizeMB} MB) uploaded successfully`,
       });
     } catch (error) {
-      console.error("Error processing file:", error);
+      console.error('Error processing file:', error);
       toast({
-        title: "Error",
-        description: "Failed to process the file. Please try a smaller image.",
-        variant: "destructive"
+        title: 'Upload Failed',
+        description: error instanceof Error ? error.message : 'Failed to process file',
+        variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
-  
-  const clearFile = () => {
+
+  const handleRemove = () => {
     setPreview(null);
+    setFileName(null);
     setFileSize(null);
     onFileChange(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
-  
-  const isImage = accept.includes('image');
-  
+
+  const isImageType = allowedTypes.every(type => type.startsWith('image/'));
+
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className="space-y-2">
       {preview ? (
-        <div className="relative rounded-md overflow-hidden border border-gray-200">
-          {isImage ? (
-            <img 
-              src={preview} 
-              alt="File preview" 
-              className="w-full h-auto max-h-[200px] object-contain bg-gray-50"
-            />
-          ) : (
-            <div className="flex items-center justify-center bg-gray-50 p-4 h-[200px]">
-              <File className="w-16 h-16 text-gray-400" />
-              <span className="ml-2 text-sm text-gray-500">File uploaded</span>
+        <div className="relative border border-gray-200 rounded-md overflow-hidden">
+          {isImageType && (
+            <div className="relative aspect-video">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-contain bg-gray-50"
+              />
             </div>
           )}
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-80"
-            onClick={clearFile}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          {fileSize && (
-            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-              {fileSize}
+          
+          <div className="p-2 bg-gray-50 flex justify-between items-center">
+            <div className="text-sm">
+              {fileName && <p className="font-medium truncate">{fileName}</p>}
+              {fileSize && <p className="text-xs text-gray-500">{fileSize}</p>}
+              {!fileName && existingUrl && <p className="text-xs text-gray-500">Existing file</p>}
             </div>
-          )}
+            <Button 
+              type="button" 
+              size="sm" 
+              variant="ghost" 
+              onClick={handleRemove}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Remove</span>
+            </Button>
+          </div>
         </div>
       ) : (
-        <>
-          <div className="flex items-center gap-2">
-            {isImage ? (
-              <Image className="h-5 w-5 text-gray-500" />
+        <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+          <div className="flex flex-col items-center justify-center space-y-2">
+            {isImageType ? (
+              <ImageIcon className="h-8 w-8 text-gray-400" />
             ) : (
-              <File className="h-5 w-5 text-gray-500" />
+              <Upload className="h-8 w-8 text-gray-400" />
             )}
-            <span className="text-sm">{label}</span>
+            <div className="text-sm text-gray-600">
+              <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">
+                <span>{label}</span>
+                <input
+                  id="file-upload"
+                  name="file-upload"
+                  type="file"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                  accept={allowedTypes.join(',')}
+                  ref={fileInputRef}
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              {isImageType 
+                ? `Supports ${allowedTypes.map(t => t.split('/')[1]).join(', ')} up to ${maxSizeMB}MB`
+                : `Max file size: ${maxSizeMB}MB`}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
-              type="file"
-              accept={accept}
-              onChange={handleFileChange}
-              className="cursor-pointer"
-              disabled={loading}
-            />
-          </div>
-          <p className="text-xs text-gray-500">
-            Max file size: {maxSizeMB}MB. For best results, use smaller images when possible.
-          </p>
-        </>
-      )}
-      {loading && (
-        <div className="flex justify-center">
-          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
         </div>
       )}
     </div>

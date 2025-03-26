@@ -58,8 +58,8 @@ export class MachineDatabaseService extends BaseService {
     try {
       console.log("Creating machine with data:", machineData);
       
-      // Create a clean copy to work with
-      const cleanedData = { ...machineData };
+      // Create a deep copy to work with
+      const cleanedData = JSON.parse(JSON.stringify(machineData));
       
       // Ensure both imageUrl and image fields are set to the same value
       if (cleanedData.imageUrl && !cleanedData.image) {
@@ -70,18 +70,16 @@ export class MachineDatabaseService extends BaseService {
       
       // Clean empty strings for linkedCourseId and linkedQuizId
       if (cleanedData.linkedCourseId === '') {
-        cleanedData.linkedCourseId = undefined;
+        cleanedData.linkedCourseId = null;
       }
       
       if (cleanedData.linkedQuizId === '') {
-        cleanedData.linkedQuizId = undefined;
+        cleanedData.linkedQuizId = null;
       }
 
-      // Explicitly convert requiresCertification to boolean
-      if (typeof cleanedData.requiresCertification === 'string') {
-        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
-      } else {
-        // Make sure it's a boolean
+      // Explicitly convert requiresCertification to boolean - critical fix
+      if (cleanedData.requiresCertification !== undefined) {
+        // Force it to be a proper boolean value
         cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
       }
       
@@ -111,6 +109,7 @@ export class MachineDatabaseService extends BaseService {
     try {
       // Make a deep copy of the machine data to avoid modifying the original
       const cleanedData = JSON.parse(JSON.stringify(machineData));
+      console.log("Original update data:", cleanedData);
       
       // For standard machines (1-4), ensure we use the correct image if none is provided
       if (['1', '2', '3', '4'].includes(machineId) && (!cleanedData.imageUrl || cleanedData.imageUrl === '')) {
@@ -127,14 +126,13 @@ export class MachineDatabaseService extends BaseService {
       }
       
       // Critical fix for certification requirements
-      // Always include the value in the update and ensure it's a boolean
-      console.log(`requiresCertification in update data: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
-      
-      // Always explicitly convert to boolean
-      if (typeof cleanedData.requiresCertification === 'string') {
-        cleanedData.requiresCertification = cleanedData.requiresCertification === 'true';
-      } else if (cleanedData.requiresCertification !== undefined) {
+      // Always ensure requiresCertification is a boolean
+      if (cleanedData.requiresCertification !== undefined) {
+        // Always force it to be a boolean
         cleanedData.requiresCertification = Boolean(cleanedData.requiresCertification);
+        console.log(`requiresCertification explicitly set to: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
+      } else {
+        console.log("requiresCertification not provided in update");
       }
       
       // Fix: Handle courses and quizzes with explicit property checks
@@ -165,7 +163,6 @@ export class MachineDatabaseService extends BaseService {
       }
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
-      console.log(`Final requiresCertification value: ${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`);
       
       const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
       console.log(`Update response for machine ${machineId}:`, response);
@@ -207,10 +204,22 @@ export class MachineDatabaseService extends BaseService {
       if (response.data && Array.isArray(response.data)) {
         response.data = response.data.map(machine => {
           const imageUrl = machine.imageUrl || machine.image || '/placeholder.svg';
+
+          // Ensure requiresCertification is a boolean
+          let requiresCertification: boolean;
+          if (typeof machine.requiresCertification === 'boolean') {
+            requiresCertification = machine.requiresCertification;
+          } else if (typeof machine.requiresCertification === 'string') {
+            requiresCertification = machine.requiresCertification === 'true';
+          } else {
+            requiresCertification = Boolean(machine.requiresCertification);
+          }
+
           return {
             ...machine,
             imageUrl: imageUrl,
-            image: imageUrl
+            image: imageUrl,
+            requiresCertification: requiresCertification
           };
         });
       }
@@ -229,8 +238,23 @@ export class MachineDatabaseService extends BaseService {
       // Ensure the machine has both imageUrl and image properties
       if (response.data) {
         const imageUrl = response.data.imageUrl || response.data.image || '/placeholder.svg';
-        response.data.imageUrl = imageUrl;
-        response.data.image = imageUrl;
+        
+        // Ensure requiresCertification is a boolean
+        let requiresCertification: boolean;
+        if (typeof response.data.requiresCertification === 'boolean') {
+          requiresCertification = response.data.requiresCertification;
+        } else if (typeof response.data.requiresCertification === 'string') {
+          requiresCertification = response.data.requiresCertification === 'true';
+        } else {
+          requiresCertification = Boolean(response.data.requiresCertification);
+        }
+        
+        return {
+          ...response.data,
+          imageUrl: imageUrl,
+          image: imageUrl,
+          requiresCertification: requiresCertification
+        };
       }
       
       return response.data;

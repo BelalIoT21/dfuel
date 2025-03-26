@@ -207,11 +207,14 @@ class MongoMachineService {
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB - updating`);
         
-        // Ensure requiresCertification is always a boolean
-        if (typeof machine.requiresCertification === 'string') {
-          machine.requiresCertification = machine.requiresCertification === 'true';
-        } else if (machine.requiresCertification !== undefined) {
-          machine.requiresCertification = Boolean(machine.requiresCertification);
+        // Ensure requiresCertification is always a boolean - critical fix
+        if (machine.requiresCertification !== undefined) {
+          if (typeof machine.requiresCertification === 'string') {
+            machine.requiresCertification = machine.requiresCertification === 'true';
+          } else {
+            machine.requiresCertification = Boolean(machine.requiresCertification);
+          }
+          console.log(`requiresCertification converted to: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
         }
         
         // Update the machine to ensure it has all properties
@@ -222,11 +225,14 @@ class MongoMachineService {
         return result.acknowledged;
       }
       
-      // Ensure requiresCertification is always a boolean
-      if (typeof machine.requiresCertification === 'string') {
-        machine.requiresCertification = machine.requiresCertification === 'true';
-      } else if (machine.requiresCertification !== undefined) {
-        machine.requiresCertification = Boolean(machine.requiresCertification);
+      // Ensure requiresCertification is always a boolean - critical fix
+      if (machine.requiresCertification !== undefined) {
+        if (typeof machine.requiresCertification === 'string') {
+          machine.requiresCertification = machine.requiresCertification === 'true';
+        } else {
+          machine.requiresCertification = Boolean(machine.requiresCertification);
+        }
+        console.log(`requiresCertification converted to: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
       }
       
       // Add the machine to the collection
@@ -271,9 +277,9 @@ class MongoMachineService {
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.status !== undefined) updateData.status = updates.status;
       
-      // Ensure requiresCertification is properly handled
-      // Always convert to boolean and always include in update if present
+      // Ensure requiresCertification is properly handled - critical fix
       if ('requiresCertification' in updates) {
+        // Force it to be a boolean
         if (typeof updates.requiresCertification === 'string') {
           updateData.requiresCertification = updates.requiresCertification === 'true';
         } else {

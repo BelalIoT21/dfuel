@@ -42,7 +42,7 @@ const AdminMachineEdit = () => {
           if (machine) {
             console.log("Loaded machine data:", machine);
             
-            // Ensure requiresCertification is a proper boolean
+            // Ensure requiresCertification is a proper boolean - key fix
             const requiresCertification = typeof machine.requiresCertification === 'boolean' 
               ? machine.requiresCertification 
               : machine.requiresCertification === 'true' || Boolean(machine.requiresCertification);

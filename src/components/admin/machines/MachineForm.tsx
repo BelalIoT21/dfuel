@@ -136,7 +136,7 @@ const MachineForm: React.FC<MachineFormProps> = ({
   };
 
   const handleImageChange = (dataUrl: string | null) => {
-    console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl.length} bytes]` : 'null');
+    console.log("Image changed:", dataUrl ? `[data URL of ${dataUrl?.length} bytes]` : 'null');
     setFormData(prev => ({
       ...prev,
       imageUrl: dataUrl || ''
