@@ -53,6 +53,12 @@ const quizSchema = new mongoose.Schema<IQuiz>(
         options: {
           type: [String],
           required: true,
+          validate: {
+            validator: function(v: string[]) {
+              return v.length >= 2;
+            },
+            message: 'Quiz must have at least 2 options'
+          }
         },
         correctAnswer: {
           type: Number,

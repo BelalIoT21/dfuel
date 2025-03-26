@@ -42,6 +42,7 @@ const AdminQuizEdit = () => {
           const quiz = await quizDatabaseService.getQuizById(id);
           
           if (quiz) {
+            console.log('Loaded quiz data:', quiz);
             setFormData({
               title: quiz.title || '',
               description: quiz.description || '',
@@ -80,7 +81,7 @@ const AdminQuizEdit = () => {
     try {
       setIsSubmitting(true);
       
-      // Ensure required fields have at least minimal content
+      // Validate form data 
       if (!formData.title.trim()) {
         throw new Error('Title is required');
       }
@@ -94,25 +95,43 @@ const AdminQuizEdit = () => {
         throw new Error('At least one question is required');
       }
       
-      for (const question of formData.questions) {
-        if (!question.question.trim()) {
+      // Clean up option values and validate each question
+      const cleanedQuestions = formData.questions.map(q => {
+        // Filter out empty options
+        const filteredOptions = q.options.filter(opt => opt.trim() !== '');
+        
+        if (!q.question.trim()) {
           throw new Error('All questions must have content');
         }
         
-        if (!question.options || question.options.length < 2) {
+        if (filteredOptions.length < 2) {
           throw new Error('Each question must have at least 2 options');
         }
         
-        for (const option of question.options) {
-          if (!option.trim()) {
-            throw new Error('All options must have content');
-          }
+        // Adjust correctAnswer if needed after filtering options
+        let correctAnswer = q.correctAnswer;
+        if (correctAnswer >= filteredOptions.length) {
+          correctAnswer = 0;
         }
-      }
+        
+        return {
+          ...q,
+          question: q.question.trim(),
+          options: filteredOptions,
+          correctAnswer: correctAnswer,
+        };
+      });
+      
+      const cleanedFormData = {
+        ...formData,
+        questions: cleanedQuestions,
+      };
+      
+      console.log('Submitting quiz data:', cleanedFormData);
       
       if (isEditing && id) {
         // Update existing quiz
-        const success = await quizDatabaseService.updateQuiz(id, formData);
+        const success = await quizDatabaseService.updateQuiz(id, cleanedFormData);
         
         if (success) {
           toast({
@@ -125,7 +144,7 @@ const AdminQuizEdit = () => {
         }
       } else {
         // Create new quiz
-        const result = await quizDatabaseService.createQuiz(formData);
+        const result = await quizDatabaseService.createQuiz(cleanedFormData);
         
         if (result) {
           toast({

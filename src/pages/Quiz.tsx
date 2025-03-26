@@ -9,20 +9,21 @@ import { certificationService } from '@/services/certificationService';
 import { ChevronLeft, Loader2, CheckCircle, XCircle, Award } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { quizDatabaseService } from '@/services/database/quizService';
 
 interface Question {
-  id: number;
-  text: string;
+  id?: number;
+  question: string;
   options: string[];
   correctAnswer: number;
+  explanation?: string;
 }
 
 const defaultSafetyQuestions: Question[] = [
   {
     id: 1,
-    text: "What should you always wear when operating machinery?",
+    question: "What should you always wear when operating machinery?",
     options: [
       "Jewelry and loose clothing",
       "Appropriate Personal Protective Equipment (PPE)",
@@ -83,7 +84,7 @@ const generateMachineQuestions = (machine: any): Question[] => {
   return [
     {
       id: 1,
-      text: `What should you always do before operating the ${machineName}?`,
+      question: `What should you always do before operating the ${machineName}?`,
       options: [
         "Check your phone",
         "Ensure the work area is clean and the machine is in working order",
@@ -146,6 +147,7 @@ const Quiz = () => {
   const { toast } = useToast();
 
   const [machine, setMachine] = useState<any>(null);
+  const [quiz, setQuiz] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -176,8 +178,30 @@ const Quiz = () => {
         
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
+
+        // Check if the machine has a linked quiz
+        if (machineData.linkedQuizId) {
+          try {
+            console.log(`Machine has linked quiz: ${machineData.linkedQuizId}`);
+            const quizData = await quizDatabaseService.getQuizById(machineData.linkedQuizId);
+            
+            if (quizData && quizData.questions && quizData.questions.length > 0) {
+              console.log('Retrieved linked quiz data:', quizData);
+              setQuiz(quizData);
+              setQuestions(quizData.questions);
+              setAnswers(new Array(quizData.questions.length).fill(-1));
+              setLoading(false);
+              return;
+            } else {
+              console.log('Linked quiz has no questions, falling back to generated questions');
+            }
+          } catch (err) {
+            console.error('Error fetching linked quiz:', err);
+            // Continue with generated questions if there's an error
+          }
+        }
         
-        // Generate questions based on machine type
+        // Generate default questions based on machine type if no linked quiz
         if (id === '6') {
           // Safety course
           setQuestions(defaultSafetyQuestions);
@@ -230,8 +254,9 @@ const Quiz = () => {
     const finalScore = (correctCount / questions.length) * 100;
     setScore(finalScore);
     
-    // Determine if passed (80% or higher)
-    const hasPassed = finalScore >= 80;
+    // Determine if passed (use quiz passing score if available, otherwise 80%)
+    const passingThreshold = quiz ? quiz.passingScore : 80;
+    const hasPassed = finalScore >= passingThreshold;
     setPassed(hasPassed);
     
     // If passed, grant certification
@@ -302,7 +327,7 @@ const Quiz = () => {
       <Card className="shadow-lg border-purple-100">
         <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
           <CardTitle className="text-2xl text-purple-800">
-            {machine?.name} Certification Quiz
+            {quiz ? quiz.title : `${machine?.name} Certification Quiz`}
           </CardTitle>
         </CardHeader>
         
@@ -324,7 +349,7 @@ const Quiz = () => {
                   <div className="flex flex-col items-center gap-2">
                     <XCircle className="h-16 w-16 text-red-500" />
                     <h2 className="text-2xl font-bold text-red-600">Not Quite There</h2>
-                    <p className="text-lg">Your score of {score.toFixed(0)}% didn't meet the 80% passing requirement</p>
+                    <p className="text-lg">Your score of {score.toFixed(0)}% didn't meet the {quiz ? quiz.passingScore : 80}% passing requirement</p>
                     <p className="text-gray-500 mt-2">Review the course material and try again</p>
                   </div>
                 )}
@@ -332,7 +357,7 @@ const Quiz = () => {
               
               <div className="space-y-4 mt-8">
                 {questions.map((question, index) => (
-                  <div key={question.id} className="border rounded-md p-4">
+                  <div key={question.id || index} className="border rounded-md p-4">
                     <div className="flex items-start gap-3">
                       <div className={`mt-1 flex-shrink-0 ${
                         answers[index] === question.correctAnswer 
@@ -344,7 +369,7 @@ const Quiz = () => {
                           : <XCircle className="h-5 w-5" />}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{question.text}</p>
+                        <p className="font-medium">{question.question}</p>
                         <ul className="mt-2 space-y-1">
                           {question.options.map((option, optionIndex) => (
                             <li 
@@ -361,6 +386,11 @@ const Quiz = () => {
                             </li>
                           ))}
                         </ul>
+                        {question.explanation && (
+                          <div className="mt-2 text-sm bg-blue-50 p-2 rounded text-blue-700">
+                            <strong>Explanation:</strong> {question.explanation}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -369,11 +399,17 @@ const Quiz = () => {
             </div>
           ) : (
             <div className="space-y-8">
+              {quiz && quiz.description && (
+                <div className="mb-6 text-gray-600 border-b pb-4">
+                  {quiz.description}
+                </div>
+              )}
+              
               {questions.map((question, index) => (
-                <div key={question.id} className="border rounded-md p-4">
-                  <p className="font-medium mb-4">{question.text}</p>
+                <div key={question.id || index} className="border rounded-md p-4">
+                  <p className="font-medium mb-4">{question.question}</p>
                   <RadioGroup 
-                    value={answers[index].toString()} 
+                    value={answers[index] >= 0 ? answers[index].toString() : ""} 
                     onValueChange={(value) => handleAnswerChange(index, parseInt(value))}
                   >
                     {question.options.map((option, optionIndex) => (

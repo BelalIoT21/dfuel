@@ -43,6 +43,26 @@ export const createQuiz = async (req: Request, res: Response) => {
   try {
     const { title, description, category, imageUrl, questions, passingScore, relatedMachineIds, relatedCourseId, difficulty } = req.body;
 
+    // Basic validation
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+
+    // Validate questions if provided
+    if (questions && questions.length > 0) {
+      for (const question of questions) {
+        if (!question.question || !question.question.trim()) {
+          return res.status(400).json({ message: 'All questions must have content' });
+        }
+        if (!question.options || question.options.length < 2) {
+          return res.status(400).json({ message: 'Each question must have at least 2 options' });
+        }
+        if (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
+          return res.status(400).json({ message: 'Each question must have a valid correct answer' });
+        }
+      }
+    }
+
     // Generate a new ID based on the count of quizzes + 100 (to avoid conflicts with default IDs)
     const count = await Quiz.countDocuments();
     const newId = String(count + 100);
@@ -53,14 +73,15 @@ export const createQuiz = async (req: Request, res: Response) => {
       description,
       category,
       imageUrl,
-      questions,
-      passingScore,
-      relatedMachineIds,
+      questions: questions || [],
+      passingScore: passingScore || 70,
+      relatedMachineIds: relatedMachineIds || [],
       relatedCourseId,
-      difficulty
+      difficulty: difficulty || 'Beginner'
     });
 
     const savedQuiz = await quiz.save();
+    console.log('Quiz created successfully:', savedQuiz);
     res.status(201).json(savedQuiz);
   } catch (error) {
     console.error('Error in createQuiz:', error);
@@ -73,6 +94,26 @@ export const updateQuiz = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { title, description, category, imageUrl, questions, passingScore, relatedMachineIds, relatedCourseId, difficulty } = req.body;
+
+    // Basic validation
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+
+    // Validate questions if provided
+    if (questions && questions.length > 0) {
+      for (const question of questions) {
+        if (!question.question || !question.question.trim()) {
+          return res.status(400).json({ message: 'All questions must have content' });
+        }
+        if (!question.options || question.options.length < 2) {
+          return res.status(400).json({ message: 'Each question must have at least 2 options' });
+        }
+        if (question.correctAnswer === undefined || question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
+          return res.status(400).json({ message: 'Each question must have a valid correct answer' });
+        }
+      }
+    }
 
     // Find the quiz
     let quiz;
@@ -94,15 +135,16 @@ export const updateQuiz = async (req: Request, res: Response) => {
         description,
         category,
         imageUrl,
-        questions,
-        passingScore,
-        relatedMachineIds,
+        questions: questions || [],
+        passingScore: passingScore || 70,
+        relatedMachineIds: relatedMachineIds || [],
         relatedCourseId,
-        difficulty
+        difficulty: difficulty || 'Beginner'
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
+    console.log('Quiz updated successfully:', updatedQuiz);
     res.status(200).json(updatedQuiz);
   } catch (error) {
     console.error('Error in updateQuiz:', error);
