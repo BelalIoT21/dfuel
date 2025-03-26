@@ -209,7 +209,7 @@ const ActiveBookings = () => {
                       className="border-blue-300 text-blue-700 hover:bg-blue-50"
                       onClick={() => handleViewMachine(booking.machineId)}
                     >
-                      View Machine
+                      View Booking
                     </Button>
                   </div>
                 </div>

@@ -156,7 +156,7 @@ const BookingsList = ({ bookings, getMachineName, onViewDetails, onDeleteBooking
                   onClick={() => onViewDetails(booking)}
                 >
                   <Info size={16} className="mr-1" />
-                  View
+                  View Booking
                 </Button>
                 
                 <Button 
