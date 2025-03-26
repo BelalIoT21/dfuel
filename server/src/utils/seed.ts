@@ -14,7 +14,8 @@ import {
 } from './seeds/machineSeeder';
 import { 
   seedCourses, 
-  updateCourseImages 
+  updateCourseImages,
+  checkAndSeedCourses
 } from './seeds/courseSeeder';
 import { seedQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
@@ -35,7 +36,7 @@ export class SeedService {
 
       // Get existing machine IDs
       const existingMachines = await Machine.find({}, '_id');
-      const existingMachineIds = existingMachines.map(m => m._id);
+      const existingMachineIds = existingMachines.map(m => m._id.toString());
       
       console.log('Existing machine IDs:', existingMachineIds);
       
@@ -48,22 +49,35 @@ export class SeedService {
       if (missingMachineIds.length > 0) {
         console.log(`Missing machine IDs: ${missingMachineIds.join(', ')}. Seeding missing machines...`);
         await seedMissingMachines(missingMachineIds);
-        
-        // After seeding, we need to ensure proper order
-        await ensureMachineOrder();
-      } else {
-        // Update images even if machines exist
-        console.log('Updating machine images...');
-        await updateMachineImages();
       }
+      
+      // Always update machine images and ensure proper order
+      console.log('Updating machine images...');
+      await updateMachineImages();
+      await ensureMachineOrder();
 
-      // Check if we need to seed courses
-      if (courseCount === 0) {
-        console.log('No courses found. Seeding courses...');
-        await seedCourses();
+      // Get existing course IDs
+      const existingCourses = await Course.find({}, '_id');
+      const existingCourseIds = existingCourses.map(c => c._id.toString());
+      
+      console.log('Existing course IDs:', existingCourseIds);
+      
+      // Define expected course IDs (1-4)
+      const expectedCourseIds = ['1', '2', '3', '4'];
+      
+      // Check if any expected course IDs are missing
+      const missingCourseIds = expectedCourseIds.filter(id => !existingCourseIds.includes(id));
+      
+      if (missingCourseIds.length > 0 || courseCount === 0) {
+        console.log(`Missing course IDs: ${missingCourseIds.join(', ')}. Seeding courses...`);
+        if (courseCount === 0) {
+          await seedCourses();
+        } else {
+          await checkAndSeedCourses();
+        }
       } else {
         // Update course images even if courses exist
-        console.log('Updating course images...');
+        console.log('All expected courses found. Updating course images...');
         await updateCourseImages();
       }
 
@@ -74,14 +88,10 @@ export class SeedService {
       }
 
       if (userCount > 0 && machineCount > 0 && bookingCount > 0 && courseCount > 0 && quizCount > 0) {
-        console.log('Database already seeded. All expected entities present. Checking order...');
-        // Always check and fix order even if all machines exist
-        await ensureMachineOrder();
-        return;
+        console.log('Database already seeded. All expected entities present.');
       }
 
-      // If we reach here, something may be missing, ensure it's created
-      console.log('Database seeded successfully!');
+      console.log('Database seeding complete!');
     } catch (error) {
       console.error('Error seeding database:', error);
       throw error;

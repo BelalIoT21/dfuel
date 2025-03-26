@@ -34,6 +34,10 @@ export async function updateMachineImages() {
       {
         _id: '3',
         imageUrl: '/lovable-uploads/381a5202-3287-46e3-9eda-f836609b10ac.png'
+      },
+      {
+        _id: '4',
+        imageUrl: '/machines/bambu-lab.jpg'
       }
     ];
 
