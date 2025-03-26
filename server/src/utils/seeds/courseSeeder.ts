@@ -1,3 +1,4 @@
+
 import { Course } from '../../models/Course';
 
 // Define an interface for course template objects

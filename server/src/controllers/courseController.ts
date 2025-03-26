@@ -41,11 +41,25 @@ export const getCourseById = async (req: Request, res: Response) => {
 // Create new course
 export const createCourse = async (req: Request, res: Response) => {
   try {
-    const { title, description, category, content, imageUrl, relatedMachineIds, quizId, difficulty } = req.body;
+    const { title, description, category, content, imageUrl, relatedMachineIds, quizId, difficulty, startingId } = req.body;
 
-    // Generate a new ID based on the count of courses + 5 (to start at 5)
-    const count = await Course.countDocuments();
-    const newId = String(count + 5);
+    // Generate a new ID starting at the specified startingId or 5 as default
+    const minStartId = startingId || 5;
+    
+    // Get all existing course IDs and filter out numeric ones
+    const existingCourses = await Course.find({}, { _id: 1 });
+    const numericIds = existingCourses
+      .map(c => c._id)
+      .filter(id => /^\d+$/.test(id.toString()))
+      .map(id => parseInt(id.toString()));
+    
+    // Find max ID or use minStartId - 1
+    const maxId = numericIds.length > 0 ? Math.max(...numericIds) : (minStartId - 1);
+    
+    // New ID is max + 1, but at least minStartId
+    const newId = String(Math.max(maxId + 1, minStartId));
+    
+    console.log(`Creating new course with ID: ${newId} (min starting ID: ${minStartId})`);
 
     const course = new Course({
       _id: newId,
