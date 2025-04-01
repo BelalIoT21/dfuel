@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -19,17 +18,13 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // Verify the server is running first
-      try {
-        const healthResponse = await apiService.checkHealth();
-        if (!healthResponse.data || healthResponse.status !== 200) {
-          console.error("Server health check failed:", healthResponse);
-          throw new Error("Cannot connect to server. Please try again later.");
-        }
+      // Verify the server is running first without throwing an error
+      console.log("Checking server health before login attempt");
+      const healthResponse = await apiService.checkHealth();
+      if (!healthResponse.data || healthResponse.status !== 200) {
+        console.warn("Health check warning - proceeding with login anyway:", healthResponse);
+      } else {
         console.log("Server health check passed, proceeding with login");
-      } catch (healthError) {
-        console.error("Health check error:", healthError);
-        throw new Error("Cannot connect to server. Please try again later.");
       }
   
       // MongoDB login via API
