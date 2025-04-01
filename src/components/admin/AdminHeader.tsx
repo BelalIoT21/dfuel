@@ -1,6 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { User } from 'lucide-react';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export const AdminHeader = () => {
           onClick={() => navigate('/profile')} 
           className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full md:w-auto"
         >
+          <User className="mr-2 h-4 w-4" />
           My Profile
         </Button>
       </div>

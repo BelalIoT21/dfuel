@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { DashboardContent } from '@/components/admin/dashboard/DashboardContent';
@@ -7,8 +8,14 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  useEffect(() => {
+    if (!user?.isAdmin) {
+      navigate('/home');
+    }
+  }, [user, navigate]);
+
+  // Early return if not admin to prevent flash of admin content
   if (!user?.isAdmin) {
-    navigate('/dashboard');
     return null;
   }
 

@@ -2,10 +2,11 @@
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { LogOut, ArrowLeft } from 'lucide-react';
+import { LogOut, ArrowLeft, User } from 'lucide-react';
 
 const ProfileHeader = () => {
   const { user, logout } = useAuth();
+  // Use the correct path for admins
   const redirectPath = user?.isAdmin ? '/admin' : '/home';
 
   return (
