@@ -211,8 +211,13 @@ const Index = () => {
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
-    const success = await login(email, password);
-    console.log("Login success:", success);
+    try {
+      await login(email, password);
+      console.log("Login request completed");
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error; // Important: re-throw the error so the LoginForm can handle it
+    }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {

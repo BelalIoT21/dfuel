@@ -97,9 +97,11 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5 flex items-center" : "mb-3 py-2 flex items-center"}>
-            <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
-            <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
+          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5" : "mb-3 py-2"}>
+            <div className="flex items-center">
+              <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+              <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
+            </div>
           </Alert>
         )}
         
