@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { motion } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -35,6 +36,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   const [passwordError, setPasswordError] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -77,17 +79,25 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     }
   };
 
+  const cardHeaderClass = isMobile 
+    ? "pb-1 pt-2 px-3 md:p-6" 
+    : "pb-4 pt-6 px-6";
+  
+  const cardContentClass = isMobile
+    ? "p-3 md:p-6"
+    : "p-6";
+
   return (
     <Card className="shadow-lg border-purple-100 w-full">
-      <CardHeader className="pb-1 pt-2 px-3 md:p-6">
-        <CardTitle className="text-xl md:text-2xl">Sign In</CardTitle>
-        <CardDescription className="text-xs md:text-sm">
+      <CardHeader className={cardHeaderClass}>
+        <CardTitle className={isMobile ? "text-xl md:text-2xl" : "text-2xl"}>Sign In</CardTitle>
+        <CardDescription className={isMobile ? "text-xs md:text-sm" : "text-sm"}>
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-3 md:p-6">
+      <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className="mb-2 py-1">
+          <Alert variant="destructive" className="mb-4 py-1">
             <AlertCircle className="h-3.5 w-3.5" />
             <AlertDescription className="text-xs">{formError}</AlertDescription>
           </Alert>
@@ -95,26 +105,26 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-2"
+          className="space-y-4"
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className="space-y-1" variants={itemAnimation}>
-            <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
+          <motion.div className="space-y-2" variants={itemAnimation}>
+            <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full h-7 text-xs md:text-sm ${emailError ? 'border-red-500' : ''}`}
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${emailError ? 'border-red-500' : ''}`}
             />
             {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-1" variants={itemAnimation}>
-            <Label htmlFor="password" className="text-xs md:text-sm">Password</Label>
+          <motion.div className="space-y-2" variants={itemAnimation}>
+            <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -122,7 +132,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full h-7 text-xs md:text-sm ${passwordError ? 'border-red-500' : ''}`}
+                className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
               />
             </div>
             {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
@@ -131,7 +141,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700 h-7 text-xs md:text-sm mt-1"
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm mt-1' : 'h-10 text-sm mt-2'} bg-purple-600 hover:bg-purple-700`}
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
@@ -140,14 +150,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         </motion.form>
 
         <motion.div 
-          className="mt-2 text-center"
+          className="mt-4 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <button
             onClick={onToggleMode}
-            className="text-[10px] md:text-xs text-purple-600 hover:underline"
+            className={`${isMobile ? 'text-[10px] md:text-xs' : 'text-sm'} text-purple-600 hover:underline`}
             type="button"
           >
             Don't have an account? Register

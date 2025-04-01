@@ -256,40 +256,71 @@ const Index = () => {
       } 
     : { 
         minHeight: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         transition: 'all 0.3s ease',
       };
 
   return (
     <div 
-      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      className="bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-sm space-y-1 ${keyboardVisible ? 'mt-0' : 'mt-0'}`}>
-        <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
-          <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
-          {!keyboardVisible && (
-            <p className="mt-1 text-sm md:text-lg text-gray-600">
+      <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
+        {!isMobile && (
+          <div className="text-center mb-2">
+            <h1 className="text-4xl font-bold text-purple-800 tracking-tight">Dfuel</h1>
+            <p className="mt-1 text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </p>
-          )}
-          {serverStatus && !keyboardVisible && (
-            <div className={isConnected
-              ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
-              : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
-              {isConnected ? (
-                <>
-                  <Check className="h-3 w-3 mr-1" />
-                  Connected
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3 mr-1" />
-                  Disconnected
-                </>
-              )}
-            </div>
-          )}
-        </div>
+            {serverStatus && (
+              <div className={isConnected
+                ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
+                : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
+                {isConnected ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Connected
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    Disconnected
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isMobile && (
+          <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
+            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+            {!keyboardVisible && (
+              <p className="mt-1 text-sm md:text-lg text-gray-600">
+                {isLogin ? 'Welcome back!' : 'Create your account'}
+              </p>
+            )}
+            {serverStatus && !keyboardVisible && (
+              <div className={isConnected
+                ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
+                : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
+                {isConnected ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Connected
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    Disconnected
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           {isLogin ? (
