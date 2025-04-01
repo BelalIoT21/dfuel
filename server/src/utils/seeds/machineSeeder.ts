@@ -1,4 +1,3 @@
-
 import { Machine } from '../../models/Machine';
 import { ensureMachineOrder } from './seedHelpers';
 
@@ -208,7 +207,18 @@ export async function seedAllMachines() {
     for (let i = 1; i <= 6; i++) {
       const id = i.toString();
       if (!existingMachinesMap.has(id)) {
-        missingCoreIds.push(id);
+        // Check if this machine was permanently deleted
+        const deletedMachine = await Machine.findOne({ 
+          _id: id, 
+          permanentlyDeleted: true 
+        });
+        
+        // Only add to missing list if it wasn't permanently deleted
+        if (!deletedMachine) {
+          missingCoreIds.push(id);
+        } else {
+          console.log(`Machine ${id} was permanently deleted - not restoring`);
+        }
       }
     }
     
@@ -217,7 +227,7 @@ export async function seedAllMachines() {
       console.log(`Found ${missingCoreIds.length} missing core machines. Seeding them now...`);
       await seedMissingMachines(missingCoreIds);
     } else {
-      console.log("All core machines (1-6) are present. No need to seed any.");
+      console.log("All non-deleted core machines (1-6) are present. No need to seed any.");
     }
     
     // Gently update images for existing machines if they're missing
@@ -238,34 +248,78 @@ export async function seedAllMachines() {
   }
 }
 
-// New function to restore accidentally deleted machines
-export async function restoreDeletedMachines(): Promise<number> {
+// Updated function to restore accidentally deleted machines
+export async function restoreDeletedMachines(permanentlyDeletedIds: string[] = []): Promise<number> {
   try {
+    console.log("Starting restoreDeletedMachines with excluded IDs:", permanentlyDeletedIds);
+    
     // Get all machine IDs currently in the database
     const existingMachines = await Machine.find({}, '_id');
     const existingIds = new Set(existingMachines.map(m => m._id.toString()));
     
-    // For core machines (1-6), restore any that are missing
-    const missingCoreIds = [];
-    for (let i = 1; i <= 6; i++) {
-      const id = i.toString();
-      if (!existingIds.has(id)) {
-        missingCoreIds.push(id);
-      }
-    }
+    // For core machines (1-6), find soft-deleted ones that aren't permanently deleted
+    const softDeletedMachines = await Machine.find({
+      _id: { $in: ['1', '2', '3', '4', '5', '6'] },
+      deletedAt: { $exists: true },
+      permanentlyDeleted: { $ne: true }
+    });
+    
+    console.log(`Found ${softDeletedMachines.length} soft-deleted machines to restore`);
     
     let restoredCount = 0;
     
-    // Restore missing core machines from our templates
+    // Restore soft-deleted machines that aren't permanently deleted
+    for (const machine of softDeletedMachines) {
+      const id = machine._id.toString();
+      
+      // Skip permanently deleted machines
+      if (permanentlyDeletedIds.includes(id)) {
+        console.log(`Skipping permanently deleted machine ${id}`);
+        continue;
+      }
+      
+      // Restore the machine by clearing the deletedAt field
+      machine.deletedAt = undefined;
+      
+      // Reset status and maintenance note
+      machine.status = 'Available';
+      machine.maintenanceNote = '';
+      
+      await machine.save();
+      
+      console.log(`Restored soft-deleted machine ${id}`);
+      restoredCount++;
+    }
+    
+    // For core machines (1-6), restore any that are missing and not permanently deleted
+    const missingCoreIds = [];
+    for (let i = 1; i <= 6; i++) {
+      const id = i.toString();
+      
+      // Skip if machine exists or is permanently deleted
+      if (existingIds.has(id) || permanentlyDeletedIds.includes(id)) {
+        continue;
+      }
+      
+      // Check if this ID was permanently deleted
+      const permanentlyDeleted = await Machine.findOne({ 
+        _id: id, 
+        permanentlyDeleted: true 
+      });
+      
+      if (!permanentlyDeleted) {
+        missingCoreIds.push(id);
+      } else {
+        console.log(`Machine ${id} was permanently deleted - not restoring`);
+      }
+    }
+    
+    // Restore missing core machines that aren't permanently deleted
     if (missingCoreIds.length > 0) {
-      console.log(`Restoring ${missingCoreIds.length} deleted core machines: ${missingCoreIds.join(', ')}`);
+      console.log(`Restoring ${missingCoreIds.length} missing core machines: ${missingCoreIds.join(', ')}`);
       const restored = await seedMissingMachines(missingCoreIds);
       restoredCount += restored.length;
     }
-    
-    // For user-created machines, we would need to access a backup or archive
-    // This could be implemented by adding a "deleted" flag instead of actually removing
-    // machines from the database, or by using MongoDB's time-series collections for backups
     
     console.log(`Restored ${restoredCount} deleted machines successfully`);
     return restoredCount;

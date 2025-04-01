@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -7,7 +8,10 @@ export const getMachines = async (req: Request, res: Response) => {
   try {
     // Only return machines that haven't been soft-deleted or permanently deleted
     const machines = await Machine.find({ 
-      deletedAt: { $exists: false },
+      $or: [
+        { deletedAt: { $exists: false } },
+        { deletedAt: null }
+      ],
       permanentlyDeleted: { $ne: true }
     });
     res.status(200).json(machines);
@@ -27,13 +31,19 @@ export const getMachineById = async (req: Request, res: Response) => {
     if (mongoose.Types.ObjectId.isValid(id)) {
       machine = await Machine.findOne({
         _id: id,
-        deletedAt: { $exists: false },
+        $or: [
+          { deletedAt: { $exists: false } },
+          { deletedAt: null }
+        ],
         permanentlyDeleted: { $ne: true }
       });
     } else {
       machine = await Machine.findOne({
         _id: id,
-        deletedAt: { $exists: false },
+        $or: [
+          { deletedAt: { $exists: false } },
+          { deletedAt: null }
+        ],
         permanentlyDeleted: { $ne: true }
       });
     }
@@ -135,6 +145,8 @@ export const deleteMachine = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { permanent } = req.query; // Add support for permanent deletion query parameter
     
+    console.log(`Deleting machine ${id}, permanent: ${permanent}`);
+    
     let machine;
     try {
       machine = await Machine.findById(id);
@@ -154,30 +166,27 @@ export const deleteMachine = async (req: Request, res: Response) => {
       // This way it won't be recreated on server restart
       console.log(`Permanently deleting machine ${id}`);
       
-      // For core machines (1-6), just mark as permanently deleted instead of removing
-      if (isCoreMachine) {
-        await Machine.findByIdAndUpdate(id, { 
-          deletedAt: new Date(),
-          permanentlyDeleted: true,
-          status: 'Maintenance',
-          maintenanceNote: 'This machine has been permanently deleted.'
-        });
-        
-        console.log(`Core machine ${id} marked as permanently deleted`);
-        return res.status(200).json({ 
-          message: 'Core machine marked as permanently deleted',
-          softDeleted: true
-        });
-      } else {
-        // For user-created machines, we can actually delete them
-        await Machine.findByIdAndDelete(id);
-        console.log(`User-created machine ${id} permanently deleted from database`);
-        return res.status(200).json({ message: 'Machine permanently deleted' });
-      }
+      // For both core and user-created machines, mark as permanently deleted
+      await Machine.findByIdAndUpdate(id, { 
+        deletedAt: new Date(),
+        permanentlyDeleted: true,
+        status: 'Maintenance',
+        maintenanceNote: 'This machine has been permanently deleted.'
+      });
+      
+      console.log(`Machine ${id} marked as permanently deleted`);
+      return res.status(200).json({ 
+        message: 'Machine marked as permanently deleted',
+        permanentlyDeleted: true
+      });
     } else {
       // For soft deletion, just set the deletedAt timestamp
       console.log(`Soft-deleting machine ${id}`);
-      await Machine.findByIdAndUpdate(id, { deletedAt: new Date() });
+      await Machine.findByIdAndUpdate(id, { 
+        deletedAt: new Date(),
+        status: 'Maintenance',
+        maintenanceNote: 'This machine has been temporarily removed.'
+      });
       return res.status(200).json({ 
         message: 'Machine deleted successfully (soft delete)',
         softDeleted: true
