@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
 // Main API service to handle all API requests
@@ -6,7 +6,6 @@ class ApiService {
   private api: AxiosInstance;
   private endpoints: string[];
   private currentEndpointIndex: number = 0;
-  private token: string | null = null;
   
   constructor() {
     this.endpoints = getApiEndpoints();
@@ -31,7 +30,6 @@ class ApiService {
   
   // Set authorization token for subsequent requests
   setToken(token: string | null): void {
-    this.token = token;
     if (token) {
       this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
@@ -41,24 +39,17 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('auth/me', 'GET', undefined, true);
+    return this.request('api/auth/me', 'GET', undefined, true);
   }
   
-  // Generic request method for all API calls
+  // Generic request method with improved error handling
   async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
     try {
       // Ensure endpoint doesn't start with a slash
-      let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-      
-      // Check if the endpoint needs api/ prefix
-      if (!cleanEndpoint.startsWith('api/') && 
-          !this.api.defaults.baseURL?.endsWith('/api') && 
-          !cleanEndpoint.includes('/api/')) {
-        cleanEndpoint = `api/${cleanEndpoint}`;
-      }
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
       // Make the request
-      let response: AxiosResponse;
+      let response;
       
       switch (method.toUpperCase()) {
         case 'GET':
@@ -71,13 +62,7 @@ class ApiService {
           response = await this.api.put(cleanEndpoint, data || {});
           break;
         case 'DELETE':
-          if (data === null) {
-            response = await this.api.delete(cleanEndpoint);
-          } else if (data) {
-            response = await this.api.delete(cleanEndpoint, { data });
-          } else {
-            response = await this.api.delete(cleanEndpoint);
-          }
+          response = await this.api.delete(cleanEndpoint, { data });
           break;
         default:
           throw new Error(`Unsupported method: ${method}`);
@@ -85,43 +70,33 @@ class ApiService {
       
       return {
         data: response.data,
-        status: response.status,
-        headers: response.headers
+        status: response.status
       };
     } catch (error: any) {
       const status = error.response?.status || 500;
       const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
       
-      // For bookings endpoints, if we get a 404 or similar for GET, return empty array instead of error
-      if (method === 'GET' && endpoint.includes('bookings') && (status === 404 || status === 204)) {
-        return {
-          data: [],
-          status: status,
-          headers: error.response?.headers || {}
-        };
-      }
-      
       return {
         error: errorMsg,
-        status,
-        data: error.response?.data
+        status
       };
     }
   }
   
-  // Auth functions - use exact paths from server routes
+  // Auth functions
   async login(email: string, password: string): Promise<any> {
-    return this.request('auth/login', 'POST', { email, password });
+    return this.request('api/auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    return this.request('auth/register', 'POST', userData);
+    return this.request('api/auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('auth/logout', 'POST', {}, true);
+    return this.request('api/auth/logout', 'POST', {}, true);
   }
   
+  // Rest of API methods...
   // Machine functions
   async getMachineStatus(machineId: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'GET');

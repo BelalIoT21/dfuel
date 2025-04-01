@@ -22,63 +22,35 @@ async function findUserWithAnyIdFormat(userId: string) {
   // Check if user is in cache and not expired
   const cachedData = userCache.get(userId);
   if (cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
-    // User found in cache and not expired
     return cachedData.user;
   }
   
-  // Not in cache, or cache expired, proceed with database lookup
-  let user = null;
-  
-  // Try findById first as it's the most efficient method
+  // Try findById first
   try {
-    user = await User.findById(userId).select('-password');
-    if (user) {
-      // Cache the user for future requests
-      userCache.set(userId, { user, timestamp: Date.now() });
-      return user;
-    }
-  } catch (err) {
-    // If findById fails, try other methods
-  }
-  
-  // Method 2: _id as string exact match
-  try {
-    user = await User.findOne({ _id: userId }).select('-password');
+    const user = await User.findById(userId).select('-password');
     if (user) {
       userCache.set(userId, { user, timestamp: Date.now() });
       return user;
     }
   } catch (err) {
-    // Continue to next method
+    // Continue to next method if this fails
   }
   
-  // Method 3: id field
+  // Also try finding by _id as string
   try {
-    user = await User.findOne({ id: userId }).select('-password');
+    const user = await User.findOne({ _id: userId }).select('-password');
     if (user) {
       userCache.set(userId, { user, timestamp: Date.now() });
       return user;
     }
   } catch (err) {
-    // Continue to next method
+    // Continue to numeric ID conversion if needed
   }
   
-  // Method 4: numeric conversion
+  // Numeric ID conversion as last resort
   if (!isNaN(Number(userId))) {
-    const numericId = Number(userId);
-    
     try {
-      user = await User.findById(numericId).select('-password');
-      if (user) {
-        userCache.set(userId, { user, timestamp: Date.now() });
-        return user;
-      }
-    } catch (err) {
-      // Continue to next method
-    }
-    
-    try {
-      user = await User.findOne({ id: numericId }).select('-password');
+      const user = await User.findOne({ _id: Number(userId) }).select('-password');
       if (user) {
         userCache.set(userId, { user, timestamp: Date.now() });
         return user;
@@ -107,8 +79,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
-
-    // Find user by ID with enhanced user lookup (now with caching)
+    
+    // Find user by ID 
     const user = await findUserWithAnyIdFormat(decoded.id);
 
     if (!user) {

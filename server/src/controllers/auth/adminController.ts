@@ -17,7 +17,7 @@ export const ensureAdminUser = async () => {
       return;
     }
     
-    // Check if admin user already exists
+    // Check if admin user already exists (with minimal logging)
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (!existingAdmin) {
@@ -38,8 +38,9 @@ export const ensureAdminUser = async () => {
       });
       
       await newAdmin.save();
+      console.log(`Admin user created: ${adminEmail}`);
     } else {
-      // Check if admin password needs to be updated
+      // Silently update admin if needed
       const forcePasswordUpdate = process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true';
       
       if (forcePasswordUpdate) {

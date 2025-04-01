@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -18,48 +19,25 @@ export const useAuthFunctions = (
       setIsLoading(true);
   
       // MongoDB login via API
-      const apiResponse = await apiService.login(email, password);
+      const response = await apiService.login(email, password);
   
-      // Handle API errors
-      if (apiResponse.error) {
-        if (apiResponse.status === 404) {
-          throw new Error("Server endpoint not found. Please check the server is running.");
-        } else if (apiResponse.status === 401) {
-          throw new Error("Invalid email or password.");
-        } else {
-          throw new Error(apiResponse.error);
-        }
+      if (response.error) {
+        throw new Error(response.error);
       }
   
-      // Validate response data
-      if (!apiResponse.data) {
-        throw new Error("The server returned incomplete data. Please try again.");
+      if (!response.data) {
+        throw new Error("Invalid response from server");
       }
 
-      // Extract user data and token from response
-      let userData;
-      let token;
+      // Extract user data and token
+      const userData = response.data.data?.user || response.data.user;
+      const token = response.data.data?.token || response.data.token;
       
-      if (apiResponse.data.user) {
-        userData = apiResponse.data.user;
-        token = apiResponse.data.token;
-      } else if (apiResponse.data.data?.user) {
-        userData = apiResponse.data.data.user;
-        token = apiResponse.data.data.token;
-      } else if (apiResponse.data._id || apiResponse.data.id) {
-        userData = apiResponse.data;
-        token = apiResponse.data.token;
-      }
-      
-      if (!userData) {
-        throw new Error("Invalid response format from server - missing user data");
-      }
-      
-      if (!token) {
-        throw new Error("Invalid response format from server - missing token");
+      if (!userData || !token) {
+        throw new Error("Invalid response format from server");
       }
   
-      // Normalize user data for consistency
+      // Normalize user data
       const normalizedUser = {
         id: String(userData._id || userData.id),
         name: userData.name || 'User',
@@ -67,17 +45,16 @@ export const useAuthFunctions = (
         isAdmin: Boolean(userData.isAdmin),
         certifications: Array.isArray(userData.certifications) 
           ? userData.certifications 
-          : (userData.certifications ? [String(userData.certifications)] : [])
+          : []
       };
   
-      // Save token in localStorage for auth persistence
+      // Save token in localStorage
       localStorage.setItem('token', token);
       apiService.setToken(token);
   
-      // Update the user state
+      // Update user state
       setUser(normalizedUser as User);
   
-      // Show success message
       toast({
         title: "Login successful",
         description: `Welcome back, ${normalizedUser.name}!`
@@ -87,10 +64,10 @@ export const useAuthFunctions = (
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
+        description: error instanceof Error ? error.message : "Invalid credentials",
         variant: "destructive"
       });
-      throw error;
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -102,100 +79,63 @@ export const useAuthFunctions = (
   const register = async (email: string, password: string, name?: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      console.log("Registration attempt for:", email);
-  
-      // MongoDB registration via API
-      console.log("Sending registration request to API...");
-      const apiResponse = await apiService.register({ email, password, name });
-      console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
-  
-      // Handle API errors
-      if (apiResponse.error) {
-        console.error("API registration error:", apiResponse.error);
-        toast({
-          title: "Registration failed",
-          description: apiResponse.error,
-          variant: "destructive"
-        });
-        return false;
-      }
-  
-      // Extract data from the response structure
-      let userData = null;
-      let token = null;
       
-      // Check various possible response structures
-      if (apiResponse.data?.data?.user) {
-        // Most common format from our server
-        userData = apiResponse.data.data.user;
-        token = apiResponse.data.data.token;
-      } else if (apiResponse.data?.user) {
-        // Alternative format
-        userData = apiResponse.data.user;
-        token = apiResponse.data.token;
-      } else if (apiResponse.data?._id || apiResponse.data?.id) {
-        // Direct user object in data
-        userData = apiResponse.data;
-        token = apiResponse.data.token;
+      // Call API to register user
+      const response = await apiService.register({ email, password, name });
+      
+      if (response.error) {
+        throw new Error(response.error);
       }
       
-      console.log("Extracted user data:", userData);
-      console.log("Extracted token:", token);
-  
-      // Validate required fields
-      if (!userData || !userData.email) {
-        console.error("API response is missing required fields:", apiResponse);
-        toast({
-          title: "Registration failed",
-          description: "The server returned incomplete data. Please try again.",
-          variant: "destructive"
-        });
-        return false;
+      if (!response.data) {
+        throw new Error("Invalid response from server");
       }
-  
-      // If we're registering from the admin interface, we don't want to set the user or token
-      // Just return success so the admin can stay logged in
+      
+      // Extract user data and token
+      const userData = response.data.data?.user || response.data.user;
+      const token = response.data.data?.token || response.data.token;
+      
+      if (!userData) {
+        throw new Error("Invalid response format from server");
+      }
+      
+      // If we're registering from admin interface, just return success
       if (user && user.isAdmin) {
-        console.log("Admin is adding a user, registration successful");
+        toast({
+          title: "Registration successful",
+          description: `User ${userData.name || name || 'User'} created successfully!`
+        });
         return true;
       }
-  
-      // For normal registration, proceed with setting token and user
+      
+      // For normal registration, set token and user
       if (token) {
-        // Save token in localStorage for auth persistence
         localStorage.setItem('token', token);
         apiService.setToken(token);
-      } else {
-        console.warn("No token received from registration, user may need to login");
       }
-  
+      
       // Normalize user data
       const normalizedUser = {
         id: String(userData._id || userData.id),
         name: userData.name || name || 'User',
         email: userData.email,
         isAdmin: Boolean(userData.isAdmin),
-        certifications: Array.isArray(userData.certifications) 
-          ? userData.certifications 
-          : (userData.certifications ? [String(userData.certifications)] : [])
+        certifications: Array.isArray(userData.certifications) ? userData.certifications : []
       };
-  
-      console.log("Setting user data from registration:", normalizedUser);
       
-      // Only set user in state if we're not in an admin adding a user context
+      // Update user state
       setUser(normalizedUser as User);
-  
+      
       toast({
         title: "Registration successful",
-        description: `User ${normalizedUser.name} created successfully!`
+        description: `Welcome, ${normalizedUser.name}!`
       });
-  
+      
       return true;
     } catch (error) {
-      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: error instanceof Error ? error.message : "Registration failed",
         variant: "destructive"
       });
       return false;
@@ -210,16 +150,6 @@ export const useAuthFunctions = (
   const logout = async () => {
     try {
       setIsLoading(true);
-      console.log("Logging out user from MongoDB session");
-      
-      try {
-        // Make a request to the server to handle server-side logout
-        await apiService.logout();
-        console.log("Server-side logout successful");
-      } catch (error) {
-        // Even if server-side logout fails, continue with client-side logout
-        console.warn("Server-side logout failed, proceeding with client-side logout", error);
-      }
       
       // Clear user state
       setUser(null);
@@ -227,20 +157,18 @@ export const useAuthFunctions = (
       // Remove auth data from localStorage
       localStorage.removeItem('token');
 
-      // Clear the token from API service
+      // Clear token from API service
       apiService.setToken(null);
 
-      // Show success message
       toast({
         description: "Logged out successfully."
       });
       
       return true;
     } catch (error) {
-      console.error("Error during logout:", error);
       toast({
         title: "Logout error",
-        description: "There was an error logging out. Please try again.",
+        description: "There was an error logging out.",
         variant: "destructive"
       });
       return false;

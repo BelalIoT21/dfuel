@@ -33,7 +33,7 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Compare the password
@@ -64,6 +64,7 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
       },
     });
   } catch (error) {
+    console.error('Error in loginUser:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
