@@ -1,3 +1,4 @@
+
 import { Collection } from 'mongodb';
 import { MongoMachineStatus, MongoMachine } from './types';
 import mongoConnectionService from './connectionService';
@@ -638,5 +639,7 @@ class MongoMachineService {
   }
 }
 
-const mongoMachineService = new MongoMachineService();
+// Change from default export to named export
+export const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;
+
