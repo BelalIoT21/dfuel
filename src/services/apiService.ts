@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -44,7 +43,7 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('auth/me', 'GET', undefined, true);
+    return this.request('api/auth/me', 'GET', undefined, true);
   }
   
   // Generic request method for all API calls
@@ -147,16 +146,16 @@ class ApiService {
   // Auth functions - use exact paths from server routes
   async login(email: string, password: string): Promise<any> {
     console.log("Attempting login with API service");
-    return this.request('auth/login', 'POST', { email, password });
+    return this.request('api/auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
     console.log("Attempting registration with API service");
-    return this.request('auth/register', 'POST', userData);
+    return this.request('api/auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('auth/logout', 'POST', {}, true);
+    return this.request('api/auth/logout', 'POST', {}, true);
   }
   
   // Machine functions
@@ -264,7 +263,7 @@ class ApiService {
   
   // Health check
   async checkHealth(): Promise<any> {
-    return this.request('health', 'GET');
+    return this.request('api/health', 'GET');
   }
   
   // Update user profile
