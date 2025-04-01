@@ -105,7 +105,8 @@ class ApiService {
       console.log(`Response from ${this.api.defaults.baseURL}/${cleanEndpoint}:`, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers
+        headers: response.headers,
+        data: response.data // Log the actual response data
       });
       
       // If the response data is empty, return a successful empty result instead of error
@@ -223,7 +224,7 @@ class ApiService {
   
   // Get user bookings
   async getUserBookings(userId?: string): Promise<any> {
-    return this.request('bookings', 'GET', undefined, true);
+    return this.request('auth/bookings', 'GET', undefined, true);
   }
   
   // Course related endpoints

@@ -29,16 +29,19 @@ interface LoginResponse {
 export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response<LoginResponse | { message: string }>) => {
   try {
     const { email, password } = req.body;
+    console.log(`Login attempt for ${email}`);
 
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
+      console.log(`User not found: ${email}`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Compare the password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log(`Invalid password for user: ${email}`);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -48,6 +51,8 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
 
     // Generate token
     const token = generateToken(user._id.toString());
+    
+    console.log(`User ${email} logged in successfully`);
 
     // Return the standardized response
     res.json({
