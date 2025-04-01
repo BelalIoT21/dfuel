@@ -10,7 +10,7 @@ import BookingsList from './BookingsList';
 import EmptyBookingsView from './EmptyBookingsView';
 import { Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const BookingsCard = () => {
   const { user } = useAuth();
@@ -28,14 +28,17 @@ const BookingsCard = () => {
     try {
       console.log(`Fetching bookings for user: ${user.id}`);
       const userBookings = await bookingService.getUserBookings(user.id);
-      setBookings(userBookings);
+      setBookings(Array.isArray(userBookings) ? userBookings : []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch your bookings. Please try again.",
-        variant: "destructive"
-      });
+      // Don't show error toast for empty bookings
+      if (error.message !== "No bookings found") {
+        toast({
+          title: "Note",
+          description: "You don't have any bookings yet.",
+          variant: "default"
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

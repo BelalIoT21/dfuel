@@ -1,7 +1,7 @@
 
 import { apiService } from './apiService';
 import { machineService } from './machineService';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import mongoDbService from './mongoDbService';
 
 class BookingService {
@@ -30,6 +30,11 @@ class BookingService {
       const response = await apiService.getUserBookings(userId);
       
       if (response.error) {
+        // Don't consider empty bookings an error, just return an empty array
+        if (response.error.includes("No bookings found") || response.error.includes("Bookings not found")) {
+          console.log('No bookings found for user, returning empty array');
+          return [];
+        }
         console.error('Error fetching user bookings:', response.error);
         return [];
       }

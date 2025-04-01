@@ -60,9 +60,9 @@ export const PendingActions = () => {
       console.log("All bookings before filtering:", JSON.stringify(allBookings));
       
       // Filter to only show pending bookings
-      const pendingOnly = allBookings.filter(booking => 
+      const pendingOnly = Array.isArray(allBookings) ? allBookings.filter(booking => 
         booking.status === 'Pending' || booking.status === 'pending'
-      );
+      ) : [];
       console.log(`Found ${pendingOnly.length} pending bookings:`, JSON.stringify(pendingOnly));
       
       setPendingBookings(pendingOnly);

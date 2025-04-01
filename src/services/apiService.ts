@@ -103,6 +103,18 @@ class ApiService {
         headers: response.headers
       });
       
+      // If the response data is empty, return a successful empty result instead of error
+      if (method === 'GET' && (!response.data || (Array.isArray(response.data) && response.data.length === 0))) {
+        if (endpoint.includes('bookings')) {
+          console.log('No bookings found, returning empty array');
+          return {
+            data: [],
+            status: response.status,
+            headers: response.headers
+          };
+        }
+      }
+      
       return {
         data: response.data,
         status: response.status,
@@ -118,6 +130,16 @@ class ApiService {
       // More detailed error logging
       if (error.response?.data) {
         console.error(`Error response data:`, error.response.data);
+      }
+      
+      // For bookings endpoints, if we get a 404 or similar for GET, return empty array instead of error
+      if (method === 'GET' && endpoint.includes('bookings') && (status === 404 || status === 204)) {
+        console.log('No bookings found (404/204), returning empty array');
+        return {
+          data: [],
+          status: status,
+          headers: error.response?.headers || {}
+        };
       }
       
       return {
