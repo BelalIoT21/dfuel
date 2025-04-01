@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { StrictMode, Suspense } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
-import { loadEnv, setEnv } from './utils/env';
+import { loadEnv } from './utils/env';
 import App from './App'; // Move the import to the top level
 
 // Add console log for debugging

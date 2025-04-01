@@ -15,13 +15,59 @@ const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const { user, loading: authLoading, login, register } = useAuth();
+  const [authState, setAuthState] = useState({
+    user: null,
+    loading: true,
+  });
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const prevServerStatusRef = useRef<string | null>(null);
   const checkingRef = useRef<boolean>(false);
   const attemptedEndpointsRef = useRef<string[]>([]);
   const originalHeightRef = useRef<number>(0);
+
+  let auth;
+  try {
+    auth = useAuth();
+    useEffect(() => {
+      if (auth) {
+        setAuthState({
+          user: auth.user,
+          loading: auth.loading
+        });
+      }
+    }, [auth]);
+  } catch (error) {
+    console.error('Error accessing AuthContext:', error);
+  }
+
+  const { user, loading: authLoading } = authState;
+
+  const login = async (email: string, password: string) => {
+    try {
+      if (auth?.login) {
+        return await auth.login(email, password);
+      }
+      console.error('Login function not available');
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
+
+  const register = async (email: string, password: string, name: string) => {
+    try {
+      if (auth?.register) {
+        return await auth.register(email, password, name);
+      }
+      console.error('Register function not available');
+      return false;
+    } catch (error) {
+      console.error('Register error:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     loadEnv();
@@ -204,7 +250,6 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
-      // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoading]);
@@ -219,7 +264,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      throw error; // Re-throw the error so the LoginForm can handle it
+      throw error;
     }
   };
 

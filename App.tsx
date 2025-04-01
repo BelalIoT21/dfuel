@@ -1,6 +1,6 @@
 
 import 'expo-dev-client';
-import App from './src/App.native';
+import App from './src/App';
 
-// This exports the native app component for Expo
+// This exports the app component for Expo
 export default App;
