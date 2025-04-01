@@ -14,17 +14,11 @@ const Profile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [isLoading, setIsLoading] = useState(true);
-
-  // Wrap the useAuth call in a try-catch to handle the case when AuthProvider is not available
-  let user = null;
-  try {
-    const auth = useAuth();
-    user = auth.user;
-  } catch (error) {
-    console.error('Error using Auth context:', error);
-    // Will be redirected below due to !user condition
-  }
+  const [user, setUser] = useState(null);
   
+  // Always call useAuth - don't conditionally wrap it in try/catch
+  const auth = useAuth();
+
   // Set default tab based on URL parameter
   const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
     ? tabParam 
@@ -36,13 +30,30 @@ const Profile = () => {
   };
 
   useEffect(() => {
+    // Extract user from auth context
+    try {
+      if (auth && auth.user) {
+        setUser(auth.user);
+      }
+    } catch (error) {
+      console.error('Error using Auth context:', error);
+    }
+    
     // Add a small delay to ensure auth state is loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 300);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [auth]);
+
+  // Redirect if user is not logged in - this useEffect will always run
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('No user found, redirecting to home page');
+      navigate('/');
+    }
+  }, [isLoading, user, navigate]);
 
   // Show loading state
   if (isLoading) {
@@ -56,14 +67,8 @@ const Profile = () => {
     );
   }
 
-  // Redirect if user is not logged in
+  // Show not logged in state - this will be visible briefly before the redirect
   if (!user) {
-    // Use useEffect to avoid redirect during render
-    useEffect(() => {
-      console.log('No user found, redirecting to home page');
-      navigate('/');
-    }, [navigate]);
-    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
         <div className="text-center">
