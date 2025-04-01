@@ -170,7 +170,41 @@ export class CertificationService {
       
       console.log(`Making API call to get certifications for userId=${stringUserId}`);
       
-      // Make the API call
+      // Try direct fetch first (most reliable)
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const certifications = await response.json();
+          console.log('Direct fetch certifications:', certifications);
+          
+          if (Array.isArray(certifications)) {
+            // Make sure all certification IDs are strings
+            const normalizedCerts = certifications.map(cert => {
+              if (typeof cert === 'object' && cert !== null) {
+                return cert._id ? cert._id.toString() : 
+                      cert.id ? cert.id.toString() : 
+                      String(cert);
+              }
+              return cert.toString ? cert.toString() : String(cert);
+            });
+            
+            console.log('Normalized certifications:', normalizedCerts);
+            return normalizedCerts;
+          }
+        }
+      } catch (directFetchError) {
+        console.error('Direct fetch error:', directFetchError);
+      }
+      
+      // Fallback to apiService
       const response = await apiService.get(`certifications/user/${stringUserId}`);
       console.log("API get certifications raw response:", response);
       
@@ -213,7 +247,38 @@ export class CertificationService {
       
       console.log(`Making API call to check certification for userId=${stringUserId}, machineId=${stringMachineId}`);
       
-      // Make the API call
+      // First get all certifications and check if this machine ID is included
+      // This is more reliable than individual endpoint checks
+      const allCerts = await this.getUserCertifications(stringUserId);
+      const hasCertBasedOnArray = allCerts.some(cert => String(cert) === stringMachineId);
+      
+      if (hasCertBasedOnArray) {
+        console.log(`User has certification for machine ${stringMachineId} based on certifications array`);
+        return true;
+      }
+      
+      // Fallback to direct check endpoint if array check fails
+      try {
+        // Try direct fetch 
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/certifications/check/${stringUserId}/${stringMachineId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Direct fetch certification check result:', result);
+          return !!result;
+        }
+      } catch (directFetchError) {
+        console.error('Direct fetch error for certification check:', directFetchError);
+      }
+      
+      // Final fallback: Use apiService
       const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
       console.log("API check certification response:", response);
       
