@@ -1,3 +1,4 @@
+
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -195,14 +196,36 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Make sure API token is set before deletion
+      // Set token in apiService first
       const token = localStorage.getItem('token');
       if (token) {
         apiService.setToken(token);
       }
       
-      // Use mongoDbService for deletion with fixed endpoints
-      console.log(`Attempting to delete user ${userId} using mongoDbService`);
+      // Try first direct API call for deletion
+      try {
+        console.log(`Trying direct API deletion first`);
+        const response = await apiService.request(`/users/${userId}`, 'DELETE', null, true);
+        
+        if (response && response.status >= 200 && response.status < 300) {
+          console.log(`Successfully deleted user ${userId} via direct API`);
+          toast({
+            title: "User Deleted",
+            description: "User has been permanently deleted.",
+          });
+          
+          if (onUserDeleted) {
+            onUserDeleted();
+          }
+          setDeletingUserId(null);
+          return;
+        }
+      } catch (apiError) {
+        console.error("Direct API delete error:", apiError);
+      }
+      
+      // Fall back to mongoDbService for deletion
+      console.log(`Falling back to mongoDbService for user ${userId} deletion`);
       const success = await mongoDbService.deleteUser(userId);
       
       if (success) {
@@ -216,27 +239,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           onUserDeleted();
         }
       } else {
-        // Try a direct API call as a last resort with fixed endpoint
-        try {
-          console.log(`MongoDB deletion failed, trying direct API deletion`);
-          const response = await apiService.request(`/users/${userId}`, 'DELETE', undefined, true);
-          
-          if (response && response.status >= 200 && response.status < 300) {
-            console.log(`Successfully deleted user ${userId} via direct API`);
-            toast({
-              title: "User Deleted",
-              description: "User has been permanently deleted.",
-            });
-            
-            if (onUserDeleted) {
-              onUserDeleted();
-            }
-            return;
-          }
-        } catch (apiError) {
-          console.error("API delete error:", apiError);
-        }
-        
         toast({
           title: "Error",
           description: "Failed to delete user. Please try again later.",
