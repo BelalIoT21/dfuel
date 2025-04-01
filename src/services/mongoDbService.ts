@@ -70,31 +70,31 @@ class MongoDbService {
       // First attempt: direct API call (most reliable)
       try {
         console.log(`Trying direct API deletion for user ${userId}`);
-        const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
-        console.log('API delete user response:', response);
+        const apiEndpoints = [
+          `users/${userId}`,
+          `auth/users/${userId}`,
+          `admin/users/${userId}`
+        ];
         
-        if (response && response.status >= 200 && response.status < 300) {
-          console.log(`User ${userId} deleted successfully via direct API call`);
-          return true;
+        for (const endpoint of apiEndpoints) {
+          try {
+            console.log(`Trying API endpoint: ${endpoint}`);
+            const response = await apiService.request(endpoint, 'DELETE', undefined, true);
+            console.log(`API response for ${endpoint}:`, response);
+            
+            if (response && response.status >= 200 && response.status < 300) {
+              console.log(`User ${userId} deleted successfully via API endpoint ${endpoint}`);
+              return true;
+            }
+          } catch (endpointError) {
+            console.error(`Error with endpoint ${endpoint}:`, endpointError);
+          }
         }
       } catch (apiError) {
         console.error('Direct API error deleting user:', apiError);
       }
       
-      // Second attempt: Admin API endpoint
-      try {
-        console.log(`Trying admin API deletion for user ${userId}`);
-        const adminResponse = await apiService.request(`admin/users/${userId}`, 'DELETE', undefined, true);
-        
-        if (adminResponse && adminResponse.status >= 200 && adminResponse.status < 300) {
-          console.log(`User ${userId} deleted successfully via admin API`);
-          return true;
-        }
-      } catch (adminApiError) {
-        console.error('Admin API error deleting user:', adminApiError);
-      }
-      
-      // Third attempt: use the MongoDB service
+      // Second attempt: use the MongoDB service
       try {
         console.log(`Trying MongoDB userService for deletion of user ${userId}`);
         const mongoResult = await mongoUserService.deleteUser(userId);
@@ -106,21 +106,23 @@ class MongoDbService {
         console.error('MongoDB service error deleting user:', mongoError);
       }
       
-      // Fourth attempt: Raw API DELETE
+      // Third attempt: Raw API DELETE
       try {
         console.log(`Trying raw axios DELETE for user ${userId}`);
         const axios = (await import('axios')).default;
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         
+        const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
         const endpoints = [
-          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/users/${userId}`,
-          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/auth/users/${userId}`,
-          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/admin/users/${userId}`
+          `${apiBaseUrl}/users/${userId}`,
+          `${apiBaseUrl}/auth/users/${userId}`,
+          `${apiBaseUrl}/admin/users/${userId}`
         ];
         
         for (const endpoint of endpoints) {
           try {
+            console.log(`Trying raw axios DELETE to ${endpoint}`);
             const rawResponse = await axios.delete(endpoint, { headers });
             if (rawResponse.status >= 200 && rawResponse.status < 300) {
               console.log(`User ${userId} deleted successfully via raw axios to ${endpoint}`);
@@ -144,7 +146,20 @@ class MongoDbService {
 
   async getAllBookings() {
     try {
-      // Try direct API fetch first
+      console.log("MongoDbService: Fetching all bookings");
+      
+      // Try direct MongoDB service first
+      try {
+        const bookings = await mongoBookingService.getAllBookings();
+        if (Array.isArray(bookings) && bookings.length > 0) {
+          console.log(`Found ${bookings.length} bookings via MongoDB service`);
+          return bookings;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB bookings fetch error:", mongoError);
+      }
+      
+      // Try direct API fetch as fallback
       try {
         console.log("Fetching all bookings from API");
         const response = await apiService.request('bookings/all', 'GET');
@@ -156,10 +171,11 @@ class MongoDbService {
         console.error("API bookings fetch error:", apiError);
       }
       
-      // Fallback to bookingService
-      return await mongoBookingService.getAllBookings();
+      // If both failed, return empty array
+      console.log("Failed to fetch bookings from both MongoDB and API");
+      return [];
     } catch (error) {
-      console.error('Error fetching all bookings from MongoDB:', error);
+      console.error('Error fetching all bookings:', error);
       return [];
     }
   }

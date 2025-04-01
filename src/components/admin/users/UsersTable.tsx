@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import userDatabase from '@/services/userDatabase';
 import mongoDbService from '@/services/mongoDbService';
 import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/apiService';
 
 interface UsersTableProps {
   users: any[];
@@ -194,27 +195,12 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // First try direct API call
-      let success = false;
-      try {
-        console.log(`Trying direct API deletion for user ${userId}`);
-        const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
-        console.log(`API delete response:`, response);
-        if (response && response.status >= 200 && response.status < 300) {
-          success = true;
-        }
-      } catch (apiError) {
-        console.error(`API delete user error:`, apiError);
-      }
-      
-      // If API call fails, try MongoDB deletion
-      if (!success) {
-        console.log(`API deletion failed, trying MongoDB deletion for user ${userId}`);
-        success = await mongoDbService.deleteUser(userId);
-        console.log(`MongoDB deleteUser result: ${success}`);
-      }
+      // Use mongoDbService for most reliable deletion
+      console.log(`Attempting to delete user ${userId} using mongoDbService`);
+      const success = await mongoDbService.deleteUser(userId);
       
       if (success) {
+        console.log(`Successfully deleted user ${userId}`);
         toast({
           title: "User Deleted",
           description: "User has been permanently deleted.",
@@ -224,6 +210,27 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           onUserDeleted();
         }
       } else {
+        // Additional fallback with direct API call
+        try {
+          console.log(`MongoDB deletion failed, trying direct API deletion`);
+          const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
+          
+          if (response && response.status >= 200 && response.status < 300) {
+            console.log(`Successfully deleted user ${userId} via direct API`);
+            toast({
+              title: "User Deleted",
+              description: "User has been permanently deleted.",
+            });
+            
+            if (onUserDeleted) {
+              onUserDeleted();
+            }
+            return;
+          }
+        } catch (apiError) {
+          console.error("API delete error:", apiError);
+        }
+        
         toast({
           title: "Error",
           description: "Failed to delete user. They may have special permissions.",

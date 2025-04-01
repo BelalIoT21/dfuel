@@ -6,6 +6,7 @@ import { bookingService } from "@/services/bookingService";
 import userDatabase from "@/services/userDatabase";
 import { apiService } from "@/services/apiService";
 import { isWeb } from "@/utils/platform";
+import mongoDbService from "@/services/mongoDbService";
 
 interface StatsOverviewProps {
   allUsers?: any[];
@@ -30,26 +31,43 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     const fetchBookingsCount = async () => {
       try {
         setIsLoading(true);
-        // Try API first for bookings
+        
+        // First try getting the data directly from MongoDB
         try {
+          console.log("StatsOverview: Fetching bookings directly from MongoDB");
+          const mongoBookings = await mongoDbService.getAllBookings();
+          if (Array.isArray(mongoBookings) && mongoBookings.length > 0) {
+            console.log("StatsOverview: Got bookings from MongoDB:", mongoBookings.length);
+            setBookingsCount(mongoBookings.length);
+            setIsLoading(false);
+            return;
+          }
+        } catch (mongoError) {
+          console.error("StatsOverview: Error fetching from MongoDB:", mongoError);
+        }
+        
+        // Try API next for bookings
+        try {
+          console.log("StatsOverview: Fetching bookings from API");
           const response = await apiService.getAllBookings();
           if (response.success && Array.isArray(response.data)) {
-            console.log("Fetched bookings from API:", response.data.length);
+            console.log("StatsOverview: Fetched bookings from API:", response.data.length);
             setBookingsCount(response.data.length);
             setIsLoading(false);
             return;
           }
         } catch (apiError) {
-          console.error("Error fetching bookings from API:", apiError);
+          console.error("StatsOverview: Error fetching bookings from API:", apiError);
         }
         
-        // Fallback to bookingService
+        // Last resort - try bookingService
         try {
+          console.log("StatsOverview: Falling back to bookingService");
           const bookings = await bookingService.getAllBookings();
-          console.log("Fetched bookings:", bookings);
-          setBookingsCount(bookings.length);
+          console.log("StatsOverview: Fetched bookings:", bookings);
+          setBookingsCount(Array.isArray(bookings) ? bookings.length : 0);
         } catch (error) {
-          console.error("Error fetching bookings count:", error);
+          console.error("StatsOverview: Error fetching bookings count:", error);
           setBookingsCount(0);
         }
       } finally {
