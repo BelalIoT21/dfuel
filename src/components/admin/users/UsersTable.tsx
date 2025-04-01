@@ -195,7 +195,13 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Use mongoDbService for deletion
+      // Make sure API token is set before deletion
+      const token = localStorage.getItem('token');
+      if (token) {
+        apiService.setToken(token);
+      }
+      
+      // Use mongoDbService for deletion with fixed endpoints
       console.log(`Attempting to delete user ${userId} using mongoDbService`);
       const success = await mongoDbService.deleteUser(userId);
       
@@ -210,10 +216,10 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           onUserDeleted();
         }
       } else {
-        // Try a direct API call as a last resort
+        // Try a direct API call as a last resort with fixed endpoint
         try {
           console.log(`MongoDB deletion failed, trying direct API deletion`);
-          const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
+          const response = await apiService.request(`/users/${userId}`, 'DELETE', undefined, true);
           
           if (response && response.status >= 200 && response.status < 300) {
             console.log(`Successfully deleted user ${userId} via direct API`);

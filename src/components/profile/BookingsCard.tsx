@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Calendar, RefreshCw, Plus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { bookingService } from '@/services/bookingService';
 import BookingsList from './BookingsList';
 import EmptyBookingsView from './EmptyBookingsView';
@@ -15,6 +15,7 @@ import { toast } from '@/hooks/use-toast';
 const BookingsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,11 +47,11 @@ const BookingsCard = () => {
   }, [user]);
 
   const handleNewBooking = () => {
-    // Direct to machines page with certification filter
-    navigate('/machines');
+    // Changed to navigate to the certifications tab in profile
+    setSearchParams({ tab: 'certifications' });
     toast({
-      title: "Select a Machine",
-      description: "Choose a machine to book from the list",
+      title: "Check Your Certifications",
+      description: "Make sure you have the needed certifications before booking a machine",
     });
   };
 

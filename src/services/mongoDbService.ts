@@ -65,10 +65,11 @@ class MongoDbService {
     try {
       console.log(`MongoDbService: Attempting to delete user ${userId}`);
       
-      // First attempt: direct API call using the correct endpoints
+      // First attempt: direct API call with the correct endpoint (fixed)
       try {
         console.log(`Trying direct API deletion for user ${userId}`);
-        const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
+        // Fixed the endpoint to include the slash between 'api' and 'users'
+        const response = await apiService.request(`/users/${userId}`, 'DELETE', undefined, true);
         console.log(`API response:`, response);
         
         if (response && response.status >= 200 && response.status < 300) {
@@ -91,7 +92,7 @@ class MongoDbService {
         console.error('MongoDB service error deleting user:', mongoError);
       }
       
-      // Third attempt: Try direct axios call with token
+      // Third attempt: Try direct axios call with token and corrected URL
       try {
         console.log(`Trying direct axios call for user ${userId}`);
         const axios = (await import('axios')).default;
@@ -104,6 +105,8 @@ class MongoDbService {
         
         const headers = { Authorization: `Bearer ${token}` };
         const apiUrl = apiService['api'].defaults.baseURL || 'http://localhost:4000/api';
+        
+        // Ensure the URL is correctly formatted with proper slashes
         const endpoint = `${apiUrl}/users/${userId}`;
         
         console.log(`Making direct axios DELETE request to ${endpoint}`);
