@@ -97,9 +97,9 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className="mb-3 py-1">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <AlertDescription className="text-xs">{formError}</AlertDescription>
+          <Alert variant="destructive" className="mb-3 py-2 flex items-center">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <AlertDescription className="text-sm">{formError}</AlertDescription>
           </Alert>
         )}
         
