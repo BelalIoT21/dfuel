@@ -2,7 +2,11 @@
 /**
  * Helper utility for handling image URLs in seed files
  */
+import dotenv from 'dotenv';
 import path from 'path';
+
+// Load environment variables
+dotenv.config();
 
 /**
  * Gets the base URL for image assets based on environment variables

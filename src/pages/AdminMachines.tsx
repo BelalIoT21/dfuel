@@ -10,6 +10,7 @@ import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
 import { Building2, Plus, Edit } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ const AdminMachines = () => {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [quizzesList, setQuizzesList] = useState<any[]>([]);
+  const isMobile = useIsMobile();
   
   const getProperImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/placeholder.svg';
@@ -188,26 +190,36 @@ const AdminMachines = () => {
           <BackToAdminButton />
         </div>
         
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Machine Management</h1>
-          <Button asChild className="bg-purple-600 hover:bg-purple-700">
-            <Link to="/admin/machines/new" className="flex items-center">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Machine
-            </Link>
-          </Button>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h1 className="text-3xl font-bold mb-4 md:mb-0">Machine Management</h1>
+          {!isMobile && (
+            <Button asChild className="bg-purple-600 hover:bg-purple-700">
+              <Link to="/admin/machines/new" className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Machine
+              </Link>
+            </Button>
+          )}
         </div>
         
         <Card className="mb-6">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-              <div className="w-full md:w-1/3">
+            <div className="flex flex-col gap-4">
+              <div className="w-full">
                 <Input
                   placeholder="Search machines..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+              {isMobile && (
+                <Button asChild className="bg-purple-600 hover:bg-purple-700 w-full">
+                  <Link to="/admin/machines/new" className="flex items-center justify-center">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Machine
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
