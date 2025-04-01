@@ -46,13 +46,8 @@ class ApiService {
   // Generic request method with improved error handling
   async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
     try {
-      // Clean the endpoint to remove any prefixes that might cause duplication
-      let cleanEndpoint = endpoint;
-      
-      // Remove leading slash if present
-      if (cleanEndpoint.startsWith('/')) {
-        cleanEndpoint = cleanEndpoint.substring(1);
-      }
+      // Ensure endpoint doesn't start with a slash or 'api/'
+      let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
       // Remove 'api/' prefix if it exists since it's already in the baseURL
       if (cleanEndpoint.startsWith('api/')) {
