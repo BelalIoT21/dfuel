@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
@@ -23,18 +24,6 @@ const AdminUsers = () => {
   const [machines, setMachines] = useState<any[]>([]);
   const navigate = useNavigate();
   
-  const clearLocalStorageExceptToken = () => {
-    const token = localStorage.getItem('token');
-    
-    localStorage.clear();
-    
-    if (token) {
-      localStorage.setItem('token', token);
-    }
-    
-    console.log("Cleared all localStorage data except auth token");
-  };
-  
   const fetchMachines = async () => {
     try {
       console.log("Fetching machines for stats display");
@@ -56,8 +45,6 @@ const AdminUsers = () => {
     setRefreshing(true);
     try {
       console.log("Fetching all users for admin dashboard");
-      
-      clearLocalStorageExceptToken();
       
       const response = await apiService.getAllUsers();
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
@@ -142,15 +129,10 @@ const AdminUsers = () => {
 
   const handleUserAdded = (data: any) => {
     console.log("User added, refreshing user list");
-    
-    clearLocalStorageExceptToken();
-    
     fetchUsers();
   };
   
   const handleUserDeleted = () => {
-    clearLocalStorageExceptToken();
-    
     console.log("User deleted, refreshing user list");
     fetchUsers();
   };

@@ -1,11 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
-import userDatabase from '@/services/userDatabase';
 import { apiService } from '@/services/apiService';
 import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { certificationService } from '@/services/certificationService';
-import { userDatabaseService } from '@/services/database/userService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

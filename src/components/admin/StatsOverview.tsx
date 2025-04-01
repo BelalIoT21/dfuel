@@ -2,11 +2,7 @@
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState, useRef } from "react";
-import { bookingService } from "@/services/bookingService";
-import userDatabase from "@/services/userDatabase";
 import { apiService } from "@/services/apiService";
-import { isWeb } from "@/utils/platform";
-import mongoDbService from "@/services/mongoDbService";
 
 interface StatsOverviewProps {
   allUsers?: any[];
@@ -34,10 +30,10 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       // Prevent multiple simultaneous fetches
       if (isFetchingRef.current) return;
       
-      // Only fetch if it's been more than 60 seconds since the last fetch
+      // Only fetch if it's been more than 120 seconds since the last fetch (increased from 60s)
       const now = Date.now();
-      if (now - lastFetchedRef.current < 60000 && lastFetchedRef.current > 0) {
-        console.log("Stats: Skipping fetch, last fetched less than 60 seconds ago");
+      if (now - lastFetchedRef.current < 120000 && lastFetchedRef.current > 0) {
+        console.log("Stats: Skipping fetch, last fetched less than 120 seconds ago");
         return;
       }
       
@@ -46,25 +42,15 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         setIsLoading(true);
         lastFetchedRef.current = now;
         
-        // First try getting the data directly from MongoDB
-        try {
-          console.log("StatsOverview: Fetching bookings directly from MongoDB");
-          const mongoBookings = await mongoDbService.getAllBookings();
-          if (Array.isArray(mongoBookings) && mongoBookings.length > 0) {
-            console.log("StatsOverview: Got bookings from MongoDB:", mongoBookings.length);
-            setBookingsCount(mongoBookings.length);
-            setIsLoading(false);
-            return;
-          }
-        } catch (mongoError) {
-          console.error("StatsOverview: Error fetching from MongoDB:", mongoError);
-        }
-        
-        // Try API next for bookings
+        // Try API for bookings
         try {
           console.log("StatsOverview: Fetching bookings from API");
-          const response = await apiService.getAllBookings();
-          if (response.success && Array.isArray(response.data)) {
+          const response = await apiService.request({
+            method: 'GET',
+            url: 'bookings/all'
+          });
+          
+          if (response?.data && Array.isArray(response.data)) {
             console.log("StatsOverview: Fetched bookings from API:", response.data.length);
             setBookingsCount(response.data.length);
             setIsLoading(false);
@@ -74,16 +60,8 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
           console.error("StatsOverview: Error fetching bookings from API:", apiError);
         }
         
-        // Last resort - try bookingService
-        try {
-          console.log("StatsOverview: Falling back to bookingService");
-          const bookings = await bookingService.getAllBookings();
-          console.log("StatsOverview: Fetched bookings:", bookings);
-          setBookingsCount(Array.isArray(bookings) ? bookings.length : 0);
-        } catch (error) {
-          console.error("StatsOverview: Error fetching bookings count:", error);
-          setBookingsCount(0);
-        }
+        // If we get here, there was an error or no bookings
+        setBookingsCount(0);
       } finally {
         setIsLoading(false);
         isFetchingRef.current = false;
@@ -97,39 +75,36 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     return () => clearInterval(intervalId);
   }, []);
   
-  // Ensure user count is fetched consistently from API first, then fallback to props or userDatabase
+  // Ensure user count is fetched consistently from API first, then fallback to props
   useEffect(() => {
     const fetchUsers = async () => {
-      // Only fetch if it's been more than 60 seconds since the last fetch
+      // Only fetch if it's been more than 120 seconds since the last fetch
       const now = Date.now();
-      if (now - lastFetchedRef.current < 60000 && lastFetchedRef.current > 0) {
-        console.log("Stats: Skipping user fetch, last fetched less than 60 seconds ago");
+      if (now - lastFetchedRef.current < 120000 && lastFetchedRef.current > 0) {
+        console.log("Stats: Skipping user fetch, last fetched less than 120 seconds ago");
         return;
       }
       
       try {
         console.log("Fetching users for stats overview");
         
-        // Always try the API first for consistency between web and native
-        const response = await apiService.getAllUsers();
-        if (response.success && response.data && response.data.length > 0) {
-          console.log(`Retrieved ${response.data.length} users from API`);
-          setUserCount(response.data.length);
-          return;
-        }
-        
-        // If API fails but allUsers prop is provided, use it
+        // If allUsers prop is provided, use it (most efficient)
         if (allUsers && allUsers.length > 0) {
           console.log(`Using provided users list: ${allUsers.length} users`);
           setUserCount(allUsers.length);
           return;
         }
         
-        // Last resort - fetch directly from database
-        console.log("Falling back to userDatabase for user count");
-        const users = await userDatabase.getAllUsers();
-        console.log(`Retrieved ${users.length} users from userDatabase`);
-        setUserCount(users.length);
+        // Try the API as fallback
+        const response = await apiService.getAllUsers();
+        if (response.data && response.data.length > 0) {
+          console.log(`Retrieved ${response.data.length} users from API`);
+          setUserCount(response.data.length);
+          return;
+        }
+        
+        // Last resort - just use 0
+        setUserCount(0);
       } catch (error) {
         console.error("Error fetching users for stats:", error);
         // If all else fails, use the provided users or show 0
@@ -187,7 +162,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       value: isLoading ? '...' : bookingsCount, 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
       change: '',
-      link: '/bookings'  // Changed from '/admin/bookings' to '/bookings'
+      link: '/bookings'
     },
   ];
 
