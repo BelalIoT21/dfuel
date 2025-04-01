@@ -252,7 +252,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '10vh' : '15vh',
+        paddingTop: keyboardVisible ? '1vh' : '5vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -264,9 +264,9 @@ const Index = () => {
       className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-sm space-y-2 ${keyboardVisible ? 'mt-0' : 'mt-0'}`}>
-        <div className={`text-center relative ${keyboardVisible ? 'mb-1' : 'mb-3'}`}>
-          <h1 className={`${keyboardVisible ? 'text-xl' : 'text-2xl'} md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+      <div className={`w-full max-w-sm space-y-1 ${keyboardVisible ? 'mt-0' : 'mt-0'}`}>
+        <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
+          <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
           {!keyboardVisible && (
             <p className="mt-1 text-sm md:text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
