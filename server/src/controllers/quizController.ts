@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Quiz } from '../models/Quiz';
 import mongoose from 'mongoose';
@@ -174,10 +175,10 @@ export const deleteQuiz = async (req: Request, res: Response) => {
           softDeleted: true
         });
       } else {
-        // For user-created quizzes, we can actually delete them
+        // For user-created quizzes (ID > 6), completely remove from database
         await Quiz.findByIdAndDelete(id);
         console.log(`User-created quiz ${id} permanently deleted from database`);
-        return res.status(200).json({ message: 'Quiz permanently deleted' });
+        return res.status(200).json({ message: 'Quiz permanently deleted from database' });
       }
     } else {
       // Soft delete by setting deletedAt timestamp

@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -54,6 +55,8 @@ export class CourseDatabaseService extends BaseService {
 
   async deleteCourse(courseId: string, permanent: boolean = false): Promise<boolean> {
     try {
+      console.log(`Deleting course ${courseId}, permanent: ${permanent}`);
+      
       // Prepare URL with permanent flag if needed
       const deleteUrl = permanent 
         ? `courses/${courseId}?permanent=true`
@@ -62,6 +65,7 @@ export class CourseDatabaseService extends BaseService {
       // Try the API with appropriate parameters
       try {
         const response = await apiService.request(deleteUrl, 'DELETE', undefined, true);
+        console.log(`Delete course response:`, response);
         return !response.error;
       } catch (apiError) {
         console.error(`API error deleting course ${courseId}:`, apiError);

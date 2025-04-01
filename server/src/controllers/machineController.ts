@@ -183,37 +183,8 @@ export const deleteMachine = async (req: Request, res: Response) => {
     // Check if this is a core machine (ID 1-6)
     const isCoreMachine = Number(id) >= 1 && Number(id) <= 6;
     
-    // HARD DELETE: Complete removal from database when hardDelete=true
-    if (hardDelete === 'true' || hardDelete === '1') {
-      // Only allow hard delete for non-core machines
-      if (isCoreMachine) {
-        console.log(`Cannot hard delete core machine ${id} - using soft delete instead`);
-        // For core machines, only use soft delete
-        await Machine.findByIdAndUpdate(id, { 
-          deletedAt: new Date(),
-          status: 'Maintenance',
-          maintenanceNote: 'This machine has been temporarily removed.'
-        });
-        
-        return res.status(200).json({ 
-          message: 'Core machine soft-deleted (hard delete not allowed for core machines)',
-          softDeleted: true
-        });
-      } else {
-        console.log(`Permanently REMOVING machine ${id} from database`);
-        
-        // For non-core machines, allow hard delete
-        await Machine.findByIdAndDelete(id);
-        
-        console.log(`Machine ${id} REMOVED from database permanently`);
-        return res.status(200).json({ 
-          message: 'Machine removed from database permanently',
-          hardDeleted: true
-        });
-      }
-    }
-    // PERMANENT DELETE: Mark as permanently deleted but keep record
-    else if (permanent === 'true' || permanent === '1') {
+    // For non-core machines (ID > 6), always hard delete when permanent is specified
+    if (permanent === 'true' || permanent === '1') {
       // For core machines (1-6), don't allow permanent deletion
       if (isCoreMachine) {
         console.log(`Cannot permanently delete core machine ${id} - using soft delete instead`);
@@ -229,17 +200,12 @@ export const deleteMachine = async (req: Request, res: Response) => {
           softDeleted: true
         });
       } else {
-        // For user-created machines, allow permanent deletion
-        await Machine.findByIdAndUpdate(id, { 
-          deletedAt: new Date(),
-          permanentlyDeleted: true,
-          status: 'Maintenance',
-          maintenanceNote: 'This machine has been permanently deleted.'
-        });
+        // For user-created machines, perform HARD DELETE (completely remove from database)
+        await Machine.findByIdAndDelete(id);
         
-        console.log(`Non-core machine ${id} marked as permanently deleted`);
+        console.log(`Non-core machine ${id} PERMANENTLY DELETED from database`);
         return res.status(200).json({ 
-          message: 'Machine marked as permanently deleted',
+          message: 'Machine permanently deleted from database',
           permanentlyDeleted: true
         });
       }

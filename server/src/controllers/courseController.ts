@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { Course } from '../models/Course';
 import mongoose from 'mongoose';
@@ -167,10 +168,10 @@ export const deleteCourse = async (req: Request, res: Response) => {
           softDeleted: true
         });
       } else {
-        // For user-created courses, we can actually delete them
+        // For user-created courses (ID > 6), completely remove from database
         await Course.findByIdAndDelete(id);
         console.log(`User-created course ${id} permanently deleted from database`);
-        return res.status(200).json({ message: 'Course permanently deleted' });
+        return res.status(200).json({ message: 'Course permanently deleted from database' });
       }
     } else {
       // Soft delete by setting deletedAt timestamp

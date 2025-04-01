@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 
@@ -135,12 +136,19 @@ export class QuizDatabaseService extends BaseService {
       ? `quizzes/${quizId}?permanent=true`
       : `quizzes/${quizId}`;
     
-    const result = await this.apiRequest(
-      async () => await apiService.request(deleteUrl, 'DELETE', undefined, true),
-      `Could not delete quiz ${quizId}`
-    );
-    
-    return !!result;
+    try {
+      console.log(`Deleting quiz ${quizId}, permanent: ${permanent}`);
+      const result = await this.apiRequest(
+        async () => await apiService.request(deleteUrl, 'DELETE', undefined, true),
+        `Could not delete quiz ${quizId}`
+      );
+      
+      console.log(`Delete quiz result:`, result);
+      return !!result;
+    } catch (error) {
+      console.error(`Error deleting quiz ${quizId}:`, error);
+      return false;
+    }
   }
 }
 
