@@ -169,6 +169,26 @@ class ApiService {
     return this.request('auth/logout', 'POST', {}, true);
   }
   
+  // Change password
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+    return this.request('auth/change-password', 'POST', { 
+      currentPassword, 
+      newPassword 
+    }, true);
+  }
+  
+  async forgotPassword(email: string): Promise<any> {
+    return this.request('auth/forgot-password', 'POST', { email });
+  }
+  
+  async resetPassword(email: string, resetCode: string, newPassword: string): Promise<any> {
+    return this.request('auth/reset-password', 'POST', { 
+      email, 
+      resetCode, 
+      newPassword 
+    });
+  }
+  
   // Machine functions
   async getMachineStatus(machineId: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'GET');

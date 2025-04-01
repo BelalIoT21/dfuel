@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs'; // Changed from bcrypt to bcryptjs
+import bcrypt from 'bcryptjs';
 import User from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
 
@@ -15,8 +15,8 @@ interface UserResponse {
   name: string;
   email: string;
   isAdmin: boolean;
-  lastLogin: Date; // Added lastLogin to the interface
-  createdAt: Date; // Added createdAt
+  lastLogin: Date;
+  createdAt: Date;
 }
 
 interface LoginResponse {
@@ -53,7 +53,7 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
     res.json({
       data: {
         user: {
-          _id: user._id.toString(), // Ensure _id is returned as a string
+          _id: user._id.toString(),
           name: user.name,
           email: user.email,
           isAdmin: user.isAdmin,

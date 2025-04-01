@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -31,9 +30,8 @@ export const useAuthFunctions = (
       }
   
       // Validate the response structure
-      const nestedData = apiResponse.data?.data; // Access the nested `data` object
-      const userData = nestedData?.user;
-      const token = nestedData?.token;
+      const userData = apiResponse.data?.data?.user;
+      const token = apiResponse.data?.data?.token;
   
       if (!userData || !userData._id || !userData.name || !userData.email || !token) {
         console.error("API response is missing required fields:", apiResponse);
