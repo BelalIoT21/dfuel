@@ -43,8 +43,6 @@ export const ensureAdminUser = async () => {
       await newAdmin.save();
       console.log('Default admin user created successfully');
     } else {
-      console.log('Admin user already exists');
-      
       // Check if admin password needs to be updated
       const forcePasswordUpdate = process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true';
       
@@ -63,7 +61,6 @@ export const ensureAdminUser = async () => {
       
       // Always ensure admin email is in sync with .env
       if (existingAdmin.email !== adminEmail) {
-        console.log(`Updating admin email from ${existingAdmin.email} to ${adminEmail}`);
         existingAdmin.email = adminEmail || 'admin@dfuel.com'; // Fix: Add fallback value
         await existingAdmin.save();
       }
@@ -72,7 +69,6 @@ export const ensureAdminUser = async () => {
       if (!existingAdmin.certifications || existingAdmin.certifications.length < 6) {
         existingAdmin.certifications = ['1', '2', '3', '4', '5', '6'];
         await existingAdmin.save();
-        console.log('Updated admin with all certifications');
       }
     }
   } catch (error) {

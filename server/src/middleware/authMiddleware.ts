@@ -27,8 +27,6 @@ async function findUserWithAnyIdFormat(userId: string) {
   }
   
   // Not in cache, or cache expired, proceed with database lookup
-  console.log(`Auth middleware: Looking for user with ID: ${userId}`);
-  
   let user = null;
   
   // Try findById first as it's the most efficient method
@@ -90,7 +88,6 @@ async function findUserWithAnyIdFormat(userId: string) {
     }
   }
   
-  console.log(`Auth middleware: User not found with any method for ID: ${userId}`);
   return null;
 }
 

@@ -64,19 +64,6 @@ class ApiService {
         cleanEndpoint = `api/${cleanEndpoint}`;
       }
       
-      // Log the request for debugging
-      console.log(`API request to: ${this.api.defaults.baseURL}/${cleanEndpoint} (method: ${method})`);
-      if (this.token) {
-        console.log(`Using token for authorization: ${this.token.substring(0, 10)}...`);
-      }
-      
-      // Make the request with detailed logging
-      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}/${cleanEndpoint}`);
-      console.log(`Request headers:`, this.api.defaults.headers);
-      if (data) {
-        console.log(`Request data:`, data);
-      }
-      
       // Make the request
       let response: AxiosResponse;
       
@@ -103,13 +90,6 @@ class ApiService {
           throw new Error(`Unsupported method: ${method}`);
       }
       
-      // Log the response
-      console.log(`Response from ${this.api.defaults.baseURL}/${cleanEndpoint}:`, {
-        status: response.status,
-        statusText: response.statusText,
-        data: response.data
-      });
-      
       return {
         data: response.data,
         status: response.status,
@@ -118,13 +98,6 @@ class ApiService {
     } catch (error: any) {
       const status = error.response?.status || 500;
       const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
-      
-      console.error(`API error for ${method} ${endpoint}: ${status} - ${errorMsg}`);
-      
-      // More detailed error logging
-      if (error.response?.data) {
-        console.error(`Error response data:`, error.response.data);
-      }
       
       // For bookings endpoints, if we get a 404 or similar for GET, return empty array instead of error
       if (method === 'GET' && endpoint.includes('bookings') && (status === 404 || status === 204)) {
@@ -163,10 +136,6 @@ class ApiService {
     return this.request(`machines/${machineId}/status`, 'GET');
   }
   
-  async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
-    return this.request(`machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
-  }
-
   // User functions
   async getAllUsers(): Promise<any> {
     return this.request('users', 'GET', undefined, true);

@@ -18,15 +18,6 @@ export const useAuthFunctions = (
       setIsLoading(true);
       console.log("Login attempt for:", email);
   
-      // Verify the server is running first without throwing an error
-      console.log("Checking server health before login attempt");
-      const healthResponse = await apiService.checkHealth();
-      if (!healthResponse.data || healthResponse.status !== 200) {
-        console.warn("Health check warning - proceeding with login anyway:", healthResponse);
-      } else {
-        console.log("Server health check passed, proceeding with login");
-      }
-  
       // MongoDB login via API
       console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
