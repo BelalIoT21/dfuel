@@ -6,14 +6,14 @@ import {
 } from '../controllers/authController';
 import { changePassword } from '../controllers/auth/passwordController';
 import { protect } from '../middleware/authMiddleware';
-import { getMe, getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
+import { getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 
 const router = express.Router();
 
 // User registration and authentication
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.get('/me', protect, getMe);
+router.get('/me', protect, getUserProfile); // Changed from getMe to getUserProfile
 
 // Password management - only change password functionality
 router.post('/change-password', protect, changePassword);
