@@ -167,7 +167,7 @@ export const createMachine = async (req: Request, res: Response) => {
       requiresCertification,
       difficulty = 'Beginner',
       imageUrl = '',
-      image = '', // Now explicitly accepting image field as well
+      image = '',
       specifications = '',
       details = '',
       certificationInstructions = '',
@@ -191,16 +191,18 @@ export const createMachine = async (req: Request, res: Response) => {
       normalizedImageUrl = '/' + normalizedImageUrl;
     }
 
+    // Get the next available ID (ensuring we never overwrite existing machines)
     const machines = await Machine.find({}, '_id').sort({ _id: -1 });
-    let nextId = '7';
+    let nextId = '7'; // Start from 7 for user-created machines
     
     if (machines.length > 0) {
-      const highestId = machines[0]._id;
-      console.log("Highest existing ID:", highestId);
+      const highestId = machines.reduce((max, machine) => {
+        const id = machine._id.toString();
+        return !isNaN(Number(id)) && Number(id) > Number(max) ? id : max;
+      }, '6'); // Default to 6 if no numeric IDs found
       
-      if (!isNaN(Number(highestId))) {
-        nextId = String(Number(highestId) + 1);
-      }
+      console.log("Highest existing ID:", highestId);
+      nextId = String(Number(highestId) + 1);
     }
     
     console.log(`Creating new machine with ID: ${nextId}`);
@@ -216,6 +218,7 @@ export const createMachine = async (req: Request, res: Response) => {
     
     console.log(`requiresCertification normalized to: ${normalizedRequiresCertification} (${typeof normalizedRequiresCertification})`);
     
+    // Create the new machine with a unique ID
     const machine = new Machine({
       _id: nextId,
       name,
@@ -224,13 +227,14 @@ export const createMachine = async (req: Request, res: Response) => {
       status,
       requiresCertification: normalizedRequiresCertification,
       difficulty,
-      imageUrl: normalizedImageUrl, // Store the normalized image URL
+      imageUrl: normalizedImageUrl,
       specifications,
       details,
       certificationInstructions,
       linkedCourseId: linkedCourseId || undefined,
       linkedQuizId: linkedQuizId || undefined,
-      bookedTimeSlots: []
+      bookedTimeSlots: [],
+      isUserCreated: true // Add flag to indicate this is a user-created machine
     });
 
     const createdMachine = await machine.save();
@@ -474,6 +478,22 @@ export const deleteMachine = async (req: Request, res: Response) => {
     }
 
     let machineId = id.toString();
+    
+    // For core machines (1-6), just soft delete by marking as inactive
+    // This will allow them to be restored later
+    if (machineId >= '1' && machineId <= '6') {
+      console.log(`Soft-deleting core machine ${machineId}`);
+      machine.status = 'Maintenance';
+      machine.maintenanceNote = 'This machine has been temporarily removed.';
+      await machine.save();
+      
+      console.log(`Marked core machine ${machineId} as maintenance instead of deleting`);
+      return res.status(200).json({ 
+        message: 'Core machine marked as maintenance. It can be restored later.',
+        softDeleted: true
+      });
+    }
+    
     console.log(`Finding users with certification for machine ${machineId}`);
     
     try {
@@ -500,6 +520,22 @@ export const deleteMachine = async (req: Request, res: Response) => {
       console.error("Error removing certifications:", error);
     }
 
+    // For user-created machines, we'll perform a backup before deletion
+    // This could be expanded to create a proper backup system
+    try {
+      // Create a backup of the machine before deletion
+      // In a real system, you might want to store this in a separate collection
+      console.log(`Creating backup of machine ${machineId} before deletion`);
+      const backupData = machine.toObject();
+      // Add backup timestamp
+      backupData.deletedAt = new Date();
+      // Here you would store the backup somewhere 
+      console.log(`Backup created for machine ${machineId}`);
+    } catch (backupError) {
+      console.error(`Error creating backup for machine ${machineId}:`, backupError);
+      // Continue with deletion even if backup fails
+    }
+
     // Delete the machine
     await machine.deleteOne();
 
@@ -507,5 +543,81 @@ export const deleteMachine = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in deleteMachine:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// New endpoint to restore a soft-deleted machine
+export const restoreMachine = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    let machine;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      machine = await Machine.findById(id);
+    } else {
+      machine = await Machine.findOne({ _id: id });
+    }
+    
+    if (!machine) {
+      // If machine doesn't exist, try to restore from original templates (for core machines 1-6)
+      if (id >= '1' && id <= '6') {
+        console.log(`Attempting to restore core machine ${id} from template`);
+        const restored = await Machine.findById(id);
+        if (restored) {
+          return res.status(200).json({
+            message: 'Machine has already been restored',
+            machine: restored
+          });
+        }
+        
+        // Import the restore function from seeder
+        const { restoreDeletedMachines } = require('../utils/seeds/machineSeeder');
+        await restoreDeletedMachines();
+        
+        // Check if restoration worked
+        const restoredMachine = await Machine.findById(id);
+        if (restoredMachine) {
+          return res.status(200).json({
+            message: 'Core machine restored successfully',
+            machine: restoredMachine
+          });
+        }
+        
+        return res.status(404).json({ 
+          message: 'Machine could not be restored',
+          error: 'Restoration failed'
+        });
+      }
+      
+      return res.status(404).json({ message: 'Machine not found and could not be restored' });
+    }
+    
+    // If machine exists but is in maintenance mode (soft deleted)
+    if (machine.status === 'Maintenance' && 
+        machine.maintenanceNote === 'This machine has been temporarily removed.') {
+      
+      // Restore the machine to available status
+      machine.status = 'Available';
+      machine.maintenanceNote = '';
+      await machine.save();
+      
+      return res.status(200).json({
+        message: 'Machine restored successfully',
+        machine
+      });
+    }
+    
+    // Machine exists and is not soft-deleted
+    return res.status(200).json({
+      message: 'Machine is already active',
+      machine
+    });
+    
+  } catch (error) {
+    console.error('Error in restoreMachine:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
   }
 };

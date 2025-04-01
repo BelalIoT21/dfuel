@@ -202,6 +202,60 @@ class MongoDbService {
     }
   }
 
+  async backupMachine(machineId: string): Promise<boolean> {
+    try {
+      console.log(`Backing up machine ${machineId} before deletion`);
+      
+      // Create a connector to MongoDB service
+      const response = await fetch(`${this.getApiUrl()}/mongodb/backup-machine`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify({ machineId })
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to backup machine ${machineId}: ${response.statusText}`);
+        return false;
+      }
+      
+      const data = await response.json();
+      return data.success === true;
+    } catch (error) {
+      console.error(`Error backing up machine ${machineId}:`, error);
+      return false;
+    }
+  }
+
+  async restoreFromBackup(machineId: string): Promise<boolean> {
+    try {
+      console.log(`Restoring machine ${machineId} from backup`);
+      
+      // Create a connector to MongoDB service
+      const response = await fetch(`${this.getApiUrl()}/mongodb/restore-machine`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify({ machineId })
+      });
+      
+      if (!response.ok) {
+        console.error(`Failed to restore machine ${machineId}: ${response.statusText}`);
+        return false;
+      }
+      
+      const data = await response.json();
+      return data.success === true;
+    } catch (error) {
+      console.error(`Error restoring machine ${machineId}:`, error);
+      return false;
+    }
+  }
+
   async getAllCourses() {
     try {
       return await mongoCourseService.getAllCourses();

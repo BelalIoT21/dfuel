@@ -221,10 +221,104 @@ export class MachineDatabaseService extends BaseService {
 
   async deleteMachine(machineId: string): Promise<boolean> {
     try {
-      const response = await apiService.request(`machines/${machineId}`, 'DELETE', undefined, true);
-      return !response.error;
+      console.log(`Attempting to delete machine ${machineId}`);
+      
+      // First try MongoDB direct deletion if available
+      let success = false;
+      
+      try {
+        // For core machines (IDs 1-6), attempt to soft-delete first
+        if (machineId >= '1' && machineId <= '6') {
+          success = await mongoDbService.updateMachineStatus(machineId, 'Maintenance', 'This machine has been temporarily removed.');
+          if (success) {
+            console.log(`Successfully soft-deleted core machine ${machineId} via MongoDB`);
+            return true;
+          }
+        }
+        
+        // Backup the machine before deletion using the new backup method
+        await mongoDbService.backupMachine(machineId);
+        
+        // Then proceed with actual deletion
+        success = await mongoDbService.deleteDocument('machines', machineId);
+        if (success) {
+          console.log("Successfully deleted machine via MongoDB");
+          return true;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB error deleting machine:", mongoError);
+      }
+      
+      // Try multiple API endpoints
+      const endpoints = [
+        `machines/${machineId}`,
+        `auth/machines/${machineId}`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying to delete machine via ${endpoint}`);
+          const response = await apiService.delete(endpoint);
+          
+          if (response.data && response.data.success) {
+            console.log(`Successfully deleted machine via API endpoint: ${endpoint}`);
+            return true;
+          }
+          
+          // If it's a core machine and the server used soft deletion
+          if (response.data && response.data.softDeleted) {
+            console.log(`Core machine ${machineId} was soft-deleted instead of hard-deleted`);
+            return true;
+          }
+        } catch (apiError) {
+          console.error(`API error deleting machine via ${endpoint}:`, apiError);
+        }
+      }
+      
+      console.error("All methods of machine deletion failed");
+      return false;
     } catch (error) {
-      console.error(`API error, could not delete machine ${machineId}:`, error);
+      console.error("API error in deleteMachine:", error);
+      return false;
+    }
+  }
+
+  async restoreMachine(machineId: string): Promise<boolean> {
+    try {
+      console.log(`Attempting to restore machine ${machineId}`);
+      
+      // Try MongoDB direct restoration first
+      try {
+        // For core machines (IDs 1-6), try to restore from template
+        if (machineId >= '1' && machineId <= '6') {
+          const response = await apiService.post(`machines/${machineId}/restore`);
+          if (response.data && !response.error) {
+            console.log(`Successfully restored core machine ${machineId} via API`);
+            return true;
+          }
+        }
+        
+        // For user-created machines, try to restore from backup
+        const success = await mongoDbService.restoreFromBackup(machineId);
+        if (success) {
+          console.log(`Successfully restored machine ${machineId} from backup via MongoDB`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error(`MongoDB error restoring machine ${machineId}:`, mongoError);
+      }
+      
+      // Fall back to API
+      const response = await apiService.post(`machines/${machineId}/restore`);
+      if (response.data && !response.error) {
+        console.log(`Successfully restored machine ${machineId} via API`);
+        return true;
+      }
+      
+      console.error(`Failed to restore machine ${machineId}`);
+      return false;
+    } catch (error) {
+      console.error(`Error in restoreMachine:`, error);
       return false;
     }
   }

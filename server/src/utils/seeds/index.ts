@@ -1,7 +1,7 @@
 
 import mongoose from 'mongoose';
 import { seedUsers } from './userSeeder';
-import { seedAllMachines, ensureMachineImages } from './machineSeeder';
+import { seedAllMachines, ensureMachineImages, restoreDeletedMachines } from './machineSeeder';
 import { seedSafetyCourses } from './courseSeeder';
 import { seedSafetyQuizzes } from './quizSeeder';
 
@@ -13,7 +13,8 @@ export async function runAllSeeders() {
     // Seed users
     await seedUsers();
     
-    // Seed machines
+    // Seed core machines (but don't overwrite existing ones)
+    console.log("Seeding core machines while preserving user modifications...");
     await seedAllMachines();
     
     // Seed safety courses for machines 5 and 6
@@ -53,6 +54,9 @@ export async function runSeeder(seederName: string) {
         break;
       case 'machine-images':
         await ensureMachineImages();
+        break;
+      case 'restore-machines':
+        await restoreDeletedMachines();
         break;
       default:
         throw new Error(`Unknown seeder: ${seederName}`);

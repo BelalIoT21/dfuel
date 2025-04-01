@@ -10,7 +10,8 @@ import dotenv from 'dotenv';
 import { 
   seedMissingMachines, 
   updateMachineImages, 
-  seedAllMachines 
+  seedAllMachines,
+  restoreDeletedMachines 
 } from './seeds/machineSeeder';
 import { seedSafetyCourses, seedAllCourses } from './seeds/courseSeeder';
 import { seedSafetyQuizzes, seedAllQuizzes } from './seeds/quizSeeder';
@@ -42,19 +43,25 @@ export class SeedService {
       
       console.log('Existing machine IDs:', existingMachineIds);
       
-      // Define expected machine IDs (1-6)
-      const expectedMachineIds = ['1', '2', '3', '4', '5', '6'];
+      // Define core machine IDs (1-6)
+      const coreMachineIds = ['1', '2', '3', '4', '5', '6'];
       
-      // Check if any expected machine IDs are missing
-      const missingMachineIds = expectedMachineIds.filter(id => !existingMachineIds.includes(id));
+      // Check if any core machine IDs are missing
+      const missingCoreMachineIds = coreMachineIds.filter(id => !existingMachineIds.includes(id));
       
-      if (missingMachineIds.length > 0) {
-        console.log(`Missing machine IDs: ${missingMachineIds.join(', ')}. Seeding missing machines...`);
-        await seedMissingMachines(missingMachineIds);
+      if (missingCoreMachineIds.length > 0) {
+        console.log(`Missing core machine IDs: ${missingCoreMachineIds.join(', ')}. Seeding missing machines...`);
+        await seedMissingMachines(missingCoreMachineIds);
+      } else {
+        console.log('All core machines (1-6) are present.');
+        
+        // Try to restore any machines that might have been deleted
+        console.log('Checking for deleted machines to restore...');
+        await restoreDeletedMachines();
       }
       
-      // Always update machine images and ensure proper order
-      console.log('Updating machine images...');
+      // Always update machine images for core machines without modifying other properties
+      console.log('Gently updating machine images without overwriting user edits...');
       await updateMachineImages();
       await ensureMachineOrder();
 
@@ -64,17 +71,29 @@ export class SeedService {
         await seedUsers();
       }
 
-      // Seed all courses and quizzes (1-6)
-      console.log('Ensuring all courses (1-6) exist...');
+      // Seed all courses and quizzes (1-6) if missing
+      console.log('Ensuring all core courses (1-6) exist...');
       await seedAllCourses();
       
-      console.log('Ensuring all quizzes (1-6) exist...');
+      console.log('Ensuring all core quizzes (1-6) exist...');
       await seedAllQuizzes();
 
       console.log('Database seeding complete!');
     } catch (error) {
       console.error('Error seeding database:', error);
       throw error;
+    }
+  }
+  
+  // New method to restore deleted machines without affecting existing ones
+  static async restoreDeletedMachines() {
+    try {
+      console.log('Starting restoration of deleted machines...');
+      const restoredCount = await restoreDeletedMachines();
+      return { success: true, restoredCount };
+    } catch (error) {
+      console.error('Error restoring deleted machines:', error);
+      return { success: false, error };
     }
   }
 }

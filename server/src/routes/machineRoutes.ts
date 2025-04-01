@@ -8,7 +8,8 @@ import {
   updateMachine, 
   deleteMachine, 
   updateMachineStatus,
-  getMachineStatus 
+  getMachineStatus,
+  restoreMachine 
 } from '../controllers/machineController';
 import { protect, admin } from '../middleware/authMiddleware';
 
@@ -69,5 +70,8 @@ router.put(
 
 // Delete machine (admin only)
 router.delete('/:id', protect, admin, deleteMachine);
+
+// New endpoint to restore a deleted machine
+router.post('/:id/restore', protect, admin, restoreMachine);
 
 export default router;

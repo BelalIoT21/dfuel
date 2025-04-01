@@ -5,19 +5,22 @@ import mongoConnectionService from './connectionService';
 class MongoMachineService {
   private machineStatusesCollection: Collection<MongoMachineStatus> | null = null;
   private machinesCollection: Collection<MongoMachine> | null = null;
+  private machineBackupsCollection: Collection<MongoMachine> | null = null;
   
   async initCollections(): Promise<void> {
     try {
-      if (!this.machineStatusesCollection || !this.machinesCollection) {
+      if (!this.machineStatusesCollection || !this.machinesCollection || !this.machineBackupsCollection) {
         const db = await mongoConnectionService.connect();
         if (db) {
           this.machineStatusesCollection = db.collection<MongoMachineStatus>('machineStatuses');
           this.machinesCollection = db.collection<MongoMachine>('machines');
+          this.machineBackupsCollection = db.collection<MongoMachine>('machineBackups');
           
           // Log collection details for debugging
           console.log(`MongoDB Collections initialized: 
             - machineStatuses: ${this.machineStatusesCollection ? 'OK' : 'Failed'}
-            - machines: ${this.machinesCollection ? 'OK' : 'Failed'}`);
+            - machines: ${this.machinesCollection ? 'OK' : 'Failed'}
+            - machineBackups: ${this.machineBackupsCollection ? 'OK' : 'Failed'}`);
           
           // Check if machines collection is empty and log it
           if (this.machinesCollection) {
@@ -75,7 +78,6 @@ class MongoMachineService {
     }
     
     try {
-      // Convert "out of order" to "in-use" for the database
       let normalizedStatus = status;
       if (status.toLowerCase() === 'out of order') {
         normalizedStatus = 'in-use';
@@ -94,9 +96,7 @@ class MongoMachineService {
         upsertedCount: result.upsertedCount
       })}`);
       
-      // Also update the machine document if it exists
       if (this.machinesCollection) {
-        // Convert to proper case for Machine collection
         let dbStatus = 'Available';
         if (normalizedStatus.toLowerCase() === 'maintenance') {
           dbStatus = 'Maintenance';
@@ -127,11 +127,8 @@ class MongoMachineService {
     }
     
     try {
-      // Updated to sort by _id numerically
       const machines = await this.machinesCollection.find().sort({ _id: 1 }).toArray();
       console.log(`Retrieved ${machines.length} machines from MongoDB in order by ID`);
-      
-      // No longer filtering out machines 5 and 6
       return machines;
     } catch (error) {
       console.error("Error getting machines from MongoDB:", error);
@@ -198,12 +195,10 @@ class MongoMachineService {
     }
     
     try {
-      // Check if the machine already exists
       const exists = await this.machineExists(machine._id);
       if (exists) {
         console.log(`Machine with ID ${machine._id} already exists in MongoDB - updating`);
         
-        // Ensure requiresCertification is always a boolean - critical fix
         if (machine.requiresCertification !== undefined) {
           if (typeof machine.requiresCertification === 'string') {
             machine.requiresCertification = machine.requiresCertification === 'true';
@@ -213,7 +208,6 @@ class MongoMachineService {
           console.log(`requiresCertification converted to: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
         }
         
-        // Update the machine to ensure it has all properties
         const result = await this.machinesCollection.updateOne(
           { _id: machine._id },
           { $set: { ...machine, updatedAt: new Date() } }
@@ -221,7 +215,6 @@ class MongoMachineService {
         return result.acknowledged;
       }
       
-      // Ensure requiresCertification is always a boolean - critical fix
       if (machine.requiresCertification !== undefined) {
         if (typeof machine.requiresCertification === 'string') {
           machine.requiresCertification = machine.requiresCertification === 'true';
@@ -231,15 +224,10 @@ class MongoMachineService {
         console.log(`requiresCertification converted to: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
       }
       
-      // Add the machine to the collection
-      console.log(`Adding new machine to MongoDB: ${machine.name} (ID: ${machine._id})`);
-      console.log(`requiresCertification: ${machine.requiresCertification} (${typeof machine.requiresCertification})`);
-      
       const newMachine = { ...machine, createdAt: new Date(), updatedAt: new Date() };
       const result = await this.machinesCollection.insertOne(newMachine);
       
       if (result.acknowledged) {
-        // Also set initial status
         await this.updateMachineStatus(
           machine._id,
           machine.status || 'available',
@@ -264,18 +252,14 @@ class MongoMachineService {
     try {
       console.log(`Updating machine ${machineId} with data:`, updates);
       
-      // Create a clean update object
       const updateData: Record<string, any> = { updatedAt: new Date() };
       
-      // Handle each field specifically to avoid overwriting with undefined
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.type !== undefined) updateData.type = updates.type;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.status !== undefined) updateData.status = updates.status;
       
-      // Ensure requiresCertification is properly handled - critical fix
       if ('requiresCertification' in updates) {
-        // Force it to be a boolean
         if (typeof updates.requiresCertification === 'string') {
           updateData.requiresCertification = updates.requiresCertification === 'true';
         } else {
@@ -291,9 +275,7 @@ class MongoMachineService {
       if (updates.maintenanceNote !== undefined) updateData.maintenanceNote = updates.maintenanceNote;
       if (updates.certificationInstructions !== undefined) updateData.certificationInstructions = updates.certificationInstructions;
       
-      // Important fix for linkedCourseId and linkedQuizId - make it explicit when to set null
       if ('linkedCourseId' in updates) {
-        // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedCourseId === '' || updates.linkedCourseId === 'none') {
           updateData.linkedCourseId = undefined;
           console.log(`Removed linkedCourseId for machine ${machineId}`);
@@ -304,7 +286,6 @@ class MongoMachineService {
       }
       
       if ('linkedQuizId' in updates) {
-        // Only set to undefined if explicitly passed as empty string or "none"
         if (updates.linkedQuizId === '' || updates.linkedQuizId === 'none') {
           updateData.linkedQuizId = undefined;
           console.log(`Removed linkedQuizId for machine ${machineId}`);
@@ -314,9 +295,8 @@ class MongoMachineService {
         }
       }
       
-      // Only update the specific machineId, never any other machine
       const result = await this.machinesCollection.updateOne(
-        { _id: machineId },  // Be explicit about the ID to prevent updates to other machines
+        { _id: machineId },
         { $set: updateData }
       );
       
@@ -327,7 +307,6 @@ class MongoMachineService {
         fields: Object.keys(updateData)
       })}`);
       
-      // Also update status if provided
       if (updates.status) {
         await this.updateMachineStatus(
           machineId,
@@ -353,20 +332,16 @@ class MongoMachineService {
     try {
       const count = await this.machinesCollection.countDocuments();
       
-      // Get existing machine IDs
       const existingMachines = await this.machinesCollection.find({}, { projection: { _id: 1 } }).toArray();
       const existingMachineIds = existingMachines.map(m => m._id);
       
-      // Define expected machine IDs
-      const expectedMachineIds = ['1', '2', '3', '4', '5', '6', '7']; // Added machine 7
+      const expectedMachineIds = ['1', '2', '3', '4', '5', '6', '7'];
       
-      // Check if any expected machine IDs are missing
       const missingMachineIds = expectedMachineIds.filter(id => !existingMachineIds.includes(id));
       
       if (count === 0 || missingMachineIds.length > 0) {
         console.log("Missing machines or empty collection, seeding default machines...");
         
-        // Sort machine templates by ID to ensure proper order
         const defaultMachines: MongoMachine[] = [
           { 
             _id: '1', 
@@ -377,8 +352,8 @@ class MongoMachineService {
             requiresCertification: true,
             difficulty: 'Advanced',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '1', // Set to course 1
-            linkedQuizId: '1'  // Set to quiz 1
+            linkedCourseId: '1',
+            linkedQuizId: '1'
           },
           { 
             _id: '2', 
@@ -454,12 +429,9 @@ class MongoMachineService {
           }
         ];
         
-        // Create only missing machine entries in specific order
         if (missingMachineIds.length > 0) {
-          // Sort missing IDs numerically
           const sortedMissingIds = [...missingMachineIds].sort((a, b) => parseInt(a) - parseInt(b));
           
-          // Create machines in sorted order
           for (const id of sortedMissingIds) {
             const machine = defaultMachines.find(m => m._id === id);
             if (machine) {
@@ -468,7 +440,6 @@ class MongoMachineService {
             }
           }
         } else {
-          // Create all machine entries if collection is empty
           for (const machine of defaultMachines) {
             await this.addMachine(machine);
           }
@@ -478,15 +449,14 @@ class MongoMachineService {
       } else {
         console.log(`Found ${count} existing machines in MongoDB, updating images and metadata...`);
         
-        // Update machine data, especially images and course/quiz links
         const updates = [
           { 
             _id: '1', 
             name: 'Laser Cutter', 
             type: 'Laser Cutter',
             imageUrl: '/lovable-uploads/81c40f5d-e4d4-42ef-8262-0467a8fb48c3.png',
-            linkedCourseId: '1', // Set to course 1
-            linkedQuizId: '1'  // Set to quiz 1
+            linkedCourseId: '1',
+            linkedQuizId: '1'
           },
           { 
             _id: '2', 
@@ -538,16 +508,13 @@ class MongoMachineService {
           }
         ];
         
-        // Update each machine with its respective data
         for (const update of updates) {
           const machineId = update._id;
           console.log(`Checking if machine ${machineId} needs updates...`);
           
-          // Check if the machine exists
           const exists = await this.machineExists(machineId);
           
           if (exists) {
-            // Update the machine with the latest metadata
             await this.updateMachine(machineId, update);
           }
         }
@@ -556,8 +523,120 @@ class MongoMachineService {
       console.error("Error seeding default machines:", error);
     }
   }
+  
+  async backupMachine(machineId: string): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection || !this.machineBackupsCollection) {
+      console.error("Machine collections not initialized");
+      return false;
+    }
+    
+    try {
+      const machine = await this.machinesCollection.findOne({ _id: machineId });
+      if (!machine) {
+        console.error(`Machine ${machineId} not found for backup`);
+        return false;
+      }
+      
+      const backup = {
+        ...machine,
+        backupTime: new Date(),
+        restored: false
+      };
+      
+      await this.machineBackupsCollection.insertOne(backup);
+      console.log(`Created backup of machine ${machineId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error backing up machine ${machineId}:`, error);
+      return false;
+    }
+  }
+  
+  async restoreFromBackup(machineId: string): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection || !this.machineBackupsCollection) {
+      console.error("Machine collections not initialized");
+      return false;
+    }
+    
+    try {
+      const existingMachine = await this.machinesCollection.findOne({ _id: machineId });
+      if (existingMachine) {
+        console.log(`Machine ${machineId} already exists, no need to restore`);
+        return true;
+      }
+      
+      const backup = await this.machineBackupsCollection.findOne(
+        { _id: machineId },
+        { sort: { backupTime: -1 } }
+      );
+      
+      if (!backup) {
+        console.error(`No backup found for machine ${machineId}`);
+        return false;
+      }
+      
+      const { backupTime, restored, ...machineData } = backup;
+      
+      await this.machinesCollection.insertOne(machineData);
+      
+      await this.machineBackupsCollection.updateOne(
+        { _id: machineId, backupTime },
+        { $set: { restored: true } }
+      );
+      
+      console.log(`Restored machine ${machineId} from backup`);
+      return true;
+    } catch (error) {
+      console.error(`Error restoring machine ${machineId} from backup:`, error);
+      return false;
+    }
+  }
+  
+  async restoreAllDeletedMachines(): Promise<number> {
+    await this.initCollections();
+    if (!this.machinesCollection || !this.machineBackupsCollection) {
+      console.error("Machine collections not initialized");
+      return 0;
+    }
+    
+    try {
+      const backups = await this.machineBackupsCollection.aggregate([
+        { $sort: { backupTime: -1 } },
+        { $group: { _id: "$_id", latestBackup: { $first: "$$ROOT" } } },
+        { $replaceRoot: { newRoot: "$latestBackup" } }
+      ]).toArray();
+      
+      const existingMachines = await this.machinesCollection.find({}, { projection: { _id: 1 } }).toArray();
+      const existingIds = new Set(existingMachines.map(m => m._id.toString()));
+      
+      let restoredCount = 0;
+      
+      for (const backup of backups) {
+        if (!existingIds.has(backup._id.toString())) {
+          const { backupTime, restored, ...machineData } = backup;
+          
+          await this.machinesCollection.insertOne(machineData);
+          
+          await this.machineBackupsCollection.updateOne(
+            { _id: backup._id, backupTime },
+            { $set: { restored: true } }
+          );
+          
+          restoredCount++;
+          console.log(`Restored machine ${backup._id} from backup`);
+        }
+      }
+      
+      console.log(`Restored ${restoredCount} machines from backups`);
+      return restoredCount;
+    } catch (error) {
+      console.error("Error restoring machines from backups:", error);
+      return 0;
+    }
+  }
 }
 
-// Create a singleton instance
-export const mongoMachineService = new MongoMachineService();
+const mongoMachineService = new MongoMachineService();
 export default mongoMachineService;
