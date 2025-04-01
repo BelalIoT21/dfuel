@@ -1,9 +1,79 @@
+
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Booking, IBooking } from '../models/Booking';
 import mongoose from 'mongoose';
 import User from '../models/User';
 import { Machine } from '../models/Machine';
+
+// Helper function to find a user with any ID format (similar to authMiddleware)
+async function findUserWithAnyIdFormat(userId: string | number) {
+  console.log(`BookingController: Looking for user with ID: ${userId}`);
+  
+  // Try all possible ways to find the user
+  let user = null;
+  
+  // Method 1: findById
+  try {
+    user = await User.findById(userId);
+    if (user) {
+      console.log(`BookingController: Found user with findById: ${user._id}`);
+      return user;
+    }
+  } catch (err) {
+    console.log('BookingController: Error in findById, trying other methods');
+  }
+  
+  // Method 2: _id as string exact match
+  try {
+    user = await User.findOne({ _id: userId });
+    if (user) {
+      console.log(`BookingController: Found user with _id exact match: ${user._id}`);
+      return user;
+    }
+  } catch (err) {
+    console.log('BookingController: Error in _id exact match, trying other methods');
+  }
+  
+  // Method 3: id field
+  try {
+    user = await User.findOne({ id: userId });
+    if (user) {
+      console.log(`BookingController: Found user with id field: ${user._id}`);
+      return user;
+    }
+  } catch (err) {
+    console.log('BookingController: Error in id field search, trying other methods');
+  }
+  
+  // Method 4: numeric conversion
+  if (!isNaN(Number(userId))) {
+    const numericId = Number(userId);
+    
+    try {
+      user = await User.findById(numericId);
+      if (user) {
+        console.log(`BookingController: Found user with numeric findById: ${user._id}`);
+        return user;
+      }
+    } catch (err) {
+      console.log('BookingController: Error in numeric findById');
+    }
+    
+    try {
+      user = await User.findOne({ id: numericId });
+      if (user) {
+        console.log(`BookingController: Found user with numeric id field: ${user._id}`);
+        return user;
+      }
+    } catch (err) {
+      console.log('BookingController: Error in numeric id field search');
+    }
+  }
+  
+  console.log(`BookingController: User not found with any method for ID: ${userId}`);
+  return null;
+}
 
 // Create booking
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
@@ -52,8 +122,8 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
       throw new Error('This time slot is already booked');
     }
     
-    // Find user and machine
-    const user = await User.findById(userId);
+    // Find user and machine using enhanced lookup for user
+    const user = await findUserWithAnyIdFormat(userId);
     const machine = await Machine.findById(machineIdStr);
     
     if (!user) {
