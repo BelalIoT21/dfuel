@@ -1,357 +1,302 @@
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { getApiEndpoints } from '../utils/env';
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { formatApiEndpoint } from '@/utils/env';
-
-// Define response types
-export interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-// ApiService class to handle all API requests
+// Main API service to handle all API requests
 class ApiService {
-  private client: AxiosInstance;
+  private api: AxiosInstance;
+  private endpoints: string[];
+  private currentEndpointIndex: number = 0;
   private token: string | null = null;
-
+  
   constructor() {
-    // Create an axios instance with default config
-    this.client = axios.create({
-      baseURL: '/api',  // Default to relative path for production
+    this.endpoints = getApiEndpoints();
+    console.log("Available API endpoints:", this.endpoints);
+    
+    // Create axios instance with initial base URL
+    this.api = axios.create({
+      baseURL: this.endpoints[this.currentEndpointIndex],
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
     });
-
-    // Add response interceptor to standardize responses
-    this.client.interceptors.response.use(
+    
+    // Intercept responses to handle errors consistently
+    this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error('API error:', error);
-        
-        // Return a standardized error object
-        if (error.response) {
-          console.error(`API error for ${error.config.method.toUpperCase()} ${error.config.url}: ${error.response.status} - ${error.message}`);
-          return Promise.reject({
-            status: error.response.status,
-            data: error.response.data,
-            error: error.response.data?.message || error.message
-          });
-        }
-        
-        console.error(`API request failed: ${error.message}`);
-        return Promise.reject({
-          status: 500,
-          data: null,
-          error: error.message
-        });
+        console.error(`API error: ${error}`);
+        return Promise.reject(error);
       }
     );
-
-    // Add request interceptor to include auth token
-    this.client.interceptors.request.use(
-      (config) => {
-        // If token exists, add it to the headers
-        if (this.token) {
-          config.headers['Authorization'] = `Bearer ${this.token}`;
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
   }
-
-  // Set auth token for future requests
+  
+  // Set authorization token for subsequent requests
   setToken(token: string | null): void {
     this.token = token;
+    if (token) {
+      this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete this.api.defaults.headers.common['Authorization'];
+    }
   }
-
-  // Get the currently set token
-  getToken(): string | null {
-    return this.token;
+  
+  // Get the current user profile when logged in
+  async getCurrentUser(): Promise<any> {
+    return this.request('auth/me', 'GET', undefined, true);
   }
-
-  // Generic request method
-  async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  
+  // Generic request method for all API calls
+  async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
     try {
-      console.log(`API request to: ${config.url} (method: ${config.method || 'GET'})`);
-      
-      // Log headers and data if present
-      console.log('Making API request:', `${config.method || 'GET'} ${config.url}`, {
-        ...(config.data && { data: config.data })
-      });
-      
-      console.log('Request headers:', this.client.defaults.headers);
-      if (config.data) {
-        console.log('Request data:', config.data);
+      // Add authentication header if required and available
+      if (requiresAuth && !this.token) {
+        console.log("Auth required but no token available");
       }
       
-      const response: AxiosResponse<T> = await this.client(config);
+      // Ensure endpoint doesn't start with a slash
+      let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      
+      // Remove api/ prefix if it's already included to prevent duplication
+      if (cleanEndpoint.startsWith('api/')) {
+        cleanEndpoint = cleanEndpoint.substring(4);
+      }
+      
+      // Log the request for debugging
+      console.log(`API request to: ${this.api.defaults.baseURL}/${cleanEndpoint} (method: ${method})`);
+      if (this.token) {
+        console.log(`Using token for authorization: token-present`);
+      }
+      
+      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}/${cleanEndpoint} `);
+      console.log(`Request headers:`, this.api.defaults.headers);
+      if (data) {
+        console.log(`Request data:`, data);
+      }
+      
+      // Make the request
+      let response: AxiosResponse;
+      
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await this.api.get(cleanEndpoint);
+          break;
+        case 'POST':
+          response = await this.api.post(cleanEndpoint, data || {});
+          break;
+        case 'PUT':
+          response = await this.api.put(cleanEndpoint, data || {});
+          break;
+        case 'DELETE':
+          // For DELETE requests, handle null data specially to avoid JSON parsing errors
+          if (data === null) {
+            response = await this.api.delete(cleanEndpoint);
+          } else if (data) {
+            response = await this.api.delete(cleanEndpoint, { data });
+          } else {
+            response = await this.api.delete(cleanEndpoint);
+          }
+          break;
+        default:
+          throw new Error(`Unsupported method: ${method}`);
+      }
+      
+      // Log the response
+      console.log(`Response from ${this.api.defaults.baseURL}/${cleanEndpoint}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      });
+      
+      // If the response data is empty, return a successful empty result instead of error
+      if (method === 'GET' && (!response.data || (Array.isArray(response.data) && response.data.length === 0))) {
+        if (endpoint.includes('bookings')) {
+          console.log('No bookings found, returning empty array');
+          return {
+            data: [],
+            status: response.status,
+            headers: response.headers
+          };
+        }
+      }
+      
       return {
         data: response.data,
-        status: response.status
+        status: response.status,
+        headers: response.headers
       };
     } catch (error: any) {
-      console.error(`API request failed for ${config.url}:`, error.message || 'Unknown error');
+      const status = error.response?.status || 500;
+      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
+      
+      console.error(`API error for ${method} ${this.api.defaults.baseURL}/${endpoint}: ${status} - ${errorMsg}`);
+      console.error(`API request failed for ${endpoint}: ${errorMsg}`);
+      
+      // More detailed error logging
+      if (error.response?.data) {
+        console.error(`Error response data:`, error.response.data);
+      }
+      
+      // For bookings endpoints, if we get a 404 or similar for GET, return empty array instead of error
+      if (method === 'GET' && endpoint.includes('bookings') && (status === 404 || status === 204)) {
+        console.log('No bookings found (404/204), returning empty array');
+        return {
+          data: [],
+          status: status,
+          headers: error.response?.headers || {}
+        };
+      }
+      
       return {
-        error: error.error || error.message || 'API request failed',
-        status: error.status || 500
+        error: errorMsg,
+        status,
+        data: error.response?.data
       };
     }
   }
-
-  // Health check endpoint
-  async checkHealth(): Promise<ApiResponse> {
-    return this.request({
-      url: '/health',
-      method: 'GET'
-    });
+  
+  // Auth functions
+  async login(email: string, password: string): Promise<any> {
+    console.log("Sending login request to API endpoint:", 'auth/login');
+    return this.request('auth/login', 'POST', { email, password });
+  }
+  
+  async register(userData: { email: string; password: string; name?: string }): Promise<any> {
+    return this.request('auth/register', 'POST', userData);
+  }
+  
+  async logout(): Promise<any> {
+    return this.request('auth/logout', 'POST', {}, true);
+  }
+  
+  // Machine functions
+  async getMachineStatus(machineId: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'GET');
+  }
+  
+  async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
+    return this.request(`machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
   }
 
-  // Authentication endpoints
-  async login(email: string, password: string): Promise<ApiResponse> {
-    console.log("Sending login request to API endpoint: auth/login");
-    return this.request({
-      url: '/auth/login',
-      method: 'POST',
-      data: { email, password }
-    });
+  // User functions
+  async getAllUsers(): Promise<any> {
+    return this.request('users', 'GET', undefined, true);
+  }
+  
+  async getUserByEmail(email: string): Promise<any> {
+    return this.request(`users/email/${email}`, 'GET', undefined, true);
+  }
+  
+  async getUserById(id: string): Promise<any> {
+    return this.request(`users/${id}`, 'GET', undefined, true);
   }
 
-  async register(userData: { email: string; password: string; name?: string }): Promise<ApiResponse> {
-    console.log("Sending registration request to API endpoint: auth/register");
-    return this.request({
-      url: '/auth/register',
-      method: 'POST',
-      data: userData
-    });
+  // Get all machines
+  async getAllMachines(): Promise<any> {
+    return this.request('machines', 'GET');
   }
 
-  async logout(): Promise<ApiResponse> {
-    console.log("Sending logout request to API endpoint: auth/logout");
-    return this.request({
-      url: '/auth/logout',
-      method: 'POST'
-    });
+  // Get all bookings
+  async getAllBookings(): Promise<any> {
+    return this.request('bookings', 'GET', undefined, true);
+  }
+  
+  // Get user bookings
+  async getUserBookings(userId?: string): Promise<any> {
+    return this.request('bookings', 'GET', undefined, true);
+  }
+  
+  // Course related endpoints
+  async getAllCourses(): Promise<any> {
+    return this.request('courses', 'GET');
+  }
+  
+  async getCourseById(courseId: string): Promise<any> {
+    return this.request(`courses/${courseId}`, 'GET');
+  }
+  
+  async createCourse(courseData: any): Promise<any> {
+    return this.request('courses', 'POST', courseData, true);
+  }
+  
+  async updateCourse(courseId: string, courseData: any): Promise<any> {
+    return this.request(`courses/${courseId}`, 'PUT', courseData, true);
+  }
+  
+  async deleteCourse(courseId: string): Promise<any> {
+    return this.request(`courses/${courseId}`, 'DELETE', undefined, true);
+  }
+  
+  // Add booking
+  async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
+    console.log(`API: Adding booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
+    return this.request('bookings', 'POST', { 
+      machineId, 
+      date, 
+      time 
+    }, true);
+  }
+  
+  // Update booking status
+  async updateBookingStatus(bookingId: string, status: string): Promise<any> {
+    return this.request(`bookings/${bookingId}/status`, 'PUT', { status }, true);
+  }
+  
+  // Cancel booking
+  async cancelBooking(bookingId: string): Promise<any> {
+    return this.request(`bookings/${bookingId}/cancel`, 'PUT', {}, true);
+  }
+  
+  // Get user certifications
+  async getUserCertifications(userId: string): Promise<any> {
+    return this.request(`certifications/user/${userId}`, 'GET', undefined, true);
+  }
+  
+  // Add certification
+  async addCertification(userId: string, certificationId: string): Promise<any> {
+    return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);
+  }
+  
+  // Remove certification
+  async removeCertification(userId: string, certificationId: string): Promise<any> {
+    return this.request(`certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
   }
 
-  async getCurrentUser(): Promise<ApiResponse> {
-    console.log("Getting current user from API endpoint: user/me");
-    return this.request({
-      url: '/user/me',
-      method: 'GET'
-    });
+  // Clear all certifications for a user
+  async clearUserCertifications(userId: string): Promise<any> {
+    return this.request(`certifications/user/${userId}/clear`, 'DELETE', undefined, true);
   }
-
-  async getAllUsers(): Promise<ApiResponse> {
-    console.log("Getting all users from API endpoint: user");
-    return this.request({
-      url: '/user',
-      method: 'GET'
-    });
+  
+  // Get admin dashboard data
+  async getAdminDashboard(): Promise<any> {
+    return this.request('admin/dashboard', 'GET', undefined, true);
   }
-
-  async getUserById(id: string): Promise<ApiResponse> {
-    console.log(`Getting user by ID ${id} from API endpoint: user/${id}`);
-    return this.request({
-      url: `/user/${id}`,
-      method: 'GET'
-    });
+  
+  // Health check
+  async checkHealth(): Promise<any> {
+    return this.request('health', 'GET');
   }
-
-  async getUserByEmail(email: string): Promise<ApiResponse> {
-    console.log(`Getting user by email ${email} from API`);
-    return this.request({
-      url: `/user?email=${email}`,
-      method: 'GET'
-    });
+  
+  // Update user profile
+  async updateProfile(userId: string, updates: any): Promise<any> {
+    return this.request('auth/profile', 'PUT', updates, true);
   }
-
-  async updateProfile(userId: string, updates: { name?: string; email?: string; password?: string }): Promise<ApiResponse> {
-    console.log(`Updating profile for user ID ${userId} via API`);
-    return this.request({
-      url: `/user/profile`,
-      method: 'PUT',
-      data: updates
-    });
+  
+  // Generic REST methods
+  async get(endpoint: string): Promise<any> {
+    return this.request(endpoint, 'GET');
   }
-
-  async changePassword(userId: string, passwords: { currentPassword?: string, newPassword?: string }): Promise<ApiResponse> {
-    console.log(`Updating password for user ID ${userId} via API`);
-    return this.request({
-      url: `/user/password`,
-      method: 'PUT',
-      data: passwords
-    });
+  
+  async post(endpoint: string, data: any): Promise<any> {
+    return this.request(endpoint, 'POST', data);
   }
-
-  async getBookings(): Promise<ApiResponse> {
-    console.log("Getting bookings from API endpoint: booking");
-    return this.request({
-      url: '/booking',
-      method: 'GET'
-    });
+  
+  async put(endpoint: string, data: any): Promise<any> {
+    return this.request(endpoint, 'PUT', data);
   }
-
-  async getBookingById(id: string): Promise<ApiResponse> {
-      console.log(`Getting booking by ID ${id} from API endpoint: booking/${id}`);
-      return this.request({
-          url: `/booking/${id}`,
-          method: 'GET'
-      });
-  }
-
-  async createBooking(bookingData: any): Promise<ApiResponse> {
-    console.log("Creating a new booking via API");
-    return this.request({
-      url: '/booking',
-      method: 'POST',
-      data: bookingData
-    });
-  }
-
-  async updateBooking(id: string, updates: any): Promise<ApiResponse> {
-    console.log(`Updating booking with ID ${id} via API`);
-    return this.request({
-      url: `/booking/${id}`,
-      method: 'PUT',
-      data: updates
-    });
-  }
-
-  async deleteBooking(id: string): Promise<ApiResponse> {
-    console.log(`Deleting booking with ID ${id} via API`);
-    return this.request({
-      url: `/booking/${id}`,
-      method: 'DELETE'
-    });
-  }
-
-  async getMachines(): Promise<ApiResponse> {
-    console.log("Getting machines from API endpoint: machine");
-    return this.request({
-      url: '/machine',
-      method: 'GET'
-    });
-  }
-
-  async getMachineById(id: string): Promise<ApiResponse> {
-    console.log(`Getting machine by ID ${id} from API endpoint: machine/${id}`);
-    return this.request({
-      url: `/machine/${id}`,
-      method: 'GET'
-    });
-  }
-
-  async createMachine(machineData: any): Promise<ApiResponse> {
-    console.log("Creating a new machine via API");
-    return this.request({
-      url: '/machine',
-      method: 'POST',
-      data: machineData
-    });
-  }
-
-  async updateMachine(id: string, updates: any): Promise<ApiResponse> {
-    console.log(`Updating machine with ID ${id} via API`);
-    return this.request({
-      url: `/machine/${id}`,
-      method: 'PUT',
-      data: updates
-    });
-  }
-
-  async deleteMachine(id: string): Promise<ApiResponse> {
-    console.log(`Deleting machine with ID ${id} via API`);
-    return this.request({
-      url: `/machine/${id}`,
-      method: 'DELETE'
-    });
-  }
-
-  async getCourses(): Promise<ApiResponse> {
-    console.log("Getting courses from API endpoint: course");
-    return this.request({
-      url: '/course',
-      method: 'GET'
-    });
-  }
-
-  async getCourseById(id: string): Promise<ApiResponse> {
-    console.log(`Getting course by ID ${id} from API endpoint: course/${id}`);
-    return this.request({
-      url: `/course/${id}`,
-      method: 'GET'
-    });
-  }
-
-  async createCourse(courseData: any): Promise<ApiResponse> {
-    console.log("Creating a new course via API");
-    return this.request({
-      url: '/course',
-      method: 'POST',
-      data: courseData
-    });
-  }
-
-  async updateCourse(id: string, updates: any): Promise<ApiResponse> {
-    console.log(`Updating course with ID ${id} via API`);
-    return this.request({
-      url: `/course/${id}`,
-      method: 'PUT',
-      data: updates
-    });
-  }
-
-  async deleteCourse(id: string): Promise<ApiResponse> {
-    console.log(`Deleting course with ID ${id} via API`);
-    return this.request({
-      url: `/course/${id}`,
-      method: 'DELETE'
-    });
-  }
-
-  async getQuizzes(): Promise<ApiResponse> {
-    console.log("Getting quizzes from API endpoint: quiz");
-    return this.request({
-      url: '/quiz',
-      method: 'GET'
-    });
-  }
-
-  async getQuizById(id: string): Promise<ApiResponse> {
-    console.log(`Getting quiz by ID ${id} from API endpoint: quiz/${id}`);
-    return this.request({
-      url: `/quiz/${id}`,
-      method: 'GET'
-    });
-  }
-
-  async createQuiz(quizData: any): Promise<ApiResponse> {
-    console.log("Creating a new quiz via API");
-    return this.request({
-      url: '/quiz',
-      method: 'POST',
-      data: quizData
-    });
-  }
-
-  async updateQuiz(id: string, updates: any): Promise<ApiResponse> {
-    console.log(`Updating quiz with ID ${id} via API`);
-    return this.request({
-      url: `/quiz/${id}`,
-      method: 'PUT',
-      data: updates
-    });
-  }
-
-  async deleteQuiz(id: string): Promise<ApiResponse> {
-    console.log(`Deleting quiz with ID ${id} via API`);
-    return this.request({
-      url: `/quiz/${id}`,
-      method: 'DELETE'
-    });
+  
+  async delete(endpoint: string): Promise<any> {
+    return this.request(endpoint, 'DELETE');
   }
 }
 

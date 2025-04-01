@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -204,6 +205,7 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
+      // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoading]);
@@ -243,44 +245,46 @@ const Index = () => {
     );
   }
 
-  const mobileContainerStyle = isMobile
+  const containerStyle = keyboardVisible && isMobile
     ? { 
-        paddingTop: keyboardVisible ? '2%' : '10vh',
-        paddingBottom: keyboardVisible ? '40vh' : '0',
-        minHeight: '100vh',
+        minHeight: '100vh', 
+        paddingBottom: '0', 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
+        transform: 'translateY(-40vh)' 
       } 
     : { 
-        minHeight: '100vh',
+        minHeight: '100vh', 
         transition: 'all 0.3s ease',
+        transform: 'translateY(0)'
       };
 
   return (
     <div 
-      className="flex flex-col items-center justify-start bg-gradient-to-b from-purple-50 to-white p-4" 
-      style={mobileContainerStyle}
+      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      style={containerStyle}
     >
-      <div className={`w-full max-w-md ${isMobile ? 'max-w-xs' : 'max-w-md'} ${keyboardVisible && isMobile ? 'transform -translate-y-8' : ''}`}>
-        <div className={`text-center ${keyboardVisible && isMobile ? 'mb-0' : isMobile ? 'mb-3' : 'mb-6'}`}>
-          <h1 className={`font-bold text-purple-800 tracking-tight ${keyboardVisible && isMobile ? 'text-lg' : isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>Dfuel</h1>
-          {(!keyboardVisible || !isMobile) && (
-            <p className={`text-gray-600 ${isMobile ? 'text-sm mt-1' : 'mt-2 text-md md:text-lg'}`}>
-              {isLogin ? 'Welcome back!' : 'Create your account'}
-            </p>
-          )}
+      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
+        <div className="text-center relative">
+          <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Dfuel</h1>
+          <p className="mt-2 text-md md:text-lg text-gray-600">
+            {isLogin ? 'Welcome back!' : 'Create your account'}
+          </p>
           {serverStatus && !keyboardVisible && (
             <div className={isConnected
-              ? 'mt-1 text-green-600 flex items-center justify-center' 
-              : 'mt-1 text-red-600 flex items-center justify-center'}>
+              ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
+              : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
               {isConnected ? (
                 <>
-                  <Check className={`mr-1 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                  <span className={isMobile ? 'text-xs' : 'text-sm'}>Connected</span>
+                  <Check className="h-4 w-4 mr-1" />
+                  Connected
                 </>
               ) : (
                 <>
-                  <WifiOff className={`mr-1 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                  <span className={isMobile ? 'text-xs' : 'text-sm'}>Disconnected</span>
+                  <WifiOff className="h-4 w-4 mr-1" />
+                  Disconnected
                 </>
               )}
             </div>
@@ -298,8 +302,7 @@ const Index = () => {
             >
               <LoginForm 
                 onLogin={handleLogin} 
-                onToggleMode={toggleMode}
-                keyboardVisible={keyboardVisible}
+                onToggleMode={toggleMode} 
               />
             </motion.div>
           ) : (
