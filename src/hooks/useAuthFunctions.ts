@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -118,6 +119,7 @@ export const useAuthFunctions = (
       console.log("Registration attempt for:", email);
   
       // MongoDB registration via API
+      console.log("Sending registration request to API...");
       const apiResponse = await apiService.register({ email, password, name });
       console.log("API registration response:", JSON.stringify(apiResponse, null, 2));
   
@@ -133,20 +135,33 @@ export const useAuthFunctions = (
       }
   
       // Extract data from the response structure
-      const responseData = apiResponse.data?.data; // Access the nested data
-      const userData = responseData?.user; // Directly access user object
-      const token = responseData?.token || userData?.token; // Get token from user object or directly
+      let userData = null;
+      let token = null;
       
-      console.log("MongoDB response data:", responseData);
-      console.log("MongoDB user data:", userData);
-      console.log("MongoDB token:", token);
+      // Check various possible response structures
+      if (apiResponse.data?.data?.user) {
+        // Most common format from our server
+        userData = apiResponse.data.data.user;
+        token = apiResponse.data.data.token;
+      } else if (apiResponse.data?.user) {
+        // Alternative format
+        userData = apiResponse.data.user;
+        token = apiResponse.data.token;
+      } else if (apiResponse.data?._id || apiResponse.data?.id) {
+        // Direct user object in data
+        userData = apiResponse.data;
+        token = apiResponse.data.token;
+      }
+      
+      console.log("Extracted user data:", userData);
+      console.log("Extracted token:", token);
   
       // Validate required fields
-      if (!userData || !userData._id || !userData.email) {
+      if (!userData || !userData.email) {
         console.error("API response is missing required fields:", apiResponse);
         toast({
           title: "Registration failed",
-          description: "The MongoDB server returned incomplete data. Please try again.",
+          description: "The server returned incomplete data. Please try again.",
           variant: "destructive"
         });
         return false;
@@ -170,14 +185,16 @@ export const useAuthFunctions = (
   
       // Normalize user data
       const normalizedUser = {
-        id: String(userData._id),
+        id: String(userData._id || userData.id),
         name: userData.name || name || 'User',
         email: userData.email,
-        isAdmin: userData.isAdmin || false,
-        certifications: userData.certifications || [] 
+        isAdmin: Boolean(userData.isAdmin),
+        certifications: Array.isArray(userData.certifications) 
+          ? userData.certifications 
+          : (userData.certifications ? [String(userData.certifications)] : [])
       };
   
-      console.log("Setting user data from MongoDB:", normalizedUser);
+      console.log("Setting user data from registration:", normalizedUser);
       
       // Only set user in state if we're not in an admin adding a user context
       setUser(normalizedUser as User);
@@ -189,10 +206,10 @@ export const useAuthFunctions = (
   
       return true;
     } catch (error) {
-      console.error("MongoDB registration error:", error);
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "An unexpected error occurred with MongoDB. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
       return false;

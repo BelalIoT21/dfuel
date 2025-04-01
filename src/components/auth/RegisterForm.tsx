@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff, Check } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RegisterFormProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
@@ -41,6 +42,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const isMobile = useIsMobile();
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -124,26 +126,36 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
     }
   };
 
+  const cardHeaderClass = isMobile 
+    ? "pb-1 pt-2 px-3 md:p-6" 
+    : "pb-2 pt-4 px-6";
+  
+  const cardContentClass = isMobile
+    ? "p-3 md:p-6"
+    : "p-6 pt-3";
+
   return (
-    <Card className="shadow-lg border-purple-100">
-      <CardHeader className="pb-2">
-        <CardTitle>Register</CardTitle>
-        <CardDescription>
+    <Card className="shadow-lg border-purple-100 w-full">
+      <CardHeader className={cardHeaderClass}>
+        <CardTitle className={isMobile ? "text-xl md:text-2xl" : "text-2xl"}>Register</CardTitle>
+        <CardDescription className={isMobile ? "text-xs md:text-sm" : "text-sm"}>
           Fill in your details to create a new account
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{formError}</AlertDescription>
+          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5" : "mb-3 py-2"}>
+            <div className="flex items-center">
+              <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+              <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
+            </div>
           </Alert>
         )}
         
         {registrationSuccess && (
-          <Alert className="mb-4 bg-green-50 border-green-200">
-            <Check className="h-4 w-4 text-green-500" />
-            <AlertDescription className="text-green-700">
+          <Alert className={`mb-3 bg-green-50 border-green-200 ${isMobile ? "py-1.5" : "py-2"}`}>
+            <Check className={isMobile ? "h-3 w-3 mr-1.5 text-green-500" : "h-4 w-4 mr-2 text-green-500"} />
+            <AlertDescription className={`${isMobile ? "text-xs" : "text-sm"} text-green-700`}>
               Registration successful! Redirecting to login...
             </AlertDescription>
           </Alert>
@@ -151,40 +163,40 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-4"
+          className="space-y-2.5"
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className="space-y-2" variants={itemAnimation}>
-            <Label htmlFor="name">Full Name</Label>
+          <motion.div className="space-y-1" variants={itemAnimation}>
+            <Label htmlFor="name" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Full Name</Label>
             <Input
               id="name"
               placeholder="Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={`w-full ${nameError ? 'border-red-500' : ''}`}
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${nameError ? 'border-red-500' : ''}`}
               disabled={isSubmitting || registrationSuccess}
             />
-            {nameError && <p className="text-sm text-red-500">{nameError}</p>}
+            {nameError && <p className="text-xs text-red-500">{nameError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-2" variants={itemAnimation}>
-            <Label htmlFor="email">Email</Label>
+          <motion.div className="space-y-1" variants={itemAnimation}>
+            <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full ${emailError ? 'border-red-500' : ''}`}
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${emailError ? 'border-red-500' : ''}`}
               disabled={isSubmitting || registrationSuccess}
             />
-            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+            {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-2" variants={itemAnimation}>
-            <Label htmlFor="password">Password</Label>
+          <motion.div className="space-y-1" variants={itemAnimation}>
+            <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -192,7 +204,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
+                className={`w-full pr-10 ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
                 disabled={isSubmitting || registrationSuccess}
               />
               <button 
@@ -202,16 +214,16 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 disabled={isSubmitting || registrationSuccess}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeOff size={isMobile ? 14 : 16} /> : <Eye size={isMobile ? 14 : 16} />}
               </button>
             </div>
-            {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+            {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
           </motion.div>
           
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm mt-1' : 'h-10 text-sm mt-2'} bg-purple-600 hover:bg-purple-700`}
               disabled={isSubmitting || registrationSuccess}
             >
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
@@ -220,14 +232,14 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         </motion.form>
 
         <motion.div 
-          className="mt-4 text-center"
+          className="mt-3 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <button
             onClick={onToggleMode}
-            className="text-sm text-purple-600 hover:underline"
+            className={`${isMobile ? 'text-[10px] md:text-xs' : 'text-sm'} text-purple-600 hover:underline`}
             type="button"
             disabled={isSubmitting}
           >
