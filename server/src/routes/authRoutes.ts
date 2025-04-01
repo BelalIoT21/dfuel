@@ -4,13 +4,10 @@ import {
   registerUser,
   loginUser,
   logout,
-  getMe,
-  updateProfile,
-  getUserProfile,
-  getUserBookings,
-  deleteUserBooking
+  updateProfile
 } from '../controllers/auth/authController';
 import { changePassword } from '../controllers/auth/passwordController';
+import { getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -19,7 +16,7 @@ const router = express.Router();
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logout);
-router.get('/me', protect, getMe);
+router.get('/me', protect, getUserProfile);
 router.put('/profile', protect, updateProfile);
 
 // Password management - only change password functionality
