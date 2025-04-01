@@ -9,6 +9,7 @@ import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import BookingDetailsDialog from '@/components/profile/BookingDetailsDialog';
+import { apiService } from '@/services/apiService';
 
 const ActiveBookings = () => {
   const navigate = useNavigate();
@@ -39,11 +40,46 @@ const ActiveBookings = () => {
         setLoading(true);
         console.log('Fetching bookings for user:', user.id);
         
-        // If admin, fetch all bookings, otherwise fetch user's bookings
-        const userBookings = user.isAdmin 
-          ? await bookingService.getAllBookings()
-          : await bookingService.getUserBookings(user.id);
+        let userBookings = [];
+        
+        // If admin, try API first for all bookings
+        if (user.isAdmin) {
+          try {
+            console.log("Admin user, trying direct API call for all bookings");
+            const response = await apiService.request('bookings/all', 'GET');
+            if (response?.data && Array.isArray(response.data)) {
+              console.log(`Found ${response.data.length} bookings via API`);
+              userBookings = response.data;
+            }
+          } catch (apiError) {
+            console.error("API booking fetch error:", apiError);
+          }
           
+          // If API call fails or returns empty, fall back to bookingService
+          if (!userBookings || userBookings.length === 0) {
+            console.log("API call failed, falling back to bookingService for admin");
+            userBookings = await bookingService.getAllBookings();
+          }
+        } else {
+          // For regular users, try API first
+          try {
+            console.log(`Trying direct API call for user ${user.id} bookings`);
+            const response = await apiService.request('bookings', 'GET');
+            if (response?.data && Array.isArray(response.data)) {
+              console.log(`Found ${response.data.length} bookings for user via API`);
+              userBookings = response.data;
+            }
+          } catch (apiError) {
+            console.error("API user booking fetch error:", apiError);
+          }
+          
+          // If API call fails or returns empty, fall back to bookingService
+          if (!userBookings || userBookings.length === 0) {
+            console.log("API call failed, falling back to bookingService for user");
+            userBookings = await bookingService.getUserBookings(user.id);
+          }
+        }
+        
         console.log('Retrieved bookings:', userBookings);
         
         // Sort bookings by date and time
