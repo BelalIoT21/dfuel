@@ -1,5 +1,7 @@
 
 // Define course content templates as JSON strings
+import { getImageUrl } from './imageUtils';
+import { getVideoUrl } from './videoUtils';
 
 export const laserCutterCourseContent = JSON.stringify([
   {
@@ -81,7 +83,8 @@ export const safetyCabinetCourseContent = JSON.stringify([
     id: '2',
     elements: [
       { id: '2-1', type: 'heading', content: 'Chemical Storage', headingLevel: 2 },
-      { id: '2-2', type: 'text', content: 'Guidelines for storing chemicals safely and preventing hazardous interactions.' }
+      { id: '2-2', type: 'text', content: 'Guidelines for storing chemicals safely and preventing hazardous interactions.' },
+      { id: '2-3', type: 'video', content: getVideoUrl('safety-tutorial.mp4') }
     ]
   }
 ]);
@@ -91,7 +94,8 @@ export const machineSafetyCourseContent = JSON.stringify([
     id: '1',
     elements: [
       { id: '1-1', type: 'heading', content: 'Machine Safety Fundamentals', headingLevel: 1 },
-      { id: '1-2', type: 'text', content: 'Essential safety training required for all makerspace users' }
+      { id: '1-2', type: 'text', content: 'Essential safety training required for all makerspace users' },
+      { id: '1-3', type: 'image', content: getImageUrl('IMG_7814.jpg') }
     ]
   },
   {
