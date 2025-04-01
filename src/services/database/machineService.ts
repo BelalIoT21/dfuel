@@ -130,13 +130,18 @@ export class MachineDatabaseService extends BaseService {
       console.log("Cleaned machine data for creation:", {
         ...cleanedData,
         imageUrl: cleanedData.imageUrl ? `[Image URL of length ${cleanedData.imageUrl.length}]` : 'none',
-        image: cleanedData.image ? `[Image data of length ${cleanedData.image.length}]` : 'none'
+        image: cleanedData.image ? `[Image data of length ${cleanedData.image.length}]` : 'none',
+        requiresCertification: `${cleanedData.requiresCertification} (${typeof cleanedData.requiresCertification})`,
+        status: cleanedData.status
       });
-      console.log("requiresCertification:", cleanedData.requiresCertification, typeof cleanedData.requiresCertification);
-      console.log("status:", cleanedData.status);
       
       const response = await apiService.request('machines', 'POST', cleanedData, true);
       console.log("Create machine response:", response);
+      
+      if (!response.data) {
+        console.error("Failed to create machine: No data returned from API");
+        throw new Error("Failed to create machine: No data returned from API");
+      }
       
       // Ensure the response has both image properties and proper URLs
       if (response.data) {

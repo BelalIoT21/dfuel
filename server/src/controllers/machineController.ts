@@ -62,28 +62,41 @@ export const getMachineById = async (req: Request, res: Response) => {
 // Create new machine
 export const createMachine = async (req: Request, res: Response) => {
   try {
+    console.log('Creating new machine with data:', req.body);
+    
     const { name, type, description, status, requiresCertification, maintenanceNote, bookedTimeSlots, difficulty, imageUrl, details, specifications, certificationInstructions, linkedCourseId, linkedQuizId, note, isUserCreated } = req.body;
 
+    // Normalize requiresCertification to ensure it's a boolean
+    const normalizedRequiresCertification = Boolean(requiresCertification);
+    console.log(`Normalized requiresCertification: ${normalizedRequiresCertification} (${typeof normalizedRequiresCertification})`);
+
+    // Create machine with next available ID
     const machine = new Machine({
       name,
       type,
       description,
-      status,
-      requiresCertification,
+      status: status || 'Available',
+      requiresCertification: normalizedRequiresCertification,
       maintenanceNote,
-      bookedTimeSlots,
+      bookedTimeSlots: bookedTimeSlots || [],
       difficulty,
       imageUrl,
       details,
       specifications,
       certificationInstructions,
-      linkedCourseId,
-      linkedQuizId,
+      linkedCourseId: linkedCourseId || null,
+      linkedQuizId: linkedQuizId || null,
       note,
-      isUserCreated
+      isUserCreated: isUserCreated || true
     });
 
+    console.log('Saving machine:', { 
+      ...machine.toObject(),
+      requiresCertification: `${machine.requiresCertification} (${typeof machine.requiresCertification})` 
+    });
+    
     const savedMachine = await machine.save();
+    console.log('Machine saved successfully:', savedMachine);
     res.status(201).json(savedMachine);
   } catch (error) {
     console.error('Error in createMachine:', error);

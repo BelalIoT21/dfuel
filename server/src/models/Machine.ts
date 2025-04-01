@@ -69,7 +69,7 @@ const machineSchema = new mongoose.Schema<IMachine>(
   {
     _id: {
       type: String,
-      required: true,
+      required: false, // Set to false to allow auto-generation
     },
     name: {
       type: String,
@@ -179,11 +179,24 @@ machineSchema.methods.removeBookedTimeSlot = async function(dateTimeSlot: string
 
 // Add pre-save middleware to handle ID generation for new documents
 machineSchema.pre('save', async function(next) {
-  if (this.isNew && !this._id) {
-    this._id = await getNextId();
-    console.log(`Generated new machine ID: ${this._id}`);
+  try {
+    if (this.isNew && (!this._id || this._id === '')) {
+      console.log('Generating new ID for machine:', this.name);
+      this._id = await getNextId();
+      console.log(`Generated new machine ID: ${this._id} for machine: ${this.name}`);
+    }
+    
+    // Ensure requiresCertification is always boolean
+    if (this.requiresCertification !== undefined) {
+      this.requiresCertification = Boolean(this.requiresCertification);
+      console.log(`Normalized requiresCertification for ${this.name}: ${this.requiresCertification} (${typeof this.requiresCertification})`);
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Error in machine pre-save middleware:', error);
+    next(error);
   }
-  next();
 });
 
 export const Machine = mongoose.model<IMachine>('Machine', machineSchema);
