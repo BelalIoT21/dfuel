@@ -59,6 +59,18 @@ app.use(cors({
   credentials: true
 }));
 
+// Debug route to check API path structure
+app.get('/api/debug', (req, res) => {
+  res.json({
+    message: 'API debug route working',
+    routes: {
+      auth: '/api/auth/*',
+      users: '/api/users/*',
+      health: '/api/health/*'
+    }
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -74,7 +86,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Initialize system
+// Initialize system with minimal logging
 console.log('Initializing system...');
 createAdminUser()
   .then(() => SeedService.seedDatabase())
