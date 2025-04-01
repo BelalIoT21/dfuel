@@ -118,7 +118,7 @@ class BookingService {
           description: "This time slot has already been booked. Please select another time.",
           variant: "destructive"
         });
-        return false;
+        return { success: false, message: "Time slot already booked" };
       }
       
       try {
@@ -126,7 +126,7 @@ class BookingService {
         const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
         if (mongoSuccess) {
           console.log("Successfully created booking");
-          return true;
+          return { success: true };
         }
         console.log("MongoDB booking creation failed, falling back to API");
       } catch (mongoError) {
@@ -139,29 +139,50 @@ class BookingService {
       if (response.error) {
         console.error('Error creating booking via API:', response.error);
         
-        // Check for specific error messages
+        // Check for specific error messages related to time slot booking
         if (typeof response.error === 'string' && 
-            (response.error.includes('time slot is already booked') || 
-             response.error.includes('already exists'))) {
+            (response.error.toLowerCase().includes('time slot') || 
+             response.error.toLowerCase().includes('already booked') || 
+             response.error.toLowerCase().includes('already exists'))) {
           toast({
             title: "Time Slot Unavailable",
             description: "This time slot has already been booked. Please select another time.",
             variant: "destructive"
           });
+          return { success: false, message: "Time slot already booked" };
         } else {
           toast({
             title: "Booking Failed",
             description: "There was a problem creating your booking. Please try again.",
             variant: "destructive"
           });
+          return { success: false, message: response.error };
         }
-        return false;
       }
       
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Error creating booking:', error);
-      return false;
+      
+      // Ensure we show the proper toast for uncaught errors too
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.toLowerCase().includes('time slot') || 
+          errorMessage.toLowerCase().includes('already booked')) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: "There was a problem creating your booking. Please try again.",
+          variant: "destructive"
+        });
+      }
+      
+      return { success: false, message: errorMessage };
     }
   }
   

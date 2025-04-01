@@ -158,8 +158,17 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     });
   } catch (error) {
     console.error('Error creating booking:', error);
-    res.status(500);
-    throw new Error('Error creating booking: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    
+    // Customize error response based on error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('time slot is already booked')) {
+      res.status(400);
+    } else {
+      res.status(500);
+    }
+    
+    throw error;
   }
 });
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { bookingService } from '@/services/bookingService';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, Loader2 } from 'lucide-react';
@@ -150,22 +151,8 @@ const BookingPage = () => {
           variant: 'destructive'
         });
         
-        const allBookings = await bookingService.getAllBookings();
-        const machineBookings = allBookings.filter(
-          booking => (booking.machineId === id || booking.machine === id) && 
-          (booking.status === 'Approved' || booking.status === 'Pending')
-        );
-        
-        const bookedDateTimeSlots = machineBookings.map(booking => {
-          const bookingDate = booking.date instanceof Date 
-            ? booking.date
-            : new Date(booking.date);
-          
-          return `${format(bookingDate, 'yyyy-MM-dd')}-${booking.time}`;
-        });
-        
-        setBookedSlots(bookedDateTimeSlots);
-        updateAvailableTimeSlots(selectedDate);
+        // Refresh availability data
+        refreshAvailabilityData();
         setSubmitting(false);
         return;
       }
@@ -175,14 +162,14 @@ const BookingPage = () => {
       
       console.log('Submitting booking request');
       
-      const success = await bookingService.createBooking(
+      const result = await bookingService.createBooking(
         userId,
         machineId,
         formattedDate,
         selectedTime
       );
       
-      if (success) {
+      if (result.success) {
         setBookingSuccess(true);
         toast({
           title: 'Booking Submitted',
@@ -191,17 +178,61 @@ const BookingPage = () => {
         setTimeout(() => {
           navigate('/profile');
         }, 3000);
+      } else if (result.message && result.message.toLowerCase().includes('time slot')) {
+        // If it's a time slot issue, refresh availability data
+        refreshAvailabilityData();
       }
     } catch (err) {
       console.error('Error booking machine:', err);
       setError('An unexpected error occurred. Please try again.');
-      toast({
-        title: 'Booking Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive'
-      });
+      
+      // Show error toast with specific message if we can extract it
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      if (errorMessage.toLowerCase().includes('time slot') || 
+          errorMessage.toLowerCase().includes('already booked')) {
+        toast({
+          title: 'Time Slot Unavailable',
+          description: 'This time slot has already been booked. Please select another time.',
+          variant: 'destructive'
+        });
+        // Refresh availability data
+        refreshAvailabilityData();
+      } else {
+        toast({
+          title: 'Booking Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive'
+        });
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+  
+  // Helper function to refresh availability data
+  const refreshAvailabilityData = async () => {
+    try {
+      if (!id) return;
+      
+      const allBookings = await bookingService.getAllBookings();
+      const machineBookings = allBookings.filter(
+        booking => (booking.machineId === id || booking.machine === id) && 
+        (booking.status === 'Approved' || booking.status === 'Pending')
+      );
+      
+      const bookedDateTimeSlots = machineBookings.map(booking => {
+        const bookingDate = booking.date instanceof Date 
+          ? booking.date
+          : new Date(booking.date);
+        
+        return `${format(bookingDate, 'yyyy-MM-dd')}-${booking.time}`;
+      });
+      
+      setBookedSlots(bookedDateTimeSlots);
+      updateAvailableTimeSlots(selectedDate);
+    } catch (error) {
+      console.error('Error refreshing availability data:', error);
     }
   };
 
