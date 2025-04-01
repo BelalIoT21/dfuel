@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Booking, IBooking } from '../models/Booking';
@@ -8,7 +7,7 @@ import { Machine } from '../models/Machine';
 
 // Helper function to find a user with any ID format (similar to authMiddleware)
 async function findUserWithAnyIdFormat(userId: string | number) {
-  console.log(`BookingController: Looking for user with ID: ${userId}`);
+  console.log(`Looking for user with ID: ${userId}`);
   
   // Try all possible ways to find the user
   let user = null;
@@ -17,33 +16,30 @@ async function findUserWithAnyIdFormat(userId: string | number) {
   try {
     user = await User.findById(userId);
     if (user) {
-      console.log(`BookingController: Found user with findById: ${user._id}`);
       return user;
     }
   } catch (err) {
-    console.log('BookingController: Error in findById, trying other methods');
+    // Continue to other methods
   }
   
   // Method 2: _id as string exact match
   try {
     user = await User.findOne({ _id: userId });
     if (user) {
-      console.log(`BookingController: Found user with _id exact match: ${user._id}`);
       return user;
     }
   } catch (err) {
-    console.log('BookingController: Error in _id exact match, trying other methods');
+    // Continue to other methods
   }
   
   // Method 3: id field
   try {
     user = await User.findOne({ id: userId });
     if (user) {
-      console.log(`BookingController: Found user with id field: ${user._id}`);
       return user;
     }
   } catch (err) {
-    console.log('BookingController: Error in id field search, trying other methods');
+    // Continue to other methods
   }
   
   // Method 4: numeric conversion
@@ -53,25 +49,23 @@ async function findUserWithAnyIdFormat(userId: string | number) {
     try {
       user = await User.findById(numericId);
       if (user) {
-        console.log(`BookingController: Found user with numeric findById: ${user._id}`);
         return user;
       }
     } catch (err) {
-      console.log('BookingController: Error in numeric findById');
+      // Continue to other methods
     }
     
     try {
       user = await User.findOne({ id: numericId });
       if (user) {
-        console.log(`BookingController: Found user with numeric id field: ${user._id}`);
         return user;
       }
     } catch (err) {
-      console.log('BookingController: Error in numeric id field search');
+      // Continue to next method
     }
   }
   
-  console.log(`BookingController: User not found with any method for ID: ${userId}`);
+  console.log(`User not found with ID: ${userId}`);
   return null;
 }
 
@@ -83,15 +77,11 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   const userId = req.user?.id;
   
   if (!userId || !machineId || !date || !time) {
-    console.error('Missing required booking data:', { userId, machineId, date, time });
     res.status(400);
     throw new Error('Please provide all required fields');
   }
   
   try {
-    // Log for debugging
-    console.log(`Creating booking with userId: ${userId}, machineId: ${machineId}, date: ${date}, time: ${time}`);
-    
     // Check if this time slot is already booked
     const bookingDate = new Date(date);
     const startOfDay = new Date(bookingDate);
@@ -103,7 +93,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     // Convert machineId to string to ensure consistent comparison
     const machineIdStr = String(machineId);
     
-    console.log(`Checking for existing bookings for machine ${machineIdStr} on ${date} at ${time}`);
+    console.log(`Checking availability for machine ${machineIdStr} on ${date} at ${time}`);
     
     const existingBooking = await Booking.findOne({
       machine: machineIdStr,
@@ -116,8 +106,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     });
     
     if (existingBooking) {
-      console.log(`Time slot already booked: Machine ${machineIdStr}, Date: ${date}, Time: ${time}`);
-      console.log(`Existing booking: ${JSON.stringify(existingBooking)}`);
+      console.log(`This time slot is already booked`);
       res.status(400);
       throw new Error('This time slot is already booked');
     }
@@ -127,18 +116,14 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     const machine = await Machine.findById(machineIdStr);
     
     if (!user) {
-      console.log(`User not found: ${userId}`);
       res.status(404);
       throw new Error('User not found');
     }
     
     if (!machine) {
-      console.log(`Machine not found: ${machineIdStr}`);
       res.status(404);
       throw new Error('Machine not found');
     }
-    
-    console.log(`Creating booking for user ${user.name} and machine ${machine.name}`);
     
     // ALWAYS create booking with 'Pending' status, regardless of user role
     const booking = await Booking.create({

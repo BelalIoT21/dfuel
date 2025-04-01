@@ -1,8 +1,6 @@
-
 import { apiService } from './apiService';
 import { machineService } from './machineService';
 import mongoDbService from './mongoDbService';
-import { useToast } from '@/hooks/use-toast';
 import { toast } from '@/hooks/use-toast';
 
 class BookingService {
@@ -109,12 +107,12 @@ class BookingService {
   
   async createBooking(userId: string, machineId: string, date: string, time: string) {
     try {
-      console.log(`Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
+      console.log(`Creating booking for machine ${machineId}, date ${date}, time ${time}`);
       
       // First check if the time slot is available
       const isAvailable = await this.isTimeSlotAvailable(machineId, date, time);
       if (!isAvailable) {
-        console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
+        console.log(`Time slot is already booked`);
         toast({
           title: "Time Slot Unavailable",
           description: "This time slot has already been booked. Please select another time.",
@@ -124,15 +122,15 @@ class BookingService {
       }
       
       try {
-        console.log("Attempting to create booking via MongoDB direct connection");
+        console.log("Attempting to create booking via MongoDB");
         const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
         if (mongoSuccess) {
-          console.log("Successfully created booking via MongoDB");
+          console.log("Successfully created booking");
           return true;
         }
         console.log("MongoDB booking creation failed, falling back to API");
       } catch (mongoError) {
-        console.error("MongoDB booking creation error:", mongoError);
+        console.error("MongoDB booking creation error");
       }
       
       // Fallback to API

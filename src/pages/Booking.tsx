@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,12 +128,6 @@ const BookingPage = () => {
     }
 
     if (!machine || !selectedDate || !selectedTime) {
-      console.error('Missing booking information:', {
-        machine: !!machine,
-        selectedDate: !!selectedDate,
-        selectedTime: !!selectedTime
-      });
-      
       toast({
         title: 'Missing information',
         description: 'Please select a date and time for your booking',
@@ -180,14 +173,7 @@ const BookingPage = () => {
       const userId = user.id || user._id;
       const machineId = machine.id || machine._id;
       
-      console.log('Submitting booking with data:', {
-        userId,
-        machineId,
-        date: formattedDate,
-        time: selectedTime,
-        userName: user.name,
-        machineName: machine.name
-      });
+      console.log('Submitting booking request');
       
       const success = await bookingService.createBooking(
         userId,
@@ -205,9 +191,6 @@ const BookingPage = () => {
         setTimeout(() => {
           navigate('/profile');
         }, 3000);
-      } else {
-        // Don't set an error message here as bookingService.createBooking already shows a toast
-        // The error message in bookingService.createBooking will be shown to the user
       }
     } catch (err) {
       console.error('Error booking machine:', err);

@@ -119,10 +119,8 @@ class MongoBookingService {
     }
     
     try {
-      console.log(`Creating booking with userId: ${userId} (${typeof userId}), machineId: ${machineId} (${typeof machineId}), date: ${date}, time: ${time}`);
-      
       if (!userId || !machineId || !date || !time) {
-        console.error('Missing required booking information:', { userId, machineId, date, time });
+        console.error('Missing required booking information');
         return false;
       }
       
@@ -144,46 +142,37 @@ class MongoBookingService {
         machineIdQuery = new mongoose.Types.ObjectId(machineId);
       }
       
-      console.log(`Looking up user with ID: ${userIdQuery} (${typeof userIdQuery})`);
-      console.log(`Looking up machine with ID: ${machineIdQuery} (${typeof machineIdQuery})`);
-      
       // Try with the query parameter
       let user = await this.usersCollection.findOne({ _id: userIdQuery });
       let machine = await this.machinesCollection.findOne({ _id: machineIdQuery });
       
       // If not found, try with string ID
       if (!user) {
-        console.log(`User not found with ID ${userIdQuery}, trying string ID...`);
         user = await this.usersCollection.findOne({ _id: userId });
       }
       
       if (!machine) {
-        console.log(`Machine not found with ID ${machineIdQuery}, trying string ID...`);
         machine = await this.machinesCollection.findOne({ _id: machineId });
       }
       
       // If still not found, try with numeric ID
       if (!user && !isNaN(Number(userId))) {
-        console.log(`User not found with string ID, trying numeric ID...`);
         user = await this.usersCollection.findOne({ _id: Number(userId) });
       }
       
       if (!machine && !isNaN(Number(machineId))) {
-        console.log(`Machine not found with string ID, trying numeric ID...`);
         machine = await this.machinesCollection.findOne({ _id: Number(machineId) });
       }
       
       if (!user) {
-        console.error(`User ${userId} not found`);
+        console.error(`User not found`);
         return false;
       }
       
       if (!machine) {
-        console.error(`Machine ${machineId} not found`);
+        console.error(`Machine not found`);
         return false;
       }
-      
-      console.log(`Found user: ${user.name}, machine: ${machine.name}`);
       
       const bookingDate = new Date(date);
       if (isNaN(bookingDate.getTime())) {
@@ -191,8 +180,8 @@ class MongoBookingService {
         return false;
       }
       
-      // Improved check for existing bookings - check by both machine ID and exact time slot
-      console.log(`Checking for existing bookings on ${date} at ${time} for machine ${machineId}`);
+      // Check for existing bookings
+      console.log(`Checking availability on ${date} at ${time}`);
       
       // Create date range for the whole day
       const startOfDay = new Date(bookingDate);
@@ -212,8 +201,7 @@ class MongoBookingService {
       });
       
       if (existingBooking) {
-        console.error(`Booking already exists for machine ${machineId} on ${date} at ${time}`);
-        console.error(`Existing booking details:`, existingBooking);
+        console.error(`This time slot is already booked`);
         return false;
       }
       
@@ -233,10 +221,7 @@ class MongoBookingService {
         machineName: machine.name || 'Unknown Machine',
       };
       
-      console.log('Creating booking with data:', booking);
-      
       const result = await this.bookingsCollection.insertOne(booking);
-      
       console.log(`Booking created with ID: ${result.insertedId}`);
       return result.acknowledged;
     } catch (error) {
