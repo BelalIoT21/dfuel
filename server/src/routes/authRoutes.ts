@@ -4,12 +4,10 @@ import {
   registerUser,
   loginUser,
   logout,
-  updateProfile,
-  getUserProfile,
-  getUserBookings,
-  deleteUserBooking,
-  changePassword
-} from '../controllers/authController';
+  updateProfile
+} from '../controllers/auth/authController';
+import { changePassword } from '../controllers/auth/passwordController';
+import { getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -21,7 +19,7 @@ router.post('/logout', logout);
 router.get('/me', protect, getUserProfile);
 router.put('/profile', protect, updateProfile);
 
-// Password management
+// Password management - only change password functionality
 router.post('/change-password', protect, changePassword);
 
 // Profile and bookings routes
