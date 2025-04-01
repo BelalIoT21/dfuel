@@ -28,6 +28,7 @@ export const registerUser = async (req: Request, res: Response) => {
 
     // Get the next available ID
     let nextId = await getNextUserId();
+    console.log(`Generated next user ID: ${nextId}`);
 
     // Create user with explicitly empty certifications array
     try {
@@ -64,8 +65,10 @@ export const registerUser = async (req: Request, res: Response) => {
       
       // Handle duplicate key errors
       if (errorCode === 11000) {
-        // Try with a different ID
-        nextId = nextId + 1000 + Math.floor(Math.random() * 100);
+        // Try with a small increment instead of a large random offset
+        // Just increment by 1 and try again
+        nextId = nextId + 1;
+        console.log(`Retrying with incremented user ID: ${nextId}`);
         
         const user = await User.create({
           _id: nextId,
@@ -108,19 +111,27 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// Simplified helper function to get the next user ID
+// Improved helper function to get the next user ID
 async function getNextUserId(): Promise<number> {
   try {
+    // Find highest user ID by sorting in descending order
     const users = await User.find({}, '_id').sort({ _id: -1 }).limit(1);
     
     if (users && users.length > 0) {
+      // Get highest ID and add 1
       const highestId = Number(users[0]._id);
+      console.log(`Found highest user ID: ${highestId}`);
       return highestId + 1;
     }
     
+    // If no users exist, start with ID 1
+    console.log('No existing users found, starting with ID 1');
     return 1;
   } catch (error) {
     console.error('Error generating next user ID:', error);
-    return Math.floor(1000 + Math.random() * 9000);
+    
+    // Fallback to a small starting ID if there's an error
+    // instead of a large random number
+    return 1;
   }
 }
