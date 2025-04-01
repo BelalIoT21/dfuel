@@ -1,3 +1,4 @@
+
 import express from 'express';
 import { body } from 'express-validator';
 import { 
@@ -69,6 +70,7 @@ router.put(
 );
 
 // Delete machine (admin only) - Support permanent deletion via query parameter
+// Now also supports hardDelete for complete removal from database
 router.delete('/:id', protect, admin, deleteMachine);
 
 // New endpoint to restore a deleted machine

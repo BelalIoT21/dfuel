@@ -284,24 +284,37 @@ export class MachineDatabaseService extends BaseService {
     }
   }
 
-  async deleteMachine(machineId: string, permanent: boolean = false): Promise<boolean> {
+  async deleteMachine(machineId: string, permanent: boolean = false, hardDelete: boolean = false): Promise<boolean> {
     try {
-      console.log(`Attempting to delete machine ${machineId} (permanent: ${permanent})`);
+      console.log(`Attempting to delete machine ${machineId} (permanent: ${permanent}, hardDelete: ${hardDelete})`);
       
       // First backup the machine before deletion
       await this.backupMachine(machineId);
       
-      // Prepare URL with permanent flag if needed
-      const deleteUrl = permanent 
-        ? `machines/${machineId}?permanent=true`
-        : `machines/${machineId}`;
+      // Prepare URL with parameters
+      let deleteUrl = `machines/${machineId}`;
+      const params = [];
+      
+      if (permanent) {
+        params.push('permanent=true');
+      }
+      
+      if (hardDelete) {
+        params.push('hardDelete=true');
+      }
+      
+      if (params.length > 0) {
+        deleteUrl += `?${params.join('&')}`;
+      }
       
       // Try the API with appropriate parameters
       try {
         const response = await apiService.request(deleteUrl, 'DELETE', undefined, true);
         
         if (response.data) {
-          if (response.data.permanentlyDeleted) {
+          if (response.data.hardDeleted) {
+            console.log(`Machine ${machineId} was completely removed from database`);
+          } else if (response.data.permanentlyDeleted) {
             console.log(`Machine ${machineId} was permanently deleted`);
           } else if (response.data.softDeleted) {
             console.log(`Machine ${machineId} was soft-deleted`);

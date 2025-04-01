@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -152,13 +151,13 @@ export const updateMachine = async (req: Request, res: Response) => {
   }
 };
 
-// Update the delete machine endpoint to support permanent deletion
+// Delete machine endpoint updated to support permanent deletion from database
 export const deleteMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { permanent } = req.query; // Add support for permanent deletion query parameter
+    const { permanent, hardDelete } = req.query; // Add hardDelete parameter for true database deletion
     
-    console.log(`Deleting machine ${id}, permanent: ${permanent}`);
+    console.log(`Deleting machine ${id}, permanent: ${permanent}, hardDelete: ${hardDelete}`);
     
     let machine;
     try {
@@ -174,7 +173,21 @@ export const deleteMachine = async (req: Request, res: Response) => {
     // Check if this is a core machine (ID 1-6)
     const isCoreMachine = Number(id) >= 1 && Number(id) <= 6;
     
-    if (permanent === 'true' || permanent === '1') {
+    // HARD DELETE: Complete removal from database when hardDelete=true
+    if (hardDelete === 'true' || hardDelete === '1') {
+      console.log(`Permanently REMOVING machine ${id} from database`);
+      
+      // For true database deletion, remove it completely
+      await Machine.findByIdAndDelete(id);
+      
+      console.log(`Machine ${id} REMOVED from database permanently`);
+      return res.status(200).json({ 
+        message: 'Machine removed from database permanently',
+        hardDeleted: true
+      });
+    }
+    // PERMANENT DELETE: Mark as permanently deleted but keep record
+    else if (permanent === 'true' || permanent === '1') {
       // For permanent deletion, we mark it as permanently deleted
       // This way it won't be recreated on server restart
       console.log(`Permanently deleting machine ${id}`);
