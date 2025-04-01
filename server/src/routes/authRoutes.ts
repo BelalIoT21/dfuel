@@ -3,13 +3,11 @@ import express from 'express';
 import {
   registerUser,
   loginUser,
-  logout,
   getMe,
-  updateProfile,
   getUserProfile,
   getUserBookings,
   deleteUserBooking
-} from '../controllers/auth/authController';
+} from '../controllers/authController';
 import { changePassword } from '../controllers/auth/passwordController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -18,9 +16,7 @@ const router = express.Router();
 // User registration and authentication
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/logout', logout);
 router.get('/me', protect, getMe);
-router.put('/profile', protect, updateProfile);
 
 // Password management - only change password functionality
 router.post('/change-password', protect, changePassword);

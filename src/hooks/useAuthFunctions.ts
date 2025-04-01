@@ -141,13 +141,13 @@ export const useAuthFunctions = (user: User | null, setUser: React.Dispatch<Reac
       
       console.log('Login successful, setting user state:', data);
       
-      if (data && data.token) {
-        localStorage.setItem('token', data.token);
-        apiService.setToken?.(data.token);
+      if (data && data.data && data.data.token) {
+        localStorage.setItem('token', data.data.token);
+        apiService.setToken?.(data.data.token);
         
         const userData = {
-          ...data.user,
-          id: data.user._id || data.user.id
+          ...data.data.user,
+          id: data.data.user._id || data.data.user.id
         };
         
         setUser(userData);
@@ -166,13 +166,13 @@ export const useAuthFunctions = (user: User | null, setUser: React.Dispatch<Reac
     try {
       const data = await register(email, password, name);
       
-      if (data && data.token) {
-        localStorage.setItem('token', data.token);
-        apiService.setToken?.(data.token);
+      if (data && data.data && data.data.token) {
+        localStorage.setItem('token', data.data.token);
+        apiService.setToken?.(data.data.token);
         
         const userData = {
-          ...data.user,
-          id: data.user._id || data.user.id
+          ...data.data.user,
+          id: data.data.user._id || data.data.user.id
         };
         
         setUser(userData);
