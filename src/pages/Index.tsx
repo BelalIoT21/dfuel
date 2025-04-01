@@ -204,7 +204,6 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
-      // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoading]);
@@ -250,29 +249,33 @@ const Index = () => {
         paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: 'flex-start', 
+        justifyContent: keyboardVisible ? 'flex-start' : 'center', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '1vh' : '5vh',
+        paddingTop: keyboardVisible ? '5vh' : '0',
       } 
     : { 
         minHeight: '100vh', 
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
         transition: 'all 0.3s ease',
       };
 
   return (
     <div 
-      className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
+      className="flex flex-col items-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-sm space-y-1 ${keyboardVisible ? 'mt-0' : 'mt-0'}`}>
-        <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
+      <div className={`w-full max-w-sm space-y-1 ${keyboardVisible && isMobile ? 'mt-0' : ''}`}>
+        <div className={`text-center relative ${keyboardVisible && isMobile ? 'hidden' : 'mb-2'}`}>
           <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
-          {!keyboardVisible && (
+          {!(keyboardVisible && isMobile) && (
             <p className="mt-1 text-sm md:text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </p>
           )}
-          {serverStatus && !keyboardVisible && (
+          {serverStatus && !(keyboardVisible && isMobile) && (
             <div className={isConnected
               ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
               : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
