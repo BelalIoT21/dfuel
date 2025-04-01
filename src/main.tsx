@@ -4,7 +4,7 @@ import { StrictMode, Suspense } from 'react';
 import './index.css'
 import { isWeb, isPlatformNative } from './utils/platform';
 import { loadEnv, setEnv } from './utils/env';
-import App from './App'; // Move the import to the top level
+import App from './App'; 
 
 // Add console log for debugging
 console.log("Initializing application");

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -15,13 +16,35 @@ const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const { user, loading: authLoading, login, register } = useAuth();
+  const [authError, setAuthError] = useState<string | null>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const prevServerStatusRef = useRef<string | null>(null);
   const checkingRef = useRef<boolean>(false);
   const attemptedEndpointsRef = useRef<string[]>([]);
   const originalHeightRef = useRef<number>(0);
+
+  // Safely access auth context
+  let auth;
+  try {
+    auth = useAuth();
+  } catch (error) {
+    console.error("Auth context error:", error);
+    // We'll handle this with a fallback UI
+  }
+
+  const { user, loading: authLoading, login, register } = auth || { 
+    user: null, 
+    loading: false,
+    login: async () => { 
+      setAuthError("Authentication service is not available"); 
+      return false; 
+    },
+    register: async () => { 
+      setAuthError("Authentication service is not available"); 
+      return false; 
+    }
+  };
 
   useEffect(() => {
     loadEnv();
@@ -212,6 +235,9 @@ const Index = () => {
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
     try {
+      if (!login) {
+        throw new Error("Authentication service is not available");
+      }
       const success = await login(email, password);
       console.log("Login result:", success);
       if (!success) {
@@ -226,6 +252,9 @@ const Index = () => {
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
     try {
+      if (!register) {
+        throw new Error("Authentication service is not available");
+      }
       const success = await register(email, password, name);
       console.log("Registration result:", success);
       if (!success) {
@@ -242,6 +271,22 @@ const Index = () => {
   };
 
   console.log("Rendering Index component, auth loading:", authLoading);
+
+  // If there's an auth context error, show a helpful message
+  if (authError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
+        <div className="text-red-500 text-xl mb-4">Authentication Error</div>
+        <div className="text-gray-700 mb-6">{authError}</div>
+        <button 
+          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          onClick={() => window.location.reload()}
+        >
+          Reload Application
+        </button>
+      </div>
+    );
+  }
 
   const isConnected = serverStatus === 'connected';
 
