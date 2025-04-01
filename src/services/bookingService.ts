@@ -1,7 +1,9 @@
+
 import { apiService } from './apiService';
 import { machineService } from './machineService';
-import { useToast } from '@/hooks/use-toast';
 import mongoDbService from './mongoDbService';
+import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 class BookingService {
   async getAllBookings() {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from 'lucide-react';
+import { Calendar, CalendarX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,6 +12,7 @@ interface BookMachineButtonProps {
   requiresCertification?: boolean;
   className?: string;
   size?: 'default' | 'sm' | 'lg';
+  timeSlotUnavailable?: boolean;
 }
 
 const BookMachineButton = ({ 
@@ -20,7 +21,8 @@ const BookMachineButton = ({
   machineStatus, 
   requiresCertification = true,
   className = '',
-  size = 'default'
+  size = 'default',
+  timeSlotUnavailable = false
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -28,10 +30,19 @@ const BookMachineButton = ({
   const isAvailable = machineStatus?.toLowerCase() === 'available';
   // If certification is not required, consider the user as certified
   const effectiveCertification = requiresCertification ? isCertified : true;
-  const canBook = effectiveCertification && isAvailable;
+  const canBook = effectiveCertification && isAvailable && !timeSlotUnavailable;
   
   const handleBooking = () => {
     if (!canBook) {
+      if (timeSlotUnavailable) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (!isAvailable) {
         toast({
           title: "Machine Unavailable",
@@ -66,11 +77,15 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
-  if (!isAvailable) {
+  if (timeSlotUnavailable) {
+    buttonText = "Time Slot Unavailable";
+  } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
   }
+
+  const ButtonIcon = timeSlotUnavailable ? CalendarX : Calendar;
 
   return (
     <Button 
@@ -80,7 +95,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <Calendar className="mr-2 h-4 w-4" />
+      <ButtonIcon className="mr-2 h-4 w-4" />
       {buttonText}
     </Button>
   );

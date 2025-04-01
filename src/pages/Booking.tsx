@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,7 +53,6 @@ const BookingPage = () => {
           console.log(`Successfully loaded machine:`, foundMachine);
           setMachine(foundMachine);
           
-          // Fetch all bookings to determine availability
           const allBookings = await bookingService.getAllBookings();
           console.log(`Fetched ${allBookings.length} bookings to check availability`);
           
@@ -150,16 +148,14 @@ const BookingPage = () => {
       
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
-      // Double-check if the slot is still available
       const dateTimeSlot = `${formattedDate}-${selectedTime}`;
       if (bookedSlots.includes(dateTimeSlot)) {
         toast({
           title: 'Time Slot Unavailable',
-          description: 'This time slot has just been booked. Please select another time.',
+          description: 'This time slot has already been booked. Please select another time.',
           variant: 'destructive'
         });
         
-        // Refresh available slots
         const allBookings = await bookingService.getAllBookings();
         const machineBookings = allBookings.filter(
           booking => (booking.machineId === id || booking.machine === id) && 
@@ -205,7 +201,6 @@ const BookingPage = () => {
           title: 'Booking Submitted',
           description: `Your booking request for ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTime} has been submitted and is pending approval.`,
         });
-        // Don't navigate immediately to allow user to see the success message
         setTimeout(() => {
           navigate('/profile');
         }, 3000);
