@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -30,19 +29,46 @@ export const useAuthFunctions = (
         throw new Error(apiResponse.error);
       }
   
-      // Validate the response structure
+      // Validate response data - handle different response structures
       if (!apiResponse.data) {
         console.error("API response is missing data:", apiResponse);
         throw new Error("The server returned incomplete data. Please try again.");
       }
+
+      // Handle different API response structures
+      // Some endpoints return {data: {user: {...}, token: "..."}}
+      // Others return {data: {data: {user: {...}, token: "..."}}}
+      // And others might return {data: {...user data...}, token: "..."}
       
-      // Check if the data is directly in response.data or nested in response.data.data
-      const userData = apiResponse.data.user || apiResponse.data.data?.user || apiResponse.data;
-      const token = apiResponse.data.token || apiResponse.data.data?.token;
+      // Extract user data and token from the response
+      let userData;
+      let token;
+      
+      // Try to find user data
+      if (apiResponse.data.user) {
+        userData = apiResponse.data.user;
+      } else if (apiResponse.data.data?.user) {
+        userData = apiResponse.data.data.user;
+      } else if (apiResponse.data._id) {
+        userData = apiResponse.data;
+      }
+      
+      // Try to find token
+      if (apiResponse.data.token) {
+        token = apiResponse.data.token;
+      } else if (apiResponse.data.data?.token) {
+        token = apiResponse.data.data.token;
+      }
+      
+      if (!userData || !token) {
+        console.error("Could not extract user data or token from response:", apiResponse);
+        throw new Error("Invalid response format from server");
+      }
   
-      if (!userData || !userData._id || !userData.name || !userData.email || !token) {
-        console.error("API response is missing required fields:", apiResponse);
-        throw new Error("The server returned incomplete data. Please try again.");
+      // Ensure required fields exist
+      if (!userData._id) {
+        console.error("User data missing _id field:", userData);
+        throw new Error("Invalid user data returned from server");
       }
   
       // Ensure certifications are properly set and always an array
