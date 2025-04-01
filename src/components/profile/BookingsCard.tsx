@@ -13,13 +13,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 
 const BookingsCard = () => {
-  const { user } = useAuth();
+  // Wrap the useAuth call in a try-catch to handle the case when AuthProvider is not available
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.error('Error using Auth context in BookingsCard:', error);
+  }
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
   const fetchBookings = async () => {
     if (!user) return;

@@ -17,7 +17,15 @@ const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Cou
 const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
 
 const CertificationsCard = () => {
-  const { user } = useAuth();
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.error('Error using Auth context in CertificationsCard:', error);
+    return null; // Don't render anything if auth is not available
+  }
+
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [machines, setMachines] = useState<any[]>([]);
@@ -181,6 +189,8 @@ const CertificationsCard = () => {
     console.log(`Booking machine ${machineId} from CertificationsCard`);
     navigate(`/booking/${machineId}`);
   };
+
+  if (!user) return null;
 
   if (loading) {
     return (

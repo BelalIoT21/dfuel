@@ -8,6 +8,7 @@ import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { certificationService } from '@/services/certificationService';
 import { userDatabaseService } from '@/services/database/userService';
 
+// Create the context with a defined undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

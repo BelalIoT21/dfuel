@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface BookMachineButtonProps {
   machineId: string;
@@ -23,6 +23,7 @@ const BookMachineButton = ({
   size = 'default'
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const isAvailable = machineStatus?.toLowerCase() === 'available';
   // If certification is not required, consider the user as certified

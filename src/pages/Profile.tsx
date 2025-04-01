@@ -10,11 +10,20 @@ import BookingsCard from '@/components/profile/BookingsCard';
 import { Loader2 } from 'lucide-react';
 
 const Profile = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Wrap the useAuth call in a try-catch to handle the case when AuthProvider is not available
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.error('Error using Auth context:', error);
+    // Will be redirected below due to !user condition
+  }
   
   // Set default tab based on URL parameter
   const defaultTab = tabParam && ['profile', 'certifications', 'bookings'].includes(tabParam) 
@@ -49,8 +58,25 @@ const Profile = () => {
 
   // Redirect if user is not logged in
   if (!user) {
-    navigate('/');
-    return null;
+    // Use useEffect to avoid redirect during render
+    useEffect(() => {
+      console.log('No user found, redirecting to home page');
+      navigate('/');
+    }, [navigate]);
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+        <div className="text-center">
+          <p className="text-purple-600 mb-2">Please log in to view your profile</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

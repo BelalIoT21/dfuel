@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,19 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from 'sonner';
 
 const PersonalInfoCard = () => {
-  const { user, updateProfile, changePassword } = useAuth();
+  let user = null;
+  let updateProfile = null;
+  let changePassword = null;
+  
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    updateProfile = auth.updateProfile;
+    changePassword = auth.changePassword;
+  } catch (error) {
+    console.error('Error using Auth context in PersonalInfoCard:', error);
+    return null; // Don't render anything if auth is not available
+  }
   
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');

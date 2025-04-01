@@ -5,7 +5,18 @@ import { useAuth } from '@/context/AuthContext';
 import { LogOut, ArrowLeft, User } from 'lucide-react';
 
 const ProfileHeader = () => {
-  const { user, logout } = useAuth();
+  // Wrap the useAuth call in a try-catch to handle the case when AuthProvider is not available
+  let user = null;
+  let logout = () => {};
+  
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    logout = auth.logout;
+  } catch (error) {
+    console.error('Error using Auth context in ProfileHeader:', error);
+  }
+  
   // Use the correct path for admins
   const redirectPath = user?.isAdmin ? '/admin' : '/home';
 
