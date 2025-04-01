@@ -44,7 +44,7 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('api/auth/me', 'GET', undefined, true);
+    return this.request('auth/me', 'GET', undefined, true);
   }
   
   // Generic request method for all API calls
@@ -55,12 +55,12 @@ class ApiService {
         console.log("Auth required but no token available");
       }
       
-      // Ensure endpoint doesn't start with a slash and has api/ prefix if not already
+      // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // Make sure api/ prefix is included if not already
-      if (!cleanEndpoint.startsWith('api/')) {
-        cleanEndpoint = `api/${cleanEndpoint}`;
+      // Remove api/ prefix if it's already included to prevent duplication
+      if (cleanEndpoint.startsWith('api/')) {
+        cleanEndpoint = cleanEndpoint.substring(4);
       }
       
       // Log the request for debugging
@@ -158,79 +158,79 @@ class ApiService {
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
-    return this.request('api/auth/login', 'POST', { email, password });
+    return this.request('auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    return this.request('api/auth/register', 'POST', userData);
+    return this.request('auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('api/auth/logout', 'POST', {}, true);
+    return this.request('auth/logout', 'POST', {}, true);
   }
   
   // Machine functions
   async getMachineStatus(machineId: string): Promise<any> {
-    return this.request(`api/machines/${machineId}/status`, 'GET');
+    return this.request(`machines/${machineId}/status`, 'GET');
   }
   
   async updateMachineStatus(machineId: string, status: string, note?: string): Promise<any> {
-    return this.request(`api/machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
+    return this.request(`machines/${machineId}/status`, 'PUT', { status, maintenanceNote: note }, true);
   }
 
   // User functions
   async getAllUsers(): Promise<any> {
-    return this.request('api/users', 'GET', undefined, true);
+    return this.request('users', 'GET', undefined, true);
   }
   
   async getUserByEmail(email: string): Promise<any> {
-    return this.request(`api/users/email/${email}`, 'GET', undefined, true);
+    return this.request(`users/email/${email}`, 'GET', undefined, true);
   }
   
   async getUserById(id: string): Promise<any> {
-    return this.request(`api/users/${id}`, 'GET', undefined, true);
+    return this.request(`users/${id}`, 'GET', undefined, true);
   }
 
   // Get all machines
   async getAllMachines(): Promise<any> {
-    return this.request('api/machines', 'GET');
+    return this.request('machines', 'GET');
   }
 
   // Get all bookings
   async getAllBookings(): Promise<any> {
-    return this.request('api/bookings', 'GET', undefined, true);
+    return this.request('bookings', 'GET', undefined, true);
   }
   
   // Get user bookings
   async getUserBookings(userId?: string): Promise<any> {
-    return this.request('api/bookings', 'GET', undefined, true);
+    return this.request('bookings', 'GET', undefined, true);
   }
   
   // Course related endpoints
   async getAllCourses(): Promise<any> {
-    return this.request('api/courses', 'GET');
+    return this.request('courses', 'GET');
   }
   
   async getCourseById(courseId: string): Promise<any> {
-    return this.request(`api/courses/${courseId}`, 'GET');
+    return this.request(`courses/${courseId}`, 'GET');
   }
   
   async createCourse(courseData: any): Promise<any> {
-    return this.request('api/courses', 'POST', courseData, true);
+    return this.request('courses', 'POST', courseData, true);
   }
   
   async updateCourse(courseId: string, courseData: any): Promise<any> {
-    return this.request(`api/courses/${courseId}`, 'PUT', courseData, true);
+    return this.request(`courses/${courseId}`, 'PUT', courseData, true);
   }
   
   async deleteCourse(courseId: string): Promise<any> {
-    return this.request(`api/courses/${courseId}`, 'DELETE', undefined, true);
+    return this.request(`courses/${courseId}`, 'DELETE', undefined, true);
   }
   
   // Add booking
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
     console.log(`API: Adding booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
-    return this.request('api/bookings', 'POST', { 
+    return this.request('bookings', 'POST', { 
       machineId, 
       date, 
       time 
@@ -239,47 +239,47 @@ class ApiService {
   
   // Update booking status
   async updateBookingStatus(bookingId: string, status: string): Promise<any> {
-    return this.request(`api/bookings/${bookingId}/status`, 'PUT', { status }, true);
+    return this.request(`bookings/${bookingId}/status`, 'PUT', { status }, true);
   }
   
   // Cancel booking
   async cancelBooking(bookingId: string): Promise<any> {
-    return this.request(`api/bookings/${bookingId}/cancel`, 'PUT', {}, true);
+    return this.request(`bookings/${bookingId}/cancel`, 'PUT', {}, true);
   }
   
   // Get user certifications
   async getUserCertifications(userId: string): Promise<any> {
-    return this.request(`api/certifications/user/${userId}`, 'GET', undefined, true);
+    return this.request(`certifications/user/${userId}`, 'GET', undefined, true);
   }
   
   // Add certification
   async addCertification(userId: string, certificationId: string): Promise<any> {
-    return this.request('api/certifications', 'POST', { userId, machineId: certificationId }, true);
+    return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);
   }
   
   // Remove certification
   async removeCertification(userId: string, certificationId: string): Promise<any> {
-    return this.request(`api/certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
+    return this.request(`certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
   }
 
   // Clear all certifications for a user
   async clearUserCertifications(userId: string): Promise<any> {
-    return this.request(`api/certifications/user/${userId}/clear`, 'DELETE', undefined, true);
+    return this.request(`certifications/user/${userId}/clear`, 'DELETE', undefined, true);
   }
   
   // Get admin dashboard data
   async getAdminDashboard(): Promise<any> {
-    return this.request('api/admin/dashboard', 'GET', undefined, true);
+    return this.request('admin/dashboard', 'GET', undefined, true);
   }
   
   // Health check
   async checkHealth(): Promise<any> {
-    return this.request('api/health', 'GET');
+    return this.request('health', 'GET');
   }
   
   // Update user profile
   async updateProfile(userId: string, updates: any): Promise<any> {
-    return this.request('api/auth/profile', 'PUT', updates, true);
+    return this.request('auth/profile', 'PUT', updates, true);
   }
   
   // Generic REST methods
