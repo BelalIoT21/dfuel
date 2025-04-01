@@ -248,7 +248,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       user = await User.findById(req.params.id);
       console.log(`findById result: ${user ? 'User found' : 'User not found'}`);
     } catch (err) {
-      console.log(`Error using findById: ${err.message}, trying alternative methods`);
+      console.log(`Error using findById: ${err instanceof Error ? err.message : 'Unknown error'}, trying alternative methods`);
       
       // Try finding by id as a string field
       user = await User.findOne({ id: req.params.id });
