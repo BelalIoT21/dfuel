@@ -27,7 +27,13 @@ export const useAuthFunctions = (
       // Handle API errors
       if (apiResponse.error) {
         console.error("API login error:", apiResponse.error);
-        throw new Error(apiResponse.error);
+        if (apiResponse.status === 404) {
+          throw new Error("Server endpoint not found. Please check the server is running.");
+        } else if (apiResponse.status === 401) {
+          throw new Error("Invalid email or password.");
+        } else {
+          throw new Error(apiResponse.error);
+        }
       }
   
       // Validate response data - handle different response structures

@@ -58,9 +58,10 @@ class ApiService {
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // IMPORTANT FIX: Make sure we don't duplicate the api/ prefix
-      // Check if the endpoint already includes 'api/' or if the base URL already has '/api'
-      if (!cleanEndpoint.startsWith('api/') && !this.api.defaults.baseURL?.endsWith('/api')) {
+      // Check if the endpoint needs api/ prefix
+      if (!cleanEndpoint.startsWith('api/') && 
+          !this.api.defaults.baseURL?.endsWith('/api') && 
+          !cleanEndpoint.includes('/api/')) {
         cleanEndpoint = `api/${cleanEndpoint}`;
       }
       
@@ -143,12 +144,14 @@ class ApiService {
     }
   }
   
-  // Auth functions - fixed paths to match server routes exactly
+  // Auth functions - use exact paths from server routes
   async login(email: string, password: string): Promise<any> {
+    console.log("Attempting login with API service");
     return this.request('auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
+    console.log("Attempting registration with API service");
     return this.request('auth/register', 'POST', userData);
   }
   
