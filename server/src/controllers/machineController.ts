@@ -95,6 +95,10 @@ export const createMachine = async (req: Request, res: Response) => {
     });
     
     const savedMachine = await machine.save();
+    
+    // Create an initial backup of the new machine
+    await backupMachineData(savedMachine._id);
+    
     console.log('Machine saved successfully:', savedMachine);
     res.status(201).json(savedMachine);
   } catch (error) {
@@ -120,6 +124,9 @@ export const updateMachine = async (req: Request, res: Response) => {
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
     }
+    
+    // Backup the machine data before updating
+    await backupMachineData(id);
 
     const updatedMachine = await Machine.findByIdAndUpdate(
       id,
@@ -170,41 +177,72 @@ export const deleteMachine = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
     
+    // Backup the machine before deletion
+    await backupMachineData(id);
+    
     // Check if this is a core machine (ID 1-6)
     const isCoreMachine = Number(id) >= 1 && Number(id) <= 6;
     
     // HARD DELETE: Complete removal from database when hardDelete=true
     if (hardDelete === 'true' || hardDelete === '1') {
-      console.log(`Permanently REMOVING machine ${id} from database`);
-      
-      // For true database deletion, remove it completely
-      await Machine.findByIdAndDelete(id);
-      
-      console.log(`Machine ${id} REMOVED from database permanently`);
-      return res.status(200).json({ 
-        message: 'Machine removed from database permanently',
-        hardDeleted: true
-      });
+      // Only allow hard delete for non-core machines
+      if (isCoreMachine) {
+        console.log(`Cannot hard delete core machine ${id} - using soft delete instead`);
+        // For core machines, only use soft delete
+        await Machine.findByIdAndUpdate(id, { 
+          deletedAt: new Date(),
+          status: 'Maintenance',
+          maintenanceNote: 'This machine has been temporarily removed.'
+        });
+        
+        return res.status(200).json({ 
+          message: 'Core machine soft-deleted (hard delete not allowed for core machines)',
+          softDeleted: true
+        });
+      } else {
+        console.log(`Permanently REMOVING machine ${id} from database`);
+        
+        // For non-core machines, allow hard delete
+        await Machine.findByIdAndDelete(id);
+        
+        console.log(`Machine ${id} REMOVED from database permanently`);
+        return res.status(200).json({ 
+          message: 'Machine removed from database permanently',
+          hardDeleted: true
+        });
+      }
     }
     // PERMANENT DELETE: Mark as permanently deleted but keep record
     else if (permanent === 'true' || permanent === '1') {
-      // For permanent deletion, we mark it as permanently deleted
-      // This way it won't be recreated on server restart
-      console.log(`Permanently deleting machine ${id}`);
-      
-      // For both core and user-created machines, mark as permanently deleted
-      await Machine.findByIdAndUpdate(id, { 
-        deletedAt: new Date(),
-        permanentlyDeleted: true,
-        status: 'Maintenance',
-        maintenanceNote: 'This machine has been permanently deleted.'
-      });
-      
-      console.log(`Machine ${id} marked as permanently deleted`);
-      return res.status(200).json({ 
-        message: 'Machine marked as permanently deleted',
-        permanentlyDeleted: true
-      });
+      // For core machines (1-6), don't allow permanent deletion
+      if (isCoreMachine) {
+        console.log(`Cannot permanently delete core machine ${id} - using soft delete instead`);
+        // Just use soft delete for core machines
+        await Machine.findByIdAndUpdate(id, { 
+          deletedAt: new Date(),
+          status: 'Maintenance',
+          maintenanceNote: 'This machine has been temporarily removed.'
+        });
+        
+        return res.status(200).json({ 
+          message: 'Core machine soft-deleted (permanent delete not allowed for core machines)',
+          softDeleted: true
+        });
+      } else {
+        // For user-created machines, allow permanent deletion
+        await Machine.findByIdAndUpdate(id, { 
+          deletedAt: new Date(),
+          permanentlyDeleted: true,
+          status: 'Maintenance',
+          maintenanceNote: 'This machine has been permanently deleted.'
+        });
+        
+        console.log(`Non-core machine ${id} marked as permanently deleted`);
+        return res.status(200).json({ 
+          message: 'Machine marked as permanently deleted',
+          permanentlyDeleted: true
+        });
+      }
     } else {
       // For soft deletion, just set the deletedAt timestamp
       console.log(`Soft-deleting machine ${id}`);
@@ -258,6 +296,9 @@ export const updateMachineStatus = async (req: Request, res: Response) => {
     if (!machine) {
       return res.status(404).json({ message: 'Machine not found' });
     }
+    
+    // Backup the machine data before updating status
+    await backupMachineData(id);
 
     machine.status = status;
     machine.maintenanceNote = maintenanceNote || ''; // Allow clearing the maintenance note
@@ -319,6 +360,34 @@ export const restoreMachine = async (req: Request, res: Response) => {
   }
 };
 
+// Helper function to backup machine data
+const backupMachineData = async (machineId: string) => {
+  try {
+    const machine = await Machine.findById(machineId);
+    if (!machine) {
+      console.error(`Cannot backup machine ${machineId}: not found`);
+      return false;
+    }
+    
+    // Create backup data with timestamp
+    const backupData = {
+      ...machine.toObject(),
+      _backupTime: new Date().toISOString()
+    };
+    
+    // Store backup as JSON string
+    await Machine.findByIdAndUpdate(machineId, {
+      backupData: JSON.stringify(backupData)
+    });
+    
+    console.log(`Successfully backed up machine ${machineId}`);
+    return true;
+  } catch (error) {
+    console.error(`Error backing up machine ${machineId}:`, error);
+    return false;
+  }
+};
+
 // Backup machine endpoint
 export const backupMachine = async (req: Request, res: Response) => {
   try {
@@ -331,8 +400,15 @@ export const backupMachine = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
-    // Update with provided backup data
-    await Machine.findByIdAndUpdate(id, { backupData });
+    // Update with provided backup data or generate new backup
+    if (backupData) {
+      await Machine.findByIdAndUpdate(id, { backupData });
+    } else {
+      const success = await backupMachineData(id);
+      if (!success) {
+        return res.status(500).json({ message: 'Failed to backup machine' });
+      }
+    }
 
     res.status(200).json({ success: true, message: 'Machine backed up successfully' });
   } catch (error) {

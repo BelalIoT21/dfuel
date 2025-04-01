@@ -27,6 +27,7 @@ export interface IMachine extends mongoose.Document {
   // Backup and restoration tracking
   deletedAt?: Date;
   permanentlyDeleted?: boolean; // Added flag for permanent deletion
+  backupData?: string; // Add field to store JSON backup of machine data
   
   // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -136,6 +137,9 @@ const machineSchema = new mongoose.Schema<IMachine>(
     permanentlyDeleted: {
       type: Boolean,
       default: false
+    },
+    backupData: {
+      type: String
     }
   },
   {
@@ -192,10 +196,21 @@ machineSchema.pre('save', async function(next) {
       console.log(`Normalized requiresCertification for ${this.name}: ${this.requiresCertification} (${typeof this.requiresCertification})`);
     }
     
+    // Create a backup of the machine data before saving
+    // Only for existing machines (not new ones)
+    if (!this.isNew && !this.backupData) {
+      const backupData = {
+        ...this.toObject(),
+        _backupTime: new Date().toISOString()
+      };
+      this.backupData = JSON.stringify(backupData);
+      console.log(`Created backup for machine ${this._id}`);
+    }
+    
     next();
   } catch (error) {
     console.error('Error in machine pre-save middleware:', error);
-    // Fix: Convert the unknown error to a proper mongoose error or pass undefined
+    // Convert the unknown error to a proper mongoose error
     if (error instanceof Error) {
       next(new mongoose.Error.ValidationError(error));
     } else {

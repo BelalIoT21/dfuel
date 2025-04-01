@@ -11,10 +11,11 @@ import {
   seedMissingMachines, 
   updateMachineImages, 
   seedAllMachines,
-  restoreDeletedMachines 
+  restoreDeletedMachines,
+  backupMachines
 } from './seeds/machineSeeder';
-import { seedSafetyCourses, seedAllCourses } from './seeds/courseSeeder';
-import { seedSafetyQuizzes, seedAllQuizzes } from './seeds/quizSeeder';
+import { seedSafetyCourses, seedAllCourses, restoreDeletedCourses } from './seeds/courseSeeder';
+import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
 import { createAdminUser } from '../controllers/admin/adminController';
 import { seedUsers } from './seeds/userSeeder';
@@ -37,7 +38,17 @@ export class SeedService {
       console.log('Ensuring admin user exists...');
       await createAdminUser();
 
-      // Get existing machine IDs
+      // First restore any soft-deleted core entities to preserve their modifications
+      console.log('Checking for soft-deleted core machines to restore...');
+      await restoreDeletedMachines();
+      
+      console.log('Checking for soft-deleted core courses to restore...');
+      await restoreDeletedCourses();
+      
+      console.log('Checking for soft-deleted core quizzes to restore...');
+      await restoreDeletedQuizzes();
+
+      // Get existing machine IDs after restoration
       const existingMachines = await Machine.find({}, '_id');
       const existingMachineIds = existingMachines.map(m => m._id.toString());
       
@@ -54,10 +65,6 @@ export class SeedService {
         await seedMissingMachines(missingCoreMachineIds);
       } else {
         console.log('All core machines (1-6) are present.');
-        
-        // Try to restore any machines that might have been deleted
-        console.log('Checking for deleted machines to restore...');
-        await restoreDeletedMachines();
       }
       
       // Always update machine images for core machines without modifying other properties
@@ -77,6 +84,10 @@ export class SeedService {
       
       console.log('Ensuring all core quizzes (1-6) exist...');
       await seedAllQuizzes();
+      
+      // Create backups of all entities without backups
+      console.log('Creating backups for machines without backups...');
+      await backupMachines();
 
       console.log('Database seeding complete!');
     } catch (error) {
@@ -85,7 +96,7 @@ export class SeedService {
     }
   }
   
-  // New method to restore deleted machines without affecting existing ones
+  // Method to restore deleted machines while preserving their modifications
   static async restoreDeletedMachines() {
     try {
       console.log('Starting restoration of deleted machines...');
@@ -93,6 +104,30 @@ export class SeedService {
       return { success: true, restoredCount };
     } catch (error) {
       console.error('Error restoring deleted machines:', error);
+      return { success: false, error };
+    }
+  }
+  
+  // Method to restore deleted courses while preserving their modifications
+  static async restoreDeletedCourses() {
+    try {
+      console.log('Starting restoration of deleted courses...');
+      const restoredCount = await restoreDeletedCourses();
+      return { success: true, restoredCount };
+    } catch (error) {
+      console.error('Error restoring deleted courses:', error);
+      return { success: false, error };
+    }
+  }
+  
+  // Method to restore deleted quizzes while preserving their modifications
+  static async restoreDeletedQuizzes() {
+    try {
+      console.log('Starting restoration of deleted quizzes...');
+      const restoredCount = await restoreDeletedQuizzes();
+      return { success: true, restoredCount };
+    } catch (error) {
+      console.error('Error restoring deleted quizzes:', error);
       return { success: false, error };
     }
   }

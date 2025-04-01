@@ -1,3 +1,4 @@
+
 import { Machine } from '../../models/Machine';
 import { ensureMachineOrder } from './seedHelpers';
 
@@ -222,7 +223,14 @@ export async function seedAllMachines() {
       }
     }
     
-    // Only seed the missing core machines
+    // First check for soft-deleted machines to restore
+    console.log("Checking for soft-deleted core machines to restore...");
+    const softDeletedCount = await restoreSoftDeletedCoreMachines();
+    if (softDeletedCount > 0) {
+      console.log(`Restored ${softDeletedCount} soft-deleted core machines`);
+    }
+    
+    // Only seed the remaining missing core machines
     if (missingCoreIds.length > 0) {
       console.log(`Found ${missingCoreIds.length} missing core machines. Seeding them now...`);
       await seedMissingMachines(missingCoreIds);
@@ -248,50 +256,52 @@ export async function seedAllMachines() {
   }
 }
 
+// New function to specifically restore soft-deleted core machines with their latest changes
+async function restoreSoftDeletedCoreMachines(): Promise<number> {
+  try {
+    // Find core machines (1-6) that are soft-deleted but not permanently deleted
+    const softDeletedCoreMachines = await Machine.find({
+      _id: { $in: ['1', '2', '3', '4', '5', '6'] },
+      deletedAt: { $exists: true, $ne: null },
+      permanentlyDeleted: { $ne: true }
+    });
+    
+    console.log(`Found ${softDeletedCoreMachines.length} soft-deleted core machines to restore`);
+    
+    let restoredCount = 0;
+    
+    for (const machine of softDeletedCoreMachines) {
+      // Restore the machine by clearing the deletedAt field
+      // but preserve all other properties/changes
+      machine.deletedAt = undefined;
+      machine.status = 'Available';
+      machine.maintenanceNote = '';
+      
+      await machine.save();
+      console.log(`Restored soft-deleted core machine ${machine._id} with all previous modifications`);
+      restoredCount++;
+    }
+    
+    return restoredCount;
+  } catch (error) {
+    console.error("Error restoring soft-deleted core machines:", error);
+    return 0;
+  }
+}
+
 // Updated function to restore accidentally deleted machines
 export async function restoreDeletedMachines(permanentlyDeletedIds: string[] = []): Promise<number> {
   try {
     console.log("Starting restoreDeletedMachines with excluded IDs:", permanentlyDeletedIds);
     
+    // First restore any soft-deleted core machines
+    const softDeletedCount = await restoreSoftDeletedCoreMachines();
+    
     // Get all machine IDs currently in the database
     const existingMachines = await Machine.find({}, '_id');
     const existingIds = new Set(existingMachines.map(m => m._id.toString()));
     
-    // For core machines (1-6), find soft-deleted ones that aren't permanently deleted
-    const softDeletedMachines = await Machine.find({
-      _id: { $in: ['1', '2', '3', '4', '5', '6'] },
-      deletedAt: { $exists: true },
-      permanentlyDeleted: { $ne: true }
-    });
-    
-    console.log(`Found ${softDeletedMachines.length} soft-deleted machines to restore`);
-    
-    let restoredCount = 0;
-    
-    // Restore soft-deleted machines that aren't permanently deleted
-    for (const machine of softDeletedMachines) {
-      const id = machine._id.toString();
-      
-      // Skip permanently deleted machines
-      if (permanentlyDeletedIds.includes(id)) {
-        console.log(`Skipping permanently deleted machine ${id}`);
-        continue;
-      }
-      
-      // Restore the machine by clearing the deletedAt field
-      machine.deletedAt = undefined;
-      
-      // Reset status and maintenance note
-      machine.status = 'Available';
-      machine.maintenanceNote = '';
-      
-      await machine.save();
-      
-      console.log(`Restored soft-deleted machine ${id}`);
-      restoredCount++;
-    }
-    
-    // For core machines (1-6), restore any that are missing and not permanently deleted
+    // For core machines (1-6) that are still missing, recreate them if not permanently deleted
     const missingCoreIds = [];
     for (let i = 1; i <= 6; i++) {
       const id = i.toString();
@@ -315,14 +325,16 @@ export async function restoreDeletedMachines(permanentlyDeletedIds: string[] = [
     }
     
     // Restore missing core machines that aren't permanently deleted
+    let recreatedCount = 0;
     if (missingCoreIds.length > 0) {
       console.log(`Restoring ${missingCoreIds.length} missing core machines: ${missingCoreIds.join(', ')}`);
       const restored = await seedMissingMachines(missingCoreIds);
-      restoredCount += restored.length;
+      recreatedCount = restored.length;
     }
     
-    console.log(`Restored ${restoredCount} deleted machines successfully`);
-    return restoredCount;
+    const totalRestored = softDeletedCount + recreatedCount;
+    console.log(`Restored ${totalRestored} deleted machines successfully (${softDeletedCount} soft-deleted, ${recreatedCount} recreated)`);
+    return totalRestored;
   } catch (error) {
     console.error("Error restoring deleted machines:", error);
     return 0;
@@ -338,19 +350,28 @@ export async function ensureMachineImages() {
 // New function to regularly backup user-created machines for restoration purposes
 export async function backupMachines() {
   try {
-    // This is a placeholder for a backup mechanism
-    // In a real implementation, this could:
-    // 1. Save a snapshot to a backup collection
-    // 2. Export to a JSON file
-    // 3. Use MongoDB's built-in backup facilities
-    
     const allMachines = await Machine.find({});
-    console.log(`Backed up ${allMachines.length} machines`);
+    let backupCount = 0;
     
-    // Here you would implement actual backup logic
-    // For now, we're just logging that it happened
+    for (const machine of allMachines) {
+      // Create backup data with timestamp if it doesn't exist
+      if (!machine.backupData) {
+        const backupData = {
+          ...machine.toObject(),
+          _backupTime: new Date().toISOString()
+        };
+        
+        // Store backup as JSON string
+        await Machine.findByIdAndUpdate(machine._id, {
+          backupData: JSON.stringify(backupData)
+        });
+        
+        backupCount++;
+      }
+    }
     
-    return allMachines.length;
+    console.log(`Backed up ${backupCount} machines that didn't have backups`);
+    return backupCount;
   } catch (error) {
     console.error("Error backing up machines:", error);
     return 0;

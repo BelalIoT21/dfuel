@@ -1,9 +1,9 @@
 
 import mongoose from 'mongoose';
 import { seedUsers } from './userSeeder';
-import { seedAllMachines, ensureMachineImages, restoreDeletedMachines } from './machineSeeder';
-import { seedSafetyCourses } from './courseSeeder';
-import { seedSafetyQuizzes } from './quizSeeder';
+import { seedAllMachines, ensureMachineImages, restoreDeletedMachines, backupMachines } from './machineSeeder';
+import { seedSafetyCourses, seedAllCourses, restoreDeletedCourses } from './courseSeeder';
+import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes } from './quizSeeder';
 
 // Main seeding function to run all seeders
 export async function runAllSeeders() {
@@ -13,18 +13,24 @@ export async function runAllSeeders() {
     // Seed users
     await seedUsers();
     
+    // First restore any soft-deleted core machines/courses/quizzes
+    await restoreDeletedMachines();
+    await restoreDeletedCourses();
+    await restoreDeletedQuizzes();
+    
     // Seed core machines (but don't overwrite existing ones)
     console.log("Seeding core machines while preserving user modifications...");
     await seedAllMachines();
     
-    // Seed safety courses for machines 5 and 6
-    await seedSafetyCourses();
-    
-    // Seed safety quizzes for machines 5 and 6
-    await seedSafetyQuizzes();
+    // Seed safety courses and quizzes
+    await seedAllCourses();
+    await seedAllQuizzes();
     
     // Ensure machine images are updated
     await ensureMachineImages();
+    
+    // Backup any entities that don't have backups
+    await backupMachines();
     
     console.log("All seeders completed successfully");
     return { success: true };
@@ -57,6 +63,15 @@ export async function runSeeder(seederName: string) {
         break;
       case 'restore-machines':
         await restoreDeletedMachines();
+        break;
+      case 'restore-courses':
+        await restoreDeletedCourses();
+        break;
+      case 'restore-quizzes':
+        await restoreDeletedQuizzes();
+        break;
+      case 'backup-machines':
+        await backupMachines();
         break;
       default:
         throw new Error(`Unknown seeder: ${seederName}`);
