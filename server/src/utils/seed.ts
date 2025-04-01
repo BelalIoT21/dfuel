@@ -8,7 +8,6 @@ import dotenv from 'dotenv';
 // Import seeders and helpers
 import { 
   seedMissingMachines, 
-  updateMachineImages, 
   seedAllMachines,
   restoreDeletedMachines,
   backupMachines
@@ -73,7 +72,6 @@ export class SeedService {
       
       // Always update machine images for core machines without modifying other properties
       console.log('Gently updating machine images without overwriting user edits...');
-      await updateMachineImages();
       await ensureMachineOrder();
 
       // Seed users if needed
