@@ -65,7 +65,7 @@ export async function seedAllCourses() {
 // Function to restore soft-deleted core courses
 export async function restoreDeletedCourses(): Promise<number> {
   try {
-    // Find core courses (1-6) that are soft-deleted but not permanently deleted
+    // Find ONLY core courses (1-6) that are soft-deleted but not permanently deleted
     const softDeletedCoreCourses = await Course.find({
       _id: { $in: ['1', '2', '3', '4', '5', '6'] },
       deletedAt: { $exists: true, $ne: null },
@@ -85,6 +85,9 @@ export async function restoreDeletedCourses(): Promise<number> {
       console.log(`Restored soft-deleted core course ${course._id} with all previous modifications`);
       restoredCount++;
     }
+    
+    // Do NOT restore courses with ID > 6 (user created courses)
+    console.log(`Only core courses (1-6) were considered for restoration`);
     
     return restoredCount;
   } catch (error) {
