@@ -1,7 +1,7 @@
 
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { bookingService } from "@/services/bookingService";
 import userDatabase from "@/services/userDatabase";
 import { apiService } from "@/services/apiService";
@@ -18,6 +18,8 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   const [isLoading, setIsLoading] = useState(true);
   const [userCount, setUserCount] = useState(0);
   const [machineCount, setMachineCount] = useState(0);
+  const isFetchingRef = useRef(false);
+  const lastFetchedRef = useRef(0);
   
   // Set machine count when machines prop changes
   useEffect(() => {
@@ -29,8 +31,20 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   // Fetch the actual bookings count
   useEffect(() => {
     const fetchBookingsCount = async () => {
+      // Prevent multiple simultaneous fetches
+      if (isFetchingRef.current) return;
+      
+      // Only fetch if it's been more than 60 seconds since the last fetch
+      const now = Date.now();
+      if (now - lastFetchedRef.current < 60000 && lastFetchedRef.current > 0) {
+        console.log("Stats: Skipping fetch, last fetched less than 60 seconds ago");
+        return;
+      }
+      
       try {
+        isFetchingRef.current = true;
         setIsLoading(true);
+        lastFetchedRef.current = now;
         
         // First try getting the data directly from MongoDB
         try {
@@ -72,15 +86,27 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         }
       } finally {
         setIsLoading(false);
+        isFetchingRef.current = false;
       }
     };
     
     fetchBookingsCount();
+    
+    // Only update stats every 2 minutes at most
+    const intervalId = setInterval(fetchBookingsCount, 120000);
+    return () => clearInterval(intervalId);
   }, []);
   
   // Ensure user count is fetched consistently from API first, then fallback to props or userDatabase
   useEffect(() => {
     const fetchUsers = async () => {
+      // Only fetch if it's been more than 60 seconds since the last fetch
+      const now = Date.now();
+      if (now - lastFetchedRef.current < 60000 && lastFetchedRef.current > 0) {
+        console.log("Stats: Skipping user fetch, last fetched less than 60 seconds ago");
+        return;
+      }
+      
       try {
         console.log("Fetching users for stats overview");
         

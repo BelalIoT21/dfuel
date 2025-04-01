@@ -15,14 +15,22 @@ export const PendingActions = () => {
   const { toast } = useToast();
   
   const fetchPendingBookings = useCallback(async () => {
+    // Return early if we're already refreshing to prevent duplicate calls
+    if (isRefreshing) return;
+    
     try {
       setIsLoading(true);
+      setIsRefreshing(true);
       console.log("Fetching pending bookings...");
       
       // Try direct API fetch first
       try {
         console.log("Fetching bookings directly from API");
-        const response = await apiService.request('bookings/all', 'GET');
+        const response = await apiService.request({
+          method: 'GET',
+          url: 'bookings/all'
+        });
+        
         console.log("API response for bookings:", response);
         if (response?.data && Array.isArray(response.data)) {
           console.log(`Found ${response.data.length} bookings via API`);
@@ -73,16 +81,17 @@ export const PendingActions = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [isRefreshing]);
   
   useEffect(() => {
+    // Initial fetch
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 10 seconds
+    // Set up polling to refresh pending bookings but at a much lower frequency (60 seconds)
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 10000);
+    }, 60000); // Changed from 10 seconds to 60 seconds
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
@@ -95,6 +104,8 @@ export const PendingActions = () => {
   }, [fetchPendingBookings]);
 
   const handleManualRefresh = () => {
+    if (isRefreshing) return; // Prevent multiple clicks
+    
     setIsRefreshing(true);
     fetchPendingBookings();
     toast({
