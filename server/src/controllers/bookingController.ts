@@ -13,6 +13,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   const userId = req.user?.id;
   
   if (!userId || !machineId || !date || !time) {
+    console.error('Missing required booking data:', { userId, machineId, date, time });
     res.status(400);
     throw new Error('Please provide all required fields');
   }
@@ -32,6 +33,8 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     // Convert machineId to string to ensure consistent comparison
     const machineIdStr = String(machineId);
     
+    console.log(`Checking for existing bookings for machine ${machineIdStr} on ${date} at ${time}`);
+    
     const existingBooking = await Booking.findOne({
       machine: machineIdStr,
       date: {
@@ -44,6 +47,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     
     if (existingBooking) {
       console.log(`Time slot already booked: Machine ${machineIdStr}, Date: ${date}, Time: ${time}`);
+      console.log(`Existing booking: ${JSON.stringify(existingBooking)}`);
       res.status(400);
       throw new Error('This time slot is already booked');
     }
@@ -100,7 +104,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   } catch (error) {
     console.error('Error creating booking:', error);
     res.status(500);
-    throw new Error('Error creating booking');
+    throw new Error('Error creating booking: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 });
 

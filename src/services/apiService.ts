@@ -104,7 +104,11 @@ class ApiService {
       
       console.error(`API error for ${method} ${this.api.defaults.baseURL}${endpoint}: ${status} - ${errorMsg}`);
       console.error(`API request failed for ${endpoint}: ${errorMsg}`);
-      console.error(`Could not connect to server.`);
+      
+      // More detailed error logging
+      if (error.response?.data) {
+        console.error(`Error response data:`, error.response.data);
+      }
       
       return {
         error: errorMsg,
@@ -156,7 +160,6 @@ class ApiService {
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
     console.log(`API: Adding booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
     return this.request('bookings', 'POST', { 
-      userId, 
       machineId, 
       date, 
       time 

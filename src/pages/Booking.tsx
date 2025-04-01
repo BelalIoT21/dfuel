@@ -54,15 +54,26 @@ const BookingPage = () => {
           console.log(`Successfully loaded machine:`, foundMachine);
           setMachine(foundMachine);
           
+          // Fetch all bookings to determine availability
           const allBookings = await bookingService.getAllBookings();
+          console.log(`Fetched ${allBookings.length} bookings to check availability`);
+          
           const machineBookings = allBookings.filter(
-            booking => booking.machineId === id || booking.machine === id && 
+            booking => (booking.machineId === id || booking.machine === id) && 
             (booking.status === 'Approved' || booking.status === 'Pending')
           );
           
-          const bookedDateTimeSlots = machineBookings.map(booking => 
-            `${booking.date}-${booking.time}`
-          );
+          console.log(`Found ${machineBookings.length} bookings for this machine`);
+          
+          const bookedDateTimeSlots = machineBookings.map(booking => {
+            const bookingDate = booking.date instanceof Date 
+              ? booking.date
+              : new Date(booking.date);
+            
+            return `${format(bookingDate, 'yyyy-MM-dd')}-${booking.time}`;
+          });
+          
+          console.log(`Booked slots:`, bookedDateTimeSlots);
           setBookedSlots(bookedDateTimeSlots);
           
           updateAvailableTimeSlots(selectedDate);
@@ -89,12 +100,16 @@ const BookingPage = () => {
     if (!date) return;
     
     const formattedDate = format(date, 'yyyy-MM-dd');
+    console.log(`Updating available slots for date: ${formattedDate}`);
     
     const available = timeSlots.filter(time => {
       const dateTimeSlot = `${formattedDate}-${time}`;
-      return !bookedSlots.includes(dateTimeSlot);
+      const isBooked = bookedSlots.includes(dateTimeSlot);
+      console.log(`Slot ${dateTimeSlot}: ${isBooked ? 'BOOKED' : 'available'}`);
+      return !isBooked;
     });
     
+    console.log(`Available time slots: ${available.length} slots`);
     setAvailableTimeSlots(available);
     
     if (selectedTime && !available.includes(selectedTime)) {
@@ -131,8 +146,39 @@ const BookingPage = () => {
     
     try {
       setSubmitting(true);
+      setError(null);
       
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      // Double-check if the slot is still available
+      const dateTimeSlot = `${formattedDate}-${selectedTime}`;
+      if (bookedSlots.includes(dateTimeSlot)) {
+        toast({
+          title: 'Time Slot Unavailable',
+          description: 'This time slot has just been booked. Please select another time.',
+          variant: 'destructive'
+        });
+        
+        // Refresh available slots
+        const allBookings = await bookingService.getAllBookings();
+        const machineBookings = allBookings.filter(
+          booking => (booking.machineId === id || booking.machine === id) && 
+          (booking.status === 'Approved' || booking.status === 'Pending')
+        );
+        
+        const bookedDateTimeSlots = machineBookings.map(booking => {
+          const bookingDate = booking.date instanceof Date 
+            ? booking.date
+            : new Date(booking.date);
+          
+          return `${format(bookingDate, 'yyyy-MM-dd')}-${booking.time}`;
+        });
+        
+        setBookedSlots(bookedDateTimeSlots);
+        updateAvailableTimeSlots(selectedDate);
+        setSubmitting(false);
+        return;
+      }
       
       const userId = user.id || user._id;
       const machineId = machine.id || machine._id;
@@ -164,12 +210,7 @@ const BookingPage = () => {
           navigate('/profile');
         }, 3000);
       } else {
-        setError('Failed to create booking. This time slot may already be booked.');
-        toast({
-          title: 'Booking Failed',
-          description: 'Unable to create your booking. This time slot may already be booked.',
-          variant: 'destructive'
-        });
+        setError('Failed to create booking. Please try again with a different time slot.');
       }
     } catch (err) {
       console.error('Error booking machine:', err);

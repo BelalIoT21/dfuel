@@ -73,10 +73,42 @@ class BookingService {
   async createBooking(userId: string, machineId: string, date: string, time: string) {
     try {
       console.log(`Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
+      
+      // First try direct MongoDB connection
+      try {
+        console.log("Attempting to create booking via MongoDB direct connection");
+        const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
+        if (mongoSuccess) {
+          console.log("Successfully created booking via MongoDB");
+          return true;
+        }
+        console.log("MongoDB booking creation failed, falling back to API");
+      } catch (mongoError) {
+        console.error("MongoDB booking creation error:", mongoError);
+      }
+      
+      // Fallback to API
       const response = await apiService.addBooking(userId, machineId, date, time);
       
       if (response.error) {
-        console.error('Error creating booking:', response.error);
+        console.error('Error creating booking via API:', response.error);
+        
+        // Check for specific error messages
+        if (typeof response.error === 'string' && 
+            (response.error.includes('time slot is already booked') || 
+             response.error.includes('already exists'))) {
+          toast({
+            title: "Time Slot Unavailable",
+            description: "This time slot has already been booked. Please select another time.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Booking Failed",
+            description: "There was a problem creating your booking. Please try again.",
+            variant: "destructive"
+          });
+        }
         return false;
       }
       
