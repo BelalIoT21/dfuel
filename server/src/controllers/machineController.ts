@@ -158,7 +158,7 @@ export const updateMachine = async (req: Request, res: Response) => {
   }
 };
 
-// Delete machine endpoint updated to support permanent deletion from database
+// Delete machine endpoint updated to ensure permanent deletion for machines with ID > 6
 export const deleteMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -180,34 +180,60 @@ export const deleteMachine = async (req: Request, res: Response) => {
     // Backup the machine before deletion
     await backupMachineData(id);
     
-    // Check if this is a core machine (ID 1-6)
-    const isCoreMachine = Number(id) >= 1 && Number(id) <= 6;
+    // Check if this is a core machine (ID 1-6) or user-created machine (ID > 6)
+    const machineIdNum = Number(id);
+    const isCoreMachine = machineIdNum >= 1 && machineIdNum <= 6;
+    const isUserMachine = !isNaN(machineIdNum) && machineIdNum > 6;
     
-    // For non-core machines (ID > 6), always hard delete when permanent is specified
-    if (permanent === 'true' || permanent === '1') {
-      // For core machines (1-6), don't allow permanent deletion
+    // For user-created machines (ID > 6), always use permanent deletion
+    // regardless of the permanent flag
+    const shouldPermanentDelete = permanent === 'true' || permanent === '1' || isUserMachine;
+    
+    if (shouldPermanentDelete) {
+      console.log(`Using permanent deletion for machine ${id} (isUserMachine: ${isUserMachine})`);
+      
+      // For core machines (1-6), don't allow physical deletion from database
       if (isCoreMachine) {
         console.log(`Cannot permanently delete core machine ${id} - using soft delete instead`);
         // Just use soft delete for core machines
         await Machine.findByIdAndUpdate(id, { 
           deletedAt: new Date(),
           status: 'Maintenance',
-          maintenanceNote: 'This machine has been temporarily removed.'
+          maintenanceNote: 'This machine has been temporarily removed.',
+          permanentlyDeleted: true
         });
         
         return res.status(200).json({ 
-          message: 'Core machine soft-deleted (permanent delete not allowed for core machines)',
-          softDeleted: true
+          message: 'Core machine soft-deleted and marked as permanently deleted',
+          softDeleted: true,
+          permanentlyDeleted: true
         });
       } else {
         // For user-created machines, perform HARD DELETE (completely remove from database)
-        await Machine.findByIdAndDelete(id);
-        
-        console.log(`Non-core machine ${id} PERMANENTLY DELETED from database`);
-        return res.status(200).json({ 
-          message: 'Machine permanently deleted from database',
-          permanentlyDeleted: true
-        });
+        try {
+          await Machine.findByIdAndDelete(id);
+          console.log(`Non-core machine ${id} PERMANENTLY DELETED from database`);
+          return res.status(200).json({ 
+            message: 'Machine permanently deleted from database',
+            permanentlyDeleted: true,
+            hardDeleted: true
+          });
+        } catch (deleteError) {
+          console.error(`Error performing hard delete on machine ${id}:`, deleteError);
+          
+          // If hard delete fails, mark as permanently deleted
+          await Machine.findByIdAndUpdate(id, { 
+            deletedAt: new Date(),
+            status: 'Maintenance',
+            maintenanceNote: 'This machine has been permanently removed.',
+            permanentlyDeleted: true
+          });
+          
+          return res.status(200).json({ 
+            message: 'Machine marked as permanently deleted',
+            permanentlyDeleted: true
+          });
+        }
       }
     } else {
       // For soft deletion, just set the deletedAt timestamp

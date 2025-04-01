@@ -131,6 +131,15 @@ export class QuizDatabaseService extends BaseService {
   }
 
   async deleteQuiz(quizId: string, permanent: boolean = false): Promise<boolean> {
+    // Check if this is a user-created quiz (ID > 6)
+    const isUserQuiz = !isNaN(Number(quizId)) && Number(quizId) > 6;
+    
+    // For non-core quizzes (ID > 6), always use permanent deletion
+    if (isUserQuiz) {
+      console.log(`Quiz ${quizId} is a user-created quiz, using permanent deletion`);
+      permanent = true;
+    }
+    
     // Prepare URL with permanent flag if needed
     const deleteUrl = permanent 
       ? `quizzes/${quizId}?permanent=true`
@@ -144,9 +153,43 @@ export class QuizDatabaseService extends BaseService {
       );
       
       console.log(`Delete quiz result:`, result);
+      
+      // If the API call succeeds but doesn't confirm permanent deletion for user quizzes
+      if (isUserQuiz && result && !result.permanentlyDeleted) {
+        // Make a follow-up request to ensure it's marked as permanently deleted
+        try {
+          await apiService.request(`mongodb/delete-quiz`, 'POST', {
+            quizId,
+            permanent: true
+          }, true);
+          console.log(`Successfully force-deleted quiz ${quizId} via MongoDB`);
+          return true;
+        } catch (forceError) {
+          console.error(`MongoDB force-delete failed for quiz ${quizId}:`, forceError);
+        }
+      }
+      
       return !!result;
     } catch (error) {
       console.error(`Error deleting quiz ${quizId}:`, error);
+      
+      // If the API call fails for user quizzes, try a direct MongoDB delete
+      if (isUserQuiz) {
+        try {
+          const forceDeletionResult = await apiService.request('mongodb/delete-quiz', 'POST', {
+            quizId,
+            permanent: true
+          }, true);
+          
+          if (forceDeletionResult.data?.success) {
+            console.log(`Successfully force-deleted quiz ${quizId} via MongoDB`);
+            return true;
+          }
+        } catch (mongoError) {
+          console.error(`MongoDB force-delete failed for quiz ${quizId}:`, mongoError);
+        }
+      }
+      
       return false;
     }
   }

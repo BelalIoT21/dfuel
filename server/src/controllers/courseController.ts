@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Course } from '../models/Course';
 import mongoose from 'mongoose';
@@ -130,11 +129,13 @@ export const updateCourse = async (req: Request, res: Response) => {
   }
 };
 
-// Delete course (soft delete)
+// Delete course - updated to ensure permanent deletion for courses with ID > 6
 export const deleteCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { permanent } = req.query; // Add support for permanent deletion query parameter
+    
+    console.log(`Deleting course ${id}, permanent: ${permanent}`);
 
     // Find the course
     let course;
@@ -151,11 +152,19 @@ export const deleteCourse = async (req: Request, res: Response) => {
     // Backup the course before deletion
     await backupCourseData(id);
     
-    // Check if we should permanently delete
-    if (permanent === 'true' || permanent === '1') {
-      // For core courses (1-6), just mark them as permanently deleted
-      const isCoreCourse = Number(id) >= 1 && Number(id) <= 6;
+    // Check if this is a core course (ID 1-6) or user-created course (ID > 6)
+    const courseIdNum = Number(id);
+    const isCoreCourse = courseIdNum >= 1 && courseIdNum <= 6;
+    const isUserCourse = !isNaN(courseIdNum) && courseIdNum > 6;
+    
+    // For user-created courses (ID > 6), always use permanent deletion
+    // regardless of the permanent flag
+    const shouldPermanentDelete = permanent === 'true' || permanent === '1' || isUserCourse;
+    
+    if (shouldPermanentDelete) {
+      console.log(`Using permanent deletion for course ${id} (isUserCourse: ${isUserCourse})`);
       
+      // For core courses (1-6), just mark them as permanently deleted
       if (isCoreCourse) {
         await Course.findByIdAndUpdate(id, { 
           deletedAt: new Date(),
@@ -165,18 +174,40 @@ export const deleteCourse = async (req: Request, res: Response) => {
         console.log(`Core course ${id} marked as permanently deleted`);
         return res.status(200).json({ 
           message: 'Core course marked as permanently deleted',
-          softDeleted: true
+          permanentlyDeleted: true
         });
       } else {
         // For user-created courses (ID > 6), completely remove from database
-        await Course.findByIdAndDelete(id);
-        console.log(`User-created course ${id} permanently deleted from database`);
-        return res.status(200).json({ message: 'Course permanently deleted from database' });
+        try {
+          await Course.findByIdAndDelete(id);
+          console.log(`User-created course ${id} permanently deleted from database`);
+          return res.status(200).json({ 
+            message: 'Course permanently deleted from database',
+            permanentlyDeleted: true,
+            hardDeleted: true  
+          });
+        } catch (deleteError) {
+          console.error(`Error performing hard delete on course ${id}:`, deleteError);
+          
+          // If hard delete fails, mark as permanently deleted
+          await Course.findByIdAndUpdate(id, { 
+            deletedAt: new Date(),
+            permanentlyDeleted: true
+          });
+          
+          return res.status(200).json({ 
+            message: 'Course marked as permanently deleted',
+            permanentlyDeleted: true
+          });
+        }
       }
     } else {
       // Soft delete by setting deletedAt timestamp
       await Course.findByIdAndUpdate(id, { deletedAt: new Date() });
-      return res.status(200).json({ message: 'Course deleted successfully (soft delete)' });
+      return res.status(200).json({ 
+        message: 'Course deleted successfully (soft delete)',
+        softDeleted: true 
+      });
     }
   } catch (error) {
     console.error('Error in deleteCourse:', error);

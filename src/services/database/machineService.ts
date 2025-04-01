@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import mongoDbService from '../mongoDbService';
@@ -291,6 +292,17 @@ export class MachineDatabaseService extends BaseService {
       // First backup the machine before deletion
       await this.backupMachine(machineId);
       
+      // Check if this is a user-created machine (ID > 6)
+      const isUserMachine = !isNaN(Number(machineId)) && Number(machineId) > 6;
+      
+      // For non-core machines (ID > 6), always use permanent deletion
+      // This ensures they are properly removed from the database
+      if (isUserMachine) {
+        console.log(`Machine ${machineId} is a user-created machine, using permanent deletion`);
+        permanent = true;
+        hardDelete = true;
+      }
+      
       // Prepare URL with parameters
       let deleteUrl = `machines/${machineId}`;
       const params = [];
@@ -309,6 +321,7 @@ export class MachineDatabaseService extends BaseService {
       
       // Try the API with appropriate parameters
       try {
+        console.log(`Sending DELETE request to ${deleteUrl}`);
         const response = await apiService.request(deleteUrl, 'DELETE', undefined, true);
         
         if (response.data) {
@@ -325,6 +338,24 @@ export class MachineDatabaseService extends BaseService {
         }
       } catch (apiError) {
         console.error(`API error deleting machine ${machineId}:`, apiError);
+        
+        // If the API call fails, try a direct MongoDB delete for user machines
+        if (isUserMachine) {
+          try {
+            // Try using the MongoDB service to force delete
+            const forceDeletionResult = await apiService.request('mongodb/delete-machine', 'POST', {
+              machineId,
+              permanent: true
+            }, true);
+            
+            if (forceDeletionResult.data?.success) {
+              console.log(`Successfully force-deleted machine ${machineId} via MongoDB`);
+              return true;
+            }
+          } catch (mongoError) {
+            console.error(`MongoDB force-delete failed for machine ${machineId}:`, mongoError);
+          }
+        }
       }
       
       return false;
