@@ -204,6 +204,7 @@ class MongoDbService {
 
   async createCourse(courseData: any) {
     try {
+      console.log('MongoDbService attempting to create course with data:', courseData);
       return await mongoCourseService.createCourse(courseData);
     } catch (error) {
       console.error('Error creating course in MongoDB:', error);

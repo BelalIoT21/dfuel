@@ -188,6 +188,27 @@ class ApiService {
     return this.request('bookings', 'GET', undefined, true);
   }
   
+  // Course related endpoints
+  async getAllCourses(): Promise<any> {
+    return this.request('courses', 'GET');
+  }
+  
+  async getCourseById(courseId: string): Promise<any> {
+    return this.request(`courses/${courseId}`, 'GET');
+  }
+  
+  async createCourse(courseData: any): Promise<any> {
+    return this.request('courses', 'POST', courseData, true);
+  }
+  
+  async updateCourse(courseId: string, courseData: any): Promise<any> {
+    return this.request(`courses/${courseId}`, 'PUT', courseData, true);
+  }
+  
+  async deleteCourse(courseId: string): Promise<any> {
+    return this.request(`courses/${courseId}`, 'DELETE', undefined, true);
+  }
+  
   // Add booking
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
     console.log(`API: Adding booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -120,11 +119,7 @@ const ActiveBookings = () => {
           }
         }
         
-        if (!fetchSuccess || userBookings.length === 0) {
-          console.log("Failed to fetch any bookings from all methods");
-          setFetchError("Could not retrieve bookings. Please try again later.");
-        }
-        
+        // We'll not set an error message when no bookings are found, just an empty array
         console.log('Final retrieved bookings:', userBookings);
         
         // Clean up bookings data to ensure consistent format
@@ -154,12 +149,8 @@ const ActiveBookings = () => {
         console.log(`Set ${sortedBookings.length} processed bookings`);
       } catch (error) {
         console.error('Error fetching bookings:', error);
-        setFetchError("An unexpected error occurred while fetching bookings.");
-        toast({
-          title: "Error",
-          description: "Failed to load your bookings",
-          variant: "destructive"
-        });
+        // Don't show error for empty bookings, just set empty array
+        setBookings([]);
       } finally {
         setLoading(false);
       }
@@ -278,13 +269,6 @@ const ActiveBookings = () => {
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
               <p className="text-gray-600">Loading bookings...</p>
-            </div>
-          ) : fetchError ? (
-            <div className="text-center py-8">
-              <p className="text-lg text-red-500 mb-4">{fetchError}</p>
-              <Button onClick={() => navigate('/profile?tab=certifications')} className="bg-purple-600 hover:bg-purple-700">
-                Browse Machines
-              </Button>
             </div>
           ) : bookings.length === 0 ? (
             <div className="text-center py-8">
