@@ -9,10 +9,13 @@ import { bookingService } from '@/services/bookingService';
 import BookingsList from './BookingsList';
 import EmptyBookingsView from './EmptyBookingsView';
 import { Loader2 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from '@/hooks/use-toast';
 
 const BookingsCard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,6 +30,11 @@ const BookingsCard = () => {
       setBookings(userBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch your bookings. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -38,8 +46,12 @@ const BookingsCard = () => {
   }, [user]);
 
   const handleNewBooking = () => {
-    // Navigate to certifications tab instead of booking page
-    navigate('/profile?tab=certifications');
+    // Direct to machines page with certification filter
+    navigate('/machines');
+    toast({
+      title: "Select a Machine",
+      description: "Choose a machine to book from the list",
+    });
   };
 
   const handleRefresh = () => {

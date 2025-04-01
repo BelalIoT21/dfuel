@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 interface BookMachineButtonProps {
   machineId: string;
@@ -30,7 +31,25 @@ const BookMachineButton = ({
   
   const handleBooking = () => {
     console.log(`Booking machine ${machineId}, navigating to /booking/${machineId}`);
-    // Always navigate directly to the booking page
+    
+    if (!canBook) {
+      if (!isAvailable) {
+        toast({
+          title: "Machine Unavailable",
+          description: "This machine is currently unavailable for booking",
+          variant: "destructive"
+        });
+      } else if (requiresCertification && !isCertified) {
+        toast({
+          title: "Certification Required",
+          description: "You need to be certified to book this machine",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+    
+    // Navigate to the booking page
     navigate(`/booking/${machineId}`);
   };
 
