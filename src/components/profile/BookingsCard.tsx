@@ -61,31 +61,36 @@ const BookingsCard = () => {
 
   return (
     <Card className="border-purple-100">
-      <CardHeader className="flex flex-row justify-between items-center">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Calendar size={20} className="text-purple-600" />
+            <Calendar size={20} className="text-purple-600 flex-shrink-0" />
             Your Bookings
           </CardTitle>
           <CardDescription>Manage your machine bookings</CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleRefresh} 
             disabled={refreshing}
+            className="h-9 w-9 p-0 sm:w-auto sm:p-2"
           >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {refreshing ? 
+              <Loader2 className="h-4 w-4 animate-spin" /> : 
+              <RefreshCw className="h-4 w-4 sm:mr-1" />
+            }
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleNewBooking}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 ml-auto sm:ml-0 flex-grow sm:flex-grow-0"
           >
             <Plus className="h-4 w-4" />
-            New Booking
+            <span>New Booking</span>
           </Button>
         </div>
       </CardHeader>
