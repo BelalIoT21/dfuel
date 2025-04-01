@@ -1,4 +1,3 @@
-
 import { Machine } from '../../models/Machine';
 import { ensureMachineOrder } from './seedHelpers';
 
@@ -193,8 +192,6 @@ export async function seedAllMachines() {
       console.log("All non-deleted core machines (1-6) are present. No need to seed any.");
     }
     
-  
-    
     // Don't modify or overwrite any existing machines that have been edited
     console.log("Preserving all user edits to existing machines.");
     
@@ -295,7 +292,6 @@ export async function restoreDeletedMachines(permanentlyDeletedIds: string[] = [
   }
 }
 
-
 // New function to regularly backup user-created machines for restoration purposes
 export async function backupMachines() {
   try {
@@ -323,6 +319,51 @@ export async function backupMachines() {
     return backupCount;
   } catch (error) {
     console.error("Error backing up machines:", error);
+    return 0;
+  }
+}
+
+// Add the missing ensureMachineImages function that was referenced in seeds/index.ts
+export async function ensureMachineImages() {
+  try {
+    console.log('Ensuring machine images are up to date...');
+    
+    // Get all existing machines
+    const machines = await Machine.find({});
+    let updatedCount = 0;
+    
+    // Define the image URLs for core machines
+    const coreImageUrls: Record<string, string> = {
+      '1': 'http://localhost:4000/utils/images/IMG_7814.jpg', // Laser Cutter
+      '2': 'http://localhost:4000/utils/images/IMG_7773.jpg', // Ultimaker
+      '3': 'http://localhost:4000/utils/images/IMG_7768.jpg', // X1 E Carbon 3D Printer
+      '4': 'http://localhost:4000/utils/images/IMG_7769.jpg', // Bambu Lab X1 E
+      '5': 'http://localhost:4000/utils/images/IMG_7775.jpg', // Safety Cabinet
+      '6': 'http://localhost:4000/utils/images/IMG_7821.jpg', // Safety Course
+    };
+    
+    // Update each machine if needed
+    for (const machine of machines) {
+      const machineId = machine._id.toString();
+      
+      // Only update core machines (IDs 1-6)
+      if (machineId >= '1' && machineId <= '6') {
+        const expectedImageUrl = coreImageUrls[machineId];
+        
+        // Update if image URL is missing or different
+        if (!machine.imageUrl || machine.imageUrl !== expectedImageUrl) {
+          console.log(`Updating image for machine ${machineId} (${machine.name})`);
+          machine.imageUrl = expectedImageUrl;
+          await machine.save();
+          updatedCount++;
+        }
+      }
+    }
+    
+    console.log(`Updated images for ${updatedCount} machines`);
+    return updatedCount;
+  } catch (error) {
+    console.error('Error ensuring machine images:', error);
     return 0;
   }
 }
