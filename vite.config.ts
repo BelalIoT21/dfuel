@@ -20,9 +20,6 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    // Add environment variable replacement for production build
-    // This will replace import.meta.env.PROD with true in production builds
-    // and all other environment variables can be defined here
     rollupOptions: {
       output: {
         manualChunks: {
@@ -33,8 +30,9 @@ export default defineConfig(({ mode }) => ({
   },
   // Define environment variables for different modes
   define: {
+    // Load API URL from environment or default to secure placeholder
     'import.meta.env.API_URL': mode === 'production' 
-      ? JSON.stringify('https://api.your-domain.com/api')
-      : JSON.stringify('')
+      ? JSON.stringify(process.env.API_URL || '')
+      : JSON.stringify(process.env.API_URL || '')
   }
 }));

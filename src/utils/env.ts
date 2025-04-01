@@ -3,7 +3,7 @@
  * Environment variable management
  */
 
-import { isAndroid, isCapacitor, isIOS } from './platform';
+import { isCapacitor } from './platform';
 
 // Define environment types
 export type Environment = 'development' | 'production';
@@ -23,12 +23,11 @@ export const loadEnv = (): void => {
   
   // Set the default server IP to be consistent across platforms
   setEnv('CUSTOM_SERVER_IP', 'localhost');
-  console.log('Server IP set to:', getEnv('CUSTOM_SERVER_IP'));
   
   // Set API URL from environment variables if available
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:4000/api';
   setEnv('API_URL', apiUrl);
-  console.log('API URL set to:', apiUrl);
+  console.log('API configuration loaded successfully');
 };
 
 // Set environment variables with validation
@@ -43,8 +42,6 @@ export const setEnv = (key: string, value: string): void => {
     (window as any).__ENV__ = (window as any).__ENV__ || {};
     (window as any).__ENV__[key] = value;
   }
-  
-  console.log(`Environment variable set: ${key}=${value}`);
 };
 
 // Get environment variables
@@ -72,22 +69,14 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 // Get the local server IP for the device being used
 export const getLocalServerIP = (): string => {
   // Use API_URL instead of hardcoded localhost
-  return getEnv('API_URL', 'http://localhost:4000/api');
+  return getEnv('API_URL', '');
 };
 
-// Check if the app is running on a physical device vs emulator
+// Check if the app is running on a physical device vs emulator - simplified
 export const isPhysicalDevice = (): boolean => {
   // If using Capacitor, assume physical device when not in dev mode
   if (isCapacitor() && getEnvironment() === 'production') {
     return true;
-  }
-  
-  // Look for emulator indicators in user agent
-  if (typeof navigator !== 'undefined' && navigator.userAgent) {
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('android') && (ua.includes('emulator') || ua.includes('sdk_gphone'))) {
-      return false; // Likely an emulator
-    }
   }
   
   // Default to false for web environment
@@ -96,26 +85,25 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  const configuredApiUrl = getEnv('API_URL', 'http://localhost:4000/api');
+  const configuredApiUrl = getEnv('API_URL', '');
   
   return [
     configuredApiUrl,
-    `http://127.0.0.1:4000/api`, // Fallback to localhost IP
     '/api' // Relative fallback
-  ];
+  ].filter(Boolean); // Remove empty values
 };
 
-// Get API URL based on environment and platform
+// Get API URL based on environment
 export const getApiUrl = (): string => {
   const env = getEnvironment();
   
   // In a production environment, get from environment variables
   if (env === 'production') {
-    return getEnv('API_URL', 'https://api.your-domain.com/api');
+    return getEnv('API_URL', '');
   }
   
   // For development, use the API_URL from env
-  return getEnv('API_URL', 'http://localhost:4000/api');
+  return getEnv('API_URL', '');
 };
 
 // Ensure API endpoint always has correct format
@@ -125,6 +113,11 @@ export const formatApiEndpoint = (endpoint: string): string => {
   // If the endpoint already starts with http, assume it's a full URL
   if (endpoint.startsWith('http')) {
     return endpoint;
+  }
+  
+  // If no API URL is configured, use relative path
+  if (!apiUrl) {
+    return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   }
   
   // Remove leading slash from endpoint if present
