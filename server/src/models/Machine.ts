@@ -195,7 +195,12 @@ machineSchema.pre('save', async function(next) {
     next();
   } catch (error) {
     console.error('Error in machine pre-save middleware:', error);
-    next(error);
+    // Fix: Convert the unknown error to a proper mongoose error or pass undefined
+    if (error instanceof Error) {
+      next(new mongoose.Error.ValidationError(error));
+    } else {
+      next(new Error('Unknown error in pre-save middleware'));
+    }
   }
 });
 
