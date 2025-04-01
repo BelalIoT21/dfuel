@@ -74,13 +74,36 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            const certificationResult = await certificationService.checkCertification(user.id, id);
-            setIsCertified(certificationResult);
-            console.log(`User certification status for machine ${id}: ${certificationResult}`);
+            // First, try to get all user certifications
+            console.log(`Checking certifications for user ${user.id} on machine ${id}`);
+            const userCertifications = await certificationService.getUserCertifications(user.id);
+            console.log('User certifications:', userCertifications);
             
-            const safetyCertResult = await certificationService.checkCertification(user.id, '6');
-            setHasSafetyCertification(safetyCertResult);
-            console.log(`User has safety certification: ${safetyCertResult}`);
+            // Check if the current machine ID is in the user's certifications
+            const machineIdString = String(id);
+            const hasCert = userCertifications.some(cert => String(cert) === machineIdString);
+            console.log(`User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineIdString}`);
+            setIsCertified(hasCert);
+            
+            // If direct check failed, try the certification-specific endpoint as fallback
+            if (!hasCert) {
+              const certificationResult = await certificationService.checkCertification(user.id, id);
+              console.log(`Fallback certification check result: ${certificationResult}`);
+              setIsCertified(hasCert || certificationResult);
+            }
+            
+            // Check safety certification
+            const safetyIdString = '6';
+            const hasSafetyCert = userCertifications.some(cert => String(cert) === safetyIdString);
+            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
+            setHasSafetyCertification(hasSafetyCert);
+            
+            // If direct check failed, try the certification-specific endpoint
+            if (!hasSafetyCert) {
+              const safetyCertResult = await certificationService.checkCertification(user.id, '6');
+              console.log(`Fallback safety certification check result: ${safetyCertResult}`);
+              setHasSafetyCertification(hasSafetyCert || safetyCertResult);
+            }
           } catch (certError) {
             console.error('Error checking certification:', certError);
           }
@@ -213,9 +236,9 @@ const MachineDetail = () => {
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
   console.log("MachineDetail - displaying image:", machineImageUrl);
-  
   console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
+  console.log("User certification status:", isCertified);
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -314,12 +337,15 @@ const MachineDetail = () => {
               </Button>
             )}
             
-            <BookMachineButton 
-              machineId={id || ''}
-              isCertified={isCertified || !requiresCertification}
-              machineStatus={machineStatus}
-              className="flex-1"
-            />
+            {/* Don't render booking button for special machines */}
+            {id !== '5' && id !== '6' && (
+              <BookMachineButton 
+                machineId={id || ''}
+                isCertified={isCertified || !requiresCertification}
+                machineStatus={machineStatus}
+                className="flex-1"
+              />
+            )}
           </div>
         </CardContent>
       </Card>

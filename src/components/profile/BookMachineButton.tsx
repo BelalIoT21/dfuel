@@ -27,6 +27,14 @@ const BookMachineButton = ({
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Special machine IDs that should not be bookable
+  const NON_BOOKABLE_MACHINE_IDS = ['5', '6']; // Safety Cabinet and Safety Course
+  
+  // If this is a non-bookable machine ID, don't render the button
+  if (NON_BOOKABLE_MACHINE_IDS.includes(machineId)) {
+    return null;
+  }
+
   const isAvailable = machineStatus?.toLowerCase() === 'available';
   // If certification is not required, consider the user as certified
   const effectiveCertification = requiresCertification ? isCertified : true;
