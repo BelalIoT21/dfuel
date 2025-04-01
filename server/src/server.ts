@@ -1,100 +1,62 @@
 
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
-import morgan from 'morgan';
 import helmet from 'helmet';
+import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './config/db';
-import { notFound, errorHandler } from './middleware/errorMiddleware';
+import { errorHandler } from './middleware/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
-import machineRoutes from './routes/machineRoutes';
-import adminRoutes from './routes/adminRoutes';
-import healthRoutes from './routes/healthRoutes';
 import bookingRoutes from './routes/bookingRoutes';
-import certificationRoutes from './routes/certificationRoutes';
+import machineRoutes from './routes/machineRoutes';
 import courseRoutes from './routes/courseRoutes';
 import quizRoutes from './routes/quizRoutes';
-import { SeedService } from './utils/seed';
-import { createAdminUser } from './controllers/admin/adminController';
-
-dotenv.config();
+import certificationRoutes from './routes/certificationRoutes';
+import adminRoutes from './routes/adminRoutes';
+import healthRoutes from './routes/healthRoutes';
 
 // Connect to MongoDB
 connectDB();
 
 const app = express();
 
-// Serve the images folder for machine images
-// First, make the utils/images directory available publicly
-const imagesPath = path.join(__dirname, './utils/images');
-app.use('/utils/images', express.static(imagesPath));
-
-// Also serve it at an alternative URL for better client compatibility
-app.use('/api/utils/images', express.static(imagesPath));
-
-// Set up higher limits for request payload size
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Enable middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(morgan('dev'));
 
-// Development logging
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
+// Serve static files from the server/src/public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: false
-}));
-
-// CORS setup
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // Allow any origin for development
-    callback(null, true);
-  },
-  credentials: true
-}));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/machines', machineRoutes);
-app.use('/api/admin', adminRoutes);
+// API Routes
 app.use('/api/health', healthRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/certifications', certificationRoutes);
-app.use('/api/courses', courseRoutes);
-app.use('/api/quizzes', quizRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/machine', machineRoutes);
+app.use('/api/course', courseRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/cert', certificationRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Handle 404s for API routes
+app.use('/api/*', (req, res) => {
+  console.log(`API 404: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ message: 'API endpoint not found' });
+});
 
 // Error handling middleware
-app.use(notFound);
 app.use(errorHandler);
 
-// Create admin user independently to ensure it's done regardless of seed process
-console.log('Ensuring admin user exists...');
-createAdminUser()
-  .then(() => {
-    // Seed the database
-    return SeedService.seedDatabase();
-  })
-  .then(() => {
-    console.log('Database seeding complete');
-  })
-  .catch((error) => {
-    console.error('Error in startup process:', error);
-  });
-
-const PORT = process.env.PORT || 5000;
-
+// Start the server
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+export default app;

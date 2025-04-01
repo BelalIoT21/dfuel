@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { formatApiEndpoint } from '@/utils/env';
 
@@ -111,7 +110,7 @@ class ApiService {
 
   // Authentication endpoints
   async login(email: string, password: string): Promise<ApiResponse> {
-    console.log("Sending login request to API endpoint: auth/login");
+    console.log("Sending login request to API endpoint: /auth/login");
     return this.request({
       url: '/auth/login',
       method: 'POST',
