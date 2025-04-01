@@ -1,7 +1,6 @@
-
 import { apiService } from './apiService';
 import { machineService } from './machineService';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import mongoDbService from './mongoDbService';
 
 class BookingService {
@@ -75,11 +74,53 @@ class BookingService {
     return processedBookings;
   }
   
+  async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
+    try {
+      // First check with MongoDB service
+      const isAvailable = await mongoDbService.isTimeSlotAvailable(machineId, date, time);
+      if (!isAvailable) {
+        console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
+        return false;
+      }
+      
+      // If MongoDB says it's available, double-check with API
+      try {
+        const response = await apiService.request(`machines/${machineId}/availability`, 'GET', {
+          date,
+          time
+        });
+        
+        if (response.data && response.data.available === false) {
+          console.log(`API reports time slot ${date} at ${time} for machine ${machineId} is not available`);
+          return false;
+        }
+      } catch (apiError) {
+        console.log('API availability check failed, relying on MongoDB result');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking time slot availability:', error);
+      return false; // Default to unavailable on error
+    }
+  }
+  
   async createBooking(userId: string, machineId: string, date: string, time: string) {
     try {
       console.log(`Creating booking for user ${userId}, machine ${machineId}, date ${date}, time ${time}`);
       
-      // First try direct MongoDB connection
+      // First check if the time slot is available
+      const isAvailable = await this.isTimeSlotAvailable(machineId, date, time);
+      if (!isAvailable) {
+        console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       try {
         console.log("Attempting to create booking via MongoDB direct connection");
         const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);

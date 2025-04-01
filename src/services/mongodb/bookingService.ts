@@ -77,6 +77,40 @@ class MongoBookingService {
     }
   }
   
+  async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
+    await this.initCollections();
+    if (!this.bookingsCollection) {
+      console.error("Bookings collection not initialized");
+      return false;
+    }
+    
+    try {
+      // Create date range for the whole day
+      const bookingDate = new Date(date);
+      const startOfDay = new Date(bookingDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(bookingDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      // Check for existing approved or pending bookings
+      const existingBooking = await this.bookingsCollection.findOne({
+        machine: machineId,
+        date: {
+          $gte: startOfDay,
+          $lt: endOfDay
+        },
+        time: time,
+        status: { $in: ['Pending', 'Approved'] }
+      });
+      
+      return !existingBooking;
+    } catch (error) {
+      console.error("Error checking time slot availability in MongoDB:", error);
+      return false;
+    }
+  }
+  
   async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     await this.initCollections();
     if (!this.bookingsCollection || !this.usersCollection || !this.machinesCollection) {
@@ -323,93 +357,112 @@ class MongoBookingService {
       console.log(`MongoDB: Updating booking ${bookingId} status to ${status}`);
       let result;
       let bookingFound = false;
-      
+      let bookingData = null;
+    
       // First try using MongoDB ObjectId
       if (mongoose.Types.ObjectId.isValid(bookingId)) {
         console.log(`Updating booking with ObjectId: ${bookingId}`);
-        
+      
         // First check if the booking exists
         const booking = await this.bookingsCollection.findOne({ 
           _id: new mongoose.Types.ObjectId(bookingId) 
         });
-        
+      
         if (booking) {
           bookingFound = true;
+          bookingData = booking;
           console.log(`Found booking with ObjectId, current status: ${booking.status}`);
-          
+        
           // If the booking already has the target status, return success without updating
           if (booking.status === status) {
             console.log(`Booking ${bookingId} already has status ${status}`);
             return true;
           }
-          
+        
           result = await this.bookingsCollection.updateOne(
             { _id: new mongoose.Types.ObjectId(bookingId) },
             { $set: { status, updatedAt: new Date() } }
           );
         }
       }
-      
+    
       // If not found with ObjectId, try with clientId
       if (!bookingFound) {
         console.log(`Booking not found with ObjectId, trying clientId: ${bookingId}`);
-        
+      
         // Check if the booking exists with clientId
         const booking = await this.bookingsCollection.findOne({ 
           clientId: bookingId 
         });
-        
+      
         if (booking) {
           bookingFound = true;
+          bookingData = booking;
           console.log(`Found booking with clientId, current status: ${booking.status}`);
-          
+        
           // If the booking already has the target status, return success without updating
           if (booking.status === status) {
             console.log(`Booking ${bookingId} already has status ${status}`);
             return true;
           }
-          
+        
           result = await this.bookingsCollection.updateOne(
             { clientId: bookingId },
             { $set: { status, updatedAt: new Date() } }
           );
         }
       }
-      
+    
       // If still not found, try one more time with string ID
       if (!bookingFound) {
         console.log(`Booking not found with ObjectId or clientId, trying string ID: ${bookingId}`);
-        
+      
         // Check if any booking has an id field matching the bookingId
         const booking = await this.bookingsCollection.findOne({ 
           id: bookingId 
         });
-        
+      
         if (booking) {
           bookingFound = true;
+          bookingData = booking;
           console.log(`Found booking with id field, current status: ${booking.status}`);
-          
+        
           // If the booking already has the target status, return success without updating
           if (booking.status === status) {
             console.log(`Booking ${bookingId} already has status ${status}`);
             return true;
           }
-          
+        
           result = await this.bookingsCollection.updateOne(
             { id: bookingId },
             { $set: { status, updatedAt: new Date() } }
           );
         }
       }
+    
+      // Update machine time slots if status is changing to or from Approved
+      if (bookingFound && bookingData) {
+        const machineId = bookingData.machine;
+        const date = bookingData.date;
+        const time = bookingData.time;
       
+        if (status === 'Approved') {
+          // Add the time slot to the machine's booked slots
+          await this.updateMachineTimeSlots(machineId, new Date(date).toISOString(), time, true);
+        } else if (bookingData.status === 'Approved' && status !== 'Approved') {
+          // Remove the time slot from the machine's booked slots if unapproving
+          await this.updateMachineTimeSlots(machineId, new Date(date).toISOString(), time, false);
+        }
+      }
+    
       // Log detailed results and check success
       console.log(`MongoDB update result:`, result);
-      
+    
       if (!bookingFound) {
         console.log(`❌ No booking found with any ID format: ${bookingId}`);
         return false;
       }
-      
+    
       // Check if document was actually modified and make sure result exists
       if (result && result.modifiedCount > 0) {
         console.log(`✅ Booking ${bookingId} status updated to ${status}`);
@@ -425,16 +478,57 @@ class MongoBookingService {
         const updatedBooking = bookingFound && mongoose.Types.ObjectId.isValid(bookingId) 
           ? await this.bookingsCollection.findOne({ _id: new mongoose.Types.ObjectId(bookingId) })
           : await this.bookingsCollection.findOne({ clientId: bookingId });
-        
+      
         if (updatedBooking && updatedBooking.status === status) {
           console.log(`✅ Confirmed booking now has status ${status}`);
           return true;
         }
-        
+      
         return false;
       }
     } catch (error) {
       console.error(`Error updating booking ${bookingId} status in MongoDB:`, error);
+      return false;
+    }
+  }
+  
+  async updateMachineTimeSlots(machineId: string, date: string, time: string, addSlot: boolean = true): Promise<boolean> {
+    await this.initCollections();
+    if (!this.machinesCollection) {
+      console.error("Machines collection not initialized");
+      return false;
+    }
+    
+    try {
+      const timeSlotKey = `${date.substring(0, 10)}-${time}`;
+      let machineIdToUse = machineId;
+      
+      // Convert to ObjectId if valid
+      if (mongoose.Types.ObjectId.isValid(machineId)) {
+        machineIdToUse = new mongoose.Types.ObjectId(machineId);
+      }
+      
+      if (addSlot) {
+        // Add the time slot to the machine's booked slots
+        const result = await this.machinesCollection.updateOne(
+          { _id: machineIdToUse },
+          { $addToSet: { bookedTimeSlots: timeSlotKey } }
+        );
+        
+        console.log(`Added time slot ${timeSlotKey} to machine ${machineId}, result:`, result);
+        return result.modifiedCount > 0 || result.matchedCount > 0;
+      } else {
+        // Remove the time slot from the machine's booked slots
+        const result = await this.machinesCollection.updateOne(
+          { _id: machineIdToUse },
+          { $pull: { bookedTimeSlots: timeSlotKey } }
+        );
+        
+        console.log(`Removed time slot ${timeSlotKey} from machine ${machineId}, result:`, result);
+        return result.modifiedCount > 0 || result.matchedCount > 0;
+      }
+    } catch (error) {
+      console.error(`Error updating machine time slots for ${machineId}:`, error);
       return false;
     }
   }

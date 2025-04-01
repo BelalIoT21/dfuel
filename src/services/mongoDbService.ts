@@ -34,6 +34,24 @@ class MongoDbService {
     }
   }
 
+  async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
+    try {
+      // Check if the machine has any approved bookings for this time slot
+      const bookings = await this.getAllBookings();
+      const timeSlotBooked = bookings.some(booking => 
+        booking.machineId === machineId && 
+        booking.date.substring(0, 10) === date.substring(0, 10) && 
+        booking.time === time && 
+        (booking.status === 'Approved' || booking.status === 'Pending')
+      );
+      
+      return !timeSlotBooked;
+    } catch (error) {
+      console.error('Error checking time slot availability:', error);
+      return false; // Default to unavailable on error
+    }
+  }
+
   async getAllUsers() {
     try {
       return await mongoUserService.getAllUsers();
