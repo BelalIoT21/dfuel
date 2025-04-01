@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Check } from "lucide-react";
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 interface RegisterFormProps {
   onRegister: (email: string, password: string, name: string) => Promise<void>;
@@ -29,6 +30,7 @@ const itemAnimation = {
 };
 
 export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) => {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -87,7 +89,15 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       console.log("Attempting registration with:", { email, password, name });
       await onRegister(email, password, name);
       console.log("Registration successful");
+      
       setRegistrationSuccess(true);
+      
+      // Show success toast
+      toast({
+        title: "Registration successful!",
+        description: "Your account has been created. Redirecting to login...",
+        variant: "default"
+      });
       
       // Clear form after successful registration
       setEmail('');
@@ -97,11 +107,18 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       // Redirect to login after a short delay
       setTimeout(() => {
         onToggleMode();
-      }, 1500);
+      }, 2000);
       
     } catch (error) {
       console.error("Authentication error:", error);
       setFormError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
+      
+      // Show error toast
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : 'Please try again with different information.',
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -125,7 +142,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         
         {registrationSuccess && (
           <Alert className="mb-4 bg-green-50 border-green-200">
-            <AlertCircle className="h-4 w-4 text-green-500" />
+            <Check className="h-4 w-4 text-green-500" />
             <AlertDescription className="text-green-700">
               Registration successful! Redirecting to login...
             </AlertDescription>

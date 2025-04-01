@@ -26,40 +26,102 @@ export const registerUser = async (req: Request, res: Response) => {
     // Set a default name if none is provided
     const userName = name || 'User'; // Default name is "User"
 
-    // Get the next _id with improved error handling
-    const nextId = await getNextUserId();
-    console.log(`Generated next user ID: ${nextId}`);
+    // Get the next _id with improved error handling and retry logic
+    let nextId;
+    try {
+      nextId = await getNextUserId();
+      console.log(`Generated next user ID: ${nextId}`);
+    } catch (idError) {
+      console.error('Error generating user ID:', idError);
+      // Use timestamp-based ID as fallback
+      nextId = Math.floor(Date.now() / 1000);
+      console.log(`Using timestamp-based fallback ID: ${nextId}`);
+    }
 
     // Create user with explicitly empty certifications array
-    const user = await User.create({
-      _id: nextId, // Assign the next _id
-      name: userName, // Use the provided name or default "User"
-      email,
-      password,
-      certifications: [], // Explicitly set empty certifications array
-    });
-
-    if (user) {
-      // Generate a token for the new user
-      const token = generateToken(user._id.toString());
-      
-      res.status(201).json({
-        data: {
-          user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            certifications: user.certifications || [], // Ensure we return certifications
-            bookings: user.bookings || [], // Include bookings if available
-            updatedAt: user.updatedAt, // Include timestamps
-            createdAt: user.createdAt
-          },
-          token
-        },
+    try {
+      const user = await User.create({
+        _id: nextId,
+        name: userName,
+        email,
+        password,
+        certifications: [], // Explicitly set empty certifications array
       });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
+
+      if (user) {
+        // Generate a token for the new user
+        const token = generateToken(user._id.toString());
+        
+        res.status(201).json({
+          data: {
+            user: {
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              isAdmin: user.isAdmin,
+              certifications: user.certifications || [], // Ensure we return certifications
+              bookings: user.bookings || [], // Include bookings if available
+              updatedAt: user.updatedAt, // Include timestamps
+              createdAt: user.createdAt
+            },
+            token
+          },
+        });
+      } else {
+        res.status(400).json({ message: 'Invalid user data' });
+      }
+    } catch (createError) {
+      console.error('Error creating user:', createError);
+      
+      // Specific handling for duplicate key errors
+      if (createError.code === 11000) {
+        // Get a new ID with a retry mechanism
+        try {
+          const retryId = await getRetryUserId();
+          console.log(`Retrying with new user ID: ${retryId}`);
+          
+          const user = await User.create({
+            _id: retryId,
+            name: userName,
+            email,
+            password,
+            certifications: [],
+          });
+          
+          if (user) {
+            // Generate a token for the new user
+            const token = generateToken(user._id.toString());
+            
+            res.status(201).json({
+              data: {
+                user: {
+                  _id: user._id,
+                  name: user.name,
+                  email: user.email,
+                  isAdmin: user.isAdmin,
+                  certifications: user.certifications || [],
+                  bookings: user.bookings || [],
+                  updatedAt: user.updatedAt,
+                  createdAt: user.createdAt
+                },
+                token
+              },
+            });
+            return;
+          }
+        } catch (retryError) {
+          console.error('Error in retry attempt:', retryError);
+          return res.status(500).json({ 
+            message: 'Failed to create user account. Please try again.',
+            error: 'Database error during registration retry'
+          });
+        }
+      }
+      
+      res.status(500).json({ 
+        message: 'Failed to create user account', 
+        error: createError instanceof Error ? createError.message : 'Unknown error' 
+      });
     }
   } catch (error) {
     console.error('Error in registerUser:', error);
@@ -94,5 +156,30 @@ async function getNextUserId(): Promise<number> {
     const randomId = Math.floor(1000 + Math.random() * 9000);
     console.log(`Error in ID generation, using random ID: ${randomId}`);
     return randomId;
+  }
+}
+
+// Alternative ID generation for retry attempts
+async function getRetryUserId(): Promise<number> {
+  try {
+    // Get all existing IDs
+    const users = await User.find({}, '_id');
+    const existingIds = users.map(user => Number(user._id));
+    
+    // Get the highest ID
+    const highestId = Math.max(...existingIds, 0);
+    
+    // Generate a retry ID that's higher than any existing ID
+    const retryId = highestId + 1000 + Math.floor(Math.random() * 1000);
+    console.log(`Generated retry ID: ${retryId} (highest existing ID was ${highestId})`);
+    
+    return retryId;
+  } catch (error) {
+    console.error('Error generating retry user ID:', error);
+    
+    // Generate a timestamp-based ID as a last resort
+    const timestampId = Math.floor(Date.now() / 1000);
+    console.log(`Using timestamp-based ID for retry: ${timestampId}`);
+    return timestampId;
   }
 }

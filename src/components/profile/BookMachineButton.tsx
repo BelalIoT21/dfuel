@@ -58,14 +58,28 @@ const BookMachineButton = ({
       description: `Navigating to booking page for machine ${machineId}`,
     });
     
-    // Navigate to the booking page - ensure we have a clean URL
-    const bookingUrl = `/booking/${machineId}`;
-    console.log(`Navigating to booking URL: ${bookingUrl}`);
+    console.log(`Attempting to navigate to booking URL for machine ${machineId}`);
     
-    // Use a timeout to ensure UI updates before navigation
-    setTimeout(() => {
-      navigate(bookingUrl);
-    }, 100);
+    try {
+      // Ensure we're using the correct path format
+      const bookingPath = `/booking/${machineId}`;
+      console.log(`Navigating to: ${bookingPath}`);
+      
+      // Force a hard navigation to the booking page
+      window.location.href = bookingPath;
+    } catch (error) {
+      console.error("Navigation error:", error);
+      
+      // Fallback to React Router navigation
+      navigate(`/booking/${machineId}`);
+      
+      // Show error toast if navigation fails
+      toast({
+        title: "Navigation Error",
+        description: "There was a problem navigating to the booking page. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   let buttonText = "Book Now";
