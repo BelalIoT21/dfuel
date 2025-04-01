@@ -205,7 +205,8 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
-      navigate('/home');
+      // Redirect admin users to the admin dashboard and regular users to the home page
+      navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoading]);
 
