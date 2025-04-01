@@ -193,13 +193,11 @@ const Index = () => {
       }
     };
     
-    // Initial check after a short delay
     setTimeout(() => {
       checkServer();
     }, 1000);
     
-    // Reduce polling frequency to once every 2 minutes instead of 45 seconds
-    const intervalId = setInterval(checkServer, 120000);
+    const intervalId = setInterval(checkServer, 45000);
     
     return () => clearInterval(intervalId);
   }, [serverStatus]);

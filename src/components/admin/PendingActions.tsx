@@ -1,7 +1,9 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
+import { bookingService } from '@/services/bookingService';
 import { Loader2, RefreshCw } from 'lucide-react';
+import mongoDbService from '@/services/mongoDbService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
@@ -11,95 +13,89 @@ export const PendingActions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
-  const lastFetchedRef = useRef(0);
-  const isFetchingRef = useRef(false);
-  const timeoutRef = useRef(null);
   
   const fetchPendingBookings = useCallback(async () => {
-    // Return early if we're already refreshing to prevent duplicate calls
-    if (isFetchingRef.current) return;
-    
-    // Only fetch if it's been more than 180 seconds since the last fetch (increased from 120s)
-    const now = Date.now();
-    if (now - lastFetchedRef.current < 180000 && lastFetchedRef.current > 0) {
-      console.log("PendingActions: Skipping fetch, last fetched less than 180 seconds ago");
-      return;
-    }
-    
     try {
       setIsLoading(true);
-      setIsRefreshing(true);
-      isFetchingRef.current = true;
-      lastFetchedRef.current = now;
-      
       console.log("Fetching pending bookings...");
       
-      const response = await apiService.request({
-        method: 'GET',
-        url: 'bookings/all'
-      });
-      
-      if (response?.data && Array.isArray(response.data)) {
-        // Filter to only show pending bookings
-        const pendingOnly = response.data.filter(booking => 
-          booking.status === 'Pending' || booking.status === 'pending'
-        );
-        console.log(`Found ${pendingOnly.length} pending bookings from API`);
-        setPendingBookings(pendingOnly);
-      } else {
-        console.log("No bookings found or invalid response");
-        setPendingBookings([]);
+      // Try direct API fetch first
+      try {
+        console.log("Fetching bookings directly from API");
+        const response = await apiService.request('bookings/all', 'GET');
+        console.log("API response for bookings:", response);
+        if (response?.data && Array.isArray(response.data)) {
+          console.log(`Found ${response.data.length} bookings via API`);
+          // Filter to only show pending bookings
+          const pendingOnly = response.data.filter(booking => 
+            booking.status === 'Pending' || booking.status === 'pending'
+          );
+          console.log(`Found ${pendingOnly.length} pending bookings from API`);
+          setPendingBookings(pendingOnly);
+          setIsLoading(false);
+          setIsRefreshing(false);
+          return;
+        }
+      } catch (apiError) {
+        console.error("API booking fetch error:", apiError);
       }
+      
+      // Try MongoDB as fallback
+      let allBookings = [];
+      try {
+        console.log("Fetching bookings from MongoDB");
+        allBookings = await mongoDbService.getAllBookings();
+        console.log(`Found ${allBookings.length} bookings in MongoDB`);
+      } catch (mongoError) {
+        console.error("MongoDB booking fetch error:", mongoError);
+      }
+      
+      // If MongoDB fails or returns empty, use the service
+      if (!allBookings || allBookings.length === 0) {
+        console.log("Falling back to bookingService");
+        allBookings = await bookingService.getAllBookings();
+        console.log(`Found ${allBookings.length} total bookings via bookingService`);
+      }
+      
+      console.log("All bookings before filtering:", JSON.stringify(allBookings));
+      
+      // Filter to only show pending bookings
+      const pendingOnly = Array.isArray(allBookings) ? allBookings.filter(booking => 
+        booking.status === 'Pending' || booking.status === 'pending'
+      ) : [];
+      console.log(`Found ${pendingOnly.length} pending bookings:`, JSON.stringify(pendingOnly));
+      
+      setPendingBookings(pendingOnly);
     } catch (error) {
       console.error('Error fetching pending bookings:', error);
       setPendingBookings([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
-      isFetchingRef.current = false;
     }
   }, []);
   
   useEffect(() => {
-    // Initial fetch
     fetchPendingBookings();
     
-    // Set up polling with a higher interval to reduce server calls
+    // Set up polling to refresh pending bookings every 10 seconds
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 180000); // 3 minutes
+    }, 10000);
     
-    return () => {
-      clearInterval(intervalId);
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
+    return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
 
   // Handle booking status change to completely refresh the list
-  const handleBookingStatusChange = useCallback(() => {
+  const handleBookingStatusChange = useCallback(async () => {
     console.log("Booking status changed, refreshing list");
-    
-    // Use a timeout to avoid immediate refresh and allow server state to update
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      // Force immediate refresh of the bookings list by resetting lastFetchedRef
-      lastFetchedRef.current = 0;
-      fetchPendingBookings();
-    }, 1000); // 1 second delay
+    // Force immediate refresh of the bookings list
+    await fetchPendingBookings();
   }, [fetchPendingBookings]);
 
   const handleManualRefresh = () => {
-    if (isRefreshing) return; // Prevent multiple clicks
-    
-    // Reset the last fetched time to force a refresh
-    lastFetchedRef.current = 0;
-    
+    setIsRefreshing(true);
     fetchPendingBookings();
     toast({
       title: "Refreshing Bookings",
