@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { courseService } from '@/services/courseService';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from './BookMachineButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
@@ -26,6 +26,7 @@ const CertificationsCard = () => {
   const [machineStatuses, setMachineStatuses] = useState({});
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
+  const isMobile = useIsMobile();
   
   // Track safety certifications specifically
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
@@ -226,11 +227,19 @@ const CertificationsCard = () => {
           </div>
           <Button 
             variant="outline" 
-            size="icon" 
+            size={isMobile ? "icon" : "sm"}
             onClick={handleRefresh} 
             disabled={refreshing}
+            className={isMobile ? "h-9 w-9 p-0" : ""}
           >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <RefreshCw className={`h-4 w-4 ${isMobile ? "" : "mr-2"}`} />
+                {!isMobile && <span>Refresh</span>}
+              </>
+            )}
           </Button>
         </div>
       </CardHeader>
