@@ -1,9 +1,9 @@
-
 import { Request, Response } from 'express';
 import User from '../models/User';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
 // @desc    Get current user profile
 // @route   GET /api/users/me
@@ -242,38 +242,49 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     console.log(`Attempting to delete user with ID: ${req.params.id}`);
     
+    // Validate the id parameter
+    if (!req.params.id) {
+      console.log('No user ID provided for deletion');
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
     let user;
-    try {
-      // Try finding user by MongoDB ObjectId
+    
+    // If ID might be a valid MongoDB ObjectId, try that first
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      console.log(`${req.params.id} appears to be a valid ObjectId, trying findById`);
       user = await User.findById(req.params.id);
-      console.log(`findById result: ${user ? 'User found' : 'User not found'}`);
-    } catch (err) {
-      console.log(`Error using findById: ${err instanceof Error ? err.message : 'Unknown error'}, trying alternative methods`);
+    } else {
+      console.log(`${req.params.id} is not a valid ObjectId, skipping findById`);
+    }
+    
+    // If user not found by ObjectId, try other fields
+    if (!user) {
+      console.log('User not found by ObjectId, trying alternative lookup methods');
       
-      // Try finding by id as a string field
-      user = await User.findOne({ id: req.params.id });
-      console.log(`findOne by id field: ${user ? 'User found' : 'User not found'}`);
+      // Try by string ID
+      user = await User.findOne({ _id: req.params.id });
       
-      if (!user) {
-        // Try finding with a numeric conversion as last resort
-        if (!isNaN(Number(req.params.id))) {
-          user = await User.findOne({ id: Number(req.params.id) });
-          console.log(`findOne with numeric id: ${user ? 'User found' : 'User not found'}`);
-        }
+      // Try by numeric ID 
+      if (!user && !isNaN(Number(req.params.id))) {
+        console.log(`Trying numeric ID: ${Number(req.params.id)}`);
+        user = await User.findOne({ _id: Number(req.params.id) });
       }
     }
     
+    // Final check if user was found
     if (!user) {
-      console.log(`User with ID ${req.params.id} not found for deletion`);
+      console.log(`User with ID ${req.params.id} not found for deletion after all lookup attempts`);
       return res.status(404).json({ message: 'User not found' });
     }
     
-    console.log(`Found user to delete: ${user.name} (${user._id})`);
+    console.log(`Found user to delete: ${user.name || 'unnamed'} (${user._id})`);
+    
     // Delete the user
     await user.deleteOne();
     
     console.log(`User ${req.params.id} deleted successfully`);
-    res.json({ message: 'User removed successfully' });
+    res.status(200).json({ message: 'User removed successfully' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
     res.status(500).json({ 

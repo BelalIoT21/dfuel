@@ -65,7 +65,7 @@ class MongoDbService {
     try {
       console.log(`MongoDbService: Attempting to delete user ${userId}`);
       
-      // Make simplified API call with proper empty body
+      // Make API call to delete the user
       try {
         console.log(`Attempting API deletion for user ${userId}`);
         const token = localStorage.getItem('token');
@@ -73,31 +73,26 @@ class MongoDbService {
           apiService.setToken(token);
         }
         
-        // Ensure endpoint starts with a slash
-        const endpoint = `/users/${userId}`;
-        console.log(`Using endpoint: ${endpoint}`);
-        
-        const response = await apiService.request(endpoint, 'DELETE', {}, true);
+        // Use direct endpoint without leading slash and with proper content type
+        const response = await apiService.request(`users/${userId}`, 'DELETE', null, true);
         console.log(`API deletion response:`, response);
         
         if (response && response.status >= 200 && response.status < 300) {
           console.log(`User ${userId} deleted successfully via API`);
           return true;
+        } else {
+          console.log(`API deletion failed with status ${response?.status}`);
         }
       } catch (apiError) {
         console.error('API error deleting user:', apiError);
       }
       
       // Fall back to MongoDB service if API fails
-      try {
-        console.log(`Falling back to MongoDB userService for deletion`);
-        const mongoResult = await mongoUserService.deleteUser(userId);
-        if (mongoResult) {
-          console.log(`User ${userId} deleted successfully via MongoDB service`);
-          return true;
-        }
-      } catch (mongoError) {
-        console.error('MongoDB error deleting user:', mongoError);
+      console.log(`Falling back to MongoDB userService for deletion`);
+      const mongoResult = await mongoUserService.deleteUser(userId);
+      if (mongoResult) {
+        console.log(`User ${userId} deleted successfully via MongoDB service`);
+        return true;
       }
       
       console.log(`Failed to delete user ${userId} through all methods`);

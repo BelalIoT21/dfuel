@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -55,13 +54,16 @@ class ApiService {
         console.log("Auth required but no token available");
       }
       
+      // Ensure endpoint doesn't start with a slash
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      
       // Log the request for debugging
-      console.log(`API request to: ${this.api.defaults.baseURL}${endpoint} (method: ${method})`);
+      console.log(`API request to: ${this.api.defaults.baseURL}${cleanEndpoint} (method: ${method})`);
       if (this.token) {
         console.log(`Using token for authorization: token-present`);
       }
       
-      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}${endpoint} `);
+      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}${cleanEndpoint} `);
       console.log(`Request headers:`, this.api.defaults.headers);
       if (data) {
         console.log(`Request data:`, data);
@@ -72,20 +74,22 @@ class ApiService {
       
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await this.api.get(endpoint);
+          response = await this.api.get(cleanEndpoint);
           break;
         case 'POST':
-          response = await this.api.post(endpoint, data || {});
+          response = await this.api.post(cleanEndpoint, data || {});
           break;
         case 'PUT':
-          response = await this.api.put(endpoint, data || {});
+          response = await this.api.put(cleanEndpoint, data || {});
           break;
         case 'DELETE':
-          // For DELETE requests, use different approach depending on whether data is provided
-          if (data) {
-            response = await this.api.delete(endpoint, { data });
+          // For DELETE requests, handle null data specially to avoid JSON parsing errors
+          if (data === null) {
+            response = await this.api.delete(cleanEndpoint);
+          } else if (data) {
+            response = await this.api.delete(cleanEndpoint, { data });
           } else {
-            response = await this.api.delete(endpoint);
+            response = await this.api.delete(cleanEndpoint);
           }
           break;
         default:
@@ -93,7 +97,7 @@ class ApiService {
       }
       
       // Log the response
-      console.log(`Response from ${this.api.defaults.baseURL}${endpoint}:`, {
+      console.log(`Response from ${this.api.defaults.baseURL}${cleanEndpoint}:`, {
         status: response.status,
         statusText: response.statusText,
         headers: response.headers
