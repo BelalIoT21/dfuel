@@ -10,7 +10,7 @@ import { bookingService } from '@/services/bookingService';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const timeSlots = [
@@ -31,6 +31,7 @@ const BookingPage = () => {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>(timeSlots);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -140,11 +141,13 @@ const BookingPage = () => {
     try {
       setSubmitting(true);
       setError(null);
+      setBookingError(null);
       
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       
       const dateTimeSlot = `${formattedDate}-${selectedTime}`;
       if (bookedSlots.includes(dateTimeSlot)) {
+        setBookingError('This time slot has already been booked. Please select another time.');
         toast({
           title: 'Time Slot Unavailable',
           description: 'This time slot has already been booked. Please select another time.',
@@ -171,6 +174,7 @@ const BookingPage = () => {
       
       if (result.success) {
         setBookingSuccess(true);
+        setBookingError(null);
         toast({
           title: 'Booking Submitted',
           description: `Your booking request for ${machine.name} on ${format(selectedDate, 'MMMM d, yyyy')} at ${selectedTime} has been submitted and is pending approval.`,
@@ -178,9 +182,13 @@ const BookingPage = () => {
         setTimeout(() => {
           navigate('/profile');
         }, 3000);
-      } else if (result.message && result.message.toLowerCase().includes('time slot')) {
+      } else if (result.message) {
+        setBookingError(result.message);
+        
         // If it's a time slot issue, refresh availability data
-        refreshAvailabilityData();
+        if (result.message.toLowerCase().includes('time slot')) {
+          refreshAvailabilityData();
+        }
       }
     } catch (err) {
       console.error('Error booking machine:', err);
@@ -188,6 +196,7 @@ const BookingPage = () => {
       
       // Show error toast with specific message if we can extract it
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setBookingError(errorMessage);
       
       if (errorMessage.toLowerCase().includes('time slot') || 
           errorMessage.toLowerCase().includes('already booked')) {
@@ -305,7 +314,7 @@ const BookingPage = () => {
   if (bookingSuccess) {
     return (
       <div className="container mx-auto max-w-3xl p-4 py-8">
-        <Alert className="bg-green-50 border-green-200 text-green-800 mb-4">
+        <Alert className="bg-green-50 border-green-200 text-green-800 mb-4" variant="success">
           <AlertTitle>Booking Submitted Successfully</AlertTitle>
           <AlertDescription>
             Your booking request for {machine.name} on {format(selectedDate!, 'MMMM d, yyyy')} at {selectedTime} has been submitted.
@@ -329,6 +338,14 @@ const BookingPage = () => {
         <ChevronLeft className="h-4 w-4" />
         Back
       </Button>
+      
+      {bookingError && (
+        <Alert className="mb-4 border-orange-200 bg-orange-50" variant="warning">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertTitle>Booking Error</AlertTitle>
+          <AlertDescription>{bookingError}</AlertDescription>
+        </Alert>
+      )}
       
       {user ? (
         <Card className="shadow-lg border-purple-100">

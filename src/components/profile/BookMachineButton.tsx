@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,15 +77,18 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
+  let buttonIcon = Calendar;
+  
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
+    buttonIcon = CalendarX;
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
+    buttonIcon = AlertTriangle;
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
+    buttonIcon = AlertTriangle;
   }
-
-  const ButtonIcon = timeSlotUnavailable ? CalendarX : Calendar;
 
   return (
     <Button 
@@ -95,7 +98,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <ButtonIcon className="mr-2 h-4 w-4" />
+      <buttonIcon className="mr-2 h-4 w-4" />
       {buttonText}
     </Button>
   );

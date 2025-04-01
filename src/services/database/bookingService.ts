@@ -1,7 +1,6 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import mongoDbService from '../mongoDbService';
 
 /**
@@ -15,19 +14,42 @@ export class BookingDatabaseService extends BaseService {
         return true;
       }
       
-      toast({
-        title: "Error",
-        description: response.error || "Failed to add booking",
-        variant: "destructive"
-      });
+      if (response.error && (
+        response.error.includes('time slot') || 
+        response.error.includes('already booked')
+      )) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to add booking",
+          variant: "destructive"
+        });
+      }
       return false;
     } catch (error) {
       console.error("API error in addBooking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add booking. Please try again.",
-        variant: "destructive"
-      });
+      
+      // Extract error message
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes('time slot') || errorMessage.includes('already booked')) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add booking. Please try again.",
+          variant: "destructive"
+        });
+      }
       return false;
     }
   }
