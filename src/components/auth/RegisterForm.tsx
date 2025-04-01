@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff, Check } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,7 +39,6 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   const [passwordError, setPasswordError] = useState('');
   const [nameError, setNameError] = useState('');
   const [formError, setFormError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const isMobile = useIsMobile();
@@ -197,26 +196,15 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           
           <motion.div className="space-y-1" variants={itemAnimation}>
             <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`w-full pr-10 ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
-                disabled={isSubmitting || registrationSuccess}
-              />
-              <button 
-                type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                disabled={isSubmitting || registrationSuccess}
-              >
-                {showPassword ? <EyeOff size={isMobile ? 14 : 16} /> : <Eye size={isMobile ? 14 : 16} />}
-              </button>
-            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
+              disabled={isSubmitting || registrationSuccess}
+            />
             {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
           </motion.div>
           
