@@ -30,8 +30,6 @@ const BookMachineButton = ({
   const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
-    console.log(`Booking machine ${machineId}, navigating to /booking/${machineId}`);
-    
     if (!canBook) {
       if (!isAvailable) {
         toast({
@@ -39,18 +37,35 @@ const BookMachineButton = ({
           description: "This machine is currently unavailable for booking",
           variant: "destructive"
         });
-      } else if (requiresCertification && !isCertified) {
+        return;
+      } 
+      
+      if (requiresCertification && !isCertified) {
         toast({
           title: "Certification Required",
           description: "You need to be certified to book this machine",
           variant: "destructive"
         });
+        return;
       }
+      
       return;
     }
     
-    // Navigate to the booking page
-    navigate(`/booking/${machineId}`);
+    // Show toast with booking intent
+    toast({
+      title: "Booking Machine",
+      description: `Navigating to booking page for machine ${machineId}`,
+    });
+    
+    // Navigate to the booking page - ensure we have a clean URL
+    const bookingUrl = `/booking/${machineId}`;
+    console.log(`Navigating to booking URL: ${bookingUrl}`);
+    
+    // Use a timeout to ensure UI updates before navigation
+    setTimeout(() => {
+      navigate(bookingUrl);
+    }, 100);
   };
 
   let buttonText = "Book Now";

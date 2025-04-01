@@ -38,6 +38,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -86,6 +87,18 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       console.log("Attempting registration with:", { email, password, name });
       await onRegister(email, password, name);
       console.log("Registration successful");
+      setRegistrationSuccess(true);
+      
+      // Clear form after successful registration
+      setEmail('');
+      setPassword('');
+      setName('');
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        onToggleMode();
+      }, 1500);
+      
     } catch (error) {
       console.error("Authentication error:", error);
       setFormError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
@@ -110,6 +123,15 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           </Alert>
         )}
         
+        {registrationSuccess && (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <AlertCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-700">
+              Registration successful! Redirecting to login...
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <motion.form 
           onSubmit={handleSubmit} 
           className="space-y-4"
@@ -125,7 +147,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={`w-full ${nameError ? 'border-red-500' : ''}`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || registrationSuccess}
             />
             {nameError && <p className="text-sm text-red-500">{nameError}</p>}
           </motion.div>
@@ -139,7 +161,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={`w-full ${emailError ? 'border-red-500' : ''}`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || registrationSuccess}
             />
             {emailError && <p className="text-sm text-red-500">{emailError}</p>}
           </motion.div>
@@ -154,14 +176,14 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={`w-full pr-10 ${passwordError ? 'border-red-500' : ''}`}
-                disabled={isSubmitting}
+                disabled={isSubmitting || registrationSuccess}
               />
               <button 
                 type="button"
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                disabled={isSubmitting}
+                disabled={isSubmitting || registrationSuccess}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -173,7 +195,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
             <Button 
               type="submit" 
               className="w-full bg-purple-600 hover:bg-purple-700"
-              disabled={isSubmitting}
+              disabled={isSubmitting || registrationSuccess}
             >
               {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </Button>

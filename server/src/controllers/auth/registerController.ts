@@ -26,8 +26,9 @@ export const registerUser = async (req: Request, res: Response) => {
     // Set a default name if none is provided
     const userName = name || 'User'; // Default name is "User"
 
-    // Get the next _id
+    // Get the next _id with improved error handling
     const nextId = await getNextUserId();
+    console.log(`Generated next user ID: ${nextId}`);
 
     // Create user with explicitly empty certifications array
     const user = await User.create({
@@ -69,8 +70,29 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 };
 
-// Helper function to get the next user ID
+// Helper function to get the next user ID with improved error handling
 async function getNextUserId(): Promise<number> {
-  const highestUser = await User.findOne().sort({ _id: -1 });
-  return highestUser ? Number(highestUser._id) + 1 : 1;
+  try {
+    // Get all users and sort by _id
+    const users = await User.find({}, '_id').sort({ _id: -1 }).limit(1);
+    
+    // If we have users, return the highest ID + 1
+    if (users && users.length > 0) {
+      const highestId = Number(users[0]._id);
+      console.log(`Highest existing user ID: ${highestId}`);
+      return highestId + 1;
+    }
+    
+    // If no users exist, start with ID 1
+    console.log("No existing users found, starting with ID 1");
+    return 1;
+  } catch (error) {
+    console.error('Error generating next user ID:', error);
+    
+    // Generate a random ID between 1000-9999 as a fallback
+    // This helps avoid collisions if the normal sequence is broken
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    console.log(`Error in ID generation, using random ID: ${randomId}`);
+    return randomId;
+  }
 }
