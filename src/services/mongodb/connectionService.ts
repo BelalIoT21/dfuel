@@ -64,6 +64,12 @@ class MongoConnectionService {
             const collections = await this.db.listCollections().toArray();
             console.log(`Available collections: ${collections.map(c => c.name).join(', ')}`);
 
+            // Create machineBackups collection if it doesn't exist
+            if (!collections.find(c => c.name === 'machineBackups')) {
+              await this.db.createCollection('machineBackups');
+              console.log('Created new machineBackups collection');
+            }
+
             if (!this.initialized) {
               await this.initializeData();
               this.initialized = true;
@@ -171,4 +177,3 @@ class MongoConnectionService {
 
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;
-

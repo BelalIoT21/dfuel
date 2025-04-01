@@ -29,6 +29,7 @@ export interface MongoMachine extends Document {
   requiresCertification?: boolean;
   isUserCreated?: boolean;
   deletedAt?: Date;
+  backupData?: string; // Add field to store JSON backup of latest machine data
 }
 
 export interface MongoQuiz extends Document {

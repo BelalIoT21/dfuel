@@ -9,7 +9,8 @@ import {
   deleteMachine, 
   updateMachineStatus,
   getMachineStatus,
-  restoreMachine 
+  restoreMachine,
+  backupMachine 
 } from '../controllers/machineController';
 import { protect, admin } from '../middleware/authMiddleware';
 
@@ -72,6 +73,11 @@ router.put(
 router.delete('/:id', protect, admin, deleteMachine);
 
 // New endpoint to restore a deleted machine
-router.post('/:id/restore', protect, admin, restoreMachine);
+router.post('/:id/restore', protect, admin, jsonParser, restoreMachine);
+
+// New endpoint to backup a machine
+router.post('/:id/backup', protect, admin, jsonParser, [
+  body('backupData').notEmpty().withMessage('Backup data is required')
+], backupMachine);
 
 export default router;

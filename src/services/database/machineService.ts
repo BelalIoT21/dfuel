@@ -202,6 +202,14 @@ export class MachineDatabaseService extends BaseService {
       
       console.log(`Updating machine ${machineId} with cleaned data:`, cleanedData);
       
+      // Create a backup of the current machine state before updating
+      try {
+        await this.backupMachine(machineId, cleanedData);
+      } catch (backupError) {
+        console.error(`Error backing up machine ${machineId} before update:`, backupError);
+        // Continue with update even if backup fails
+      }
+      
       const response = await apiService.request(`machines/${machineId}`, 'PUT', cleanedData, true);
       console.log(`Update response for machine ${machineId}:`, response);
       
@@ -219,9 +227,63 @@ export class MachineDatabaseService extends BaseService {
     }
   }
 
+  // New method to backup a machine before deletion or update
+  async backupMachine(machineId: string, updatedData?: any): Promise<boolean> {
+    try {
+      console.log(`Creating backup for machine ${machineId}`);
+      
+      // First get the current machine data
+      const currentMachine = await this.getMachineById(machineId);
+      if (!currentMachine) {
+        console.error(`Cannot backup machine ${machineId}: not found`);
+        return false;
+      }
+      
+      // If we have update data, merge it with current data to create a "future state" backup
+      const backupData = updatedData 
+        ? { ...currentMachine, ...updatedData, _backupTime: new Date().toISOString() }
+        : { ...currentMachine, _backupTime: new Date().toISOString() };
+      
+      // Store backup via API
+      try {
+        await apiService.request(`machines/${machineId}/backup`, 'POST', { 
+          backupData: JSON.stringify(backupData)
+        }, true);
+        console.log(`Successfully backed up machine ${machineId} via API`);
+        return true;
+      } catch (apiError) {
+        console.error(`API backup failed for machine ${machineId}:`, apiError);
+        
+        // Try MongoDB direct backup if API fails
+        try {
+          const backupResult = await apiService.request('mongodb/backup-machine', 'POST', {
+            machineId,
+            backupData: JSON.stringify(backupData)
+          }, true);
+          
+          if (backupResult.data?.success) {
+            console.log(`Successfully backed up machine ${machineId} via MongoDB`);
+            return true;
+          }
+        } catch (mongoError) {
+          console.error(`MongoDB backup failed for machine ${machineId}:`, mongoError);
+        }
+      }
+      
+      console.warn(`Could not create backup for machine ${machineId}`);
+      return false;
+    } catch (error) {
+      console.error(`Error in backupMachine(${machineId}):`, error);
+      return false;
+    }
+  }
+
   async deleteMachine(machineId: string): Promise<boolean> {
     try {
       console.log(`Attempting to delete machine ${machineId}`);
+      
+      // First backup the machine before deletion
+      await this.backupMachine(machineId);
       
       // First try MongoDB direct deletion if available
       let success = false;
@@ -229,7 +291,7 @@ export class MachineDatabaseService extends BaseService {
       try {
         // For core machines (IDs 1-6), attempt to soft-delete first
         if (machineId >= '1' && machineId <= '6') {
-          success = await mongoDbService.updateMachineStatus(machineId, 'Maintenance', 'This machine has been temporarily removed.');
+          success = await this.updateMachineStatus(machineId, 'Maintenance', 'This machine has been temporarily removed.');
           if (success) {
             console.log(`Successfully soft-deleted core machine ${machineId} via MongoDB`);
             return true;
@@ -286,6 +348,30 @@ export class MachineDatabaseService extends BaseService {
   async restoreMachine(machineId: string): Promise<boolean> {
     try {
       console.log(`Attempting to restore machine ${machineId}`);
+      
+      // Try to restore from backup first for any machine
+      try {
+        const response = await apiService.post(`machines/${machineId}/restore`, { useLatestBackup: true });
+        if (response.data && !response.error) {
+          console.log(`Successfully restored machine ${machineId} from latest backup`);
+          return true;
+        }
+      } catch (restoreError) {
+        console.error(`Error restoring machine ${machineId} from backup:`, restoreError);
+      }
+      
+      // For core machines (IDs 1-6), try to restore from template if backup restore failed
+      if (machineId >= '1' && machineId <= '6') {
+        try {
+          const response = await apiService.post(`machines/${machineId}/restore`, { useTemplate: true });
+          if (response.data && !response.error) {
+            console.log(`Successfully restored core machine ${machineId} from template`);
+            return true;
+          }
+        } catch (templateError) {
+          console.error(`Error restoring core machine ${machineId} from template:`, templateError);
+        }
+      }
       
       // Try MongoDB direct restoration first
       try {

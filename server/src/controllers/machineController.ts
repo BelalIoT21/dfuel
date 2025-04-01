@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Machine } from '../models/Machine';
 import mongoose from 'mongoose';
@@ -281,6 +280,26 @@ export const updateMachine = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Machine not found' });
     }
 
+    // Create a backup of the machine before updating it
+    try {
+      // Store current machine state in the machineBackups collection
+      const db = mongoose.connection.db;
+      if (db) {
+        const backupsCollection = db.collection('machineBackups');
+        const backupData = {
+          machineId: id,
+          data: JSON.stringify(machine.toObject()),
+          timestamp: new Date(),
+          reason: 'pre-update'
+        };
+        await backupsCollection.insertOne(backupData);
+        console.log(`Created backup of machine ${id} before update`);
+      }
+    } catch (backupError) {
+      console.error(`Error creating backup for machine ${id}:`, backupError);
+      // Continue with update even if backup fails
+    }
+
     const {
       name,
       type,
@@ -479,10 +498,28 @@ export const deleteMachine = async (req: Request, res: Response) => {
 
     let machineId = id.toString();
     
-    // For core machines (1-6), just soft delete by marking as inactive
-    // This will allow them to be restored later
+    // For core machines (1-6), create a backup and then soft delete
     if (machineId >= '1' && machineId <= '6') {
-      console.log(`Soft-deleting core machine ${machineId}`);
+      console.log(`Creating backup and soft-deleting core machine ${machineId}`);
+      
+      try {
+        // Create a backup of the machine before soft deletion
+        const db = mongoose.connection.db;
+        if (db) {
+          const backupsCollection = db.collection('machineBackups');
+          const backupData = {
+            machineId,
+            data: JSON.stringify(machine.toObject()),
+            timestamp: new Date(),
+            reason: 'pre-soft-delete'
+          };
+          await backupsCollection.insertOne(backupData);
+          console.log(`Created backup of machine ${machineId} before soft deletion`);
+        }
+      } catch (backupError) {
+        console.error(`Error creating backup for machine ${machineId}:`, backupError);
+      }
+      
       machine.status = 'Maintenance';
       machine.maintenanceNote = 'This machine has been temporarily removed.';
       await machine.save();
@@ -520,20 +557,22 @@ export const deleteMachine = async (req: Request, res: Response) => {
       console.error("Error removing certifications:", error);
     }
 
-    // For user-created machines, we'll perform a backup before deletion
-    // This could be expanded to create a proper backup system
+    // For user-created machines, create a backup before deletion
     try {
-      // Create a backup of the machine before deletion
-      // In a real system, you might want to store this in a separate collection
-      console.log(`Creating backup of machine ${machineId} before deletion`);
-      const backupData = machine.toObject();
-      // Add backup timestamp
-      backupData.deletedAt = new Date();
-      // Here you would store the backup somewhere 
-      console.log(`Backup created for machine ${machineId}`);
+      const db = mongoose.connection.db;
+      if (db) {
+        const backupsCollection = db.collection('machineBackups');
+        const backupData = {
+          machineId,
+          data: JSON.stringify(machine.toObject()),
+          timestamp: new Date(),
+          reason: 'pre-delete'
+        };
+        await backupsCollection.insertOne(backupData);
+        console.log(`Created backup of machine ${machineId} before deletion`);
+      }
     } catch (backupError) {
       console.error(`Error creating backup for machine ${machineId}:`, backupError);
-      // Continue with deletion even if backup fails
     }
 
     // Delete the machine
@@ -546,10 +585,15 @@ export const deleteMachine = async (req: Request, res: Response) => {
   }
 };
 
-// New endpoint to restore a soft-deleted machine
-export const restoreMachine = async (req: Request, res: Response) => {
+// New endpoint to backup a machine
+export const backupMachine = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { backupData } = req.body;
+    
+    if (!backupData) {
+      return res.status(400).json({ message: 'Backup data is required' });
+    }
     
     let machine;
     if (mongoose.Types.ObjectId.isValid(id)) {
@@ -559,60 +603,187 @@ export const restoreMachine = async (req: Request, res: Response) => {
     }
     
     if (!machine) {
-      // If machine doesn't exist, try to restore from original templates (for core machines 1-6)
-      if (id >= '1' && id <= '6') {
-        console.log(`Attempting to restore core machine ${id} from template`);
-        const restored = await Machine.findById(id);
-        if (restored) {
-          return res.status(200).json({
-            message: 'Machine has already been restored',
-            machine: restored
-          });
-        }
-        
-        // Import the restore function from seeder
-        const { restoreDeletedMachines } = require('../utils/seeds/machineSeeder');
-        await restoreDeletedMachines();
-        
-        // Check if restoration worked
-        const restoredMachine = await Machine.findById(id);
-        if (restoredMachine) {
-          return res.status(200).json({
-            message: 'Core machine restored successfully',
-            machine: restoredMachine
-          });
-        }
-        
-        return res.status(404).json({ 
-          message: 'Machine could not be restored',
-          error: 'Restoration failed'
-        });
-      }
-      
-      return res.status(404).json({ message: 'Machine not found and could not be restored' });
+      return res.status(404).json({ message: 'Machine not found' });
     }
     
-    // If machine exists but is in maintenance mode (soft deleted)
-    if (machine.status === 'Maintenance' && 
-        machine.maintenanceNote === 'This machine has been temporarily removed.') {
-      
-      // Restore the machine to available status
-      machine.status = 'Available';
-      machine.maintenanceNote = '';
-      await machine.save();
-      
-      return res.status(200).json({
-        message: 'Machine restored successfully',
-        machine
+    try {
+      const db = mongoose.connection.db;
+      if (db) {
+        const backupsCollection = db.collection('machineBackups');
+        const backupRecord = {
+          machineId: id,
+          data: backupData,
+          timestamp: new Date(),
+          reason: 'api-backup'
+        };
+        await backupsCollection.insertOne(backupRecord);
+        console.log(`Created backup of machine ${id}`);
+        
+        return res.status(200).json({ 
+          message: 'Machine backup created successfully',
+          success: true
+        });
+      } else {
+        throw new Error('Database connection not available');
+      }
+    } catch (dbError) {
+      console.error(`Database error creating backup for machine ${id}:`, dbError);
+      return res.status(500).json({ 
+        message: 'Error creating backup', 
+        error: dbError instanceof Error ? dbError.message : 'Unknown error'
       });
     }
-    
-    // Machine exists and is not soft-deleted
-    return res.status(200).json({
-      message: 'Machine is already active',
-      machine
+  } catch (error) {
+    console.error('Error in backupMachine:', error);
+    return res.status(500).json({ 
+      message: 'Server error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
     });
+  }
+};
+
+// Updated endpoint to restore a machine
+export const restoreMachine = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { useLatestBackup, useTemplate } = req.body;
     
+    console.log(`Restoring machine ${id} with options:`, { useLatestBackup, useTemplate });
+    
+    // FIRST: Try to restore from latest backup if requested
+    if (useLatestBackup) {
+      try {
+        const db = mongoose.connection.db;
+        if (db) {
+          const backupsCollection = db.collection('machineBackups');
+          // Find the latest backup for this machine
+          const latestBackup = await backupsCollection.find({ machineId: id })
+            .sort({ timestamp: -1 })
+            .limit(1)
+            .toArray();
+            
+          if (latestBackup.length > 0) {
+            console.log(`Found backup for machine ${id} from ${latestBackup[0].timestamp}`);
+            
+            // Parse the backup data
+            const backupData = JSON.parse(latestBackup[0].data);
+            
+            // See if the machine exists
+            let existingMachine;
+            if (mongoose.Types.ObjectId.isValid(id)) {
+              existingMachine = await Machine.findById(id);
+            } else {
+              existingMachine = await Machine.findOne({ _id: id });
+            }
+            
+            if (existingMachine) {
+              // Update existing machine with backed up data
+              console.log(`Updating existing machine ${id} with backup data`);
+              
+              // Update all fields from backup
+              Object.keys(backupData).forEach(key => {
+                // Skip special fields that shouldn't be restored
+                if (!['_id', '__v', 'createdAt', 'updatedAt', '_backupTime'].includes(key)) {
+                  existingMachine[key] = backupData[key];
+                }
+              });
+              
+              // Set status to Available
+              existingMachine.status = 'Available';
+              existingMachine.maintenanceNote = '';
+              
+              await existingMachine.save();
+              console.log(`Successfully restored machine ${id} from backup`);
+              
+              return res.status(200).json({
+                message: 'Machine restored successfully from backup',
+                machine: existingMachine
+              });
+            } else {
+              // Create a new machine from backup
+              console.log(`Creating new machine ${id} from backup data`);
+              
+              // Prepare clean data for new machine
+              const cleanData = { ...backupData };
+              delete cleanData._backupTime;
+              delete cleanData.__v;
+              delete cleanData.createdAt;
+              delete cleanData.updatedAt;
+              
+              // Ensure _id is correct
+              cleanData._id = id;
+              
+              // Set status to Available
+              cleanData.status = 'Available';
+              cleanData.maintenanceNote = '';
+              
+              const newMachine = new Machine(cleanData);
+              await newMachine.save();
+              
+              console.log(`Successfully recreated machine ${id} from backup`);
+              
+              return res.status(200).json({
+                message: 'Machine recreated successfully from backup',
+                machine: newMachine
+              });
+            }
+          } else {
+            console.log(`No backup found for machine ${id}`);
+          }
+        }
+      } catch (backupError) {
+        console.error(`Error restoring machine ${id} from backup:`, backupError);
+      }
+    }
+    
+    // SECOND: If we get here, either backup restore failed or wasn't requested
+    // Try to restore from original templates (for core machines 1-6)
+    if (useTemplate || id >= '1' && id <= '6') {
+      console.log(`Attempting to restore core machine ${id} from template`);
+      
+      let existingMachine;
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        existingMachine = await Machine.findById(id);
+      } else {
+        existingMachine = await Machine.findOne({ _id: id });
+      }
+      
+      if (existingMachine) {
+        // If the machine is soft-deleted (in maintenance), just restore it
+        if (existingMachine.status === 'Maintenance' && 
+            existingMachine.maintenanceNote === 'This machine has been temporarily removed.') {
+          
+          // Restore the machine to available status
+          existingMachine.status = 'Available';
+          existingMachine.maintenanceNote = '';
+          await existingMachine.save();
+          
+          return res.status(200).json({
+            message: 'Machine restored successfully',
+            machine: existingMachine
+          });
+        }
+      }
+      
+      // Import the restore function from seeder
+      const { restoreDeletedMachines } = require('../utils/seeds/machineSeeder');
+      await restoreDeletedMachines();
+      
+      // Check if restoration worked
+      const restoredMachine = await Machine.findById(id);
+      if (restoredMachine) {
+        return res.status(200).json({
+          message: 'Core machine restored successfully from template',
+          machine: restoredMachine
+        });
+      }
+    }
+    
+    // If we get here, all restoration attempts failed
+    return res.status(404).json({ 
+      message: 'Machine could not be restored',
+      error: 'Restoration failed'
+    });
   } catch (error) {
     console.error('Error in restoreMachine:', error);
     res.status(500).json({ 
