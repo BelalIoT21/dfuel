@@ -177,6 +177,11 @@ const CertificationsCard = () => {
     navigate(`/quiz/${quizId}`);
   };
 
+  const handleBookMachine = (machineId: string) => {
+    console.log(`Booking machine ${machineId} from CertificationsCard`);
+    navigate(`/booking/${machineId}`);
+  };
+
   if (loading) {
     return (
       <Card>

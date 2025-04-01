@@ -29,6 +29,7 @@ const BookMachineButton = ({
   const canBook = effectiveCertification && isAvailable;
   
   const handleBooking = () => {
+    console.log(`Booking machine ${machineId}, navigating to /booking/${machineId}`);
     // Always navigate directly to the booking page
     navigate(`/booking/${machineId}`);
   };

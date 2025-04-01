@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   const [nameError, setNameError] = useState('');
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateEmail = (email: string) => {
     if (!email) return 'Email is required';
@@ -75,11 +77,14 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
     if (!validateForm()) return;
     
     try {
+      setIsSubmitting(true);
       await onRegister(email, password, name);
       console.log("Registration successful");
     } catch (error) {
       console.error("Authentication error:", error);
       setFormError('Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,8 +160,12 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           </motion.div>
           
           <motion.div variants={itemAnimation}>
-            <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </Button>
           </motion.div>
         </motion.form>
