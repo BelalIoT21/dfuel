@@ -23,9 +23,9 @@ const NotFound = () => {
         console.log("Accessed bookings page, will not redirect");
         setRedirectPath(user.isAdmin ? '/admin' : '/home');
       } else if (location.pathname.startsWith('/booking/')) {
-        // If trying to access a specific booking page
+        // If trying to access a specific booking page with an invalid ID
+        console.log("Invalid booking page accessed, redirecting to home");
         setRedirectPath('/home');
-        console.log("Redirecting from specific booking to home page");
       } else if (user.isAdmin) {
         setRedirectPath('/admin');
       } else {
