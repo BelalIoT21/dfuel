@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 import { machineService } from './machineService';
 import mongoDbService from './mongoDbService';
@@ -126,6 +127,10 @@ class BookingService {
         const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
         if (mongoSuccess) {
           console.log("Successfully created booking");
+          toast({
+            title: "Booking Created",
+            description: "Your booking has been created successfully.",
+          });
           return { success: true };
         }
         console.log("MongoDB booking creation failed, falling back to API");
@@ -160,6 +165,10 @@ class BookingService {
         }
       }
       
+      toast({
+        title: "Booking Created",
+        description: "Your booking has been created successfully.",
+      });
       return { success: true };
     } catch (error) {
       console.error('Error creating booking:', error);

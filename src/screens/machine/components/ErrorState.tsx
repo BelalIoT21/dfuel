@@ -5,13 +5,16 @@ import { Button } from 'react-native-paper';
 
 interface ErrorStateProps {
   onGoBack: () => void;
+  errorMessage?: string;
 }
 
-const ErrorState = ({ onGoBack }: ErrorStateProps) => {
+const ErrorState = ({ onGoBack, errorMessage }: ErrorStateProps) => {
   return (
     <View style={styles.container}>
       <Text style={styles.errorTitle}>Error</Text>
-      <Text style={styles.errorMessage}>Unable to load machine information</Text>
+      <Text style={styles.errorMessage}>
+        {errorMessage || "Unable to load machine information"}
+      </Text>
       <Button 
         mode="contained" 
         onPress={onGoBack} 

@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Booking, IBooking } from '../models/Booking';
@@ -93,8 +94,6 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     // Convert machineId to string to ensure consistent comparison
     const machineIdStr = String(machineId);
     
-    console.log(`Checking availability for machine ${machineIdStr} on ${date} at ${time}`);
-    
     const existingBooking = await Booking.findOne({
       machine: machineIdStr,
       date: {
@@ -107,6 +106,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     
     if (existingBooking) {
       console.log(`This time slot is already booked`);
+      // Set a 400 status code for client-side detection
       res.status(400);
       throw new Error('This time slot is already booked');
     }
