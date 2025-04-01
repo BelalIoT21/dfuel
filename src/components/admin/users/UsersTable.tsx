@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -195,9 +194,25 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      console.log(`Trying MongoDB deletion for user ${userId}`);
-      const success = await mongoDbService.deleteUser(userId);
-      console.log(`MongoDB deleteUser result: ${success}`);
+      // First try direct API call
+      let success = false;
+      try {
+        console.log(`Trying direct API deletion for user ${userId}`);
+        const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
+        console.log(`API delete response:`, response);
+        if (response && response.status >= 200 && response.status < 300) {
+          success = true;
+        }
+      } catch (apiError) {
+        console.error(`API delete user error:`, apiError);
+      }
+      
+      // If API call fails, try MongoDB deletion
+      if (!success) {
+        console.log(`API deletion failed, trying MongoDB deletion for user ${userId}`);
+        success = await mongoDbService.deleteUser(userId);
+        console.log(`MongoDB deleteUser result: ${success}`);
+      }
       
       if (success) {
         toast({

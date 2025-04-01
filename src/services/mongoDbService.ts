@@ -63,37 +63,82 @@ class MongoDbService {
 
   async deleteUser(userId: string) {
     try {
-      // First attempt: use the MongoDB service
-      const mongoResult = await mongoUserService.deleteUser(userId);
-      if (mongoResult) {
-        console.log(`User ${userId} deleted successfully via MongoDB service`);
-        return true;
+      console.log(`MongoDbService: Attempting to delete user ${userId}`);
+      
+      // Try multiple deletion methods for maximum reliability
+      
+      // First attempt: direct API call (most reliable)
+      try {
+        console.log(`Trying direct API deletion for user ${userId}`);
+        const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
+        console.log('API delete user response:', response);
+        
+        if (response && response.status >= 200 && response.status < 300) {
+          console.log(`User ${userId} deleted successfully via direct API call`);
+          return true;
+        }
+      } catch (apiError) {
+        console.error('Direct API error deleting user:', apiError);
       }
       
-      // Second attempt: try direct API call
-      console.log(`MongoDB service failed to delete user ${userId}, trying API`);
-      const response = await apiService.request(`users/${userId}`, 'DELETE');
-      console.log('API delete user response:', response);
+      // Second attempt: Admin API endpoint
+      try {
+        console.log(`Trying admin API deletion for user ${userId}`);
+        const adminResponse = await apiService.request(`admin/users/${userId}`, 'DELETE', undefined, true);
+        
+        if (adminResponse && adminResponse.status >= 200 && adminResponse.status < 300) {
+          console.log(`User ${userId} deleted successfully via admin API`);
+          return true;
+        }
+      } catch (adminApiError) {
+        console.error('Admin API error deleting user:', adminApiError);
+      }
       
-      if (response && response.status >= 200 && response.status < 300) {
-        console.log(`User ${userId} deleted successfully via API`);
-        return true;
+      // Third attempt: use the MongoDB service
+      try {
+        console.log(`Trying MongoDB userService for deletion of user ${userId}`);
+        const mongoResult = await mongoUserService.deleteUser(userId);
+        if (mongoResult) {
+          console.log(`User ${userId} deleted successfully via MongoDB service`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error('MongoDB service error deleting user:', mongoError);
+      }
+      
+      // Fourth attempt: Raw API DELETE
+      try {
+        console.log(`Trying raw axios DELETE for user ${userId}`);
+        const axios = (await import('axios')).default;
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        const endpoints = [
+          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/users/${userId}`,
+          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/auth/users/${userId}`,
+          `${process.env.REACT_APP_API_URL || 'http://localhost:4000/api'}/admin/users/${userId}`
+        ];
+        
+        for (const endpoint of endpoints) {
+          try {
+            const rawResponse = await axios.delete(endpoint, { headers });
+            if (rawResponse.status >= 200 && rawResponse.status < 300) {
+              console.log(`User ${userId} deleted successfully via raw axios to ${endpoint}`);
+              return true;
+            }
+          } catch (endpointError) {
+            console.log(`Failed to delete via ${endpoint}:`, endpointError.message);
+          }
+        }
+      } catch (rawError) {
+        console.error('Raw axios error deleting user:', rawError);
       }
       
       console.log(`Failed to delete user ${userId} through all methods`);
       return false;
     } catch (error) {
-      console.error('Error deleting user from MongoDB:', error);
-      
-      // Final attempt: try direct API call if error occurred
-      try {
-        console.log(`Error in MongoDB delete, trying API as last resort for user ${userId}`);
-        const response = await apiService.request(`users/${userId}`, 'DELETE');
-        return response && response.status >= 200 && response.status < 300;
-      } catch (apiError) {
-        console.error('API error deleting user:', apiError);
-        return false;
-      }
+      console.error('Error in deleteUser master method:', error);
+      return false;
     }
   }
 

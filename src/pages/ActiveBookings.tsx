@@ -20,6 +20,7 @@ const ActiveBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     console.log("ActiveBookings component mounted");
@@ -38,60 +39,122 @@ const ActiveBookings = () => {
     const fetchBookings = async () => {
       try {
         setLoading(true);
+        setFetchError(null);
         console.log('Fetching bookings for user:', user.id);
         
         let userBookings = [];
+        let fetchSuccess = false;
         
         // If admin, try API first for all bookings
         if (user.isAdmin) {
           try {
             console.log("Admin user, trying direct API call for all bookings");
-            const response = await apiService.request('bookings/all', 'GET');
+            const response = await apiService.request('bookings/all', 'GET', undefined, true);
+            console.log("API bookings response:", response);
+            
             if (response?.data && Array.isArray(response.data)) {
               console.log(`Found ${response.data.length} bookings via API`);
               userBookings = response.data;
+              fetchSuccess = true;
             }
           } catch (apiError) {
             console.error("API booking fetch error:", apiError);
           }
           
           // If API call fails or returns empty, fall back to bookingService
-          if (!userBookings || userBookings.length === 0) {
+          if (!fetchSuccess) {
             console.log("API call failed, falling back to bookingService for admin");
-            userBookings = await bookingService.getAllBookings();
+            try {
+              const serviceBookings = await bookingService.getAllBookings();
+              if (serviceBookings && serviceBookings.length > 0) {
+                userBookings = serviceBookings;
+                fetchSuccess = true;
+                console.log(`Found ${serviceBookings.length} bookings via bookingService`);
+              }
+            } catch (serviceError) {
+              console.error("BookingService fetch error:", serviceError);
+            }
+          }
+          
+          // Last resort - check specific API endpoint format
+          if (!fetchSuccess) {
+            try {
+              console.log("Trying alternative API endpoint format");
+              const altResponse = await apiService.request('auth/bookings', 'GET', undefined, true);
+              if (altResponse?.data && Array.isArray(altResponse.data)) {
+                userBookings = altResponse.data;
+                fetchSuccess = true;
+                console.log(`Found ${altResponse.data.length} bookings via alternative API`);
+              }
+            } catch (altError) {
+              console.error("Alternative API fetch error:", altError);
+            }
           }
         } else {
           // For regular users, try API first
           try {
             console.log(`Trying direct API call for user ${user.id} bookings`);
-            const response = await apiService.request('bookings', 'GET');
+            const response = await apiService.request('bookings', 'GET', undefined, true);
             if (response?.data && Array.isArray(response.data)) {
               console.log(`Found ${response.data.length} bookings for user via API`);
               userBookings = response.data;
+              fetchSuccess = true;
             }
           } catch (apiError) {
             console.error("API user booking fetch error:", apiError);
           }
           
           // If API call fails or returns empty, fall back to bookingService
-          if (!userBookings || userBookings.length === 0) {
+          if (!fetchSuccess) {
             console.log("API call failed, falling back to bookingService for user");
-            userBookings = await bookingService.getUserBookings(user.id);
+            try {
+              const serviceBookings = await bookingService.getUserBookings(user.id);
+              if (serviceBookings && serviceBookings.length > 0) {
+                userBookings = serviceBookings;
+                fetchSuccess = true;
+                console.log(`Found ${serviceBookings.length} bookings via bookingService`);
+              }
+            } catch (serviceError) {
+              console.error("BookingService user fetch error:", serviceError);
+            }
           }
         }
         
-        console.log('Retrieved bookings:', userBookings);
+        if (!fetchSuccess || userBookings.length === 0) {
+          console.log("Failed to fetch any bookings from all methods");
+          setFetchError("Could not retrieve bookings. Please try again later.");
+        }
+        
+        console.log('Final retrieved bookings:', userBookings);
+        
+        // Clean up bookings data to ensure consistent format
+        const processedBookings = userBookings.map(booking => {
+          return {
+            id: booking.id || booking._id,
+            machineId: booking.machineId || booking.machine,
+            machineName: booking.machineName || booking.machine?.name || 'Unknown Machine',
+            userId: booking.userId || booking.user,
+            userName: booking.userName || booking.user?.name || 'Unknown User',
+            date: booking.date,
+            time: booking.time,
+            status: booking.status || 'Pending',
+            createdAt: booking.createdAt || new Date().toISOString(),
+            updatedAt: booking.updatedAt || new Date().toISOString()
+          };
+        });
         
         // Sort bookings by date and time
-        const sortedBookings = [...userBookings].sort((a, b) => {
+        const sortedBookings = [...processedBookings].sort((a, b) => {
           const dateA = new Date(`${a.date} ${a.time}`);
           const dateB = new Date(`${b.date} ${b.time}`);
           return dateA.getTime() - dateB.getTime();
         });
         
         setBookings(sortedBookings);
+        console.log(`Set ${sortedBookings.length} processed bookings`);
       } catch (error) {
         console.error('Error fetching bookings:', error);
+        setFetchError("An unexpected error occurred while fetching bookings.");
         toast({
           title: "Error",
           description: "Failed to load your bookings",
@@ -216,6 +279,13 @@ const ActiveBookings = () => {
               <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
               <p className="text-gray-600">Loading bookings...</p>
             </div>
+          ) : fetchError ? (
+            <div className="text-center py-8">
+              <p className="text-lg text-red-500 mb-4">{fetchError}</p>
+              <Button onClick={() => navigate('/profile?tab=certifications')} className="bg-purple-600 hover:bg-purple-700">
+                Browse Machines
+              </Button>
+            </div>
           ) : bookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-lg text-gray-500 mb-4">
@@ -250,7 +320,9 @@ const ActiveBookings = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mb-3">
                       <div>
                         <span className="text-gray-500 text-sm">Date: </span>
-                        <span>{format(new Date(booking.date), 'MMMM d, yyyy')}</span>
+                        <span>{typeof booking.date === 'string' 
+                          ? format(new Date(booking.date), 'MMMM d, yyyy')
+                          : 'Invalid date'}</span>
                       </div>
                       <div>
                         <span className="text-gray-500 text-sm">Time: </span>
