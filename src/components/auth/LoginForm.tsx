@@ -97,20 +97,20 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className="mb-3 py-2 flex items-center">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription className="text-sm">{formError}</AlertDescription>
+          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5 flex items-center" : "mb-3 py-2 flex items-center"}>
+            <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+            <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
           </Alert>
         )}
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-3"
+          className="space-y-2.5"
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className="space-y-1.5" variants={itemAnimation}>
+          <motion.div className="space-y-1" variants={itemAnimation}>
             <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
               id="email"
@@ -123,7 +123,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
             {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-1.5" variants={itemAnimation}>
+          <motion.div className="space-y-1" variants={itemAnimation}>
             <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
             <div className="relative">
               <Input
