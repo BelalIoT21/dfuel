@@ -39,7 +39,7 @@ const Index = () => {
     const handleKeyboardVisibility = () => {
       if (isAndroid() || isIOS()) {
         const currentHeight = window.innerHeight;
-        const threshold = originalHeightRef.current * 0.75;
+        const threshold = originalHeightRef.current * 0.85; // Higher threshold
         const isKeyboardOpen = currentHeight < threshold;
         
         console.log(`Keyboard detection: height ${currentHeight}/${originalHeightRef.current}, threshold: ${threshold}`);
@@ -245,6 +245,7 @@ const Index = () => {
     );
   }
 
+  // Improved mobile keyboard handling and positioning
   const containerStyle = keyboardVisible && isMobile
     ? { 
         minHeight: '100vh', 
@@ -253,12 +254,11 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(-40vh)' 
+        paddingTop: '5vh',
       } 
     : { 
         minHeight: '100vh', 
         transition: 'all 0.3s ease',
-        transform: 'translateY(0)'
       };
 
   return (
@@ -266,12 +266,14 @@ const Index = () => {
       className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-md space-y-6 animate-fade-up ${keyboardVisible ? 'mt-4' : 'my-auto'}`}>
-        <div className="text-center relative">
-          <h1 className="text-3xl md:text-4xl font-bold text-purple-800 tracking-tight">Dfuel</h1>
-          <p className="mt-2 text-md md:text-lg text-gray-600">
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </p>
+      <div className={`w-full max-w-sm space-y-4 ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
+        <div className={`text-center relative ${keyboardVisible ? 'mb-1' : 'mb-4'}`}>
+          <h1 className={`${keyboardVisible ? 'text-2xl' : 'text-3xl'} md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+          {!keyboardVisible && (
+            <p className="mt-2 text-md md:text-lg text-gray-600">
+              {isLogin ? 'Welcome back!' : 'Create your account'}
+            </p>
+          )}
           {serverStatus && !keyboardVisible && (
             <div className={isConnected
               ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
