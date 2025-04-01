@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -9,7 +10,6 @@ import {
   MAX_IMAGE_SIZE_MB,
   compressImageIfNeeded 
 } from '@/utils/fileUpload';
-import { formatImageUrl } from '@/utils/env';
 
 interface FileUploadProps {
   existingUrl?: string;
@@ -30,10 +30,19 @@ const FileUpload: React.FC<FileUploadProps> = ({
   compressImages = true,
   targetCompressedSizeMB = 5 // Increased from 2MB to 5MB
 }) => {
-  // Use our new utility function for formatting URLs
-  const formattedExistingUrl = existingUrl ? formatImageUrl(existingUrl) : null;
+  // Format existing URL if it's a server path
+  const formatExistingUrl = (url?: string) => {
+    if (!url) return null;
+    
+    if (url.startsWith('/utils/images')) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      return `${apiUrl}/api${url}`;
+    }
+    
+    return url;
+  };
 
-  const [preview, setPreview] = useState<string | null>(formattedExistingUrl);
+  const [preview, setPreview] = useState<string | null>(formatExistingUrl(existingUrl) || null);
   const [isUploading, setIsUploading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
@@ -128,7 +137,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const isImageType = allowedTypes.every(type => type.startsWith('image/'));
 
   // Properly display existing images
-  const displayPreview = preview || (existingUrl ? formattedExistingUrl : null);
+  const displayPreview = preview || (existingUrl ? formatExistingUrl(existingUrl) : null);
 
   console.log("FileUpload: displaying image preview:", displayPreview);
 

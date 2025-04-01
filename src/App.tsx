@@ -1,5 +1,5 @@
 
-import { Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "./components/ui/sonner";
 import Index from "./pages/Index";
@@ -24,31 +24,33 @@ function App() {
   console.log("Routes initialized, including /bookings for ActiveBookings page");
   
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/booking/:id" element={<Booking />} />
-        <Route path="/bookings" element={<ActiveBookings />} />
-        <Route path="/course/:id" element={<Course />} />
-        <Route path="/quiz/:id" element={<Quiz />} />
-        <Route path="/machine/:id" element={<MachineDetail />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/machines" element={<AdminMachines />} />
-        <Route path="/admin/machines/new" element={<AdminMachineEdit />} />
-        <Route path="/admin/machines/edit/:id" element={<AdminMachineEdit />} />
-        <Route path="/admin/courses" element={<AdminCourses />} />
-        <Route path="/admin/courses/new" element={<AdminCourseEdit />} />
-        <Route path="/admin/courses/edit/:id" element={<AdminCourseEdit />} />
-        <Route path="/admin/quizzes" element={<AdminQuizzes />} />
-        <Route path="/admin/quizzes/new" element={<AdminQuizEdit />} />
-        <Route path="/admin/quizzes/edit/:id" element={<AdminQuizEdit />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/booking/:id" element={<Booking />} />
+          <Route path="/bookings" element={<ActiveBookings />} />
+          <Route path="/course/:id" element={<Course />} />
+          <Route path="/quiz/:id" element={<Quiz />} />
+          <Route path="/machine/:id" element={<MachineDetail />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/machines" element={<AdminMachines />} />
+          <Route path="/admin/machines/new" element={<AdminMachineEdit />} />
+          <Route path="/admin/machines/edit/:id" element={<AdminMachineEdit />} />
+          <Route path="/admin/courses" element={<AdminCourses />} />
+          <Route path="/admin/courses/new" element={<AdminCourseEdit />} />
+          <Route path="/admin/courses/edit/:id" element={<AdminCourseEdit />} />
+          <Route path="/admin/quizzes" element={<AdminQuizzes />} />
+          <Route path="/admin/quizzes/new" element={<AdminQuizEdit />} />
+          <Route path="/admin/quizzes/edit/:id" element={<AdminQuizEdit />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

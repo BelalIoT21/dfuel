@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,6 @@ import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
 import { Building2, Plus, Edit } from 'lucide-react';
-import { formatImageUrl } from '@/utils/env';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -24,7 +24,19 @@ const AdminMachines = () => {
   
   const getProperImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/placeholder.svg';
-    return formatImageUrl(imageUrl);
+    
+    // Handle server image paths by adding the API URL prefix
+    if (imageUrl.startsWith('/utils/images')) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      return `${apiUrl}/api${imageUrl}`;
+    }
+    
+    // Handle base64 data URLs directly
+    if (imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    
+    return imageUrl;
   };
   
   useEffect(() => {
@@ -215,6 +227,7 @@ const AdminMachines = () => {
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
+                  // Make sure to use the proper image URL function
                   const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
                   console.log(`AdminMachines - Machine ${machineId} image: ${imageUrl}`);
                   

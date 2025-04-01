@@ -18,15 +18,14 @@ const router = express.Router();
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/logout', logout);
-
-// User profile
 router.get('/me', protect, getUserProfile);
 router.put('/profile', protect, updateProfile);
 
 // Password management
 router.post('/change-password', protect, changePassword);
 
-// Bookings management
+// Profile and bookings routes
+router.get('/profile', protect, getUserProfile);
 router.get('/bookings', protect, getUserBookings);
 router.delete('/bookings/:id', protect, deleteUserBooking);
 

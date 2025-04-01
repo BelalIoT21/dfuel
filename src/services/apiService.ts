@@ -105,8 +105,7 @@ class ApiService {
       console.log(`Response from ${this.api.defaults.baseURL}/${cleanEndpoint}:`, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
-        data: response.data // Log the actual response data
+        headers: response.headers
       });
       
       // If the response data is empty, return a successful empty result instead of error
@@ -170,26 +169,6 @@ class ApiService {
     return this.request('auth/logout', 'POST', {}, true);
   }
   
-  // Change password
-  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
-    return this.request('auth/change-password', 'POST', { 
-      currentPassword, 
-      newPassword 
-    }, true);
-  }
-  
-  async forgotPassword(email: string): Promise<any> {
-    return this.request('auth/forgot-password', 'POST', { email });
-  }
-  
-  async resetPassword(email: string, resetCode: string, newPassword: string): Promise<any> {
-    return this.request('auth/reset-password', 'POST', { 
-      email, 
-      resetCode, 
-      newPassword 
-    });
-  }
-  
   // Machine functions
   async getMachineStatus(machineId: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'GET');
@@ -224,7 +203,7 @@ class ApiService {
   
   // Get user bookings
   async getUserBookings(userId?: string): Promise<any> {
-    return this.request('auth/bookings', 'GET', undefined, true);
+    return this.request('bookings', 'GET', undefined, true);
   }
   
   // Course related endpoints

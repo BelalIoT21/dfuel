@@ -1,4 +1,3 @@
-
 import { Machine } from '../../models/Machine';
 import { ensureMachineOrder } from './seedHelpers';
 
@@ -29,7 +28,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Intermediate',
-    imageUrl: '/utils/images/IMG_7814.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
     specifications: 'Working area: 32" x 20", Power: 120W, Materials: Wood, Acrylic, Paper, Leather',
     linkedCourseId: '1',
     linkedQuizId: '1'
@@ -42,7 +41,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Intermediate',
-    imageUrl: '/utils/images/IMG_7773.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
     specifications: 'Build volume: 330 x 240 x 300 mm, Nozzle diameter: 0.4mm, Materials: PLA, ABS, Nylon, TPU',
     linkedCourseId: '2',
     linkedQuizId: '2'
@@ -55,7 +54,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Intermediate',
-    imageUrl: '/utils/images/IMG_7768.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7768.jpg',
     specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 500mm/s, Materials: PLA, PETG, TPU, ABS',
     linkedCourseId: '3',
     linkedQuizId: '3'
@@ -68,7 +67,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Advanced',
-    imageUrl: '/utils/images/IMG_7769.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7769.jpg',
     specifications: 'Build volume: 256 x 256 x 256 mm, Max Speed: 600mm/s, Materials: PLA, PETG, TPU, ABS, PC',
     linkedCourseId: '4',
     linkedQuizId: '4'
@@ -81,7 +80,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: true,
     difficulty: 'Basic',
-    imageUrl: '/utils/images/IMG_7775.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7775.jpg',
     specifications: 'Capacity: 30 gallons, Fire resistant: 2 hours',
     linkedCourseId: '5',
     linkedQuizId: '5'
@@ -94,7 +93,7 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
     status: 'Available',
     requiresCertification: false,
     difficulty: 'Basic',
-    imageUrl: '/utils/images/IMG_7821.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
     specifications: 'Duration: 1 hour, Required for all makerspace users',
     linkedCourseId: '6',
     linkedQuizId: '6'

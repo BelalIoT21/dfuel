@@ -1,3 +1,4 @@
+
 // Define quiz content templates
 
 // Original quiz templates for restoration capability
@@ -31,7 +32,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7814.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
     relatedMachineIds: ['1'],
     relatedCourseId: '1',
     difficulty: 'Intermediate'
@@ -65,7 +66,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7815.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
     relatedMachineIds: ['2'],
     relatedCourseId: '2',
     difficulty: 'Basic'
@@ -99,7 +100,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7773.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
     relatedMachineIds: ['3'],
     relatedCourseId: '3',
     difficulty: 'Advanced'
@@ -133,7 +134,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7815.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
     relatedMachineIds: ['4'],
     relatedCourseId: '4',
     difficulty: 'Intermediate'
@@ -167,7 +168,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7818.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
     relatedMachineIds: ['5'],
     relatedCourseId: '5',
     difficulty: 'Basic'
@@ -201,7 +202,7 @@ export const ORIGINAL_QUIZ_TEMPLATES = {
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7821.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
     relatedMachineIds: ['6'],
     relatedCourseId: '6',
     difficulty: 'Basic'
@@ -240,7 +241,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7814.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
     relatedMachineIds: ['1'],
     relatedCourseId: '1',
     difficulty: 'Intermediate'
@@ -275,7 +276,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7815.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
     relatedMachineIds: ['2'],
     relatedCourseId: '2',
     difficulty: 'Basic'
@@ -310,7 +311,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7773.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
     relatedMachineIds: ['3'],
     relatedCourseId: '3',
     difficulty: 'Advanced'
@@ -345,7 +346,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7815.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
     relatedMachineIds: ['4'],
     relatedCourseId: '4',
     difficulty: 'Intermediate'
@@ -380,7 +381,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7818.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
     relatedMachineIds: ['5'],
     relatedCourseId: '5',
     difficulty: 'Basic'
@@ -415,7 +416,7 @@ export const predefinedQuizzes = [
       }
     ],
     passingScore: 70,
-    imageUrl: '/utils/images/IMG_7821.jpg',
+    imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
     relatedMachineIds: ['6'],
     relatedCourseId: '6',
     difficulty: 'Basic'

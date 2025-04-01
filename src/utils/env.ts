@@ -129,30 +129,6 @@ export const formatApiEndpoint = (endpoint: string): string => {
   return `${formattedApiUrl}${cleanEndpoint}`;
 };
 
-// New utility function to format image URLs
-export const formatImageUrl = (imageUrl: string | undefined): string => {
-  if (!imageUrl) return '/placeholder.svg';
-  
-  // If it's already a fully qualified URL or data URL, return as is
-  if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) {
-    return imageUrl;
-  }
-  
-  // For server image paths like /utils/images/xxx.jpg
-  if (imageUrl.startsWith('/utils/images')) {
-    const apiBaseUrl = getApiUrl();
-    // Remove /api from the end if it exists, as we'll add it below
-    const baseUrl = apiBaseUrl.endsWith('/api') 
-      ? apiBaseUrl 
-      : `${apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl}/api`;
-    
-    return `${baseUrl}${imageUrl}`;
-  }
-  
-  // For any other case, return as is
-  return imageUrl;
-};
-
 // Check if the app is running in a Capacitor environment
 export const isCapacitorEnvironment = (): boolean => {
   return typeof (window as any)?.Capacitor !== 'undefined';
