@@ -1,6 +1,6 @@
 
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs'; // Changed from bcrypt to bcryptjs
+import bcrypt from 'bcryptjs';
 import User from '../../models/User';
 import { generateToken } from '../../utils/tokenUtils';
 
@@ -15,8 +15,9 @@ interface UserResponse {
   name: string;
   email: string;
   isAdmin: boolean;
-  lastLogin: Date; // Added lastLogin to the interface
-  createdAt: Date; // Added createdAt
+  lastLogin: Date;
+  createdAt: Date;
+  certifications?: string[];
 }
 
 interface LoginResponse {
@@ -29,16 +30,19 @@ interface LoginResponse {
 export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Response<LoginResponse | { message: string }>) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for:', email);
 
     // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Compare the password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Password does not match for user:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -48,17 +52,19 @@ export const loginUser = async (req: Request<{}, {}, LoginRequestBody>, res: Res
 
     // Generate token
     const token = generateToken(user._id.toString());
+    console.log('Login successful, token generated for user:', email);
 
     // Return the standardized response
     res.json({
       data: {
         user: {
-          _id: user._id.toString(), // Ensure _id is returned as a string
+          _id: user._id.toString(),
           name: user.name,
           email: user.email,
-          isAdmin: user.isAdmin,
+          isAdmin: user.isAdmin || false,
           lastLogin: user.lastLogin,
-          createdAt: user.createdAt
+          createdAt: user.createdAt,
+          certifications: user.certifications || []
         },
         token,
       },

@@ -16,7 +16,7 @@ const router = express.Router();
 
 // User registration and authentication
 router.post('/register', registerUser);
-router.post('/login', loginUser); // Ensure this route is correctly defined
+router.post('/login', loginUser);
 router.post('/logout', logout);
 router.get('/me', protect, getUserProfile);
 router.put('/profile', protect, updateProfile);
