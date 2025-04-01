@@ -8,6 +8,8 @@ import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes, backupQuizzes
 // Main seeding function to run all seeders
 export async function runAllSeeders() {
   try {
+    console.log("Running seeders...");
+    
     // Seed users
     await seedUsers();
     
@@ -41,6 +43,8 @@ export async function runAllSeeders() {
 // Function to run seeder by name
 export async function runSeeder(seederName: string) {
   try {
+    console.log(`Running ${seederName} seeder...`);
+    
     switch (seederName) {
       case 'users':
         await seedUsers();

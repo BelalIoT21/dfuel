@@ -21,7 +21,7 @@ export const ensureAdminUser = async () => {
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (!existingAdmin) {
-      console.log(`Creating admin user: ${adminEmail}`);
+      console.log(`Creating default admin user: ${adminEmail}`);
       
       // Get the admin password from env
       const adminPassword = process.env.ADMIN_PASSWORD;
@@ -41,35 +41,38 @@ export const ensureAdminUser = async () => {
       });
       
       await newAdmin.save();
-      console.log('Admin user created');
+      console.log('Default admin user created successfully');
     } else {
-      // Admin exists, check for updates if needed
+      console.log('Admin user already exists');
       
       // Check if admin password needs to be updated
       const forcePasswordUpdate = process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true';
       
       if (forcePasswordUpdate) {
+        console.log('Force admin password update is enabled, updating admin password');
+        
+        // Update the admin password
         const adminPassword = process.env.ADMIN_PASSWORD;
         if (!adminPassword) {
           throw new Error('ADMIN_PASSWORD is not defined in environment variables');
         }
         existingAdmin.password = adminPassword;
         await existingAdmin.save();
-        console.log('Admin password updated');
+        console.log('Admin password updated successfully');
       }
       
       // Always ensure admin email is in sync with .env
       if (existingAdmin.email !== adminEmail) {
+        console.log(`Updating admin email from ${existingAdmin.email} to ${adminEmail}`);
         existingAdmin.email = adminEmail || 'admin@dfuel.com'; // Fix: Add fallback value
         await existingAdmin.save();
-        console.log('Admin email updated');
       }
       
       // If admin exists but doesn't have all certifications, update them
       if (!existingAdmin.certifications || existingAdmin.certifications.length < 6) {
         existingAdmin.certifications = ['1', '2', '3', '4', '5', '6'];
         await existingAdmin.save();
-        console.log('Admin certifications updated');
+        console.log('Updated admin with all certifications');
       }
     }
   } catch (error) {
