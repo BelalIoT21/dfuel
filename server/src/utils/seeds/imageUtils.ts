@@ -21,7 +21,7 @@ export const getImageBaseUrl = (): string => {
     ? apiUrl.substring(0, apiUrl.length - 4) 
     : apiUrl;
     
-  return baseUrl || 'http://localhost:4000';
+  return baseUrl;
 };
 
 /**
