@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -180,22 +181,37 @@ export const useAuthFunctions = (
   /**
    * Handles user logout.
    */
-  const logout = () => {
-    console.log("Logging out user from MongoDB session");
+  const logout = async () => {
+    try {
+      console.log("Logging out user from MongoDB session");
+      
+      // Make a request to the server to handle server-side logout
+      await apiService.logout();
+      
+      // Clear user state
+      setUser(null);
 
-    // Clear user state
-    setUser(null);
+      // Remove auth data from localStorage
+      localStorage.removeItem('token');
 
-    // Remove auth data
-    localStorage.removeItem('token');
+      // Clear the token from API service
+      apiService.setToken(null);
 
-    // Clear the token from API service
-    apiService.setToken(null);
-
-    // Show success message
-    toast({
-      description: "Logged out successfully."
-    });
+      // Show success message
+      toast({
+        description: "Logged out successfully."
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error during logout:", error);
+      toast({
+        title: "Logout error",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive"
+      });
+      return false;
+    }
   };
 
   return {

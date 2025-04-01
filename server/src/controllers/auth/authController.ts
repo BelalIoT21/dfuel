@@ -16,11 +16,24 @@ export {
   deleteUserBooking
 };
 
-// Placeholder functions for routes that don't have implementations yet
+// Logout function implementation
 export const logout = (req: Request, res: Response) => {
-  res.json({ message: 'Logged out successfully' });
+  // Server-side logout handling
+  // In a token-based auth system, we mainly let the client handle token removal
+  // But we can implement optional server-side handling for additional security
+  try {
+    // Clear any server-side session data or tokens if needed
+    // For JWT, we don't typically manage tokens server-side, but could add token to blacklist if needed
+    
+    // Return success
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.status(500).json({ success: false, message: 'Server error during logout' });
+  }
 };
 
+// Placeholder for getMe
 export const getMe = getUserProfile;
 
 export const updateProfile = async (req: Request, res: Response) => {
