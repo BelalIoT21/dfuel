@@ -195,7 +195,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Use mongoDbService for most reliable deletion
+      // Use mongoDbService for deletion
       console.log(`Attempting to delete user ${userId} using mongoDbService`);
       const success = await mongoDbService.deleteUser(userId);
       
@@ -210,7 +210,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           onUserDeleted();
         }
       } else {
-        // Additional fallback with direct API call
+        // Try a direct API call as a last resort
         try {
           console.log(`MongoDB deletion failed, trying direct API deletion`);
           const response = await apiService.request(`users/${userId}`, 'DELETE', undefined, true);
@@ -233,7 +233,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         
         toast({
           title: "Error",
-          description: "Failed to delete user. They may have special permissions.",
+          description: "Failed to delete user. Please try again later.",
           variant: "destructive"
         });
       }
