@@ -11,6 +11,8 @@ export interface ICourse extends mongoose.Document {
   relatedMachineIds?: string[];
   quizId?: string;
   difficulty: string;
+  deletedAt?: Date;
+  backupData?: string; // Add field to store JSON backup of course data
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +52,12 @@ const courseSchema = new mongoose.Schema<ICourse>(
     difficulty: {
       type: String,
       default: 'Beginner',
+    },
+    deletedAt: {
+      type: Date,
+    },
+    backupData: {
+      type: String,
     },
   },
   {

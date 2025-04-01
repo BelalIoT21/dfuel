@@ -19,6 +19,8 @@ export interface IQuiz extends mongoose.Document {
   relatedMachineIds?: string[];
   relatedCourseId?: string;
   difficulty: string;
+  deletedAt?: Date;
+  backupData?: string; // Add field to store JSON backup of quiz data
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +85,12 @@ const quizSchema = new mongoose.Schema<IQuiz>(
     difficulty: {
       type: String,
       default: 'Beginner',
+    },
+    deletedAt: {
+      type: Date,
+    },
+    backupData: {
+      type: String,
     },
   },
   {

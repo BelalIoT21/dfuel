@@ -49,6 +49,8 @@ export interface MongoQuiz extends Document {
   relatedMachineIds?: string[];
   relatedCourseId?: string;
   difficulty: string;
+  deletedAt?: Date;
+  backupData?: string; // Add field to store JSON backup of latest quiz data
 }
 
 export interface MongoCourse extends Document {
@@ -62,6 +64,8 @@ export interface MongoCourse extends Document {
   relatedMachineIds?: string[];
   quizId?: string;
   difficulty: string;
+  deletedAt?: Date;
+  backupData?: string; // Add field to store JSON backup of latest course data
 }
 
 export interface MongoMachineStatus extends Document {

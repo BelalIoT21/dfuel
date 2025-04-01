@@ -6,7 +6,8 @@ import mongoose from 'mongoose';
 // Get all courses
 export const getCourses = async (req: Request, res: Response) => {
   try {
-    const courses = await Course.find();
+    // Only return courses that haven't been soft-deleted
+    const courses = await Course.find({ deletedAt: { $exists: false } });
     res.status(200).json(courses);
   } catch (error) {
     console.error('Error in getCourses:', error);
@@ -22,9 +23,9 @@ export const getCourseById = async (req: Request, res: Response) => {
     // Handle string IDs properly
     let course;
     if (mongoose.Types.ObjectId.isValid(id)) {
-      course = await Course.findById(id);
+      course = await Course.findOne({ _id: id, deletedAt: { $exists: false } });
     } else {
-      course = await Course.findOne({ _id: id });
+      course = await Course.findOne({ _id: id, deletedAt: { $exists: false } });
     }
 
     if (!course) {
@@ -74,6 +75,10 @@ export const createCourse = async (req: Request, res: Response) => {
     });
 
     const savedCourse = await course.save();
+    
+    // Create an initial backup of the new course
+    await backupCourseData(savedCourse._id);
+    
     res.status(201).json(savedCourse);
   } catch (error) {
     console.error('Error in createCourse:', error);
@@ -98,6 +103,9 @@ export const updateCourse = async (req: Request, res: Response) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
+    
+    // Backup the course before updating
+    await backupCourseData(id);
 
     // Update the course fields
     const updatedCourse = await Course.findByIdAndUpdate(
@@ -122,7 +130,7 @@ export const updateCourse = async (req: Request, res: Response) => {
   }
 };
 
-// Delete course
+// Delete course (soft delete)
 export const deleteCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -138,13 +146,134 @@ export const deleteCourse = async (req: Request, res: Response) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-
-    // Delete the course
-    await course.deleteOne();
+    
+    // Backup the course before deletion
+    await backupCourseData(id);
+    
+    // Soft delete by setting deletedAt timestamp
+    await Course.findByIdAndUpdate(id, { deletedAt: new Date() });
 
     res.status(200).json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Error in deleteCourse:', error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Helper function to backup course data
+const backupCourseData = async (courseId: string) => {
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      console.error(`Cannot backup course ${courseId}: not found`);
+      return false;
+    }
+    
+    // Create backup data with timestamp
+    const backupData = {
+      ...course.toObject(),
+      _backupTime: new Date().toISOString()
+    };
+    
+    // Store backup as JSON string
+    await Course.findByIdAndUpdate(courseId, {
+      backupData: JSON.stringify(backupData)
+    });
+    
+    console.log(`Successfully backed up course ${courseId}`);
+    return true;
+  } catch (error) {
+    console.error(`Error backing up course ${courseId}:`, error);
+    return false;
+  }
+};
+
+// Backup course endpoint
+export const backupCourse = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { backupData } = req.body;
+    
+    // Find the course to ensure it exists
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // Update with provided backup data or generate new backup
+    if (backupData) {
+      await Course.findByIdAndUpdate(id, { backupData });
+    } else {
+      const success = await backupCourseData(id);
+      if (!success) {
+        return res.status(500).json({ message: 'Failed to backup course' });
+      }
+    }
+    
+    res.status(200).json({ success: true, message: 'Course backed up successfully' });
+  } catch (error) {
+    console.error(`Error in backupCourse:`, error);
+    res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+// Restore course endpoint
+export const restoreCourse = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the course to check if it exists
+    let existingCourse = await Course.findById(id);
+    
+    // If course doesn't exist or is soft-deleted, attempt to restore from backup
+    const restoreFromBackup = !existingCourse || existingCourse.deletedAt;
+    
+    if (restoreFromBackup) {
+      // Try to find the course even if it's soft-deleted
+      existingCourse = await Course.findOne({ _id: id });
+      
+      if (!existingCourse) {
+        return res.status(404).json({ message: 'Course not found and no backup available' });
+      }
+      
+      // Check if backup data exists
+      if (!existingCourse.backupData) {
+        return res.status(404).json({ message: 'No backup data available for this course' });
+      }
+      
+      // Parse backup data
+      const backupData = JSON.parse(existingCourse.backupData);
+      
+      // Update course with backup data
+      Object.keys(backupData).forEach(key => {
+        // Skip special fields that shouldn't be restored
+        if (!['_id', '__v', 'createdAt', 'updatedAt', '_backupTime'].includes(key)) {
+          // Fix: Type assertion to allow string indexing on the mongoose document
+          (existingCourse as any)[key] = backupData[key];
+        }
+      });
+      
+      // Clear deletedAt to undelete
+      existingCourse.deletedAt = undefined;
+      
+      // Save the restored course
+      await existingCourse.save();
+      
+      res.status(200).json({ 
+        success: true, 
+        message: 'Course restored successfully from backup',
+        course: existingCourse
+      });
+    } else {
+      // Course exists and isn't deleted, just return it
+      res.status(200).json({ 
+        success: true, 
+        message: 'Course already exists and is active',
+        course: existingCourse
+      });
+    }
+  } catch (error) {
+    console.error(`Error in restoreCourse:`, error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
