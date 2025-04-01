@@ -7,6 +7,7 @@ import {
   safetyCabinetCourseContent,
   machineSafetyCourseContent
 } from './courseContent';
+import { getImageUrl } from './imageUtils';
 
 // Original course templates for restoration capability
 export const ORIGINAL_COURSE_TEMPLATES = {
@@ -17,7 +18,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Learn how to safely operate the lab\'s laser cutter',
     category: 'Equipment',
     content: laserCutterCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
+    imageUrl: getImageUrl('IMG_7814.jpg'),
     relatedMachineIds: ['1'],
     quizId: '1',
     difficulty: 'Intermediate'
@@ -27,7 +28,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Learn how to use the Ultimaker 3D printer effectively',
     category: 'Equipment',
     content: ultimakerCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['2'],
     quizId: '2',
     difficulty: 'Basic'
@@ -37,7 +38,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Advanced training for carbon fiber composite printing',
     category: 'Equipment',
     content: x1CarbonCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
+    imageUrl: getImageUrl('IMG_7773.jpg'),
     relatedMachineIds: ['3'],
     quizId: '3',
     difficulty: 'Advanced'
@@ -47,7 +48,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Learn to use the Bambu Lab printer for high-quality prints',
     category: 'Equipment',
     content: bambuLabCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['4'],
     quizId: '4',
     difficulty: 'Intermediate'
@@ -57,7 +58,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Learn how to properly use and store materials in the safety cabinet',
     category: 'Safety',
     content: safetyCabinetCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
+    imageUrl: getImageUrl('IMG_7818.jpg'),
     relatedMachineIds: ['5'],
     quizId: '5',
     difficulty: 'Basic'
@@ -67,7 +68,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Essential safety training required for all makerspace users',
     category: 'Safety',
     content: machineSafetyCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
+    imageUrl: getImageUrl('IMG_7821.jpg'),
     relatedMachineIds: ['6'],
     quizId: '6',
     difficulty: 'Basic'
@@ -82,7 +83,7 @@ export const predefinedCourses = [
     description: 'Learn how to safely operate the lab\'s laser cutter',
     category: 'Equipment',
     content: laserCutterCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg',
+    imageUrl: getImageUrl('IMG_7814.jpg'),
     relatedMachineIds: ['1'],
     quizId: '1',
     difficulty: 'Intermediate'
@@ -93,7 +94,7 @@ export const predefinedCourses = [
     description: 'Learn how to use the Ultimaker 3D printer effectively',
     category: 'Equipment',
     content: ultimakerCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['2'],
     quizId: '2',
     difficulty: 'Basic'
@@ -104,7 +105,7 @@ export const predefinedCourses = [
     description: 'Advanced training for carbon fiber composite printing',
     category: 'Equipment',
     content: x1CarbonCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg',
+    imageUrl: getImageUrl('IMG_7773.jpg'),
     relatedMachineIds: ['3'],
     quizId: '3',
     difficulty: 'Advanced'
@@ -115,7 +116,7 @@ export const predefinedCourses = [
     description: 'Learn to use the Bambu Lab printer for high-quality prints',
     category: 'Equipment',
     content: bambuLabCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7815.jpg',
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['4'],
     quizId: '4',
     difficulty: 'Intermediate'
@@ -126,7 +127,7 @@ export const predefinedCourses = [
     description: 'Learn how to properly use and store materials in the safety cabinet',
     category: 'Safety',
     content: safetyCabinetCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7818.jpg',
+    imageUrl: getImageUrl('IMG_7818.jpg'),
     relatedMachineIds: ['5'],
     quizId: '5',
     difficulty: 'Basic'
@@ -137,7 +138,7 @@ export const predefinedCourses = [
     description: 'Essential safety training required for all makerspace users',
     category: 'Safety',
     content: machineSafetyCourseContent,
-    imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg',
+    imageUrl: getImageUrl('IMG_7821.jpg'),
     relatedMachineIds: ['6'],
     quizId: '6',
     difficulty: 'Basic'
