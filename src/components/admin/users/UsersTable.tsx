@@ -1,6 +1,5 @@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
-import { machines } from '../../../utils/data';
 import { useState, useEffect } from 'react';
 import { machineService } from '@/services/machineService';
 import { Button } from "@/components/ui/button";
@@ -72,23 +71,22 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           }
         });
         
-        // Add local machines as fallback
-        machines
-          .filter(m => m.name.toLowerCase() !== "cnc mill")
-          .forEach(machine => {
-            if (!namesMap[machine.id]) {
-              namesMap[machine.id] = machine.name;
-            }
-          });
-        
         console.log('Created machine name map with', Object.keys(namesMap).length, 'entries');
         setMachineNames(namesMap);
       } catch (error) {
         console.error('Error fetching machines:', error);
         
-        // Fallback to local data (filtered)
-        const filteredMachines = machines.filter(m => m.name.toLowerCase() !== "cnc mill");
-        setAllMachines(filteredMachines);
+        // Since we can't use machines from 'data.ts', create a fallback array
+        const defaultMachines = [
+          { id: "1", name: "Laser Cutter" },
+          { id: "2", name: "Ultimaker" },
+          { id: "3", name: "X1 E Carbon 3D Printer" },
+          { id: "4", name: "Bambu Lab X1 E" },
+          { id: "5", name: "Safety Cabinet" },
+          { id: "6", name: "Machine Safety Course" }
+        ];
+        
+        setAllMachines(defaultMachines);
         
         // Create a map of local machine IDs to names for quick lookup
         const namesMap: {[key: string]: string} = {};
@@ -99,12 +97,6 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         namesMap["4"] = "Bambu Lab X1 E";
         namesMap["5"] = "Safety Cabinet";
         namesMap["6"] = "Machine Safety Course";
-        
-        filteredMachines.forEach(machine => {
-          if (!namesMap[machine.id]) {
-            namesMap[machine.id] = machine.name;
-          }
-        });
         
         setMachineNames(namesMap);
       }
