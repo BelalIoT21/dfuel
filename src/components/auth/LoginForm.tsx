@@ -78,8 +78,8 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   };
 
   return (
-    <Card className="shadow-lg border-purple-100">
-      <CardHeader className="pb-1 pt-3 px-4 md:p-6">
+    <Card className="shadow-lg border-purple-100 w-full">
+      <CardHeader className="pb-1 pt-2 px-3 md:p-6">
         <CardTitle className="text-xl md:text-2xl">Sign In</CardTitle>
         <CardDescription className="text-xs md:text-sm">
           Enter your credentials to access your account
@@ -87,7 +87,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       </CardHeader>
       <CardContent className="p-3 md:p-6">
         {formError && (
-          <Alert variant="destructive" className="mb-2 py-1.5">
+          <Alert variant="destructive" className="mb-2 py-1">
             <AlertCircle className="h-3.5 w-3.5" />
             <AlertDescription className="text-xs">{formError}</AlertDescription>
           </Alert>
@@ -95,7 +95,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-2.5"
+          className="space-y-2"
           variants={formAnimation}
           initial="hidden"
           animate="show"
@@ -108,7 +108,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full h-8 text-xs md:text-sm ${emailError ? 'border-red-500' : ''}`}
+              className={`w-full h-7 text-xs md:text-sm ${emailError ? 'border-red-500' : ''}`}
             />
             {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
@@ -122,7 +122,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full h-8 text-xs md:text-sm ${passwordError ? 'border-red-500' : ''}`}
+                className={`w-full h-7 text-xs md:text-sm ${passwordError ? 'border-red-500' : ''}`}
               />
             </div>
             {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
@@ -131,7 +131,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700 h-8 text-xs md:text-sm mt-1"
+              className="w-full bg-purple-600 hover:bg-purple-700 h-7 text-xs md:text-sm mt-1"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
