@@ -12,44 +12,57 @@ declare global {
   }
 }
 
-// Helper function to find a user with any ID format (similar to the one in certificationController)
+// Simple in-memory cache for user lookups to reduce database queries
+// Key is user ID, value is user object and timestamp
+const userCache: Map<string, { user: any, timestamp: number }> = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Helper function to find a user with any ID format (with caching)
 async function findUserWithAnyIdFormat(userId: string) {
+  // Check if user is in cache and not expired
+  const cachedData = userCache.get(userId);
+  if (cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
+    // User found in cache and not expired
+    return cachedData.user;
+  }
+  
+  // Not in cache, or cache expired, proceed with database lookup
   console.log(`Auth middleware: Looking for user with ID: ${userId}`);
   
-  // Try all possible ways to find the user
   let user = null;
   
-  // Method 1: findById
+  // Try findById first as it's the most efficient method
   try {
     user = await User.findById(userId).select('-password');
     if (user) {
-      console.log(`Auth middleware: Found user with findById: ${user._id}`);
+      // Cache the user for future requests
+      userCache.set(userId, { user, timestamp: Date.now() });
       return user;
     }
   } catch (err) {
-    console.log('Auth middleware: Error in findById, trying other methods');
+    // If findById fails, try other methods
   }
   
   // Method 2: _id as string exact match
   try {
     user = await User.findOne({ _id: userId }).select('-password');
     if (user) {
-      console.log(`Auth middleware: Found user with _id exact match: ${user._id}`);
+      userCache.set(userId, { user, timestamp: Date.now() });
       return user;
     }
   } catch (err) {
-    console.log('Auth middleware: Error in _id exact match, trying other methods');
+    // Continue to next method
   }
   
   // Method 3: id field
   try {
     user = await User.findOne({ id: userId }).select('-password');
     if (user) {
-      console.log(`Auth middleware: Found user with id field: ${user._id}`);
+      userCache.set(userId, { user, timestamp: Date.now() });
       return user;
     }
   } catch (err) {
-    console.log('Auth middleware: Error in id field search, trying other methods');
+    // Continue to next method
   }
   
   // Method 4: numeric conversion
@@ -59,21 +72,21 @@ async function findUserWithAnyIdFormat(userId: string) {
     try {
       user = await User.findById(numericId).select('-password');
       if (user) {
-        console.log(`Auth middleware: Found user with numeric findById: ${user._id}`);
+        userCache.set(userId, { user, timestamp: Date.now() });
         return user;
       }
     } catch (err) {
-      console.log('Auth middleware: Error in numeric findById');
+      // Continue to next method
     }
     
     try {
       user = await User.findOne({ id: numericId }).select('-password');
       if (user) {
-        console.log(`Auth middleware: Found user with numeric id field: ${user._id}`);
+        userCache.set(userId, { user, timestamp: Date.now() });
         return user;
       }
     } catch (err) {
-      console.log('Auth middleware: Error in numeric id field search');
+      // Last attempt failed
     }
   }
   
@@ -98,7 +111,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
 
-    // Find user by ID with enhanced user lookup
+    // Find user by ID with enhanced user lookup (now with caching)
     const user = await findUserWithAnyIdFormat(decoded.id);
 
     if (!user) {
