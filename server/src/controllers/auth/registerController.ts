@@ -70,11 +70,15 @@ export const registerUser = async (req: Request, res: Response) => {
       } else {
         res.status(400).json({ message: 'Invalid user data' });
       }
-    } catch (createError) {
-      console.error('Error creating user:', createError);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      
+      // Type guard for MongoDB duplicate key error
+      const isMongoError = error instanceof Error && 'code' in error;
+      const errorCode = isMongoError ? (error as any).code : null;
       
       // Specific handling for duplicate key errors
-      if (createError.code === 11000) {
+      if (errorCode === 11000) {
         // Get a new ID with a retry mechanism
         try {
           const retryId = await getRetryUserId();
@@ -120,7 +124,7 @@ export const registerUser = async (req: Request, res: Response) => {
       
       res.status(500).json({ 
         message: 'Failed to create user account', 
-        error: createError instanceof Error ? createError.message : 'Unknown error' 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
   } catch (error) {
