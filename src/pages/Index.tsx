@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -245,8 +246,8 @@ const Index = () => {
 
   const mobileContainerStyle = isMobile
     ? { 
-        paddingTop: keyboardVisible ? '1rem' : '10vh',
-        paddingBottom: keyboardVisible ? '15vh' : '0',
+        paddingTop: keyboardVisible ? '1vh' : '10vh',
+        paddingBottom: keyboardVisible ? '30vh' : '0',
         minHeight: '100vh',
         transition: 'all 0.3s ease',
       } 
@@ -261,11 +262,13 @@ const Index = () => {
       style={mobileContainerStyle}
     >
       <div className={`w-full max-w-md ${isMobile ? 'max-w-xs' : 'max-w-md'} ${keyboardVisible && isMobile ? 'scale-95' : ''}`}>
-        <div className={`text-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
-          <h1 className={`font-bold text-purple-800 tracking-tight ${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>Dfuel</h1>
-          <p className={`text-gray-600 ${isMobile ? 'text-sm mt-1' : 'mt-2 text-md md:text-lg'}`}>
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </p>
+        <div className={`text-center ${keyboardVisible && isMobile ? 'mb-1' : isMobile ? 'mb-3' : 'mb-6'}`}>
+          <h1 className={`font-bold text-purple-800 tracking-tight ${keyboardVisible && isMobile ? 'text-xl' : isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>Dfuel</h1>
+          {(!keyboardVisible || !isMobile) && (
+            <p className={`text-gray-600 ${isMobile ? 'text-sm mt-1' : 'mt-2 text-md md:text-lg'}`}>
+              {isLogin ? 'Welcome back!' : 'Create your account'}
+            </p>
+          )}
           {serverStatus && !keyboardVisible && (
             <div className={isConnected
               ? 'mt-1 text-green-600 flex items-center justify-center' 
@@ -296,7 +299,8 @@ const Index = () => {
             >
               <LoginForm 
                 onLogin={handleLogin} 
-                onToggleMode={toggleMode} 
+                onToggleMode={toggleMode}
+                keyboardVisible={keyboardVisible}
               />
             </motion.div>
           ) : (

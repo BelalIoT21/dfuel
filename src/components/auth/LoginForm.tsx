@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onToggleMode: () => void;
+  keyboardVisible?: boolean;
 }
 
 const formAnimation = {
@@ -28,7 +30,7 @@ const itemAnimation = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, onToggleMode, keyboardVisible = false }: LoginFormProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -78,17 +80,22 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     }
   };
 
+  // Apply more compact styles when keyboard is visible on mobile
+  const compactMode = keyboardVisible && isMobile;
+
   return (
-    <Card className={`shadow-md border-purple-100 ${isMobile ? 'py-2' : ''}`}>
-      <CardHeader className={isMobile ? "pb-1 pt-3 px-4" : "pb-2"}>
-        <CardTitle className={isMobile ? "text-xl" : ""}>Sign In</CardTitle>
-        <CardDescription className={isMobile ? "text-sm" : ""}>
-          Enter your credentials to access your account
-        </CardDescription>
+    <Card className={`shadow-md border-purple-100 ${compactMode ? 'py-1 mb-16' : isMobile ? 'py-2' : ''}`}>
+      <CardHeader className={compactMode ? "pb-0 pt-2 px-4" : isMobile ? "pb-1 pt-3 px-4" : "pb-2"}>
+        <CardTitle className={compactMode ? "text-lg" : isMobile ? "text-xl" : ""}>Sign In</CardTitle>
+        {!compactMode && (
+          <CardDescription className={isMobile ? "text-sm" : ""}>
+            Enter your credentials to access your account
+          </CardDescription>
+        )}
       </CardHeader>
-      <CardContent className={isMobile ? "px-4 py-2" : ""}>
+      <CardContent className={compactMode ? "px-4 py-1" : isMobile ? "px-4 py-2" : ""}>
         {formError && (
-          <Alert variant="destructive" className={`mb-3 ${isMobile ? 'py-2' : 'mb-4'}`}>
+          <Alert variant="destructive" className={`${compactMode ? 'mb-1 py-1' : isMobile ? 'py-2 mb-2' : 'mb-4'}`}>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className={isMobile ? "text-xs" : ""}>{formError}</AlertDescription>
           </Alert>
@@ -96,12 +103,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className={isMobile ? "space-y-3" : "space-y-4"}
+          className={compactMode ? "space-y-2" : isMobile ? "space-y-3" : "space-y-4"}
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className={isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
+          <motion.div className={compactMode ? "space-y-1" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
             <Label htmlFor="email" className={isMobile ? "text-sm" : ""}>Email</Label>
             <Input
               id="email"
@@ -109,12 +116,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full ${emailError ? 'border-red-500' : ''} ${isMobile ? 'h-9 text-sm' : ''}`}
+              className={`w-full ${emailError ? 'border-red-500' : ''} ${compactMode ? 'h-8 text-sm' : isMobile ? 'h-9 text-sm' : ''}`}
             />
             {emailError && <p className={`text-red-500 ${isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{emailError}</p>}
           </motion.div>
           
-          <motion.div className={isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
+          <motion.div className={compactMode ? "space-y-1" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
             <Label htmlFor="password" className={isMobile ? "text-sm" : ""}>Password</Label>
             <div className="relative">
               <Input
@@ -123,7 +130,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full ${passwordError ? 'border-red-500' : ''} ${isMobile ? 'h-9 text-sm' : ''}`}
+                className={`w-full ${passwordError ? 'border-red-500' : ''} ${compactMode ? 'h-8 text-sm' : isMobile ? 'h-9 text-sm' : ''}`}
               />
             </div>
             {passwordError && <p className={`text-red-500 ${isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{passwordError}</p>}
@@ -132,7 +139,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className={`w-full bg-purple-600 hover:bg-purple-700 ${isMobile ? 'h-9 text-sm mt-1' : ''}`}
+              className={`w-full bg-purple-600 hover:bg-purple-700 ${compactMode ? 'h-8 text-sm mt-0.5' : isMobile ? 'h-9 text-sm mt-1' : ''}`}
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
@@ -141,14 +148,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         </motion.form>
 
         <motion.div 
-          className={`text-center ${isMobile ? 'mt-2' : 'mt-4'}`}
+          className={`text-center ${compactMode ? 'mt-1' : isMobile ? 'mt-2' : 'mt-4'}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <button
             onClick={onToggleMode}
-            className={`text-purple-600 hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}
+            className={`text-purple-600 hover:underline ${compactMode ? 'text-xs' : isMobile ? 'text-xs' : 'text-sm'}`}
             type="button"
           >
             Don't have an account? Register
