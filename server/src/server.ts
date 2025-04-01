@@ -28,12 +28,8 @@ connectDB();
 const app = express();
 
 // Serve the images folder for machine images
-// First, make the utils/images directory available publicly
 const imagesPath = path.join(__dirname, './utils/images');
-console.log('Images directory path:', imagesPath);
 app.use('/utils/images', express.static(imagesPath));
-
-// Also serve it at an alternative URL for better client compatibility
 app.use('/api/utils/images', express.static(imagesPath));
 
 // Set up higher limits for request payload size
@@ -55,13 +51,9 @@ app.use(helmet({
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('Request allowed without origin (like mobile app, curl, etc.)');
-      return callback(null, true);
-    }
+    if (!origin) return callback(null, true);
     
     // Allow any origin for development
-    console.log(`Request origin: ${origin}`);
     callback(null, true);
   },
   credentials: true
@@ -82,16 +74,12 @@ app.use('/api/quizzes', quizRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Create admin user independently to ensure it's done regardless of seed process
-console.log('Ensuring admin user exists before starting seed process...');
+// Initialize system
+console.log('Initializing system...');
 createAdminUser()
+  .then(() => SeedService.seedDatabase())
   .then(() => {
-    console.log('Admin user check complete, continuing with database seeding...');
-    // Seed the database
-    return SeedService.seedDatabase();
-  })
-  .then(() => {
-    console.log('Database seeding complete');
+    console.log('Database setup complete');
   })
   .catch((error) => {
     console.error('Error in startup process:', error);
@@ -102,4 +90,3 @@ const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-

@@ -8,8 +8,6 @@ import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes, backupQuizzes
 // Main seeding function to run all seeders
 export async function runAllSeeders() {
   try {
-    console.log("Running all seeders...");
-    
     // Seed users
     await seedUsers();
     
@@ -19,7 +17,6 @@ export async function runAllSeeders() {
     await restoreDeletedQuizzes();
     
     // Seed core machines (but don't overwrite existing ones)
-    console.log("Seeding core machines while preserving user modifications...");
     await seedAllMachines();
     
     // Seed safety courses and quizzes
@@ -34,7 +31,6 @@ export async function runAllSeeders() {
     await backupCourses();
     await backupQuizzes();
     
-    console.log("All seeders completed successfully");
     return { success: true };
   } catch (error) {
     console.error("Error running seeders:", error);
@@ -45,8 +41,6 @@ export async function runAllSeeders() {
 // Function to run seeder by name
 export async function runSeeder(seederName: string) {
   try {
-    console.log(`Running ${seederName} seeder...`);
-    
     switch (seederName) {
       case 'users':
         await seedUsers();
@@ -85,7 +79,6 @@ export async function runSeeder(seederName: string) {
         throw new Error(`Unknown seeder: ${seederName}`);
     }
     
-    console.log(`${seederName} seeder completed successfully`);
     return { success: true };
   } catch (error) {
     console.error(`Error running ${seederName} seeder:`, error);
