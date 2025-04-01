@@ -85,17 +85,17 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
-  let buttonIcon = Calendar;
+  let ButtonIcon = Calendar; // Fixed: Changed to PascalCase
   
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
-    buttonIcon = CalendarX;
+    ButtonIcon = CalendarX; // Fixed: Changed to PascalCase
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
-    buttonIcon = AlertTriangle;
+    ButtonIcon = AlertTriangle; // Fixed: Changed to PascalCase
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
-    buttonIcon = AlertTriangle;
+    ButtonIcon = AlertTriangle; // Fixed: Changed to PascalCase
   }
 
   return (
@@ -106,7 +106,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <buttonIcon className="mr-2 h-4 w-4" />
+      <ButtonIcon className="mr-2 h-4 w-4" />
       {buttonText}
     </Button>
   );
