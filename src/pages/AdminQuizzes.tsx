@@ -9,6 +9,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { quizDatabaseService } from '@/services/database/quizService';
 import { Badge } from '@/components/ui/badge';
+import { Plus } from 'lucide-react';
 
 const AdminQuizzes = () => {
   const { user } = useAuth();
@@ -101,9 +102,12 @@ const AdminQuizzes = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div>
-                <Button onClick={() => navigate('/admin/quizzes/new')}>Add New Quiz</Button>
-              </div>
+              <Button asChild className="w-full md:w-auto">
+                <Link to="/admin/quizzes/new" className="flex items-center justify-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add New Quiz
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

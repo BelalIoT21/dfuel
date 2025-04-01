@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,13 +26,11 @@ const AdminMachines = () => {
   const getProperImageUrl = (imageUrl: string) => {
     if (!imageUrl) return '/placeholder.svg';
     
-    // Handle server image paths by adding the API URL prefix
     if (imageUrl.startsWith('/utils/images')) {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       return `${apiUrl}/api${imageUrl}`;
     }
     
-    // Handle base64 data URLs directly
     if (imageUrl.startsWith('data:')) {
       return imageUrl;
     }
@@ -192,34 +189,24 @@ const AdminMachines = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <h1 className="text-3xl font-bold mb-4 md:mb-0">Machine Management</h1>
-          {!isMobile && (
-            <Button asChild className="bg-purple-600 hover:bg-purple-700">
-              <Link to="/admin/machines/new" className="flex items-center">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Machine
-              </Link>
-            </Button>
-          )}
         </div>
         
         <Card className="mb-6">
           <CardContent className="p-6">
-            <div className="flex flex-col gap-4">
-              <div className="w-full">
+            <div className="flex flex-col md:flex-row gap-4 justify-between">
+              <div className="w-full md:w-1/3">
                 <Input
                   placeholder="Search machines..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              {isMobile && (
-                <Button asChild className="bg-purple-600 hover:bg-purple-700 w-full">
-                  <Link to="/admin/machines/new" className="flex items-center justify-center">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Machine
-                  </Link>
-                </Button>
-              )}
+              <Button asChild className="w-full md:w-auto">
+                <Link to="/admin/machines/new" className="flex items-center justify-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Machine
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -239,7 +226,6 @@ const AdminMachines = () => {
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
-                  // Make sure to use the proper image URL function
                   const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
                   console.log(`AdminMachines - Machine ${machineId} image: ${imageUrl}`);
                   
