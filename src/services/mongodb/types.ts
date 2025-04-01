@@ -27,6 +27,8 @@ export interface MongoMachine extends Document {
   linkedCourseId?: string;
   linkedQuizId?: string;
   requiresCertification?: boolean;
+  isUserCreated?: boolean;
+  deletedAt?: Date;
 }
 
 export interface MongoQuiz extends Document {
@@ -59,4 +61,11 @@ export interface MongoCourse extends Document {
   relatedMachineIds?: string[];
   quizId?: string;
   difficulty: string;
+}
+
+export interface MongoMachineStatus extends Document {
+  machineId: string;
+  status: string;
+  note?: string;
+  updatedAt: Date;
 }

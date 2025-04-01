@@ -21,6 +21,12 @@ export interface IMachine extends mongoose.Document {
   linkedQuizId?: string;
   note?: string;
   
+  // Flag to indicate if machine was created by a user (not a core machine)
+  isUserCreated?: boolean;
+  
+  // Backup and restoration tracking
+  deletedAt?: Date;
+  
   // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
   removeBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -32,8 +38,8 @@ async function getNextId(): Promise<string> {
     // Find the highest numeric ID in the collection
     const machines = await mongoose.model('Machine').find({}, '_id').sort({ _id: -1 }).limit(20);
     
-    // Start with ID 4 as base (since IDs 1-4 are reserved)
-    let highestId = 4;
+    // Start with ID 7 as base (since IDs 1-6 are reserved for core machines)
+    let highestId = 6;
     
     // Find the highest numeric ID
     for (const machine of machines) {
@@ -47,14 +53,14 @@ async function getNextId(): Promise<string> {
       }
     }
     
-    // Return the next ID, ensuring it's at least 5
-    const nextId = Math.max(highestId + 1, 5);
+    // Return the next ID, ensuring it's at least 7
+    const nextId = Math.max(highestId + 1, 7);
     console.log(`Generated next machine ID: ${nextId} (from highest: ${highestId})`);
     return nextId.toString();
   } catch (error) {
     console.error('Error generating next machine ID:', error);
-    // Fallback to minimum ID 5 if there's an error
-    return "5";
+    // Fallback to minimum ID 7 if there's an error
+    return "7";
   }
 }
 
@@ -117,6 +123,15 @@ const machineSchema = new mongoose.Schema<IMachine>(
     note: {
       type: String,
     },
+    // Flag for user-created machines
+    isUserCreated: {
+      type: Boolean,
+      default: false
+    },
+    // Backup and restoration tracking
+    deletedAt: {
+      type: Date
+    }
   },
   {
     timestamps: true,
