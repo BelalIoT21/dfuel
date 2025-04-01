@@ -3,13 +3,10 @@ import express from 'express';
 import {
   registerUser,
   loginUser,
-  getMe,
-  getUserProfile,
-  getUserBookings,
-  deleteUserBooking
 } from '../controllers/authController';
 import { changePassword } from '../controllers/auth/passwordController';
 import { protect } from '../middleware/authMiddleware';
+import { getMe, getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 
 const router = express.Router();
 
