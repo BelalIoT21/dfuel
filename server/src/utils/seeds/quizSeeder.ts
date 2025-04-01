@@ -1,7 +1,6 @@
 
-import { Quiz } from '../../models/Quiz';
-import { predefinedQuizzes, ORIGINAL_QUIZ_TEMPLATES } from './courseTemplates';
-import { QuizDocument } from '../../models/Quiz';
+import { Quiz, IQuiz } from '../../models/Quiz';
+import { predefinedQuizzes, ORIGINAL_QUIZ_TEMPLATES } from './quizTemplates';
 
 // Function to seed safety quizzes (safety and machine safety quizzes only)
 export async function seedSafetyQuizzes() {
@@ -10,13 +9,13 @@ export async function seedSafetyQuizzes() {
     const quiz5 = await Quiz.findById('5');
     const quiz6 = await Quiz.findById('6');
     
-    const safetyQuizzes = predefinedQuizzes.filter((quiz: any) => 
+    const safetyQuizzes = predefinedQuizzes.filter((quiz) => 
       (quiz._id === '5' || quiz._id === '6') && quiz.category === 'Safety'
     );
     
     // Create Safety Cabinet quiz if it doesn't exist
-    if (!quiz5 && safetyQuizzes.find((q: any) => q._id === '5')) {
-      const safetyCabinetQuiz = new Quiz(safetyQuizzes.find((q: any) => q._id === '5'));
+    if (!quiz5 && safetyQuizzes.find((q) => q._id === '5')) {
+      const safetyCabinetQuiz = new Quiz(safetyQuizzes.find((q) => q._id === '5'));
       await safetyCabinetQuiz.save();
       console.log('Created Safety Cabinet quiz with ID: 5');
     } else {
@@ -24,8 +23,8 @@ export async function seedSafetyQuizzes() {
     }
     
     // Create Machine Safety quiz if it doesn't exist
-    if (!quiz6 && safetyQuizzes.find((q: any) => q._id === '6')) {
-      const machineSafetyQuiz = new Quiz(safetyQuizzes.find((q: any) => q._id === '6'));
+    if (!quiz6 && safetyQuizzes.find((q) => q._id === '6')) {
+      const machineSafetyQuiz = new Quiz(safetyQuizzes.find((q) => q._id === '6'));
       await machineSafetyQuiz.save();
       console.log('Created Machine Safety quiz with ID: 6');
     } else {
