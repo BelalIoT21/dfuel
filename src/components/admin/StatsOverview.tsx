@@ -16,6 +16,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   const [machineCount, setMachineCount] = useState(0);
   const isFetchingRef = useRef(false);
   const lastFetchedRef = useRef(0);
+  const bookingsTimestampRef = useRef(0);
   
   // Set machine count when machines prop changes
   useEffect(() => {
@@ -24,23 +25,23 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     }
   }, [machines]);
   
-  // Fetch the actual bookings count
+  // Fetch the actual bookings count with reduced frequency
   useEffect(() => {
     const fetchBookingsCount = async () => {
       // Prevent multiple simultaneous fetches
       if (isFetchingRef.current) return;
       
-      // Only fetch if it's been more than 120 seconds since the last fetch (increased from 60s)
+      // Only fetch if it's been more than 180 seconds since the last fetch
       const now = Date.now();
-      if (now - lastFetchedRef.current < 120000 && lastFetchedRef.current > 0) {
-        console.log("Stats: Skipping fetch, last fetched less than 120 seconds ago");
+      if (now - bookingsTimestampRef.current < 180000 && bookingsTimestampRef.current > 0) {
+        console.log("Stats: Skipping bookings fetch, last fetched less than 180 seconds ago");
         return;
       }
       
       try {
         isFetchingRef.current = true;
         setIsLoading(true);
-        lastFetchedRef.current = now;
+        bookingsTimestampRef.current = now;
         
         // Try API for bookings
         try {
@@ -70,22 +71,23 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
     
     fetchBookingsCount();
     
-    // Only update stats every 2 minutes at most
-    const intervalId = setInterval(fetchBookingsCount, 120000);
+    // Only update stats every 3 minutes at most
+    const intervalId = setInterval(fetchBookingsCount, 180000);
     return () => clearInterval(intervalId);
   }, []);
   
-  // Ensure user count is fetched consistently from API first, then fallback to props
+  // Ensure user count is fetched consistently from props first, then fallback to API
   useEffect(() => {
     const fetchUsers = async () => {
-      // Only fetch if it's been more than 120 seconds since the last fetch
+      // Only fetch if it's been more than 180 seconds since the last fetch
       const now = Date.now();
-      if (now - lastFetchedRef.current < 120000 && lastFetchedRef.current > 0) {
-        console.log("Stats: Skipping user fetch, last fetched less than 120 seconds ago");
+      if (now - lastFetchedRef.current < 180000 && lastFetchedRef.current > 0) {
+        console.log("Stats: Skipping user fetch, last fetched less than 180 seconds ago");
         return;
       }
       
       try {
+        lastFetchedRef.current = now;
         console.log("Fetching users for stats overview");
         
         // If allUsers prop is provided, use it (most efficient)
@@ -95,25 +97,24 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
           return;
         }
         
-        // Try the API as fallback
-        const response = await apiService.getAllUsers();
-        if (response.data && response.data.length > 0) {
-          console.log(`Retrieved ${response.data.length} users from API`);
-          setUserCount(response.data.length);
-          return;
+        // Try the API as fallback, but avoid making this call unless necessary
+        if (userCount === 0) {
+          const response = await apiService.getAllUsers();
+          if (response.data && response.data.length > 0) {
+            console.log(`Retrieved ${response.data.length} users from API`);
+            setUserCount(response.data.length);
+            return;
+          }
         }
-        
-        // Last resort - just use 0
-        setUserCount(0);
       } catch (error) {
         console.error("Error fetching users for stats:", error);
-        // If all else fails, use the provided users or show 0
-        setUserCount(allUsers?.length || 0);
       }
     };
     
     fetchUsers();
-  }, [allUsers]);
+    
+    // Don't set up an interval for this - we'll rely on prop updates
+  }, [allUsers, userCount]);
   
   // Get actual machine count based on the machines array
   const getMachineCount = (machinesArray: any[]) => {
@@ -122,8 +123,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       setMachineCount(0);
       return 0;
     }
-    
-    console.log("Total machines before filtering:", machinesArray.length);
     
     // Filter out ONLY machines with IDs 5 and 6 (safety cabinet and safety course)
     const filteredMachines = machinesArray.filter(machine => {

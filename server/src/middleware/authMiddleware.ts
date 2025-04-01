@@ -12,9 +12,31 @@ declare global {
   }
 }
 
-// Helper function to find a user with any ID format (similar to the one in certificationController)
+// Simple in-memory cache for user lookups
+// Keys are user IDs, values are user objects with an expiry timestamp
+const userCache: { [key: string]: { user: any, expiry: number } } = {};
+const CACHE_DURATION = 300000; // 5 minutes in ms
+
+// Clean up expired cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(userCache).forEach(key => {
+    if (userCache[key].expiry < now) {
+      delete userCache[key];
+    }
+  });
+}, 600000); // Run every 10 minutes
+
+// Helper function to find a user with any ID format with caching
 async function findUserWithAnyIdFormat(userId: string) {
   console.log(`Auth middleware: Looking for user with ID: ${userId}`);
+  
+  // Check cache first
+  const now = Date.now();
+  if (userCache[userId] && userCache[userId].expiry > now) {
+    console.log(`Auth middleware: Found user in cache: ${userId}`);
+    return userCache[userId].user;
+  }
   
   // Try all possible ways to find the user
   let user = null;
@@ -24,6 +46,11 @@ async function findUserWithAnyIdFormat(userId: string) {
     user = await User.findById(userId).select('-password');
     if (user) {
       console.log(`Auth middleware: Found user with findById: ${user._id}`);
+      // Cache the user
+      userCache[userId] = {
+        user,
+        expiry: now + CACHE_DURATION
+      };
       return user;
     }
   } catch (err) {
@@ -35,6 +62,10 @@ async function findUserWithAnyIdFormat(userId: string) {
     user = await User.findOne({ _id: userId }).select('-password');
     if (user) {
       console.log(`Auth middleware: Found user with _id exact match: ${user._id}`);
+      userCache[userId] = {
+        user,
+        expiry: now + CACHE_DURATION
+      };
       return user;
     }
   } catch (err) {
@@ -46,6 +77,10 @@ async function findUserWithAnyIdFormat(userId: string) {
     user = await User.findOne({ id: userId }).select('-password');
     if (user) {
       console.log(`Auth middleware: Found user with id field: ${user._id}`);
+      userCache[userId] = {
+        user,
+        expiry: now + CACHE_DURATION
+      };
       return user;
     }
   } catch (err) {
@@ -60,6 +95,10 @@ async function findUserWithAnyIdFormat(userId: string) {
       user = await User.findById(numericId).select('-password');
       if (user) {
         console.log(`Auth middleware: Found user with numeric findById: ${user._id}`);
+        userCache[userId] = {
+          user,
+          expiry: now + CACHE_DURATION
+        };
         return user;
       }
     } catch (err) {
@@ -70,6 +109,10 @@ async function findUserWithAnyIdFormat(userId: string) {
       user = await User.findOne({ id: numericId }).select('-password');
       if (user) {
         console.log(`Auth middleware: Found user with numeric id field: ${user._id}`);
+        userCache[userId] = {
+          user,
+          expiry: now + CACHE_DURATION
+        };
         return user;
       }
     } catch (err) {
@@ -80,6 +123,9 @@ async function findUserWithAnyIdFormat(userId: string) {
   console.log(`Auth middleware: User not found with any method for ID: ${userId}`);
   return null;
 }
+
+// Simple token verification cache
+const tokenCache: { [key: string]: { decoded: any, expiry: number } } = {};
 
 // Protect routes with JWT authentication
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
@@ -95,6 +141,13 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
   }
 
   try {
+    // Check if token is in cache
+    const now = Date.now();
+    if (tokenCache[token] && tokenCache[token].expiry > now) {
+      req.user = tokenCache[token].decoded;
+      return next();
+    }
+
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
 
@@ -104,6 +157,12 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Cache the token verification result
+    tokenCache[token] = {
+      decoded: user,
+      expiry: now + CACHE_DURATION
+    };
 
     // Attach user to request object
     req.user = user;

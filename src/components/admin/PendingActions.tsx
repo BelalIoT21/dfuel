@@ -13,15 +13,16 @@ export const PendingActions = () => {
   const { toast } = useToast();
   const lastFetchedRef = useRef(0);
   const isFetchingRef = useRef(false);
+  const timeoutRef = useRef(null);
   
   const fetchPendingBookings = useCallback(async () => {
     // Return early if we're already refreshing to prevent duplicate calls
     if (isFetchingRef.current) return;
     
-    // Only fetch if it's been more than 120 seconds since the last fetch (increased from 60s)
+    // Only fetch if it's been more than 180 seconds since the last fetch (increased from 120s)
     const now = Date.now();
-    if (now - lastFetchedRef.current < 120000 && lastFetchedRef.current > 0) {
-      console.log("PendingActions: Skipping fetch, last fetched less than 120 seconds ago");
+    if (now - lastFetchedRef.current < 180000 && lastFetchedRef.current > 0) {
+      console.log("PendingActions: Skipping fetch, last fetched less than 180 seconds ago");
       return;
     }
     
@@ -33,16 +34,12 @@ export const PendingActions = () => {
       
       console.log("Fetching pending bookings...");
       
-      // Try direct API fetch
-      console.log("Fetching bookings directly from API");
       const response = await apiService.request({
         method: 'GET',
         url: 'bookings/all'
       });
       
-      console.log("API response for bookings:", response);
       if (response?.data && Array.isArray(response.data)) {
-        console.log(`Found ${response.data.length} bookings via API`);
         // Filter to only show pending bookings
         const pendingOnly = response.data.filter(booking => 
           booking.status === 'Pending' || booking.status === 'pending'
@@ -67,20 +64,34 @@ export const PendingActions = () => {
     // Initial fetch
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings at a lower frequency (2 minutes)
+    // Set up polling with a higher interval to reduce server calls
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 120000); // 2 minutes
+    }, 180000); // 3 minutes
     
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [fetchPendingBookings]);
 
   // Handle booking status change to completely refresh the list
-  const handleBookingStatusChange = useCallback(async () => {
+  const handleBookingStatusChange = useCallback(() => {
     console.log("Booking status changed, refreshing list");
-    // Force immediate refresh of the bookings list
-    await fetchPendingBookings();
+    
+    // Use a timeout to avoid immediate refresh and allow server state to update
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      // Force immediate refresh of the bookings list by resetting lastFetchedRef
+      lastFetchedRef.current = 0;
+      fetchPendingBookings();
+    }, 1000); // 1 second delay
   }, [fetchPendingBookings]);
 
   const handleManualRefresh = () => {
