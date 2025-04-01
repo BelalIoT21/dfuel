@@ -79,42 +79,42 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
 
   return (
     <Card className="shadow-lg border-purple-100">
-      <CardHeader className="pb-1 pt-3 px-4 md:p-6">
+      <CardHeader className="pb-2 pt-4 px-4 md:p-6">
         <CardTitle className="text-xl md:text-2xl">Sign In</CardTitle>
-        <CardDescription className="text-xs md:text-sm">
+        <CardDescription className="text-sm">
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-3 md:p-6">
+      <CardContent className="p-4 md:p-6">
         {formError && (
-          <Alert variant="destructive" className="mb-2 py-1.5">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <AlertDescription className="text-xs">{formError}</AlertDescription>
+          <Alert variant="destructive" className="mb-3 py-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">{formError}</AlertDescription>
           </Alert>
         )}
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-2.5"
+          className="space-y-3"
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className="space-y-1" variants={itemAnimation}>
-            <Label htmlFor="email" className="text-xs md:text-sm">Email</Label>
+          <motion.div className="space-y-1.5" variants={itemAnimation}>
+            <Label htmlFor="email" className="text-sm">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full h-8 text-xs md:text-sm ${emailError ? 'border-red-500' : ''}`}
+              className={`w-full h-9 text-sm ${emailError ? 'border-red-500' : ''}`}
             />
             {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-1" variants={itemAnimation}>
-            <Label htmlFor="password" className="text-xs md:text-sm">Password</Label>
+          <motion.div className="space-y-1.5" variants={itemAnimation}>
+            <Label htmlFor="password" className="text-sm">Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -122,7 +122,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full h-8 text-xs md:text-sm ${passwordError ? 'border-red-500' : ''}`}
+                className={`w-full h-9 text-sm ${passwordError ? 'border-red-500' : ''}`}
               />
             </div>
             {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
@@ -131,7 +131,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className="w-full bg-purple-600 hover:bg-purple-700 h-8 text-xs md:text-sm mt-1"
+              className="w-full bg-purple-600 hover:bg-purple-700 h-9 text-sm mt-2"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
@@ -140,14 +140,14 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         </motion.form>
 
         <motion.div 
-          className="mt-2 text-center"
+          className="mt-3 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <button
             onClick={onToggleMode}
-            className="text-[10px] md:text-xs text-purple-600 hover:underline"
+            className="text-xs text-purple-600 hover:underline"
             type="button"
           >
             Don't have an account? Register

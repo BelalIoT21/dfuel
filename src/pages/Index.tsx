@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -244,7 +245,8 @@ const Index = () => {
     );
   }
 
-  const containerStyle = isMobile
+  // Improved mobile keyboard handling and positioning
+  const containerStyle = keyboardVisible && isMobile
     ? { 
         minHeight: '100vh', 
         paddingBottom: '0', 
@@ -252,7 +254,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '2vh' : '15vh',
+        paddingTop: '5vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -264,26 +266,26 @@ const Index = () => {
       className="flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-sm space-y-2 ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
-        <div className={`text-center relative ${keyboardVisible ? 'mb-1' : 'mb-3'}`}>
-          <h1 className={`${keyboardVisible ? 'text-xl' : 'text-2xl'} md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+      <div className={`w-full max-w-sm space-y-4 ${keyboardVisible ? 'mt-0' : 'my-auto'}`}>
+        <div className={`text-center relative ${keyboardVisible ? 'mb-1' : 'mb-4'}`}>
+          <h1 className={`${keyboardVisible ? 'text-2xl' : 'text-3xl'} md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
           {!keyboardVisible && (
-            <p className="mt-1 text-sm md:text-lg text-gray-600">
+            <p className="mt-2 text-md md:text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </p>
           )}
           {serverStatus && !keyboardVisible && (
             <div className={isConnected
-              ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
-              : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
+              ? 'mt-2 text-sm text-green-600 flex items-center justify-center' 
+              : 'mt-2 text-sm text-red-600 flex items-center justify-center'}>
               {isConnected ? (
                 <>
-                  <Check className="h-3 w-3 mr-1" />
+                  <Check className="h-4 w-4 mr-1" />
                   Connected
                 </>
               ) : (
                 <>
-                  <WifiOff className="h-3 w-3 mr-1" />
+                  <WifiOff className="h-4 w-4 mr-1" />
                   Disconnected
                 </>
               )}
