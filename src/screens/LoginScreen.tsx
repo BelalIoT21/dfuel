@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { TextInput, Button, Surface, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,6 +12,9 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { user, login, register } = useAuth();
+  
+  // Get screen dimensions to help with positioning
+  const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     if (user) {
@@ -56,7 +59,13 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.scrollContainer,
+          // Position the content higher on the screen
+          { justifyContent: 'flex-start', paddingTop: screenHeight * 0.1 }
+        ]}
+      >
         <View style={styles.logoContainer}>
           <Text style={styles.title}>Dfuel</Text>
           <Text style={styles.subtitle}>
@@ -126,7 +135,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
     padding: 20,
   },
   logoContainer: {
