@@ -6,6 +6,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import mongoDbService from '@/services/mongoDbService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { apiService } from '@/services/apiService';
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
@@ -18,10 +19,31 @@ export const PendingActions = () => {
       setIsLoading(true);
       console.log("Fetching pending bookings...");
       
-      // Try MongoDB first for direct database access
+      // Try direct API fetch first
+      try {
+        console.log("Fetching bookings directly from API");
+        const response = await apiService.request('bookings/all', 'GET');
+        console.log("API response for bookings:", response);
+        if (response?.data && Array.isArray(response.data)) {
+          console.log(`Found ${response.data.length} bookings via API`);
+          // Filter to only show pending bookings
+          const pendingOnly = response.data.filter(booking => 
+            booking.status === 'Pending' || booking.status === 'pending'
+          );
+          console.log(`Found ${pendingOnly.length} pending bookings from API`);
+          setPendingBookings(pendingOnly);
+          setIsLoading(false);
+          setIsRefreshing(false);
+          return;
+        }
+      } catch (apiError) {
+        console.error("API booking fetch error:", apiError);
+      }
+      
+      // Try MongoDB as fallback
       let allBookings = [];
       try {
-        console.log("Fetching bookings directly from MongoDB");
+        console.log("Fetching bookings from MongoDB");
         allBookings = await mongoDbService.getAllBookings();
         console.log(`Found ${allBookings.length} bookings in MongoDB`);
       } catch (mongoError) {
@@ -56,11 +78,11 @@ export const PendingActions = () => {
   useEffect(() => {
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 5 seconds
+    // Set up polling to refresh pending bookings every 10 seconds
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
-    }, 5000);
+    }, 10000);
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);

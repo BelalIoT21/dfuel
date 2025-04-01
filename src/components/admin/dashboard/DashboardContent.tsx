@@ -8,6 +8,7 @@ import { PlatformOverview } from '@/components/admin/PlatformOverview';
 import { QuickActions } from '@/components/admin/QuickActions';
 import { PendingActions } from '@/components/admin/PendingActions';
 import { MachineStatus } from '@/components/admin/MachineStatus';
+import mongoDbService from '@/services/mongoDbService';
 
 // Define consistent machine data
 const MACHINE_TYPES = {
@@ -55,11 +56,35 @@ export const DashboardContent = () => {
           console.error("Error fetching dashboard data:", dashboardError);
         }
         
-        // Fallback: Get all users directly if dashboard didn't provide them
+        // If we didn't get users from dashboard, try direct user API
         if (allUsers.length === 0) {
-          const response = await apiService.getAllUsers();
-          if (response.data) {
-            setAllUsers(response.data);
+          try {
+            console.log("Fetching users directly from API");
+            const timestamp = new Date().getTime();
+            const usersResponse = await apiService.request(`users?t=${timestamp}`, 'GET');
+            if (usersResponse?.data && Array.isArray(usersResponse.data)) {
+              console.log(`Fetched ${usersResponse.data.length} users from API`);
+              setAllUsers(usersResponse.data);
+            } else {
+              // Try MongoDB as final fallback for users
+              console.log("API failed, trying MongoDB for users");
+              const mongoUsers = await mongoDbService.getAllUsers();
+              if (Array.isArray(mongoUsers) && mongoUsers.length > 0) {
+                setAllUsers(mongoUsers);
+              }
+            }
+          } catch (userApiError) {
+            console.error("Error fetching users from API:", userApiError);
+            // Final fallback - MongoDB
+            try {
+              console.log("Trying MongoDB for users after API failure");
+              const mongoUsers = await mongoDbService.getAllUsers();
+              if (Array.isArray(mongoUsers) && mongoUsers.length > 0) {
+                setAllUsers(mongoUsers);
+              }
+            } catch (mongoError) {
+              console.error("MongoDB user fetch error:", mongoError);
+            }
           }
         }
         
@@ -90,9 +115,49 @@ export const DashboardContent = () => {
             setMachineData(processedMachines);
           } else {
             console.error("Invalid machine data format:", machinesResponse.data);
+            
+            // Try MongoDB as fallback
+            console.log("Trying MongoDB for machines");
+            const mongoMachines = await mongoDbService.getAllMachines();
+            if (Array.isArray(mongoMachines) && mongoMachines.length > 0) {
+              // Process machine data from MongoDB
+              const processedMachines = mongoMachines.map(machine => {
+                const machineId = String(machine._id || machine.id);
+                return {
+                  ...machine,
+                  id: machineId,
+                  name: MACHINE_NAMES[machineId] || machine.name,
+                  type: MACHINE_TYPES[machineId] || machine.type || "Machine",
+                  status: machine.status?.toLowerCase() || 'available'
+                };
+              });
+              setMachineData(processedMachines);
+            }
           }
         } catch (machinesError) {
           console.error("Error fetching machines:", machinesError);
+          
+          // Try MongoDB as fallback
+          try {
+            console.log("Trying MongoDB for machines after API error");
+            const mongoMachines = await mongoDbService.getAllMachines();
+            if (Array.isArray(mongoMachines) && mongoMachines.length > 0) {
+              // Process machine data from MongoDB
+              const processedMachines = mongoMachines.map(machine => {
+                const machineId = String(machine._id || machine.id);
+                return {
+                  ...machine,
+                  id: machineId,
+                  name: MACHINE_NAMES[machineId] || machine.name,
+                  type: MACHINE_TYPES[machineId] || machine.type || "Machine",
+                  status: machine.status?.toLowerCase() || 'available'
+                };
+              });
+              setMachineData(processedMachines);
+            }
+          } catch (mongoError) {
+            console.error("MongoDB machine fetch error:", mongoError);
+          }
         }
       } catch (error) {
         console.error("Error loading dashboard data:", error);
