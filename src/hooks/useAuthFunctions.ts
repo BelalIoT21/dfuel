@@ -1,5 +1,8 @@
+
 import { apiService } from '../services/apiService';
 import { toast } from '../components/ui/use-toast';
+import { User } from '@/types/database';
+import { useState } from 'react';
 
 // Function to handle user login
 export const login = async (email: string, password: string) => {
@@ -127,4 +130,83 @@ export const logout = async () => {
     
     throw error;
   }
+};
+
+// Create a custom hook that returns the auth functions
+export const useAuthFunctions = (user: User | null, setUser: React.Dispatch<React.SetStateAction<User | null>>) => {
+  // Create the login function with user state management
+  const loginFn = async (email: string, password: string) => {
+    try {
+      const data = await login(email, password);
+      
+      console.log('Login successful, setting user state:', data);
+      
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+        apiService.setToken?.(data.token);
+        
+        const userData = {
+          ...data.user,
+          id: data.user._id || data.user.id
+        };
+        
+        setUser(userData);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login function error:', error);
+      return false;
+    }
+  };
+  
+  // Create the registration function with user state management
+  const registerFn = async (email: string, password: string, name: string) => {
+    try {
+      const data = await register(email, password, name);
+      
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+        apiService.setToken?.(data.token);
+        
+        const userData = {
+          ...data.user,
+          id: data.user._id || data.user.id
+        };
+        
+        setUser(userData);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Register function error:', error);
+      return false;
+    }
+  };
+  
+  // Create the logout function with user state management
+  const logoutFn = async () => {
+    try {
+      await logout();
+      localStorage.removeItem('token');
+      apiService.setToken?.(null);
+      setUser(null);
+      return true;
+    } catch (error) {
+      console.error('Logout function error:', error);
+      // Even if the API call fails, we should remove the token and user state
+      localStorage.removeItem('token');
+      apiService.setToken?.(null);
+      setUser(null);
+      return false;
+    }
+  };
+  
+  return {
+    login: loginFn,
+    register: registerFn,
+    logout: logoutFn
+  };
 };

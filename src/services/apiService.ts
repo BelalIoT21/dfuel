@@ -73,6 +73,29 @@ axiosInstance.interceptors.response.use(
 );
 
 class ApiService {
+  private token: string | null = null;
+
+  // Set authentication token
+  setToken(token: string | null) {
+    this.token = token;
+    
+    if (token) {
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('API Service: Token set for future requests');
+    } else {
+      delete axiosInstance.defaults.headers.common['Authorization'];
+      console.log('API Service: Token cleared');
+    }
+  }
+
+  // Method to get the current user based on token
+  async getCurrentUser() {
+    return await this.request({
+      method: 'GET',
+      url: 'auth/me'
+    });
+  }
+  
   // Format the URL with proper path separation
   private formatUrl(url: string): string {
     // If it's already an absolute URL, return it
@@ -369,42 +392,42 @@ class ApiService {
     });
   }
 
-    async getQuizzes() {
-        return await this.request({
-            method: 'GET',
-            url: 'quizzes'
-        });
-    }
+  async getQuizzes() {
+    return await this.request({
+      method: 'GET',
+      url: 'quizzes'
+    });
+  }
 
-    async getQuizById(id: string) {
-        return await this.request({
-            method: 'GET',
-            url: `quizzes/${id}`
-        });
-    }
+  async getQuizById(id: string) {
+    return await this.request({
+      method: 'GET',
+      url: `quizzes/${id}`
+    });
+  }
 
-    async createQuiz(quizData: any) {
-        return await this.request({
-            method: 'POST',
-            url: 'quizzes',
-            data: quizData
-        });
-    }
+  async createQuiz(quizData: any) {
+    return await this.request({
+      method: 'POST',
+      url: 'quizzes',
+      data: quizData
+    });
+  }
 
-    async updateQuiz(id: string, quizData: any) {
-        return await this.request({
-            method: 'PUT',
-            url: `quizzes/${id}`,
-            data: quizData
-        });
-    }
+  async updateQuiz(id: string, quizData: any) {
+    return await this.request({
+      method: 'PUT',
+      url: `quizzes/${id}`,
+      data: quizData
+    });
+  }
 
-    async deleteQuiz(id: string) {
-        return await this.request({
-            method: 'DELETE',
-            url: `quizzes/${id}`
-        });
-    }
+  async deleteQuiz(id: string) {
+    return await this.request({
+      method: 'DELETE',
+      url: `quizzes/${id}`
+    });
+  }
 }
 
 // Create and export a singleton instance
