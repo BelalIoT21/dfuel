@@ -1,3 +1,4 @@
+
 import axios, { AxiosInstance } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -39,14 +40,23 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('api/auth/me', 'GET', undefined, true);
+    return this.request('auth/me', 'GET', undefined, true);
   }
   
   // Generic request method with improved error handling
   async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
     try {
-      // Ensure endpoint doesn't start with a slash
-      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      // Ensure endpoint doesn't start with a slash or 'api/'
+      let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      
+      // Remove 'api/' prefix if it exists since it's already in the baseURL
+      if (cleanEndpoint.startsWith('api/')) {
+        cleanEndpoint = cleanEndpoint.substring(4);
+      }
+      
+      // Log the actual URL being requested (for debugging)
+      const fullUrl = `${this.api.defaults.baseURL}/${cleanEndpoint}`;
+      console.log(`Making ${method} request to: ${fullUrl}`);
       
       // Make the request
       let response;
@@ -76,6 +86,8 @@ class ApiService {
       const status = error.response?.status || 500;
       const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
       
+      console.error(`API Error (${status}): ${errorMsg}`);
+      
       return {
         error: errorMsg,
         status
@@ -85,15 +97,15 @@ class ApiService {
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
-    return this.request('api/auth/login', 'POST', { email, password });
+    return this.request('auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    return this.request('api/auth/register', 'POST', userData);
+    return this.request('auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('api/auth/logout', 'POST', {}, true);
+    return this.request('auth/logout', 'POST', {}, true);
   }
   
   // Rest of API methods...
