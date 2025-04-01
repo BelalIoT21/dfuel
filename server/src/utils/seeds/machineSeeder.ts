@@ -101,51 +101,6 @@ const ORIGINAL_MACHINE_TEMPLATES: Record<string, MachineTemplate> = {
   },
 };
 
-// Function to update machine images
-export async function updateMachineImages() {
-  try {
-    const machineUpdates = [
-      {
-        _id: '1',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7814.jpg'
-      },
-      {
-        _id: '2',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7773.jpg'
-      },
-      {
-        _id: '3',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7768.jpg'
-      },
-      {
-        _id: '4',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7769.jpg'
-      },
-      {
-        _id: '5',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7775.jpg'
-      },
-      {
-        _id: '6',
-        imageUrl: 'http://localhost:4000/utils/images/IMG_7821.jpg'
-      }
-    ];
-
-    // Only update image if machine exists and doesn't already have an image
-    for (const update of machineUpdates) {
-      const machine = await Machine.findById(update._id);
-      if (machine && (!machine.imageUrl || machine.imageUrl === '')) {
-        await Machine.updateOne(
-          { _id: update._id },
-          { $set: { imageUrl: update.imageUrl } }
-        );
-        console.log(`Updated image for machine ${update._id} to ${update.imageUrl}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error updating machine images:', error);
-  }
-}
 
 // Function to seed missing core machines with proper type definition
 export async function seedMissingMachines(missingIds: string[]): Promise<MachineTemplate[]> {
@@ -238,8 +193,7 @@ export async function seedAllMachines() {
       console.log("All non-deleted core machines (1-6) are present. No need to seed any.");
     }
     
-    // Gently update images for existing machines if they're missing
-    await updateMachineImages();
+  
     
     // Don't modify or overwrite any existing machines that have been edited
     console.log("Preserving all user edits to existing machines.");
@@ -341,11 +295,6 @@ export async function restoreDeletedMachines(permanentlyDeletedIds: string[] = [
   }
 }
 
-// Export a function to run after all other seeds to ensure images are updated
-export async function ensureMachineImages() {
-  await updateMachineImages();
-  console.log("Machine images have been verified and updated if needed.");
-}
 
 // New function to regularly backup user-created machines for restoration purposes
 export async function backupMachines() {
