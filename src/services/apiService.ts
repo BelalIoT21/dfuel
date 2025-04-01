@@ -58,8 +58,9 @@ class ApiService {
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // Check if we need to prepend 'api/' to the endpoint
-      if (!cleanEndpoint.startsWith('api/')) {
+      // IMPORTANT FIX: Make sure we don't duplicate the api/ prefix
+      // Check if the endpoint already includes 'api/' or if the base URL already has '/api'
+      if (!cleanEndpoint.startsWith('api/') && !this.api.defaults.baseURL?.endsWith('/api')) {
         cleanEndpoint = `api/${cleanEndpoint}`;
       }
       
