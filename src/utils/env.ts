@@ -22,10 +22,10 @@ export const loadEnv = (): void => {
   console.log('Environment variables loaded');
   
   // Set the default server IP to be consistent across platforms
-  setEnv('CUSTOM_SERVER_IP', 'localhost');
+  setEnv('CUSTOM_SERVER_IP', '192.168.1.200');
   
   // Set API URL from environment variables if available
-  const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:4000/api';
+  const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://192.168.1.200:8080/api';
   setEnv('API_URL', apiUrl);
   console.log('API configuration loaded successfully');
 };
@@ -54,10 +54,10 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
         const url = new URL(apiUrl);
         return url.hostname;
       } catch (e) {
-        return 'localhost';
+        return '192.168.1.200';
       }
     }
-    return 'localhost';
+    return '192.168.1.200';
   }
   
   if (typeof window !== 'undefined' && (window as any).__ENV__) {
@@ -89,6 +89,7 @@ export const getApiEndpoints = (): string[] => {
   
   return [
     configuredApiUrl,
+    'http://192.168.1.200:8080/api',
     '/api' // Relative fallback
   ].filter(Boolean); // Remove empty values
 };
@@ -99,11 +100,11 @@ export const getApiUrl = (): string => {
   
   // In a production environment, get from environment variables
   if (env === 'production') {
-    return getEnv('API_URL', '');
+    return getEnv('API_URL', 'http://192.168.1.200:8080/api');
   }
   
   // For development, use the API_URL from env
-  return getEnv('API_URL', '');
+  return getEnv('API_URL', 'http://192.168.1.200:8080/api');
 };
 
 // Ensure API endpoint always has correct format

@@ -83,10 +83,7 @@ class ApiService {
           throw new Error(`Unsupported method: ${method}`);
       }
       
-      return {
-        data: response.data,
-        status: response.status
-      };
+      return response.data;
     } catch (error: any) {
       const status = error.response?.status || 500;
       const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
@@ -102,10 +99,12 @@ class ApiService {
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
+    console.log(`Attempting to login user: ${email}`);
     return this.request('auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
+    console.log(`Attempting to register user: ${userData.email}`);
     return this.request('auth/register', 'POST', userData);
   }
   

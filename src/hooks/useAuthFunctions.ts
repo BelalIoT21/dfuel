@@ -27,16 +27,12 @@ export const useAuthFunctions = (
         throw new Error(response.error);
       }
   
-      if (!response.data) {
-        throw new Error("Invalid response from server");
-      }
-
       // Extract user data and token
-      const userData = response.data.data?.user;
-      const token = response.data.data?.token;
+      const userData = response.data?.user;
+      const token = response.data?.token;
       
       if (!userData || !token) {
-        console.error("Invalid response format:", response.data);
+        console.error("Invalid response format:", response);
         throw new Error("Invalid response format from server");
       }
   
@@ -93,16 +89,12 @@ export const useAuthFunctions = (
         throw new Error(response.error);
       }
       
-      if (!response.data) {
-        throw new Error("Invalid response from server");
-      }
-      
       // Extract user data and token
-      const userData = response.data.data?.user;
-      const token = response.data.data?.token;
+      const userData = response.data?.user;
+      const token = response.data?.token;
       
       if (!userData) {
-        console.error("Invalid response format:", response.data);
+        console.error("Invalid response format:", response);
         throw new Error("Invalid response format from server");
       }
       
