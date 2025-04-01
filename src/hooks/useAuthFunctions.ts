@@ -16,16 +16,12 @@ export const useAuthFunctions = (
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      console.log("Login attempt for:", email);
   
       // MongoDB login via API
-      console.log("Sending login request to API...");
       const apiResponse = await apiService.login(email, password);
-      console.log("API login response:", JSON.stringify(apiResponse, null, 2));
   
       // Handle API errors
       if (apiResponse.error) {
-        console.error("API login error:", apiResponse.error);
         if (apiResponse.status === 404) {
           throw new Error("Server endpoint not found. Please check the server is running.");
         } else if (apiResponse.status === 401) {
@@ -35,43 +31,31 @@ export const useAuthFunctions = (
         }
       }
   
-      // Validate response data - handle different response structures
+      // Validate response data
       if (!apiResponse.data) {
-        console.error("API response is missing data:", apiResponse);
         throw new Error("The server returned incomplete data. Please try again.");
       }
 
-      // Assuming the standard API response follows the LoginResponse interface from server code
-      // Which returns data: { user: {...}, token: "..." }
-      // But handle other formats too
-      
+      // Extract user data and token from response
       let userData;
       let token;
       
-      // Try to extract user data from various possible response structures
       if (apiResponse.data.user) {
         userData = apiResponse.data.user;
+        token = apiResponse.data.token;
       } else if (apiResponse.data.data?.user) {
         userData = apiResponse.data.data.user;
+        token = apiResponse.data.data.token;
       } else if (apiResponse.data._id || apiResponse.data.id) {
         userData = apiResponse.data;
-      }
-      
-      // Try to extract token from various possible response structures
-      if (apiResponse.data.token) {
         token = apiResponse.data.token;
-      } else if (apiResponse.data.data?.token) {
-        token = apiResponse.data.data.token;
       }
       
-      // Validate extracted data
       if (!userData) {
-        console.error("Could not extract user data from response:", apiResponse);
         throw new Error("Invalid response format from server - missing user data");
       }
       
       if (!token) {
-        console.error("Could not extract token from response:", apiResponse);
         throw new Error("Invalid response format from server - missing token");
       }
   
@@ -85,8 +69,6 @@ export const useAuthFunctions = (
           ? userData.certifications 
           : (userData.certifications ? [String(userData.certifications)] : [])
       };
-  
-      console.log("Setting user data in state:", normalizedUser);
   
       // Save token in localStorage for auth persistence
       localStorage.setItem('token', token);
@@ -103,13 +85,12 @@ export const useAuthFunctions = (
   
       return true;
     } catch (error) {
-      console.error("Error during login:", error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive"
       });
-      throw error; // Re-throw to be caught by the login form
+      throw error;
     } finally {
       setIsLoading(false);
     }

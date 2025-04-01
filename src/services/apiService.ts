@@ -10,7 +10,6 @@ class ApiService {
   
   constructor() {
     this.endpoints = getApiEndpoints();
-    console.log("Available API endpoints:", this.endpoints);
     
     // Create axios instance with initial base URL
     this.api = axios.create({
@@ -25,7 +24,6 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error(`API error: ${error}`);
         return Promise.reject(error);
       }
     );
@@ -43,17 +41,12 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('api/auth/me', 'GET', undefined, true);
+    return this.request('auth/me', 'GET', undefined, true);
   }
   
   // Generic request method for all API calls
   async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
     try {
-      // Add authentication header if required and available
-      if (requiresAuth && !this.token) {
-        console.log("Auth required but no token available");
-      }
-      
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
@@ -118,12 +111,10 @@ class ApiService {
   
   // Auth functions - use exact paths from server routes
   async login(email: string, password: string): Promise<any> {
-    console.log("Attempting login with API service");
     return this.request('auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    console.log("Attempting registration with API service");
     return this.request('auth/register', 'POST', userData);
   }
   

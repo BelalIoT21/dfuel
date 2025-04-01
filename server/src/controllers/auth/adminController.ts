@@ -21,16 +21,13 @@ export const ensureAdminUser = async () => {
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (!existingAdmin) {
-      console.log(`Creating default admin user: ${adminEmail}`);
-      
-      // Get the admin password from env
+      // Create new admin user with ALL certifications
       const adminPassword = process.env.ADMIN_PASSWORD;
       
       if (!adminPassword) {
         throw new Error('ADMIN_PASSWORD is not defined in environment variables');
       }
       
-      // Create new admin user with ALL certifications
       const newAdmin = new User({
         _id: '1', // Use string ID for consistency
         name: 'Administrator',
@@ -41,14 +38,11 @@ export const ensureAdminUser = async () => {
       });
       
       await newAdmin.save();
-      console.log('Default admin user created successfully');
     } else {
       // Check if admin password needs to be updated
       const forcePasswordUpdate = process.env.FORCE_ADMIN_PASSWORD_UPDATE === 'true';
       
       if (forcePasswordUpdate) {
-        console.log('Force admin password update is enabled, updating admin password');
-        
         // Update the admin password
         const adminPassword = process.env.ADMIN_PASSWORD;
         if (!adminPassword) {
@@ -56,7 +50,6 @@ export const ensureAdminUser = async () => {
         }
         existingAdmin.password = adminPassword;
         await existingAdmin.save();
-        console.log('Admin password updated successfully');
       }
       
       // Always ensure admin email is in sync with .env
