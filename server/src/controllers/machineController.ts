@@ -684,7 +684,8 @@ export const restoreMachine = async (req: Request, res: Response) => {
               Object.keys(backupData).forEach(key => {
                 // Skip special fields that shouldn't be restored
                 if (!['_id', '__v', 'createdAt', 'updatedAt', '_backupTime'].includes(key)) {
-                  existingMachine[key] = backupData[key];
+                  // Fix: Type assertion to allow string indexing on the mongoose document
+                  (existingMachine as any)[key] = backupData[key];
                 }
               });
               
