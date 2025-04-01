@@ -25,7 +25,7 @@ async function findUserWithAnyIdFormat(userId: string) {
     return cachedData.user;
   }
   
-  // Try findById first
+  // Try to find the user by ID
   try {
     const user = await User.findById(userId).select('-password');
     if (user) {
@@ -34,30 +34,6 @@ async function findUserWithAnyIdFormat(userId: string) {
     }
   } catch (err) {
     // Continue to next method if this fails
-  }
-  
-  // Also try finding by _id as string
-  try {
-    const user = await User.findOne({ _id: userId }).select('-password');
-    if (user) {
-      userCache.set(userId, { user, timestamp: Date.now() });
-      return user;
-    }
-  } catch (err) {
-    // Continue to numeric ID conversion if needed
-  }
-  
-  // Numeric ID conversion as last resort
-  if (!isNaN(Number(userId))) {
-    try {
-      const user = await User.findOne({ _id: Number(userId) }).select('-password');
-      if (user) {
-        userCache.set(userId, { user, timestamp: Date.now() });
-        return user;
-      }
-    } catch (err) {
-      // Last attempt failed
-    }
   }
   
   return null;
@@ -78,7 +54,8 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { id: string };
+    const secret = process.env.JWT_SECRET || 'secret';
+    const decoded = jwt.verify(token, secret) as { id: string };
     
     // Find user by ID 
     const user = await findUserWithAnyIdFormat(decoded.id);
@@ -91,6 +68,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     req.user = user;
     next();
   } catch (error) {
+    console.error('Token verification failed:', error);
     res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };

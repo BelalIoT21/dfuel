@@ -17,9 +17,11 @@ export const useAuthFunctions = (
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      console.log("Login attempt:", email);
   
       // MongoDB login via API
       const response = await apiService.login(email, password);
+      console.log("Login response:", response);
   
       if (response.error) {
         throw new Error(response.error);
@@ -30,16 +32,17 @@ export const useAuthFunctions = (
       }
 
       // Extract user data and token
-      const userData = response.data.data?.user || response.data.user;
-      const token = response.data.data?.token || response.data.token;
+      const userData = response.data.data?.user;
+      const token = response.data.data?.token;
       
       if (!userData || !token) {
+        console.error("Invalid response format:", response.data);
         throw new Error("Invalid response format from server");
       }
   
       // Normalize user data
       const normalizedUser = {
-        id: String(userData._id || userData.id),
+        id: String(userData._id),
         name: userData.name || 'User',
         email: userData.email,
         isAdmin: Boolean(userData.isAdmin),
@@ -62,6 +65,7 @@ export const useAuthFunctions = (
   
       return true;
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Invalid credentials",
@@ -79,9 +83,11 @@ export const useAuthFunctions = (
   const register = async (email: string, password: string, name?: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      console.log("Registration attempt:", email);
       
       // Call API to register user
-      const response = await apiService.register({ email, password, name });
+      const response = await apiService.register({ email, password, name: name || '' });
+      console.log("Registration response:", response);
       
       if (response.error) {
         throw new Error(response.error);
@@ -92,10 +98,11 @@ export const useAuthFunctions = (
       }
       
       // Extract user data and token
-      const userData = response.data.data?.user || response.data.user;
-      const token = response.data.data?.token || response.data.token;
+      const userData = response.data.data?.user;
+      const token = response.data.data?.token;
       
       if (!userData) {
+        console.error("Invalid response format:", response.data);
         throw new Error("Invalid response format from server");
       }
       
@@ -116,7 +123,7 @@ export const useAuthFunctions = (
       
       // Normalize user data
       const normalizedUser = {
-        id: String(userData._id || userData.id),
+        id: String(userData._id),
         name: userData.name || name || 'User',
         email: userData.email,
         isAdmin: Boolean(userData.isAdmin),
@@ -133,6 +140,7 @@ export const useAuthFunctions = (
       
       return true;
     } catch (error) {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: error instanceof Error ? error.message : "Registration failed",

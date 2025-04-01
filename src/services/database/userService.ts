@@ -32,14 +32,20 @@ export class UserDatabaseService extends BaseService {
     try {
       console.log("Authenticating via API:", email);
       const response = await apiService.login(email, password);
-      if (response.data && response.data.user) {
+      
+      if (response.data?.data?.user) {
         console.log("API authentication successful");
+        
         // Store the token for future API requests
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
+        if (response.data.data.token) {
+          localStorage.setItem('token', response.data.data.token);
+          apiService.setToken(response.data.data.token);
         }
-        return response.data.user;
+        
+        return response.data.data.user;
       }
+      
+      console.log("API authentication failed - invalid response format");
       return null;
     } catch (error) {
       console.error("API error in authentication:", error);
@@ -51,14 +57,20 @@ export class UserDatabaseService extends BaseService {
     try {
       console.log("Registering via API:", email);
       const response = await apiService.register({ email, password, name });
-      if (response.data && response.data.user) {
+      
+      if (response.data?.data?.user) {
         console.log("API registration successful");
+        
         // Store the token for future API requests
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
+        if (response.data.data.token) {
+          localStorage.setItem('token', response.data.data.token);
+          apiService.setToken(response.data.data.token);
         }
-        return response.data.user;
+        
+        return response.data.data.user;
       }
+      
+      console.log("API registration failed - invalid response format");
       return null;
     } catch (error) {
       console.error("API error in registration:", error);
@@ -66,7 +78,7 @@ export class UserDatabaseService extends BaseService {
     }
   }
   
-  async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string}): Promise<boolean> {
+  async updateUserProfile(userId: string, updates: {name?: string, email?: string, password?: string, currentPassword?: string}): Promise<boolean> {
     try {
       const response = await apiService.updateProfile(userId, updates);
       return response.data?.success || false;

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,7 +69,6 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
     try {
       setIsSubmitting(true);
       await onLogin(email, password);
-      console.log("Login successful");
     } catch (error) {
       console.error("Authentication error:", error);
       setFormError('Invalid email or password. Please try again.');

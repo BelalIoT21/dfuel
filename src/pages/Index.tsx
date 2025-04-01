@@ -8,7 +8,7 @@ import { apiService } from '@/services/apiService';
 import { toast } from '@/components/ui/use-toast';
 import { Check, WifiOff } from 'lucide-react';
 import { isAndroid, isCapacitor, isIOS } from '@/utils/platform';
-import { getEnv, loadEnv, getApiEndpoints, getLocalServerIP } from '@/utils/env';
+import { getEnv, loadEnv, getApiEndpoints } from '@/utils/env';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -212,17 +212,29 @@ const Index = () => {
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
     try {
-      await login(email, password);
-      console.log("Login request completed");
+      const success = await login(email, password);
+      console.log("Login result:", success);
+      if (!success) {
+        throw new Error("Login failed");
+      }
     } catch (error) {
       console.error("Login error:", error);
-      throw error; // Important: re-throw the error so the LoginForm can handle it
+      throw error; // Re-throw the error so the LoginForm can handle it
     }
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
     console.log("Attempting registration for:", email);
-    await register(email, password, name);
+    try {
+      const success = await register(email, password, name);
+      console.log("Registration result:", success);
+      if (!success) {
+        throw new Error("Registration failed");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
   };
 
   const toggleMode = () => {
@@ -270,7 +282,7 @@ const Index = () => {
   return (
     <div 
       className="bg-gradient-to-b from-purple-50 to-white p-4" 
-      style={containerStyle}
+      style={isLogin ? {minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'} : {}}
     >
       <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
         {!isMobile && (
