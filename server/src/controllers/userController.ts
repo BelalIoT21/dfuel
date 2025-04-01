@@ -240,16 +240,40 @@ export const changePassword = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id);
+    console.log(`Attempting to delete user with ID: ${req.params.id}`);
+    
+    let user;
+    try {
+      // Try finding user by MongoDB ObjectId
+      user = await User.findById(req.params.id);
+      console.log(`findById result: ${user ? 'User found' : 'User not found'}`);
+    } catch (err) {
+      console.log(`Error using findById: ${err.message}, trying alternative methods`);
+      
+      // Try finding by id as a string field
+      user = await User.findOne({ id: req.params.id });
+      console.log(`findOne by id field: ${user ? 'User found' : 'User not found'}`);
+      
+      if (!user) {
+        // Try finding with a numeric conversion as last resort
+        if (!isNaN(Number(req.params.id))) {
+          user = await User.findOne({ id: Number(req.params.id) });
+          console.log(`findOne with numeric id: ${user ? 'User found' : 'User not found'}`);
+        }
+      }
+    }
     
     if (!user) {
+      console.log(`User with ID ${req.params.id} not found for deletion`);
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Allow deleting any user (including admins)
+    console.log(`Found user to delete: ${user.name} (${user._id})`);
+    // Delete the user
     await user.deleteOne();
     
-    res.json({ message: 'User removed' });
+    console.log(`User ${req.params.id} deleted successfully`);
+    res.json({ message: 'User removed successfully' });
   } catch (error) {
     console.error('Error in deleteUser:', error);
     res.status(500).json({ 

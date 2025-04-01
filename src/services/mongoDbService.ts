@@ -61,63 +61,43 @@ class MongoDbService {
     }
   }
 
-  async deleteUser(userId: string) {
+  async deleteUser(userId: string): Promise<boolean> {
     try {
       console.log(`MongoDbService: Attempting to delete user ${userId}`);
       
-      // First attempt: direct API call with explicit endpoint
+      // Make simplified API call with proper empty body
       try {
-        console.log(`Trying direct API deletion for user ${userId}`);
-        // Make sure the endpoint starts with a slash and has the correct path
-        const response = await apiService.request(`/users/${userId}`, 'DELETE', null, true);
-        console.log(`API response:`, response);
+        console.log(`Attempting API deletion for user ${userId}`);
+        const token = localStorage.getItem('token');
+        if (token) {
+          apiService.setToken(token);
+        }
+        
+        // Ensure endpoint starts with a slash
+        const endpoint = `/users/${userId}`;
+        console.log(`Using endpoint: ${endpoint}`);
+        
+        const response = await apiService.request(endpoint, 'DELETE', {}, true);
+        console.log(`API deletion response:`, response);
         
         if (response && response.status >= 200 && response.status < 300) {
           console.log(`User ${userId} deleted successfully via API`);
           return true;
         }
       } catch (apiError) {
-        console.error('Direct API error deleting user:', apiError);
+        console.error('API error deleting user:', apiError);
       }
       
-      // Second attempt: use MongoDB service as fallback
+      // Fall back to MongoDB service if API fails
       try {
-        console.log(`Trying MongoDB userService for deletion of user ${userId}`);
+        console.log(`Falling back to MongoDB userService for deletion`);
         const mongoResult = await mongoUserService.deleteUser(userId);
         if (mongoResult) {
           console.log(`User ${userId} deleted successfully via MongoDB service`);
           return true;
         }
       } catch (mongoError) {
-        console.error('MongoDB service error deleting user:', mongoError);
-      }
-      
-      // Third attempt: Try direct axios call with token
-      try {
-        console.log(`Trying direct axios call for user ${userId}`);
-        const axios = (await import('axios')).default;
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          console.log('No token available for direct axios call');
-          return false;
-        }
-        
-        const headers = { Authorization: `Bearer ${token}` };
-        const apiUrl = apiService['api'].defaults.baseURL || 'http://localhost:4000/api';
-        
-        // Ensure the URL is correctly formatted with proper slashes
-        const endpoint = `${apiUrl}/users/${userId}`;
-        
-        console.log(`Making direct axios DELETE request to ${endpoint}`);
-        const response = await axios.delete(endpoint, { headers });
-        
-        if (response.status >= 200 && response.status < 300) {
-          console.log(`User ${userId} deleted successfully via direct axios call`);
-          return true;
-        }
-      } catch (axiosError) {
-        console.error('Direct axios error:', axiosError);
+        console.error('MongoDB error deleting user:', mongoError);
       }
       
       console.log(`Failed to delete user ${userId} through all methods`);

@@ -1,3 +1,4 @@
+
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -74,13 +75,18 @@ class ApiService {
           response = await this.api.get(endpoint);
           break;
         case 'POST':
-          response = await this.api.post(endpoint, data);
+          response = await this.api.post(endpoint, data || {});
           break;
         case 'PUT':
-          response = await this.api.put(endpoint, data);
+          response = await this.api.put(endpoint, data || {});
           break;
         case 'DELETE':
-          response = await this.api.delete(endpoint, { data });
+          // For DELETE requests, use different approach depending on whether data is provided
+          if (data) {
+            response = await this.api.delete(endpoint, { data });
+          } else {
+            response = await this.api.delete(endpoint);
+          }
           break;
         default:
           throw new Error(`Unsupported method: ${method}`);

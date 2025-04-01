@@ -1,4 +1,3 @@
-
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { UserCertificationManager } from './UserCertificationManager';
 import { machines } from '../../../utils/data';
@@ -196,36 +195,13 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
         return;
       }
       
-      // Set token in apiService first
+      // Ensure token is set for API requests
       const token = localStorage.getItem('token');
       if (token) {
         apiService.setToken(token);
       }
       
-      // Try first direct API call for deletion
-      try {
-        console.log(`Trying direct API deletion first`);
-        const response = await apiService.request(`/users/${userId}`, 'DELETE', null, true);
-        
-        if (response && response.status >= 200 && response.status < 300) {
-          console.log(`Successfully deleted user ${userId} via direct API`);
-          toast({
-            title: "User Deleted",
-            description: "User has been permanently deleted.",
-          });
-          
-          if (onUserDeleted) {
-            onUserDeleted();
-          }
-          setDeletingUserId(null);
-          return;
-        }
-      } catch (apiError) {
-        console.error("Direct API delete error:", apiError);
-      }
-      
-      // Fall back to mongoDbService for deletion
-      console.log(`Falling back to mongoDbService for user ${userId} deletion`);
+      // Use mongoDbService for a simplified approach with better error handling
       const success = await mongoDbService.deleteUser(userId);
       
       if (success) {
@@ -239,6 +215,7 @@ export const UsersTable = ({ users, searchTerm, onCertificationAdded, onUserDele
           onUserDeleted();
         }
       } else {
+        console.log(`Failed to delete user ${userId}, showing error message`);
         toast({
           title: "Error",
           description: "Failed to delete user. Please try again later.",
