@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -29,11 +30,14 @@ export const useAuthFunctions = (
         throw new Error(apiResponse.error);
       }
   
-      // Validate the response structure
-      const userData = apiResponse.data?.data?.user;
-      const token = apiResponse.data?.data?.token;
+      // API can return data in different formats, handle both possibilities
+      const userData = apiResponse.data?.user || apiResponse.data?.data?.user;
+      const token = apiResponse.data?.token || apiResponse.data?.data?.token;
+      
+      console.log("User data extracted:", userData);
+      console.log("Token extracted:", token);
   
-      if (!userData || !userData._id || !userData.name || !userData.email || !token) {
+      if (!userData || !token) {
         console.error("API response is missing required fields:", apiResponse);
         throw new Error("The server returned incomplete data. Please try again.");
       }
@@ -51,7 +55,7 @@ export const useAuthFunctions = (
       // Normalize user data (map `_id` to `id` for consistency)
       const normalizedUser = {
         ...userData,
-        id: String(userData._id), // Convert _id to string if necessary
+        id: String(userData._id || userData.id), // Convert _id to string if necessary
         certifications: userData.certifications || []
       };
   
