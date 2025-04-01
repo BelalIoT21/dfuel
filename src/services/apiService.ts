@@ -43,7 +43,7 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('auth/me', 'GET', undefined, true);
+    return this.request('api/auth/me', 'GET', undefined, true);
   }
   
   // Generic request method for all API calls
@@ -57,8 +57,8 @@ class ApiService {
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // Determine if we need to prepend 'api/' to the endpoint
-      // This is crucial for making sure we hit the right endpoints
+      // If the endpoint doesn't start with 'api/' and the baseURL doesn't end with '/api'
+      // only then prepend 'api/'
       if (!cleanEndpoint.startsWith('api/') && !this.api.defaults.baseURL?.endsWith('/api')) {
         cleanEndpoint = `api/${cleanEndpoint}`;
       }
@@ -144,15 +144,15 @@ class ApiService {
   
   // Auth functions - fixed paths to match server routes exactly
   async login(email: string, password: string): Promise<any> {
-    return this.request('auth/login', 'POST', { email, password });
+    return this.request('api/auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    return this.request('auth/register', 'POST', userData);
+    return this.request('api/auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('auth/logout', 'POST', {}, true);
+    return this.request('api/auth/logout', 'POST', {}, true);
   }
   
   // Machine functions
