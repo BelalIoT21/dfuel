@@ -4,10 +4,12 @@ import {
   registerUser,
   loginUser,
   logout,
-  updateProfile
-} from '../controllers/auth/authController';
+  updateProfile,
+  getUserProfile, 
+  getUserBookings, 
+  deleteUserBooking
+} from '../controllers/authController';
 import { changePassword } from '../controllers/auth/passwordController';
-import { getUserProfile, getUserBookings, deleteUserBooking } from '../controllers/auth/profileController';
 import { protect } from '../middleware/authMiddleware';
 
 const router = express.Router();

@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -58,20 +57,20 @@ class ApiService {
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // Fix the API path handling - this is the key improvement
-      // Check if endpoint already includes 'api/' prefix
+      // Determine if we need to prepend 'api/' to the endpoint
+      // This is crucial for making sure we hit the right endpoints
       if (!cleanEndpoint.startsWith('api/') && !this.api.defaults.baseURL?.endsWith('/api')) {
-        // If neither the endpoint nor the baseURL has 'api/', add it
         cleanEndpoint = `api/${cleanEndpoint}`;
       }
       
       // Log the request for debugging
       console.log(`API request to: ${this.api.defaults.baseURL}/${cleanEndpoint} (method: ${method})`);
       if (this.token) {
-        console.log(`Using token for authorization: token-present`);
+        console.log(`Using token for authorization: ${this.token.substring(0, 10)}...`);
       }
       
-      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}/${cleanEndpoint} `);
+      // Make the request with detailed logging
+      console.log(`Making API request: ${method} ${this.api.defaults.baseURL}/${cleanEndpoint}`);
       console.log(`Request headers:`, this.api.defaults.headers);
       if (data) {
         console.log(`Request data:`, data);
@@ -91,7 +90,6 @@ class ApiService {
           response = await this.api.put(cleanEndpoint, data || {});
           break;
         case 'DELETE':
-          // For DELETE requests, handle null data specially to avoid JSON parsing errors
           if (data === null) {
             response = await this.api.delete(cleanEndpoint);
           } else if (data) {
@@ -108,20 +106,8 @@ class ApiService {
       console.log(`Response from ${this.api.defaults.baseURL}/${cleanEndpoint}:`, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers
+        data: response.data
       });
-      
-      // If the response data is empty, return a successful empty result instead of error
-      if (method === 'GET' && (!response.data || (Array.isArray(response.data) && response.data.length === 0))) {
-        if (endpoint.includes('bookings')) {
-          console.log('No bookings found, returning empty array');
-          return {
-            data: [],
-            status: response.status,
-            headers: response.headers
-          };
-        }
-      }
       
       return {
         data: response.data,
@@ -132,8 +118,7 @@ class ApiService {
       const status = error.response?.status || 500;
       const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
       
-      console.error(`API error for ${method} ${this.api.defaults.baseURL}/${endpoint}: ${status} - ${errorMsg}`);
-      console.error(`API request failed for ${endpoint}: ${errorMsg}`);
+      console.error(`API error for ${method} ${endpoint}: ${status} - ${errorMsg}`);
       
       // More detailed error logging
       if (error.response?.data) {
@@ -142,7 +127,6 @@ class ApiService {
       
       // For bookings endpoints, if we get a 404 or similar for GET, return empty array instead of error
       if (method === 'GET' && endpoint.includes('bookings') && (status === 404 || status === 204)) {
-        console.log('No bookings found (404/204), returning empty array');
         return {
           data: [],
           status: status,
@@ -158,7 +142,7 @@ class ApiService {
     }
   }
   
-  // Auth functions - fixed to use correct paths that match server routes
+  // Auth functions - fixed paths to match server routes exactly
   async login(email: string, password: string): Promise<any> {
     return this.request('auth/login', 'POST', { email, password });
   }

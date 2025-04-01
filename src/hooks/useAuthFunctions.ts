@@ -35,67 +35,59 @@ export const useAuthFunctions = (
         throw new Error("The server returned incomplete data. Please try again.");
       }
 
-      // Handle different API response structures
-      // Some endpoints return {data: {user: {...}, token: "..."}}
-      // Others return {data: {data: {user: {...}, token: "..."}}}
-      // And others might return {data: {...user data...}, token: "..."}
+      // Assuming the standard API response follows the LoginResponse interface from server code
+      // Which returns data: { user: {...}, token: "..." }
+      // But handle other formats too
       
-      // Extract user data and token from the response
       let userData;
       let token;
       
-      // Try to find user data
+      // Try to extract user data from various possible response structures
       if (apiResponse.data.user) {
         userData = apiResponse.data.user;
       } else if (apiResponse.data.data?.user) {
         userData = apiResponse.data.data.user;
-      } else if (apiResponse.data._id) {
+      } else if (apiResponse.data._id || apiResponse.data.id) {
         userData = apiResponse.data;
       }
       
-      // Try to find token
+      // Try to extract token from various possible response structures
       if (apiResponse.data.token) {
         token = apiResponse.data.token;
       } else if (apiResponse.data.data?.token) {
         token = apiResponse.data.data.token;
       }
       
-      if (!userData || !token) {
-        console.error("Could not extract user data or token from response:", apiResponse);
-        throw new Error("Invalid response format from server");
-      }
-  
-      // Ensure required fields exist
-      if (!userData._id) {
-        console.error("User data missing _id field:", userData);
-        throw new Error("Invalid user data returned from server");
-      }
-  
-      // Ensure certifications are properly set and always an array
-      if (!userData.certifications) {
-        userData.certifications = [];
-      } else if (!Array.isArray(userData.certifications)) {
-        // Convert to array if it's not already
-        userData.certifications = [String(userData.certifications)];
+      // Validate extracted data
+      if (!userData) {
+        console.error("Could not extract user data from response:", apiResponse);
+        throw new Error("Invalid response format from server - missing user data");
       }
       
-      console.log("User certifications from API:", userData.certifications);
+      if (!token) {
+        console.error("Could not extract token from response:", apiResponse);
+        throw new Error("Invalid response format from server - missing token");
+      }
   
-      // Normalize user data (map `_id` to `id` for consistency)
+      // Normalize user data for consistency
       const normalizedUser = {
-        ...userData,
-        id: String(userData._id), // Convert _id to string if necessary
-        certifications: userData.certifications || []
+        id: String(userData._id || userData.id),
+        name: userData.name || 'User',
+        email: userData.email,
+        isAdmin: Boolean(userData.isAdmin),
+        certifications: Array.isArray(userData.certifications) 
+          ? userData.certifications 
+          : (userData.certifications ? [String(userData.certifications)] : [])
       };
   
       console.log("Setting user data in state:", normalizedUser);
   
       // Save token in localStorage for auth persistence
-      console.log("Saving token to localStorage");
       localStorage.setItem('token', token);
-      apiService.setToken(token); // Set token in API service
+      apiService.setToken(token);
   
-      setUser(normalizedUser as User); // Update the user state
+      // Update the user state
+      setUser(normalizedUser as User);
   
       // Show success message
       toast({
