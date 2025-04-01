@@ -24,6 +24,11 @@ export const loadEnv = (): void => {
   // Set the default server IP to be consistent across platforms
   setEnv('CUSTOM_SERVER_IP', 'localhost');
   console.log('Server IP set to:', getEnv('CUSTOM_SERVER_IP'));
+  
+  // Set API URL from environment variables if available
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  setEnv('API_URL', apiUrl);
+  console.log('API URL set to:', apiUrl);
 };
 
 // Set environment variables with validation
@@ -44,8 +49,17 @@ export const setEnv = (key: string, value: string): void => {
 
 // Get environment variables
 export const getEnv = (key: string, defaultValue: string = ''): string => {
-  // Always use localhost for consistency across platforms
+  // Check for API_URL when requesting CUSTOM_SERVER_IP for backward compatibility
   if (key === 'CUSTOM_SERVER_IP') {
+    const apiUrl = getEnv('API_URL', '');
+    if (apiUrl) {
+      try {
+        const url = new URL(apiUrl);
+        return url.hostname;
+      } catch (e) {
+        return 'localhost';
+      }
+    }
     return 'localhost';
   }
   
@@ -57,8 +71,8 @@ export const getEnv = (key: string, defaultValue: string = ''): string => {
 
 // Get the local server IP for the device being used
 export const getLocalServerIP = (): string => {
-  // Always return localhost for consistency
-  return 'localhost';
+  // Use API_URL instead of hardcoded localhost
+  return getEnv('API_URL', 'http://localhost:4000/api');
 };
 
 // Check if the app is running on a physical device vs emulator
@@ -82,10 +96,11 @@ export const isPhysicalDevice = (): boolean => {
 
 // Get all possible API URLs for the current environment and platform
 export const getApiEndpoints = (): string[] => {
-  // Use consistent localhost:4000 endpoints for all platforms
+  const configuredApiUrl = getEnv('API_URL', 'http://localhost:4000/api');
+  
   return [
-    `http://localhost:4000/api`,
-    `http://127.0.0.1:4000/api`,
+    configuredApiUrl,
+    `http://127.0.0.1:4000/api`, // Fallback to localhost IP
     '/api' // Relative fallback
   ];
 };
@@ -94,13 +109,13 @@ export const getApiEndpoints = (): string[] => {
 export const getApiUrl = (): string => {
   const env = getEnvironment();
   
-  // In a production environment, this would use environment variables
+  // In a production environment, get from environment variables
   if (env === 'production') {
     return getEnv('API_URL', 'https://api.your-domain.com/api');
   }
   
-  // For development, always use localhost:4000
-  return 'http://localhost:4000/api';
+  // For development, use the API_URL from env
+  return getEnv('API_URL', 'http://localhost:4000/api');
 };
 
 // Ensure API endpoint always has correct format
