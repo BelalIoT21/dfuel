@@ -129,9 +129,14 @@ export class QuizDatabaseService extends BaseService {
     );
   }
 
-  async deleteQuiz(quizId: string): Promise<boolean> {
+  async deleteQuiz(quizId: string, permanent: boolean = false): Promise<boolean> {
+    // Prepare URL with permanent flag if needed
+    const deleteUrl = permanent 
+      ? `quizzes/${quizId}?permanent=true`
+      : `quizzes/${quizId}`;
+    
     const result = await this.apiRequest(
-      async () => await apiService.request(`quizzes/${quizId}`, 'DELETE', undefined, true),
+      async () => await apiService.request(deleteUrl, 'DELETE', undefined, true),
       `Could not delete quiz ${quizId}`
     );
     

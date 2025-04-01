@@ -1,5 +1,6 @@
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
+import mongoDbService from '../mongoDbService';
 
 export interface MachineData {
   name: string;
@@ -278,66 +279,36 @@ export class MachineDatabaseService extends BaseService {
     }
   }
 
-  async deleteMachine(machineId: string): Promise<boolean> {
+  async deleteMachine(machineId: string, permanent: boolean = false): Promise<boolean> {
     try {
-      console.log(`Attempting to delete machine ${machineId}`);
+      console.log(`Attempting to delete machine ${machineId} (permanent: ${permanent})`);
       
       // First backup the machine before deletion
       await this.backupMachine(machineId);
       
-      // First try MongoDB direct deletion if available
-      let success = false;
+      // Prepare URL with permanent flag if needed
+      const deleteUrl = permanent 
+        ? `machines/${machineId}?permanent=true`
+        : `machines/${machineId}`;
       
+      // Try the API with appropriate parameters
       try {
-        // For core machines (IDs 1-6), attempt to soft-delete first
-        if (machineId >= '1' && machineId <= '6') {
-          success = await this.updateMachineStatus(machineId, 'Maintenance', 'This machine has been temporarily removed.');
-          if (success) {
-            console.log(`Successfully soft-deleted core machine ${machineId} via MongoDB`);
-            return true;
+        const response = await apiService.request(deleteUrl, 'DELETE', undefined, true);
+        
+        if (response.data) {
+          if (response.data.permanentlyDeleted) {
+            console.log(`Machine ${machineId} was permanently deleted`);
+          } else if (response.data.softDeleted) {
+            console.log(`Machine ${machineId} was soft-deleted`);
+          } else {
+            console.log(`Successfully deleted machine ${machineId}`);
           }
-        }
-        
-        // Backup the machine before deletion using the new backup method
-        await mongoDbService.backupMachine(machineId);
-        
-        // Then proceed with actual deletion
-        success = await mongoDbService.deleteDocument('machines', machineId);
-        if (success) {
-          console.log("Successfully deleted machine via MongoDB");
           return true;
         }
-      } catch (mongoError) {
-        console.error("MongoDB error deleting machine:", mongoError);
+      } catch (apiError) {
+        console.error(`API error deleting machine ${machineId}:`, apiError);
       }
       
-      // Try multiple API endpoints
-      const endpoints = [
-        `machines/${machineId}`,
-        `auth/machines/${machineId}`
-      ];
-      
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`Trying to delete machine via ${endpoint}`);
-          const response = await apiService.delete(endpoint);
-          
-          if (response.data && response.data.success) {
-            console.log(`Successfully deleted machine via API endpoint: ${endpoint}`);
-            return true;
-          }
-          
-          // If it's a core machine and the server used soft deletion
-          if (response.data && response.data.softDeleted) {
-            console.log(`Core machine ${machineId} was soft-deleted instead of hard-deleted`);
-            return true;
-          }
-        } catch (apiError) {
-          console.error(`API error deleting machine via ${endpoint}:`, apiError);
-        }
-      }
-      
-      console.error("All methods of machine deletion failed");
       return false;
     } catch (error) {
       console.error("API error in deleteMachine:", error);

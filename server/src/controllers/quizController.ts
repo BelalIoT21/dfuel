@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Quiz } from '../models/Quiz';
 import mongoose from 'mongoose';
@@ -141,6 +140,7 @@ export const updateQuiz = async (req: Request, res: Response) => {
 export const deleteQuiz = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { permanent } = req.query; // Add support for permanent deletion query parameter
 
     // Find the quiz
     let quiz;
@@ -157,10 +157,33 @@ export const deleteQuiz = async (req: Request, res: Response) => {
     // Backup the quiz before deletion
     await backupQuizData(id);
     
-    // Soft delete by setting deletedAt timestamp
-    await Quiz.findByIdAndUpdate(id, { deletedAt: new Date() });
-
-    res.status(200).json({ message: 'Quiz deleted successfully' });
+    // Check if we should permanently delete
+    if (permanent === 'true' || permanent === '1') {
+      // For core quizzes (1-6), just mark them as permanently deleted
+      const isCoreQuiz = Number(id) >= 1 && Number(id) <= 6;
+      
+      if (isCoreQuiz) {
+        await Quiz.findByIdAndUpdate(id, { 
+          deletedAt: new Date(),
+          permanentlyDeleted: true
+        });
+        
+        console.log(`Core quiz ${id} marked as permanently deleted`);
+        return res.status(200).json({ 
+          message: 'Core quiz marked as permanently deleted',
+          softDeleted: true
+        });
+      } else {
+        // For user-created quizzes, we can actually delete them
+        await Quiz.findByIdAndDelete(id);
+        console.log(`User-created quiz ${id} permanently deleted from database`);
+        return res.status(200).json({ message: 'Quiz permanently deleted' });
+      }
+    } else {
+      // Soft delete by setting deletedAt timestamp
+      await Quiz.findByIdAndUpdate(id, { deletedAt: new Date() });
+      return res.status(200).json({ message: 'Quiz deleted successfully (soft delete)' });
+    }
   } catch (error) {
     console.error('Error in deleteQuiz:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
@@ -241,6 +264,14 @@ export const restoreQuiz = async (req: Request, res: Response) => {
       
       if (!existingQuiz) {
         return res.status(404).json({ message: 'Quiz not found and no backup available' });
+      }
+      
+      // Don't restore permanently deleted quizzes
+      if (existingQuiz.permanentlyDeleted) {
+        return res.status(400).json({
+          message: 'Cannot restore permanently deleted quiz',
+          permanentlyDeleted: true
+        });
       }
       
       // Check if backup data exists

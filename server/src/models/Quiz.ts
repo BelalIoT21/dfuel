@@ -20,6 +20,7 @@ export interface IQuiz extends mongoose.Document {
   relatedCourseId?: string;
   difficulty: string;
   deletedAt?: Date;
+  permanentlyDeleted?: boolean; // New flag for permanent deletion
   backupData?: string; // Add field to store JSON backup of quiz data
   createdAt: Date;
   updatedAt: Date;
@@ -88,6 +89,10 @@ const quizSchema = new mongoose.Schema<IQuiz>(
     },
     deletedAt: {
       type: Date,
+    },
+    permanentlyDeleted: {
+      type: Boolean,
+      default: false
     },
     backupData: {
       type: String,

@@ -12,6 +12,7 @@ export interface ICourse extends mongoose.Document {
   quizId?: string;
   difficulty: string;
   deletedAt?: Date;
+  permanentlyDeleted?: boolean; // New flag for permanent deletion
   backupData?: string; // Add field to store JSON backup of course data
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +56,10 @@ const courseSchema = new mongoose.Schema<ICourse>(
     },
     deletedAt: {
       type: Date,
+    },
+    permanentlyDeleted: {
+      type: Boolean,
+      default: false
     },
     backupData: {
       type: String,

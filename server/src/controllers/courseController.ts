@@ -1,4 +1,3 @@
-
 import { Request, Response } from 'express';
 import { Course } from '../models/Course';
 import mongoose from 'mongoose';
@@ -134,6 +133,7 @@ export const updateCourse = async (req: Request, res: Response) => {
 export const deleteCourse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { permanent } = req.query; // Add support for permanent deletion query parameter
 
     // Find the course
     let course;
@@ -150,10 +150,33 @@ export const deleteCourse = async (req: Request, res: Response) => {
     // Backup the course before deletion
     await backupCourseData(id);
     
-    // Soft delete by setting deletedAt timestamp
-    await Course.findByIdAndUpdate(id, { deletedAt: new Date() });
-
-    res.status(200).json({ message: 'Course deleted successfully' });
+    // Check if we should permanently delete
+    if (permanent === 'true' || permanent === '1') {
+      // For core courses (1-6), just mark them as permanently deleted
+      const isCoreCourse = Number(id) >= 1 && Number(id) <= 6;
+      
+      if (isCoreCourse) {
+        await Course.findByIdAndUpdate(id, { 
+          deletedAt: new Date(),
+          permanentlyDeleted: true
+        });
+        
+        console.log(`Core course ${id} marked as permanently deleted`);
+        return res.status(200).json({ 
+          message: 'Core course marked as permanently deleted',
+          softDeleted: true
+        });
+      } else {
+        // For user-created courses, we can actually delete them
+        await Course.findByIdAndDelete(id);
+        console.log(`User-created course ${id} permanently deleted from database`);
+        return res.status(200).json({ message: 'Course permanently deleted' });
+      }
+    } else {
+      // Soft delete by setting deletedAt timestamp
+      await Course.findByIdAndUpdate(id, { deletedAt: new Date() });
+      return res.status(200).json({ message: 'Course deleted successfully (soft delete)' });
+    }
   } catch (error) {
     console.error('Error in deleteCourse:', error);
     res.status(500).json({ message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
@@ -234,6 +257,14 @@ export const restoreCourse = async (req: Request, res: Response) => {
       
       if (!existingCourse) {
         return res.status(404).json({ message: 'Course not found and no backup available' });
+      }
+      
+      // Don't restore permanently deleted courses
+      if (existingCourse.permanentlyDeleted) {
+        return res.status(400).json({
+          message: 'Cannot restore permanently deleted course',
+          permanentlyDeleted: true
+        });
       }
       
       // Check if backup data exists

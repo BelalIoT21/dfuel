@@ -26,6 +26,7 @@ export interface IMachine extends mongoose.Document {
   
   // Backup and restoration tracking
   deletedAt?: Date;
+  permanentlyDeleted?: boolean; // Added flag for permanent deletion
   
   // Methods for manipulating booked time slots
   addBookedTimeSlot(dateTimeSlot: string): Promise<boolean>;
@@ -131,6 +132,10 @@ const machineSchema = new mongoose.Schema<IMachine>(
     // Backup and restoration tracking
     deletedAt: {
       type: Date
+    },
+    permanentlyDeleted: {
+      type: Boolean,
+      default: false
     }
   },
   {

@@ -52,10 +52,21 @@ export class CourseDatabaseService extends BaseService {
     }
   }
 
-  async deleteCourse(courseId: string): Promise<boolean> {
+  async deleteCourse(courseId: string, permanent: boolean = false): Promise<boolean> {
     try {
-      const response = await apiService.request(`courses/${courseId}`, 'DELETE', undefined, true);
-      return !response.error;
+      // Prepare URL with permanent flag if needed
+      const deleteUrl = permanent 
+        ? `courses/${courseId}?permanent=true`
+        : `courses/${courseId}`;
+      
+      // Try the API with appropriate parameters
+      try {
+        const response = await apiService.request(deleteUrl, 'DELETE', undefined, true);
+        return !response.error;
+      } catch (apiError) {
+        console.error(`API error deleting course ${courseId}:`, apiError);
+        return false;
+      }
     } catch (error) {
       console.error(`API error, could not delete course ${courseId}:`, error);
       return false;
