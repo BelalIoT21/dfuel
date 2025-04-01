@@ -87,8 +87,10 @@ export const isPhysicalDevice = (): boolean => {
 export const getApiEndpoints = (): string[] => {
   const configuredApiUrl = getEnv('API_URL', '');
   
+  // Make sure only valid URLs are returned
   return [
     configuredApiUrl,
+    'http://localhost:4000/api', // Add this as a fallback
     '/api' // Relative fallback
   ].filter(Boolean); // Remove empty values
 };

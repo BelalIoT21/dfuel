@@ -24,6 +24,7 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
+        console.error('API Error:', error.message || 'Unknown error');
         return Promise.reject(error);
       }
     );
@@ -97,6 +98,7 @@ class ApiService {
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
+    // Use the server-side path directly matching the auth route in server/src/routes/authRoutes.ts
     return this.request('auth/login', 'POST', { email, password });
   }
   

@@ -24,7 +24,14 @@ export const useAuthFunctions = (
       console.log("Login response:", response);
   
       if (response.error) {
-        throw new Error(response.error);
+        // Provide more detailed error message based on status code
+        if (response.status === 404) {
+          throw new Error("API endpoint not found. Please check server configuration.");
+        } else if (response.status === 401) {
+          throw new Error("Invalid email or password.");
+        } else {
+          throw new Error(response.error);
+        }
       }
   
       if (!response.data) {
