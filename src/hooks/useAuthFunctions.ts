@@ -183,10 +183,17 @@ export const useAuthFunctions = (
    */
   const logout = async () => {
     try {
+      setIsLoading(true);
       console.log("Logging out user from MongoDB session");
       
-      // Make a request to the server to handle server-side logout
-      await apiService.logout();
+      try {
+        // Make a request to the server to handle server-side logout
+        await apiService.logout();
+        console.log("Server-side logout successful");
+      } catch (error) {
+        // Even if server-side logout fails, continue with client-side logout
+        console.warn("Server-side logout failed, proceeding with client-side logout", error);
+      }
       
       // Clear user state
       setUser(null);
@@ -211,6 +218,8 @@ export const useAuthFunctions = (
         variant: "destructive"
       });
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 

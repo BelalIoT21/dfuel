@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 
@@ -9,6 +9,8 @@ interface LogoutButtonProps {
 }
 
 const LogoutButton = ({ onLogout, onNavigateToLogin }: LogoutButtonProps) => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -21,8 +23,16 @@ const LogoutButton = ({ onLogout, onNavigateToLogin }: LogoutButtonProps) => {
         {
           text: 'Logout',
           onPress: async () => {
-            await onLogout();
-            onNavigateToLogin();
+            try {
+              setIsLoggingOut(true);
+              await onLogout();
+              onNavigateToLogin();
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Logout Failed', 'An error occurred while logging out. Please try again.');
+            } finally {
+              setIsLoggingOut(false);
+            }
           },
           style: 'destructive',
         },
@@ -37,8 +47,10 @@ const LogoutButton = ({ onLogout, onNavigateToLogin }: LogoutButtonProps) => {
         onPress={handleLogout}
         style={styles.logoutButton}
         icon="logout"
+        loading={isLoggingOut}
+        disabled={isLoggingOut}
       >
-        Logout
+        {isLoggingOut ? 'Logging out...' : 'Logout'}
       </Button>
     </View>
   );

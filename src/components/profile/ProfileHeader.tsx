@@ -3,11 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { LogOut, ArrowLeft, User } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const ProfileHeader = () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   // Wrap the useAuth call in a try-catch to handle the case when AuthProvider is not available
   let user = null;
-  let logout = () => {};
+  let logout = async () => false;
   
   try {
     const auth = useAuth();
@@ -20,6 +27,25 @@ const ProfileHeader = () => {
   // Use the correct path for admins
   const redirectPath = user?.isAdmin ? '/admin' : '/home';
 
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const success = await logout();
+      if (success) {
+        navigate('/');
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast({
+        title: "Logout Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 p-1">
       <Link 
@@ -31,12 +57,19 @@ const ProfileHeader = () => {
       </Link>
       <Button 
         variant="outline" 
-        onClick={logout} 
+        onClick={handleLogout} 
+        disabled={isLoggingOut}
         className="border-purple-200 hover:bg-purple-50 flex items-center gap-2 text-sm w-full sm:w-auto"
         size="sm"
       >
-        <LogOut size={16} />
-        Logout
+        {isLoggingOut ? (
+          <span>Logging out...</span>
+        ) : (
+          <>
+            <LogOut size={16} />
+            Logout
+          </>
+        )}
       </Button>
     </div>
   );

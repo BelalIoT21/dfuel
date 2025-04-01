@@ -159,6 +159,10 @@ class ApiService {
     return this.request('auth/register', 'POST', userData);
   }
   
+  async logout(): Promise<any> {
+    return this.request('auth/logout', 'POST', {}, true);
+  }
+  
   // Machine functions
   async getMachineStatus(machineId: string): Promise<any> {
     return this.request(`machines/${machineId}/status`, 'GET');

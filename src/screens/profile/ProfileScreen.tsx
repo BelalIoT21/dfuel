@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Divider } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,8 @@ import CertificationsSection from './CertificationsSection';
 import LogoutButton from './LogoutButton';
 
 const ProfileScreen = ({ navigation }) => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
   let auth;
   try {
     auth = useAuth();
@@ -64,9 +66,12 @@ const ProfileScreen = ({ navigation }) => {
       <LogoutButton 
         onLogout={async () => {
           try {
+            setIsLoggingOut(true);
             await auth?.logout();
           } catch (error) {
             console.error('Error during logout:', error);
+          } finally {
+            setIsLoggingOut(false);
           }
         }}
         onNavigateToLogin={() => navigation.replace('Login')}

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types/database';
 import { AuthContextType } from '@/types/auth';
@@ -8,7 +7,6 @@ import { useAuthFunctions } from '@/hooks/useAuthFunctions';
 import { certificationService } from '@/services/certificationService';
 import { userDatabaseService } from '@/services/database/userService';
 
-// Create the context with a defined undefined initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -88,7 +86,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await logoutFn();
+    try {
+      return await logoutFn();
+    } catch (error) {
+      console.error('Error during logout:', error);
+      return false;
+    }
   };
 
   const addCertification = async (machineId: string) => {
