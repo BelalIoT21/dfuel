@@ -31,9 +31,14 @@ export const useAuthFunctions = (
       }
   
       // Validate the response structure
-      const nestedData = apiResponse.data?.data; // Access the nested `data` object
-      const userData = nestedData?.user;
-      const token = nestedData?.token;
+      if (!apiResponse.data) {
+        console.error("API response is missing data:", apiResponse);
+        throw new Error("The server returned incomplete data. Please try again.");
+      }
+      
+      // Check if the data is directly in response.data or nested in response.data.data
+      const userData = apiResponse.data.user || apiResponse.data.data?.user || apiResponse.data;
+      const token = apiResponse.data.token || apiResponse.data.data?.token;
   
       if (!userData || !userData._id || !userData.name || !userData.email || !token) {
         console.error("API response is missing required fields:", apiResponse);

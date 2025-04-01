@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { getApiEndpoints } from '../utils/env';
 
@@ -44,7 +43,7 @@ class ApiService {
   
   // Get the current user profile when logged in
   async getCurrentUser(): Promise<any> {
-    return this.request('auth/me', 'GET', undefined, true);
+    return this.request('api/auth/me', 'GET', undefined, true);
   }
   
   // Generic request method for all API calls
@@ -58,8 +57,8 @@ class ApiService {
       // Ensure endpoint doesn't start with a slash
       let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
       
-      // Remove api/ prefix if it's already included to prevent duplication
-      if (cleanEndpoint.startsWith('api/')) {
+      // Remove api/ prefix if it's already included in the baseURL
+      if (cleanEndpoint.startsWith('api/') && this.api.defaults.baseURL?.includes('/api')) {
         cleanEndpoint = cleanEndpoint.substring(4);
       }
       
@@ -158,15 +157,15 @@ class ApiService {
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
-    return this.request('auth/login', 'POST', { email, password });
+    return this.request('api/auth/login', 'POST', { email, password });
   }
   
   async register(userData: { email: string; password: string; name?: string }): Promise<any> {
-    return this.request('auth/register', 'POST', userData);
+    return this.request('api/auth/register', 'POST', userData);
   }
   
   async logout(): Promise<any> {
-    return this.request('auth/logout', 'POST', {}, true);
+    return this.request('api/auth/logout', 'POST', {}, true);
   }
   
   // Machine functions
