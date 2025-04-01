@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -246,8 +245,8 @@ const Index = () => {
 
   const mobileContainerStyle = isMobile
     ? { 
-        paddingTop: keyboardVisible ? '1vh' : '10vh',
-        paddingBottom: keyboardVisible ? '30vh' : '0',
+        paddingTop: keyboardVisible ? '2%' : '10vh',
+        paddingBottom: keyboardVisible ? '40vh' : '0',
         minHeight: '100vh',
         transition: 'all 0.3s ease',
       } 
@@ -261,9 +260,9 @@ const Index = () => {
       className="flex flex-col items-center justify-start bg-gradient-to-b from-purple-50 to-white p-4" 
       style={mobileContainerStyle}
     >
-      <div className={`w-full max-w-md ${isMobile ? 'max-w-xs' : 'max-w-md'} ${keyboardVisible && isMobile ? 'scale-95' : ''}`}>
-        <div className={`text-center ${keyboardVisible && isMobile ? 'mb-1' : isMobile ? 'mb-3' : 'mb-6'}`}>
-          <h1 className={`font-bold text-purple-800 tracking-tight ${keyboardVisible && isMobile ? 'text-xl' : isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>Dfuel</h1>
+      <div className={`w-full max-w-md ${isMobile ? 'max-w-xs' : 'max-w-md'} ${keyboardVisible && isMobile ? 'transform -translate-y-8' : ''}`}>
+        <div className={`text-center ${keyboardVisible && isMobile ? 'mb-0' : isMobile ? 'mb-3' : 'mb-6'}`}>
+          <h1 className={`font-bold text-purple-800 tracking-tight ${keyboardVisible && isMobile ? 'text-lg' : isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>Dfuel</h1>
           {(!keyboardVisible || !isMobile) && (
             <p className={`text-gray-600 ${isMobile ? 'text-sm mt-1' : 'mt-2 text-md md:text-lg'}`}>
               {isLogin ? 'Welcome back!' : 'Create your account'}

@@ -84,18 +84,18 @@ export const LoginForm = ({ onLogin, onToggleMode, keyboardVisible = false }: Lo
   const compactMode = keyboardVisible && isMobile;
 
   return (
-    <Card className={`shadow-md border-purple-100 ${compactMode ? 'py-1 mb-16' : isMobile ? 'py-2' : ''}`}>
-      <CardHeader className={compactMode ? "pb-0 pt-2 px-4" : isMobile ? "pb-1 pt-3 px-4" : "pb-2"}>
-        <CardTitle className={compactMode ? "text-lg" : isMobile ? "text-xl" : ""}>Sign In</CardTitle>
+    <Card className={`shadow-md border-purple-100 ${compactMode ? 'py-0 mb-0 scale-95' : isMobile ? 'py-2' : ''}`}>
+      <CardHeader className={compactMode ? "pb-0 pt-1 px-3" : isMobile ? "pb-1 pt-3 px-4" : "pb-2"}>
+        <CardTitle className={compactMode ? "text-base" : isMobile ? "text-xl" : ""}>Sign In</CardTitle>
         {!compactMode && (
           <CardDescription className={isMobile ? "text-sm" : ""}>
             Enter your credentials to access your account
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className={compactMode ? "px-4 py-1" : isMobile ? "px-4 py-2" : ""}>
+      <CardContent className={compactMode ? "px-3 py-1" : isMobile ? "px-4 py-2" : ""}>
         {formError && (
-          <Alert variant="destructive" className={`${compactMode ? 'mb-1 py-1' : isMobile ? 'py-2 mb-2' : 'mb-4'}`}>
+          <Alert variant="destructive" className={`${compactMode ? 'mb-1 py-0.5' : isMobile ? 'py-2 mb-2' : 'mb-4'}`}>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className={isMobile ? "text-xs" : ""}>{formError}</AlertDescription>
           </Alert>
@@ -103,26 +103,26 @@ export const LoginForm = ({ onLogin, onToggleMode, keyboardVisible = false }: Lo
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className={compactMode ? "space-y-2" : isMobile ? "space-y-3" : "space-y-4"}
+          className={compactMode ? "space-y-1" : isMobile ? "space-y-3" : "space-y-4"}
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className={compactMode ? "space-y-1" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
-            <Label htmlFor="email" className={isMobile ? "text-sm" : ""}>Email</Label>
+          <motion.div className={compactMode ? "space-y-0.5" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
+            <Label htmlFor="email" className={compactMode ? "text-xs" : isMobile ? "text-sm" : ""}>Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full ${emailError ? 'border-red-500' : ''} ${compactMode ? 'h-8 text-sm' : isMobile ? 'h-9 text-sm' : ''}`}
+              className={`w-full ${emailError ? 'border-red-500' : ''} ${compactMode ? 'h-7 text-xs py-1' : isMobile ? 'h-9 text-sm' : ''}`}
             />
-            {emailError && <p className={`text-red-500 ${isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{emailError}</p>}
+            {emailError && <p className={`text-red-500 ${compactMode ? 'text-xs mt-0' : isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{emailError}</p>}
           </motion.div>
           
-          <motion.div className={compactMode ? "space-y-1" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
-            <Label htmlFor="password" className={isMobile ? "text-sm" : ""}>Password</Label>
+          <motion.div className={compactMode ? "space-y-0.5" : isMobile ? "space-y-1" : "space-y-2"} variants={itemAnimation}>
+            <Label htmlFor="password" className={compactMode ? "text-xs" : isMobile ? "text-sm" : ""}>Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -130,16 +130,16 @@ export const LoginForm = ({ onLogin, onToggleMode, keyboardVisible = false }: Lo
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full ${passwordError ? 'border-red-500' : ''} ${compactMode ? 'h-8 text-sm' : isMobile ? 'h-9 text-sm' : ''}`}
+                className={`w-full ${passwordError ? 'border-red-500' : ''} ${compactMode ? 'h-7 text-xs py-1' : isMobile ? 'h-9 text-sm' : ''}`}
               />
             </div>
-            {passwordError && <p className={`text-red-500 ${isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{passwordError}</p>}
+            {passwordError && <p className={`text-red-500 ${compactMode ? 'text-xs mt-0' : isMobile ? 'text-xs mt-0.5' : 'text-sm'}`}>{passwordError}</p>}
           </motion.div>
           
           <motion.div variants={itemAnimation}>
             <Button 
               type="submit" 
-              className={`w-full bg-purple-600 hover:bg-purple-700 ${compactMode ? 'h-8 text-sm mt-0.5' : isMobile ? 'h-9 text-sm mt-1' : ''}`}
+              className={`w-full bg-purple-600 hover:bg-purple-700 ${compactMode ? 'h-7 text-xs mt-0.5 py-0' : isMobile ? 'h-9 text-sm mt-1' : ''}`}
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Signing In...' : 'Sign In'}
@@ -148,7 +148,7 @@ export const LoginForm = ({ onLogin, onToggleMode, keyboardVisible = false }: Lo
         </motion.form>
 
         <motion.div 
-          className={`text-center ${compactMode ? 'mt-1' : isMobile ? 'mt-2' : 'mt-4'}`}
+          className={`text-center ${compactMode ? 'mt-0.5' : isMobile ? 'mt-2' : 'mt-4'}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
