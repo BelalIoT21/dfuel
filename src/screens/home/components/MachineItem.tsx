@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Card, Title, Paragraph, Chip } from 'react-native-paper';
+import { formatImageUrl } from '@/utils/env';
 
 // Define consistent machine types
 const MACHINE_TYPES = {
@@ -73,6 +73,8 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Get appropriate image source based on machine ID
   const getImageSource = () => {
     // Use local images for known machine IDs
+    const machineId = String(machine.id || machine._id);
+    
     switch(machineId) {
       case '1': return require('../../../assets/images/IMG_7814.jpg');
       case '2': return require('../../../assets/images/IMG_7773.jpg');
@@ -83,9 +85,9 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
       default:
         // For custom machines use the provided image URL or default placeholder
         if (machine.imageUrl) {
-          return { uri: machine.imageUrl };
+          return { uri: formatImageUrl(machine.imageUrl) };
         } else if (machine.image) {
-          return { uri: machine.image };
+          return { uri: formatImageUrl(machine.image) };
         } else {
           return require('../../../assets/images/placeholder.jpg');
         }

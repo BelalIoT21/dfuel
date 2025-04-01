@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import MachineForm, { MachineFormData } from '@/components/admin/machines/MachineForm';
 import { machineDatabaseService } from '@/services/database/machineService';
+import { formatImageUrl } from '@/utils/env';
 
 const AdminMachineEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,11 +28,12 @@ const AdminMachineEdit = () => {
   const [loading, setLoading] = useState(true);
   const isEditing = !!id;
 
-  // Helper function to format image URLs
-  const formatImageUrl = (url?: string) => {
+  // Helper function to format image URLs consistently
+  const formatServerImageUrl = (url?: string) => {
     if (!url) return '';
     
     // For server paths, return as is (don't add API prefix here)
+    // This is because we want to store the path in the DB, not the full URL
     if (url.startsWith('/utils/images')) {
       return url;
     }
@@ -73,7 +74,7 @@ const AdminMachineEdit = () => {
               status: status,
               requiresCertification: requiresCertification,
               difficulty: machine.difficulty || 'Beginner',
-              imageUrl: formatImageUrl(machine.imageUrl || machine.image || ''),
+              imageUrl: formatServerImageUrl(machine.imageUrl || machine.image || ''),
               details: machine.details || '',
               specifications: machine.specifications || '',
               certificationInstructions: machine.certificationInstructions || '',

@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Chip } from 'react-native-paper';
+import { formatImageUrl } from '@/utils/env';
 
 interface MachineHeaderProps {
   machine: {
@@ -42,16 +42,13 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
     }
   };
 
-  // Get the image URL with proper fallbacks - simplified to match CourseForm behavior
   const getImageSource = () => {
     console.log('MachineHeader - Machine:', machine);
     console.log('MachineHeader - Image source:', machine.imageUrl || machine.image || 'none');
     
-    // Check for machine ID to use local images for known machines
     const machineId = machine?.id || machine?._id;
     
     if (machineId) {
-      // Use local images for known machine IDs
       switch(String(machineId)) {
         case '1': return require('../../../assets/images/IMG_7814.jpg');
         case '2': return require('../../../assets/images/IMG_7773.jpg');
@@ -62,39 +59,14 @@ const MachineHeader = ({ machine, machineStatus, isCertified }: MachineHeaderPro
       }
     }
     
-    // Simply use the imageUrl or image property if it exists
     if (machine.imageUrl) {
-      // For data URLs and complete URLs
-      if (machine.imageUrl.startsWith('data:') || machine.imageUrl.startsWith('http')) {
-        return { uri: machine.imageUrl };
-      }
-      
-      // For server paths
-      if (machine.imageUrl.startsWith('/utils/images')) {
-        return { uri: `http://localhost:4000${machine.imageUrl}` };
-      }
-      
-      // For any other case, try to use it directly
-      return { uri: machine.imageUrl };
+      return { uri: formatImageUrl(machine.imageUrl) };
     }
     
-    // Same logic for image property as fallback
     if (machine.image) {
-      // For data URLs and complete URLs
-      if (machine.image.startsWith('data:') || machine.image.startsWith('http')) {
-        return { uri: machine.image };
-      }
-      
-      // For server paths
-      if (machine.image.startsWith('/utils/images')) {
-        return { uri: `http://localhost:4000${machine.image}` };
-      }
-      
-      // For any other case, try to use it directly
-      return { uri: machine.image };
+      return { uri: formatImageUrl(machine.image) };
     }
     
-    // Default fallback image
     return require('../../../assets/images/placeholder.jpg');
   };
 
