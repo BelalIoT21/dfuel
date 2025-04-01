@@ -1,4 +1,3 @@
-
 import { Machine } from '../models/Machine';
 import User from '../models/User';
 import { Booking } from '../models/Booking';
@@ -14,7 +13,12 @@ import {
   restoreDeletedMachines,
   backupMachines
 } from './seeds/machineSeeder';
-import { seedSafetyCourses, seedAllCourses, restoreDeletedCourses } from './seeds/courseSeeder';
+import { 
+  seedSafetyCourses, 
+  seedAllCourses, 
+  restoreDeletedCourses,
+  backupCourses 
+} from './seeds/courseSeeder';
 import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes } from './seeds/quizSeeder';
 import { ensureMachineOrder } from './seeds/seedHelpers';
 import { createAdminUser } from '../controllers/admin/adminController';
@@ -128,6 +132,18 @@ export class SeedService {
       return { success: true, restoredCount };
     } catch (error) {
       console.error('Error restoring deleted quizzes:', error);
+      return { success: false, error };
+    }
+  }
+  
+  // Method to backup courses 
+  static async backupCourses() {
+    try {
+      console.log('Creating backups for courses...');
+      const backedUpCount = await backupCourses();
+      return { success: true, backedUpCount };
+    } catch (error) {
+      console.error('Error backing up courses:', error);
       return { success: false, error };
     }
   }

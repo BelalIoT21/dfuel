@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 import { seedUsers } from './userSeeder';
 import { seedAllMachines, ensureMachineImages, restoreDeletedMachines, backupMachines } from './machineSeeder';
-import { seedSafetyCourses, seedAllCourses, restoreDeletedCourses } from './courseSeeder';
+import { seedSafetyCourses, seedAllCourses, restoreDeletedCourses, backupCourses } from './courseSeeder';
 import { seedSafetyQuizzes, seedAllQuizzes, restoreDeletedQuizzes } from './quizSeeder';
 
 // Main seeding function to run all seeders
@@ -31,6 +31,7 @@ export async function runAllSeeders() {
     
     // Backup any entities that don't have backups
     await backupMachines();
+    await backupCourses();
     
     console.log("All seeders completed successfully");
     return { success: true };
@@ -72,6 +73,9 @@ export async function runSeeder(seederName: string) {
         break;
       case 'backup-machines':
         await backupMachines();
+        break;
+      case 'backup-courses':
+        await backupCourses();
         break;
       default:
         throw new Error(`Unknown seeder: ${seederName}`);
