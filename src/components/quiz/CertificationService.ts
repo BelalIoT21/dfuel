@@ -16,11 +16,9 @@ export async function addUserCertification(userId: string, machineId: string): P
   const certificationAttempts = [];
   let success = false;
 
-  // Try multiple methods to ensure certification is added both to database and locally
-  
-  // Method 1: First try direct API call to MongoDB (most reliable method)
+  // Try direct API call to MongoDB (most reliable method)
   try {
-    console.log('Method 1: Attempting direct API call to add certification');
+    console.log('Attempting direct API call to add certification');
     const directResponse = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000')}/api/certifications`, {
       method: 'POST',
       headers: {
@@ -51,14 +49,6 @@ export async function addUserCertification(userId: string, machineId: string): P
     if (directResponse.ok || (directResult && directResult.success)) {
       success = true;
       console.log('Direct API call successful');
-      
-      // Also update local service as backup
-      try {
-        await certificationService.addCertification(userIdStr, machineIdStr);
-      } catch (localErr) {
-        console.error("Error with local certification service after API success:", localErr);
-      }
-      
       return true;
     }
   } catch (directError) {
@@ -66,23 +56,15 @@ export async function addUserCertification(userId: string, machineId: string): P
     certificationAttempts.push({method: "direct API", error: String(directError)});
   }
   
-  // Method 2: Use the certification service
+  // Fallback: Use the certification service
   if (!success) {
     try {
-      console.log('Method 2: Attempting to add certification using certificationService');
+      console.log('Attempting to add certification using certificationService');
       success = await certificationService.addCertification(userIdStr, machineIdStr);
       certificationAttempts.push({method: "certificationService", success});
       
       if (success) {
         console.log('Certification successfully added via certificationService');
-        
-        // Also try to sync with database service
-        try {
-          await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
-        } catch (dbErr) {
-          console.error("Error with database service after successful certification:", dbErr);
-        }
-        
         return true;
       }
     } catch (err) {
@@ -91,9 +73,9 @@ export async function addUserCertification(userId: string, machineId: string): P
     }
   }
   
-  // Method 3: Use certificationDatabaseService if previous methods fail
+  // Fallback: Use certificationDatabaseService
   if (!success) {
-    console.log('Method 3: Trying certificationDatabaseService');
+    console.log('Trying certificationDatabaseService');
     try {
       success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
       certificationAttempts.push({method: "certificationDatabaseService", success});
@@ -105,10 +87,10 @@ export async function addUserCertification(userId: string, machineId: string): P
     }
   }
   
-  // Try one more approach with apiService as a last resort
+  // Last resort: Try apiService
   if (!success) {
     try {
-      console.log('Method 4: Trying apiService');
+      console.log('Trying apiService');
       const apiResult = await apiService.request(`certifications`, 'POST', {
         userId: userIdStr, 
         machineId: machineIdStr

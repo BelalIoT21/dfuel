@@ -106,24 +106,7 @@ export class CertificationService {
         }
       }
       
-      // Always update local storage regardless of server sync success
-      try {
-        const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-        if (!existingCerts.includes(stringCertId)) {
-          existingCerts.push(stringCertId);
-          localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-          localStorage.setItem(`user_${stringUserId}_certification_${stringCertId}`, 'true');
-          console.log(`Updated local certifications for user ${stringUserId}:`, existingCerts);
-        }
-        
-        // Update cache
-        certificationCache.set(stringUserId, existingCerts);
-      } catch (e) {
-        console.error("Error updating local certifications:", e);
-      }
-      
-      // Return true if server sync was successful or we at least updated localStorage
-      return serverSyncSuccess || true;
+      return serverSyncSuccess;
     } catch (error) {
       console.error('Error adding certification:', error);
       return false;
@@ -160,6 +143,7 @@ export class CertificationService {
         
         if (directResponse.ok) {
           console.log("Direct API call successful for removing certification");
+          certificationCache.delete(stringUserId);
           serverSyncSuccess = true;
         }
       } catch (directError) {
@@ -175,6 +159,7 @@ export class CertificationService {
           // Handle both formats of success response
           if (response.data?.success || response.status === 200) {
             console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
+            certificationCache.delete(stringUserId);
             serverSyncSuccess = true;
           }
         } catch (error) {
@@ -182,21 +167,7 @@ export class CertificationService {
         }
       }
       
-      // Always update local storage
-      try {
-        const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-        const updatedCerts = existingCerts.filter((id: string) => id !== stringCertId);
-        localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(updatedCerts));
-        localStorage.removeItem(`user_${stringUserId}_certification_${stringCertId}`);
-        console.log(`Updated local certifications after removal for user ${stringUserId}:`, updatedCerts);
-        
-        // Update cache
-        certificationCache.delete(stringUserId);
-      } catch (e) {
-        console.error("Error updating local certifications after removal:", e);
-      }
-      
-      return serverSyncSuccess || true;
+      return serverSyncSuccess;
     } catch (error) {
       console.error('Error removing certification:', error);
       return false;
@@ -227,24 +198,14 @@ export class CertificationService {
         // Handle both formats of success response
         if (response.data?.success || response.status === 200) {
           console.log(`API clear certifications succeeded for user ${userId}`);
+          certificationCache.delete(stringUserId);
           serverSyncSuccess = true;
         }
       } catch (error) {
         console.error("API clear certifications error:", error);
       }
       
-      // Always update local storage
-      try {
-        localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify([]));
-        console.log(`Cleared local certifications for user ${stringUserId}`);
-        
-        // Clear cache for this user
-        certificationCache.delete(stringUserId);
-      } catch (e) {
-        console.error("Error clearing local certifications:", e);
-      }
-      
-      return serverSyncSuccess || true;
+      return serverSyncSuccess;
     } catch (error) {
       console.error('Error clearing certifications:', error);
       return false;
@@ -291,9 +252,6 @@ export class CertificationService {
             console.log(`Got ${data.length} certifications from server:`, data);
             certifications = data.map(cert => String(cert));
             
-            // Update localStorage with server data
-            localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(certifications));
-            
             // Update certification cache
             certificationCache.set(stringUserId, certifications);
             
@@ -317,31 +275,12 @@ export class CertificationService {
         return certifications;
       }
       
-      // Third try - localStorage
-      const userCertificationsStr = localStorage.getItem(`user_${stringUserId}_certifications`);
-      if (userCertificationsStr) {
-        try {
-          const storedCertifications = JSON.parse(userCertificationsStr);
-          if (Array.isArray(storedCertifications) && storedCertifications.length > 0) {
-            console.log("Using localStorage for certifications:", storedCertifications);
-            certifications = storedCertifications;
-            certificationCache.set(stringUserId, certifications);
-            fetchAttempts.push({ method: 'localStorage', success: true, count: certifications.length });
-            return certifications;
-          }
-        } catch (parseError) {
-          console.error("Error parsing localStorage certifications:", parseError);
-          fetchAttempts.push({ method: 'localStorage', error: String(parseError) });
-        }
-      }
-      
-      // Fourth try - user object from window if available
+      // Third try - user object from window if available
       if (window.user && window.user.certifications && Array.isArray(window.user.certifications)) {
         const userObjCerts = window.user.certifications.map(c => String(c));
         console.log("Using window.user object for certifications:", userObjCerts);
         certifications = userObjCerts;
         certificationCache.set(stringUserId, certifications);
-        this.storeCertificationsLocally(stringUserId, userObjCerts);
         fetchAttempts.push({ method: 'window.user', success: true, count: certifications.length });
         return userObjCerts;
       }
@@ -356,17 +295,41 @@ export class CertificationService {
     }
   }
   
-  private storeCertificationsLocally(userId: string, certifications: string[]): void {
+  async checkCertification(userId: string, machineId: string): Promise<boolean> {
     try {
-      localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(certifications));
-      console.log(`Stored certifications in localStorage for user ${userId}:`, certifications);
+      console.log(`Checking certification for user ${userId} and machine ${machineId}`);
       
-      // Also store individual certification flags
-      certifications.forEach(certId => {
-        localStorage.setItem(`user_${userId}_certification_${certId}`, 'true');
-      });
+      if (!userId || !machineId) {
+        console.error('Invalid userId or machineId');
+        return false;
+      }
+      
+      // Try direct API first
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const response = await fetch(`${apiUrl}/api/certifications/check/${userId}/${machineId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Direct API certification check result:`, result);
+          return !!result; // Convert to boolean
+        }
+      } catch (error) {
+        console.error('Error checking certification via direct API:', error);
+      }
+      
+      // Fallback: Get all certifications and check
+      const certifications = await this.getUserCertifications(userId);
+      const hasCertification = certifications.includes(machineId);
+      console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
+      return hasCertification;
     } catch (error) {
-      console.error('Error storing certifications locally:', error);
+      console.error('Error checking certification:', error);
+      return false;
     }
   }
 }

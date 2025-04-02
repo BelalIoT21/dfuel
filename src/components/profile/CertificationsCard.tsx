@@ -1,13 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Shield, AlertCircle, Check, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { certificationService } from '@/services/certificationService';
-import { machineService } from '@/services/machineService';
 import { useToast } from '@/components/ui/use-toast';
-import { apiService } from '@/services/apiService';
 
 // Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
@@ -20,7 +18,7 @@ const CertificationsCard = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Function to fetch certifications from the server
+  // Function to fetch certifications directly from MongoDB via API
   const fetchCertifications = async () => {
     if (!user?.id) return [];
     
@@ -28,10 +26,11 @@ const CertificationsCard = () => {
       setRefreshing(true);
       console.log(`Fetching certifications for user ${user.id}`);
       
-      // Try direct API first (most reliable)
+      // Direct API call to MongoDB
       try {
-        console.log('Trying direct API to fetch certifications');
-        const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000')}/api/certifications/user/${user.id}`, {
+        console.log('Fetching certifications directly from MongoDB API');
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000');
+        const response = await fetch(`${apiUrl}/api/certifications/user/${user.id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -42,43 +41,27 @@ const CertificationsCard = () => {
           const data = await response.json();
           console.log('API response for certifications:', data);
           
-          if (data && Array.isArray(data.certifications)) {
-            console.log(`Received ${data.certifications.length} certifications from API:`, data.certifications);
-            
-            // Update local certifications service to keep it in sync
-            try {
-              await certificationService.syncUserCertifications(user.id, data.certifications);
-            } catch (syncError) {
-              console.error("Error syncing with local certifications:", syncError);
-            }
-            
-            setUserCertifications(data.certifications);
+          if (Array.isArray(data)) {
+            console.log(`Received ${data.length} certifications from API:`, data);
+            setUserCertifications(data.map(cert => String(cert)));
             setRefreshing(false);
-            return data.certifications;
+            return data.map(cert => String(cert));
           }
+        } else {
+          console.error('Failed to fetch certifications from API:', response.status);
         }
       } catch (apiError) {
-        console.error("Error fetching certifications from API:", apiError);
+        console.error("Error fetching certifications from MongoDB API:", apiError);
       }
       
-      // Fall back to certification service
-      try {
-        const certs = await certificationService.getUserCertifications(user.id);
-        console.log(`Received ${certs.length} certifications from service:`, certs);
-        setUserCertifications(certs);
-        setRefreshing(false);
-        return certs;
-      } catch (error) {
-        console.error("Error fetching certifications from service:", error);
-        setRefreshing(false);
-        toast({
-          title: "Error",
-          description: "Could not load your certifications. Please try again.",
-          variant: "destructive"
-        });
-        // Fallback to cached certifications if any
-        return userCertifications;
-      }
+      // Fallback to default
+      setRefreshing(false);
+      toast({
+        title: "Error",
+        description: "Could not load your certifications from the database. Please try again.",
+        variant: "destructive"
+      });
+      return [];
     } catch (error) {
       console.error("Error in fetchCertifications:", error);
       setRefreshing(false);
@@ -87,7 +70,7 @@ const CertificationsCard = () => {
         description: "Could not load your certifications. Please try again.",
         variant: "destructive"
       });
-      return userCertifications;
+      return [];
     }
   };
   
@@ -95,39 +78,55 @@ const CertificationsCard = () => {
   const fetchMachines = async () => {
     try {
       console.log("Fetching available machines");
-      const allMachines = await machineService.getAllMachines();
-      console.log(`Fetched ${allMachines.length} machines`);
-      
-      // Process and standardize machine data
-      const processedMachines = allMachines.map(machine => {
-        const id = (machine.id || machine._id).toString();
-        return {
-          id,
-          name: machine.name || `Machine ${id}`,
-          type: machine.type || 'Machine'
-        };
+      const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000')}/api/machines`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
-      // Add special machines if they don't exist
-      if (!processedMachines.some(m => m.id === "5")) {
-        processedMachines.push({
-          id: "5",
-          name: "Safety Cabinet",
-          type: "Safety Equipment"
+      if (response.ok) {
+        const allMachines = await response.json();
+        console.log(`Fetched ${allMachines.length} machines`);
+        
+        // Process and standardize machine data
+        const processedMachines = allMachines.map(machine => {
+          const id = (machine.id || machine._id).toString();
+          return {
+            id,
+            name: machine.name || `Machine ${id}`,
+            type: machine.type || 'Machine'
+          };
         });
+        
+        // Add special machines if they don't exist
+        if (!processedMachines.some(m => m.id === "5")) {
+          processedMachines.push({
+            id: "5",
+            name: "Safety Cabinet",
+            type: "Safety Equipment"
+          });
+        }
+        
+        if (!processedMachines.some(m => m.id === "6")) {
+          processedMachines.push({
+            id: "6",
+            name: "Machine Safety Course",
+            type: "Safety Course"
+          });
+        }
+        
+        // Sort machines by ID
+        const sortedMachines = processedMachines.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        setMachines(sortedMachines);
+      } else {
+        console.error('Failed to fetch machines:', response.status);
+        
+        // Add fallback for special machines
+        setMachines([
+          { id: "5", name: "Safety Cabinet", type: "Safety Equipment" },
+          { id: "6", name: "Machine Safety Course", type: "Safety Course" }
+        ]);
       }
-      
-      if (!processedMachines.some(m => m.id === "6")) {
-        processedMachines.push({
-          id: "6",
-          name: "Machine Safety Course",
-          type: "Safety Course"
-        });
-      }
-      
-      // Sort machines by ID
-      const sortedMachines = processedMachines.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-      setMachines(sortedMachines);
     } catch (error) {
       console.error("Error fetching machines:", error);
       toast({
