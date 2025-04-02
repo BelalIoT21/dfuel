@@ -9,6 +9,7 @@ import { machineService } from '@/services/machineService';
 import { courseService } from '@/services/courseService';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import mongoDbService from '@/services/mongoDbService';
 
@@ -357,8 +358,7 @@ const CertificationsCard = () => {
               return (
                 <div 
                   key={machine.id} 
-                  className="border rounded-md p-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                  onClick={() => navigateToMachine(machine.id)}
+                  className="border rounded-md p-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -376,29 +376,44 @@ const CertificationsCard = () => {
                   <div className="flex flex-wrap gap-2 mt-3">
                     <Button 
                       variant="outline" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click
-                        navigateToCourse(machine.linkedCourseId);
-                      }}
-                      className={!machine.linkedCourseId ? 'hidden' : ''}
+                      size="sm" 
+                      onClick={() => navigateToMachine(machine.id)}
                     >
-                      <BookOpen className="mr-1 h-4 w-4" />
-                      Course
+                      View Details
                     </Button>
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click
-                        navigateToQuiz(machine.linkedQuizId);
-                      }}
-                      className={!machine.linkedQuizId ? 'hidden' : ''}
-                    >
-                      <Award className="mr-1 h-4 w-4" />
-                      Quiz
-                    </Button>
+                    {machine.linkedCourseId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToCourse(machine.linkedCourseId)}
+                      >
+                        <BookOpen className="mr-1 h-4 w-4" />
+                        Course
+                      </Button>
+                    )}
+                    
+                    {machine.linkedQuizId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToQuiz(machine.linkedQuizId)}
+                      >
+                        <Award className="mr-1 h-4 w-4" />
+                        Quiz
+                      </Button>
+                    )}
+                    
+                    {machine.id !== "5" && machine.id !== "6" && (
+                      <BookMachineButton 
+                        machineId={machine.id} 
+                        isCertified={machine.isCertified}
+                        machineStatus={machineStatus}
+                        requiresCertification={requiresCertification}
+                        className="ml-auto"
+                        size="sm"
+                      />
+                    )}
                   </div>
                 </div>
               );
