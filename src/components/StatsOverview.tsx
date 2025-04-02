@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 import { useToast } from '@/hooks/use-toast';
+import { isWeb } from '@/utils/platform';
 
 export const StatsOverview = () => {
   const [bookingsCount, setBookingsCount] = useState<number>(0);
@@ -12,20 +13,27 @@ export const StatsOverview = () => {
     const fetchBookingsCount = async () => {
       try {
         setIsLoading(true);
-        const response = await apiService.getAllBookings();
         
-        if (response.error) {
-          console.error('Error fetching bookings:', response.error);
-          toast({
-            title: "Error fetching bookings",
-            description: "Could not load booking statistics",
-            variant: "destructive"
-          });
-          return;
+        // Only make API calls in a web environment to avoid MongoDB errors
+        if (isWeb()) {
+          const response = await apiService.getAllBookings();
+          
+          if (response.error) {
+            console.error('Error fetching bookings:', response.error);
+            toast({
+              title: "Error fetching bookings",
+              description: "Could not load booking statistics",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          const bookings = Array.isArray(response.data) ? response.data : [];
+          setBookingsCount(bookings.length);
+        } else {
+          // For non-web environments, set a default value
+          setBookingsCount(0);
         }
-        
-        const bookings = Array.isArray(response.data) ? response.data : [];
-        setBookingsCount(bookings.length);
       } catch (error) {
         console.error('Error fetching bookings count:', error);
         toast({

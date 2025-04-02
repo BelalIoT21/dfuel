@@ -1,5 +1,6 @@
 
 import { isWeb } from '../../utils/platform';
+import { getEnv } from '../../utils/env';
 import { mongoMachineService } from './machineService';
 import mongoSeedService from './seedService';
 
@@ -14,7 +15,8 @@ class MongoConnectionService {
   private maxConnectionAttempts: number = 3;
   
   constructor() {
-    this.uri = process.env.MONGODB_URI || '';
+    // Use environment utilities to get MongoDB URI instead of directly accessing process.env
+    this.uri = isWeb() ? getEnv('MONGODB_URI', '') : (import.meta.env.VITE_MONGODB_URI || '');
     
     // Auto-connect when the service is instantiated
     if (this.uri && !isWeb()) {

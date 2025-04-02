@@ -5,6 +5,7 @@ import mongoCourseService from './mongodb/courseService';
 import mongoQuizService from './mongodb/quizService';
 import mongoBookingService from './mongodb/bookingService';
 import { apiService } from './apiService';
+import { getApiUrl } from '@/utils/env';
 
 class MongoDbService {
   async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
@@ -207,7 +208,13 @@ class MongoDbService {
       console.log(`Backing up machine ${machineId} before deletion`);
       
       // Create a connector to MongoDB service
-      const response = await fetch(`${this.getApiUrl()}/mongodb/backup-machine`, {
+      const apiUrl = apiService.getBaseUrl();
+      if (!apiUrl) {
+        console.error('No API URL available for backup operation');
+        return false;
+      }
+      
+      const response = await fetch(`${apiUrl}/mongodb/backup-machine`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -234,7 +241,13 @@ class MongoDbService {
       console.log(`Restoring machine ${machineId} from backup`);
       
       // Create a connector to MongoDB service
-      const response = await fetch(`${this.getApiUrl()}/mongodb/restore-machine`, {
+      const apiUrl = apiService.getBaseUrl();
+      if (!apiUrl) {
+        console.error('No API URL available for restore operation');
+        return false;
+      }
+      
+      const response = await fetch(`${apiUrl}/mongodb/restore-machine`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,6 +267,11 @@ class MongoDbService {
       console.error(`Error restoring machine ${machineId}:`, error);
       return false;
     }
+  }
+
+  private getAuthHeaders(): Record<string, string> {
+    const token = localStorage.getItem('token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
   async getAllCourses() {
