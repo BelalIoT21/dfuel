@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { certificationService } from '@/services/certificationService';
-import { useAuth } from '@/context/AuthContext';
 
 interface BookMachineButtonProps {
   machineId: string;
@@ -18,7 +17,7 @@ interface BookMachineButtonProps {
 
 const BookMachineButton = ({ 
   machineId, 
-  isCertified: propIsCertified, 
+  isCertified, 
   machineStatus, 
   requiresCertification = true,
   className = '',
@@ -27,31 +26,9 @@ const BookMachineButton = ({
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [isCertified, setIsCertified] = useState(propIsCertified);
 
   // Special machine IDs that should not be bookable
   const NON_BOOKABLE_MACHINE_IDS = ['5', '6']; // Safety Cabinet and Safety Course
-  
-  // Re-check certification status directly from the database when component mounts
-  useEffect(() => {
-    const verifyCertification = async () => {
-      if (!user || !user.id || !requiresCertification) return;
-      
-      try {
-        const userCertifications = await certificationService.getUserCertifications(user.id);
-        const hasCert = userCertifications.some(cert => String(cert) === String(machineId));
-        console.log(`BookMachineButton: User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
-        setIsCertified(hasCert);
-      } catch (error) {
-        console.error('Error verifying certification:', error);
-        // Keep the prop value as fallback
-        setIsCertified(propIsCertified);
-      }
-    };
-    
-    verifyCertification();
-  }, [user, machineId, requiresCertification, propIsCertified]);
   
   // If this is a non-bookable machine ID, don't render the button
   if (NON_BOOKABLE_MACHINE_IDS.includes(machineId)) {
@@ -108,17 +85,17 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
-  let ButtonIcon = Calendar; // PascalCase is correct for React components
+  let buttonIcon = Calendar;
   
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
-    ButtonIcon = CalendarX; 
+    buttonIcon = CalendarX;
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
-    ButtonIcon = AlertTriangle; 
+    buttonIcon = AlertTriangle;
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
-    ButtonIcon = AlertTriangle; 
+    buttonIcon = AlertTriangle;
   }
 
   return (
@@ -129,7 +106,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <ButtonIcon className="mr-2 h-4 w-4" />
+      <buttonIcon className="mr-2 h-4 w-4" />
       {buttonText}
     </Button>
   );
