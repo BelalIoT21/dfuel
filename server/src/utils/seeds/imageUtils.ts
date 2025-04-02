@@ -13,15 +13,15 @@ dotenv.config();
  * @returns The base URL for images
  */
 export const getImageBaseUrl = (): string => {
-  // Get the API URL from environment variable or use default
-  const apiUrl = process.env.API_URL;
+  // Get the API URL from environment variable
+  const apiUrl = process.env.API_URL || '';
   
   // Extract the base URL (remove '/api' if present)
-  const baseUrl = apiUrl && apiUrl.endsWith('/api') 
+  const baseUrl = apiUrl.endsWith('/api') 
     ? apiUrl.substring(0, apiUrl.length - 4) 
     : apiUrl;
     
-  return baseUrl || 'http://localhost:4000';
+  return baseUrl;
 };
 
 /**
