@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, Loader2, Search } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import BookingDetailsDialog from '@/components/profile/BookingDetailsDialog';
 import { apiService } from '@/services/apiService';
-import { Input } from '@/components/ui/input';
 
 const ActiveBookings = () => {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ const ActiveBookings = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     console.log("ActiveBookings component mounted");
@@ -244,16 +242,6 @@ const ActiveBookings = () => {
     setDialogOpen(false);
   };
 
-  const filteredBookings = searchTerm 
-    ? bookings.filter(booking => {
-        const userName = (booking.userName || '').toLowerCase();
-        const machineName = (booking.machineName || '').toLowerCase();
-        const searchLower = searchTerm.toLowerCase();
-        
-        return userName.includes(searchLower) || machineName.includes(searchLower);
-      })
-    : bookings;
-
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -277,47 +265,25 @@ const ActiveBookings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          {user?.isAdmin && (
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by user or machine name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full"
-                />
-              </div>
-            </div>
-          )}
-          
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
               <p className="text-gray-600">Loading bookings...</p>
             </div>
-          ) : filteredBookings.length === 0 ? (
+          ) : bookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-lg text-gray-500 mb-4">
-                {searchTerm 
-                  ? 'No bookings match your search criteria' 
-                  : user?.isAdmin 
-                    ? 'There are no active bookings in the system' 
-                    : 'You don\'t have any active bookings'}
+                {user?.isAdmin 
+                  ? 'There are no active bookings in the system' 
+                  : 'You don\'t have any active bookings'}
               </p>
-              {searchTerm ? (
-                <Button onClick={() => setSearchTerm('')} variant="outline" className="mx-auto">
-                  Clear Search
-                </Button>
-              ) : (
-                <Button onClick={() => navigate('/profile?tab=certifications')} className="bg-purple-600 hover:bg-purple-700">
-                  Browse Machines
-                </Button>
-              )}
+              <Button onClick={() => navigate('/profile?tab=certifications')} className="bg-purple-600 hover:bg-purple-700">
+                Browse Machines
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredBookings.map(booking => {
+              {bookings.map(booking => {
                 const bookingId = booking.id || booking._id;
                 if (deletingBookingId === bookingId) return null; // Skip rendering if being deleted
                 

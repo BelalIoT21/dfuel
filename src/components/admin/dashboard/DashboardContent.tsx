@@ -34,17 +34,6 @@ export const DashboardContent = () => {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [machineData, setMachineData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState(false);
-  
-  // Safely use Auth context with error handling
-  let user = null;
-  try {
-    const auth = useAuth();
-    user = auth?.user;
-  } catch (error) {
-    console.error('Error accessing Auth context in DashboardContent:', error);
-    setAuthError(true);
-  }
   
   useEffect(() => {
     // Load users and machine data
@@ -177,20 +166,8 @@ export const DashboardContent = () => {
       }
     };
     
-    if (!authError) {
-      fetchData();
-    }
-  }, [authError]);
-
-  // Show loading or error state
-  if (authError) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-xl font-semibold text-red-600 mb-2">Authentication Error</h2>
-        <p className="text-gray-700">Unable to access admin dashboard. Please refresh or log in again.</p>
-      </div>
-    );
-  }
+    fetchData();
+  }, []);
 
   // Create a filtered list of machines for the stats overview
   // that excludes machines 5 and 6 which are special machines (Safety Cabinet and Safety Course)

@@ -3,6 +3,7 @@
  * Helper utility for handling image URLs in seed files
  */
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Load environment variables
 dotenv.config();
@@ -31,7 +32,7 @@ export const getImageBaseUrl = (): string => {
 export const getImageUrl = (imageName: string): string => {
   // Use environment variables to construct the URL
   const baseUrl = getImageBaseUrl();
-  const imagesPath = process.env.IMAGES_PATH;
+  const imagesPath = process.env.IMAGES_PATH || '/utils/images/';
   
   return `${baseUrl}${imagesPath}${imageName}`;
 };

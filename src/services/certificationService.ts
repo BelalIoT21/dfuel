@@ -11,9 +11,6 @@ const CERTIFICATIONS = {
   SAFETY_COURSE: { id: "6", name: "Safety Course" },
 };
 
-// Default certifications to use as fallback when everything else fails
-const DEFAULT_CERTIFICATIONS = ["6"]; // Safety course as default
-
 export class CertificationService {
   async addCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
@@ -32,8 +29,7 @@ export class CertificationService {
 
       // First attempt - direct API call with correct endpoint
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const directResponse = await fetch(`${apiUrl}/api/certifications`, {
+        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -66,8 +62,7 @@ export class CertificationService {
       
       // Third attempt - alternative endpoint 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const alternativeResponse = await fetch(`${apiUrl}/api/api/certifications`, {
+        const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -167,71 +162,39 @@ export class CertificationService {
       
       if (!userId) {
         console.error('Invalid userId');
-        return DEFAULT_CERTIFICATIONS;
+        return [];
       }
       
       // Ensure ID is string
       const stringUserId = userId.toString();
       
-      // Check if user object has certifications
-      if (window.user && window.user.certifications && Array.isArray(window.user.certifications)) {
-        const userObjCerts = window.user.certifications.map(c => String(c));
-        console.log("Using window.user object for certifications:", userObjCerts);
-        return userObjCerts;
-      }
-      
-      // Set a shorter timeout to improve performance
-      const timeoutDuration = 3000; // 3 second timeout
-      
       console.log(`Making API call to get certifications for userId=${stringUserId}`);
       
-      // Try to get certifications from the API
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        // Use API service with timeout
-        const response = await Promise.race([
-          apiService.get(`certifications/user/${stringUserId}`),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
-          )
-        ]);
-        
-        clearTimeout(timeoutId);
-        
-        console.log("API get certifications raw response:", response);
-        
-        // If we got a 404, it likely means the user doesn't exist yet or is new
-        if (response.status === 404 || response.error) {
-          console.log("User not found or error, using default certifications");
-          return [...DEFAULT_CERTIFICATIONS];
-        }
-        
-        if (response.data && Array.isArray(response.data)) {
-          // Make sure all certification IDs are strings and handle objects properly
-          const certifications = response.data.map(cert => {
-            if (typeof cert === 'object' && cert !== null) {
-              // If it's an object, extract the ID
-              return cert._id ? cert._id.toString() : 
-                    cert.id ? cert.id.toString() : 
-                    String(cert);
-            }
-            return cert.toString ? cert.toString() : String(cert);
-          });
-          console.log("Processed certifications:", certifications);
-          return certifications;
-        }
-      } catch (apiError) {
-        console.error('API service error or timeout:', apiError);
+      // Make the API call
+      const response = await apiService.get(`certifications/user/${stringUserId}`);
+      console.log("API get certifications raw response:", response);
+      
+      if (response.data && Array.isArray(response.data)) {
+        // Make sure all certification IDs are strings and handle objects properly
+        const certifications = response.data.map(cert => {
+          if (typeof cert === 'object' && cert !== null) {
+            // If it's an object, extract the ID
+            return cert._id ? cert._id.toString() : 
+                  cert.id ? cert.id.toString() : 
+                  String(cert);
+          }
+          return cert.toString ? cert.toString() : String(cert);
+        });
+        console.log("Processed certifications:", certifications);
+        return certifications;
       }
       
-      // Default fallback: return a set of default certifications
-      console.log("Using default certifications fallback");
-      return [...DEFAULT_CERTIFICATIONS];
+      // Log error if unsuccessful
+      console.error("API get certifications error:", response.error || "Unknown error");
+      return [];
     } catch (error) {
       console.error('Error getting certifications:', error);
-      return DEFAULT_CERTIFICATIONS;
+      return [];
     }
   }
 
@@ -248,20 +211,13 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
-      // Always get fresh certifications from the API
-      const allCerts = await this.getUserCertifications(stringUserId);
-      console.log(`User certifications for ${userId}:`, allCerts);
+      console.log(`Making API call to check certification for userId=${stringUserId}, machineId=${stringMachineId}`);
       
-      const hasCertBasedOnArray = allCerts.some(cert => String(cert) === stringMachineId);
+      // Make the API call
+      const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
+      console.log("API check certification response:", response);
       
-      if (hasCertBasedOnArray) {
-        console.log(`User has certification for machine ${stringMachineId} based on certifications array`);
-        return true;
-      }
-      
-      // If we get here, the user doesn't have the certification
-      console.log(`User does not have certification for machine ${stringMachineId}`);
-      return false;
+      return !!response.data; // Convert to boolean
     } catch (error) {
       console.error('Error checking certification:', error);
       return false;

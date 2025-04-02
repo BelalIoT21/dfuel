@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Key, RefreshCw, Calendar, Award, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
 import { courseService } from '@/services/courseService';
@@ -12,9 +12,9 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
-import mongoDbService from '@/services/mongoDbService';
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
+const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
 
 const CertificationsCard = () => {
   let user = null;
@@ -35,34 +35,11 @@ const CertificationsCard = () => {
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
   const isMobile = useIsMobile();
-  const [userCertifications, setUserCertifications] = useState<string[]>([]);
   
   // Track safety certifications specifically
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
   const [hasSafetyCabinetCertification, setHasSafetyCabinetCertification] = useState(false);
 
-  const fetchUserCertifications = async () => {
-    if (!user?.id) return [];
-    
-    try {
-      console.log(`Fetching certifications for user ${user.id} from MongoDB`);
-      
-      // Use the same approach as admin to fetch certifications
-      const certifications = await certificationService.getUserCertifications(user.id);
-      console.log(`Received ${certifications.length} certifications from API`, certifications);
-      
-      return certifications.map(cert => cert.toString());
-    } catch (error) {
-      console.error("Error fetching certifications:", error);
-      
-      // Fallback to user object if API fails
-      if (user.certifications && Array.isArray(user.certifications)) {
-        return user.certifications.map(cert => cert.toString());
-      }
-      return [];
-    }
-  };
-  
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
       setLoading(false);
@@ -93,7 +70,7 @@ const CertificationsCard = () => {
       
       let databaseMachines: any[] = [];
       try {
-        // Get all machines from database
+        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
       } catch (error) {
@@ -101,14 +78,23 @@ const CertificationsCard = () => {
         databaseMachines = [];
       }
       
-      // Get user certifications directly from MongoDB, same as admin approach
-      const certifications = await fetchUserCertifications();
-      setUserCertifications(certifications);
-      console.log("User certifications fetched:", certifications);
-      
-      // Check for safety certifications
-      setHasSafetyCertification(certifications.includes('6'));
-      setHasSafetyCabinetCertification(certifications.includes('5'));
+      // Get user certifications
+      let userCertifications: string[] = [];
+      try {
+        userCertifications = await certificationService.getUserCertifications(user.id);
+        console.log("User certifications:", userCertifications);
+        
+        // Check for safety certifications
+        setHasSafetyCertification(userCertifications.includes('6'));
+        setHasSafetyCabinetCertification(userCertifications.includes('5'));
+      } catch (error) {
+        console.error("Error fetching user certifications:", error);
+        if (user.certifications && Array.isArray(user.certifications)) {
+          userCertifications = user.certifications.map(cert => String(cert));
+          setHasSafetyCertification(userCertifications.includes('6'));
+          setHasSafetyCabinetCertification(userCertifications.includes('5'));
+        }
+      }
       
       // Include special machines if not already present
       for (const specialMachineId of SPECIAL_MACHINE_IDS) {
@@ -134,7 +120,7 @@ const CertificationsCard = () => {
       // Process machines - important to include ALL machines, not just certified ones
       const processedMachines = databaseMachines.map(machine => {
         const machineId = String(machine.id || machine._id);
-        const isCertified = certifications.includes(machineId);
+        const isCertified = userCertifications.includes(machineId);
         
         return {
           ...machine,
@@ -146,27 +132,21 @@ const CertificationsCard = () => {
       
       // Fetch machine statuses
       const statuses = {};
-      
-      // Fetch latest statuses in the background
-      (async () => {
-        const updatedStatuses = {};
-        for (const machine of processedMachines) {
-          try {
-            if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
-              const status = await machineService.getMachineStatus(machine.id);
-              updatedStatuses[machine.id] = status.toLowerCase();
-            } else {
-              updatedStatuses[machine.id] = "available";
-            }
-          } catch (err) {
-            console.error(`Error getting status for machine ${machine.id}:`, err);
-            updatedStatuses[machine.id] = machine.status?.toLowerCase() || "available";
+      for (const machine of processedMachines) {
+        try {
+          if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
+            const status = await machineService.getMachineStatus(machine.id);
+            statuses[machine.id] = status.toLowerCase();
+          } else {
+            statuses[machine.id] = "available";
           }
+        } catch (err) {
+          console.error(`Error getting status for machine ${machine.id}:`, err);
+          statuses[machine.id] = machine.status?.toLowerCase() || "available";
         }
-        
-        setMachineStatuses(updatedStatuses);
-      })();
+      }
       
+      setMachineStatuses(statuses);
       setMachines(processedMachines);
       setAvailableMachineIds(processedMachines.map(m => m.id));
       
@@ -205,9 +185,14 @@ const CertificationsCard = () => {
     navigate(`/quiz/${quizId}`);
   };
 
+  const handleBookMachine = (machineId: string) => {
+    console.log(`Booking machine ${machineId} from CertificationsCard`);
+    navigate(`/booking/${machineId}`);
+  };
+
   if (!user) return null;
 
-  if (loading && machines.length === 0) {
+  if (loading) {
     return (
       <Card>
         <CardHeader>

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
-import { ChevronLeft, Loader2, Calendar, Award, BookOpen } from 'lucide-react';
+import { ChevronLeft, Loader2, Calendar, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from '@/components/profile/BookMachineButton';
 
@@ -50,22 +50,6 @@ const MachineDetail = () => {
         setLoading(true);
         setError(null);
         
-        // First check localStorage for quick rendering
-        const cachedMachineStr = localStorage.getItem(`machine_${id}`);
-        
-        if (cachedMachineStr) {
-          try {
-            const cachedMachine = JSON.parse(cachedMachineStr);
-            setMachine(cachedMachine);
-            setMachineStatus(cachedMachine.status?.toLowerCase() || 'unknown');
-            console.log('Using cached machine data for initial display');
-            // Continue fetching in background but show immediate UI
-            setLoading(false);
-          } catch (cacheError) {
-            console.error('Error parsing cached machine:', cacheError);
-          }
-        }
-        
         console.log(`Fetching machine with ID: ${id}`);
         const machineData = await machineService.getMachineById(id);
         
@@ -79,44 +63,26 @@ const MachineDetail = () => {
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
-        // Cache machine data for future use
-        localStorage.setItem(`machine_${id}`, JSON.stringify(machineData));
-        
-        // Check for cached status
-        const cachedStatusStr = localStorage.getItem(`machine_status_${id}`);
-        if (cachedStatusStr) {
-          setMachineStatus(cachedStatusStr.toLowerCase());
-          console.log(`Using cached status for machine ${id}: ${cachedStatusStr}`);
-        }
-        
         try {
           const status = await machineService.getMachineStatus(id);
           setMachineStatus(status.toLowerCase());
-          localStorage.setItem(`machine_status_${id}`, status.toLowerCase());
           console.log(`Machine status: ${status}`);
         } catch (statusError) {
           console.error('Error fetching machine status:', statusError);
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
-          localStorage.setItem(`machine_status_${id}`, machineData.status?.toLowerCase() || 'unknown');
         }
         
         if (user) {
           try {
-            // Use improved checkCertification method directly from the service
-            const isUserCertified = await certificationService.checkCertification(user.id, id);
-            console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
-            setIsCertified(isUserCertified);
+            const certificationResult = await certificationService.checkCertification(user.id, id);
+            setIsCertified(certificationResult);
+            console.log(`User certification status for machine ${id}: ${certificationResult}`);
             
-            // Also check for safety certification (ID 6)
-            const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
-            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
-            setHasSafetyCertification(hasSafetyCert);
+            const safetyCertResult = await certificationService.checkCertification(user.id, '6');
+            setHasSafetyCertification(safetyCertResult);
+            console.log(`User has safety certification: ${safetyCertResult}`);
           } catch (certError) {
-            console.error('Error checking certifications:', certError);
-            // Don't use localStorage as fallback - we no longer want to use it
-            // Let's set default values based on the props
-            setIsCertified(false);
-            setHasSafetyCertification(false);
+            console.error('Error checking certification:', certError);
           }
         }
       } catch (err) {
@@ -217,7 +183,7 @@ const MachineDetail = () => {
     }
   };
 
-  if (loading && !machine) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
@@ -226,7 +192,7 @@ const MachineDetail = () => {
     );
   }
 
-  if (error && !machine) {
+  if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <div className="text-center max-w-md">
@@ -247,17 +213,9 @@ const MachineDetail = () => {
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
   console.log("MachineDetail - displaying image:", machineImageUrl);
+  
   console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
-  console.log("User certification status:", isCertified);
-
-  // Add debug logs for BookMachineButton props
-  console.log("BookMachineButton props:", {
-    machineId: id,
-    isCertified,
-    machineStatus,
-    requiresCertification
-  });
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -342,7 +300,6 @@ const MachineDetail = () => {
                 variant="outline"
                 className="flex-1"
               >
-                <BookOpen className="mr-2 h-4 w-4" />
                 Take Course
               </Button>
             )}
@@ -353,21 +310,16 @@ const MachineDetail = () => {
                 variant="outline"
                 className="flex-1"
               >
-                <Award className="mr-2 h-4 w-4" />
                 Take Quiz
               </Button>
             )}
             
-            {/* Don't render booking button for special machines */}
-            {id !== '5' && id !== '6' && (
-              <BookMachineButton 
-                machineId={id || ''}
-                isCertified={isCertified}
-                machineStatus={machineStatus}
-                requiresCertification={requiresCertification}
-                className="flex-1"
-              />
-            )}
+            <BookMachineButton 
+              machineId={id || ''}
+              isCertified={isCertified || !requiresCertification}
+              machineStatus={machineStatus}
+              className="flex-1"
+            />
           </div>
         </CardContent>
       </Card>
