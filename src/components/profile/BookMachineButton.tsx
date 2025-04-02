@@ -137,7 +137,8 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
-  let buttonText = "Book Now";
+  // IMPORTANT FIX: Always show "Book Now" as the button text when canBook is true
+  let buttonText = canBook ? "Book Now" : "";
   let ButtonIcon = Calendar;
   
   if (timeSlotUnavailable) {
@@ -149,6 +150,9 @@ const BookMachineButton = ({
   } else if (requiresCertification && !effectiveCertification) {
     buttonText = "Certification Required";
     ButtonIcon = Award; 
+  } else if (canBook) {
+    // Ensure "Book Now" is shown when the button is clickable
+    buttonText = "Book Now";
   }
 
   // Debug logs to trace button rendering
