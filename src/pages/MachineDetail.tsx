@@ -129,6 +129,53 @@ const MachineDetail = () => {
     fetchMachineData();
   }, [id, user]);
 
+  const handleGetCertified = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to get certified",
+        variant: "destructive"
+      });
+      navigate('/login', { state: { from: `/machine/${id}` } });
+      return;
+    }
+
+    if (!hasSafetyCertification && id !== '6') {
+      toast({
+        title: "Safety Certification Required",
+        description: "You need to complete the safety course before getting certified for this machine",
+        variant: "destructive"
+      });
+      navigate('/machine/6');
+      return;
+    }
+
+    try {
+      const success = await certificationService.addCertification(user.id, id || '');
+      
+      if (success) {
+        setIsCertified(true);
+        toast({
+          title: "Certification Successful",
+          description: `You are now certified to use the ${machine.name}`,
+        });
+      } else {
+        toast({
+          title: "Certification Failed",
+          description: "Unable to add certification. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error getting certified:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleTakeCourse = () => {
     if (!id) return;
     
