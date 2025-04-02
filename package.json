@@ -95,7 +95,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
-    "react-markdown": "^10.1.0",
+    "react-markdown": "^8.0.7",
     "react-native-paper": "^5.12.3",
     "react-native-safe-area-context": "^4.9.0",
     "react-native-screens": "^3.30.1",
