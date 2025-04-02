@@ -63,7 +63,7 @@ const CertificationsCard = () => {
     try {
       let databaseMachines: any[] = [];
       try {
-        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
+        // Get ALL machines
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
       } catch (error) {
@@ -82,11 +82,7 @@ const CertificationsCard = () => {
         setHasSafetyCabinetCertification(userCertifications.includes('5'));
       } catch (error) {
         console.error("Error fetching user certifications:", error);
-        if (user.certifications && Array.isArray(user.certifications)) {
-          userCertifications = user.certifications.map(cert => String(cert));
-          setHasSafetyCertification(userCertifications.includes('6'));
-          setHasSafetyCabinetCertification(userCertifications.includes('5'));
-        }
+        userCertifications = [];
       }
       
       // Include special machines if not already present
