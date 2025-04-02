@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -163,7 +162,13 @@ export class CertificationService {
       // Approach 1: Direct fetch with full URL - this matches admin approach
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
+        
+        // Make sure there is no trailing colon in the URL
+        const cleanUserId = stringUserId.replace(/:.*$/, ''); // Remove anything after a colon
+        
+        console.log(`Using cleaned user ID for API call: ${cleanUserId}`);
+        
+        const response = await fetch(`${apiUrl}/api/certifications/user/${cleanUserId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -176,15 +181,13 @@ export class CertificationService {
         if (response.ok) {
           const certifications = await response.json();
           console.log("Certifications from direct API call:", certifications);
-          return certifications.map(cert => cert.toString());
-        } else if (response.status === 404) {
-          console.log("User not found, using default certifications");
-          return DEFAULT_CERTIFICATIONS;
+          return Array.isArray(certifications) ? certifications.map(cert => cert.toString()) : DEFAULT_CERTIFICATIONS;
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
       }
       
+      // Continue with other fallback approaches
       // Approach 2: Use apiService
       try {
         const response = await apiService.get(`certifications/user/${stringUserId}`);
@@ -239,9 +242,11 @@ export class CertificationService {
         return false;
       }
       
-      // Ensure IDs are strings
-      const stringUserId = userId.toString();
+      // Ensure IDs are strings and clean them
+      const stringUserId = userId.toString().replace(/:.*$/, ''); // Remove anything after a colon
       const stringMachineId = machineId.toString();
+      
+      console.log(`Using cleaned IDs for certification check: userId=${stringUserId}, machineId=${stringMachineId}`);
       
       // Try direct API endpoint first
       try {

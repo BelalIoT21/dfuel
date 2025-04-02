@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 import mongoDbService from './mongoDbService';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +33,10 @@ class CourseService {
       console.error('Error in getAllCourses:', error);
       return [];
     }
+  }
+  
+  async getCourses() {
+    return this.getAllCourses();
   }
   
   async getCourseById(courseId: string) {
