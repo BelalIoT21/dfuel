@@ -1,6 +1,8 @@
+
 // If this file doesn't exist, we'll create it
 import { MongoUser } from './mongodb/types';
 import mongoUserService from './mongodb/userService';
+import mongoBookingService from './mongodb/bookingService';
 
 class MongoDbService {
   async getAllUsers() {
@@ -73,6 +75,58 @@ class MongoDbService {
       return true;
     } catch (error) {
       console.error("Error in deleteUser from MongoDbService:", error);
+      return false;
+    }
+  }
+
+  // Add the missing getAllBookings method
+  async getAllBookings() {
+    try {
+      console.log("MongoDbService: Getting all bookings from MongoDB");
+      return await mongoBookingService.getAllBookings();
+    } catch (error) {
+      console.error("Error in getAllBookings from MongoDbService:", error);
+      return [];
+    }
+  }
+
+  // Add methods for other booking operations
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    try {
+      console.log(`MongoDbService: Updating booking ${bookingId} status to ${status}`);
+      return await mongoBookingService.updateBookingStatus(bookingId, status);
+    } catch (error) {
+      console.error("Error in updateBookingStatus from MongoDbService:", error);
+      return false;
+    }
+  }
+
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    try {
+      console.log(`MongoDbService: Deleting booking ${bookingId}`);
+      return await mongoBookingService.deleteBooking(bookingId);
+    } catch (error) {
+      console.error("Error in deleteBooking from MongoDbService:", error);
+      return false;
+    }
+  }
+
+  async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
+    try {
+      console.log(`MongoDbService: Checking if time slot is available`);
+      return await mongoBookingService.isTimeSlotAvailable(machineId, date, time);
+    } catch (error) {
+      console.error("Error in isTimeSlotAvailable from MongoDbService:", error);
+      return false;
+    }
+  }
+
+  async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
+    try {
+      console.log(`MongoDbService: Creating booking for user ${userId} and machine ${machineId}`);
+      return await mongoBookingService.createBooking(userId, machineId, date, time);
+    } catch (error) {
+      console.error("Error in createBooking from MongoDbService:", error);
       return false;
     }
   }
