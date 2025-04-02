@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle, Award, Lock, Unlock, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
@@ -46,8 +46,7 @@ const BookMachineButton = ({
         
         // First try to check if the certification is in user object if available
         if (user.certifications && Array.isArray(user.certifications)) {
-          const machineIdStr = String(machineId);
-          const hasCert = user.certifications.some(cert => String(cert) === machineIdStr);
+          const hasCert = user.certifications.some(cert => String(cert) === String(machineId));
           if (hasCert && isMounted) {
             console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
             setIsCertified(true);
@@ -72,7 +71,39 @@ const BookMachineButton = ({
           
           console.log(`BookMachineButton: Checking certification for user ${userIdStr}, machine ${machineIdStr}`);
           
-          // Try the certification service
+          // Direct API call to avoid potential errors in service
+          try {
+            const token = localStorage.getItem('token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            
+            // Try the /api/certifications/check endpoint first (most reliable)
+            const directResponse = await fetch(`${apiUrl}/api/certifications/check/${userIdStr}/${machineIdStr}`, {
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+              }
+            });
+            
+            if (directResponse.ok) {
+              // Check content type to ensure we're getting JSON
+              const contentType = directResponse.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                const directResult = await directResponse.json();
+                if (isMounted) {
+                  console.log(`Direct API certification check result for machine ${machineId}:`, directResult);
+                  setIsCertified(directResult === true);
+                  setIsVerifying(false);
+                  return;
+                }
+              } else {
+                console.warn('Non-JSON response from certification check API');
+              }
+            }
+          } catch (directError) {
+            console.error('Direct certification check API error:', directError);
+          }
+          
+          // Fall back to certification service if direct call fails
           const hasCertFromService = await certificationService.checkCertification(userIdStr, machineIdStr);
           
           if (isMounted) {
@@ -120,35 +151,37 @@ const BookMachineButton = ({
   const isAvailable = machineStatus?.toLowerCase() === 'available';
   // If certification is not required, consider the user as certified
   const effectiveCertification = requiresCertification ? isCertified : true;
-  // Simplified condition: machine must be available and not in an unavailable time slot
-  const canBook = isAvailable && !timeSlotUnavailable;
+  const canBook = effectiveCertification && isAvailable && !timeSlotUnavailable;
   
   const handleBooking = () => {
-    if (timeSlotUnavailable) {
-      toast({
-        title: "Time Slot Unavailable",
-        description: "This time slot has already been booked. Please select another time.",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!canBook) {
+      if (timeSlotUnavailable) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+        return;
+      }
       
-    if (!isAvailable) {
-      toast({
-        title: "Machine Unavailable",
-        description: "This machine is currently unavailable for booking",
-        variant: "destructive"
-      });
-      return;
-    } 
-    
-    if (requiresCertification && !effectiveCertification) {
-      toast({
-        title: "Certification Required",
-        description: "You need to be certified to book this machine. Please take the course and quiz first.",
-        variant: "destructive"
-      });
-      navigate(`/machine/${machineId}`);
+      if (!isAvailable) {
+        toast({
+          title: "Machine Unavailable",
+          description: "This machine is currently unavailable for booking",
+          variant: "destructive"
+        });
+        return;
+      } 
+      
+      if (requiresCertification && !effectiveCertification) {
+        toast({
+          title: "Certification Required",
+          description: "You need to be certified to book this machine",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       return;
     }
     
@@ -165,7 +198,7 @@ const BookMachineButton = ({
   };
 
   // Debug logs to trace button rendering
-  console.log(`BookMachineButton final state for machine ${machineId}:`, {
+  console.log(`BookMachineButton for machine ${machineId}:`, {
     isCertified,
     propIsCertified,
     isAvailable,
@@ -174,7 +207,22 @@ const BookMachineButton = ({
     canBook
   });
 
-  // Always show either the "Book Now" button or a button with appropriate message
+  // Always show either the "Book Now" button or a disabled button with appropriate message
+  if (canBook) {
+    return (
+      <Button 
+        onClick={handleBooking} 
+        className={className}
+        size={size}
+        variant="default"
+      >
+        <Calendar className="mr-2 h-4 w-4" />
+        Book Now
+      </Button>
+    );
+  }
+
+  // Handle the non-bookable cases with specific messages
   if (timeSlotUnavailable) {
     return (
       <Button 
@@ -206,30 +254,31 @@ const BookMachineButton = ({
   } 
   
   if (requiresCertification && !effectiveCertification) {
-    // Use a regular button that navigates to course instead of showing as disabled
     return (
       <Button 
         onClick={handleBooking} 
+        disabled={true}
         className={className}
         size={size}
         variant="outline"
       >
-        <Award className="mr-2 h-4 w-4" />
-        Get Certified
+        <Lock className="mr-2 h-4 w-4" />
+        Certification Required
       </Button>
     );
   }
 
-  // Default "Book Now" button
+  // Fallback case (should rarely happen)
   return (
     <Button 
       onClick={handleBooking} 
+      disabled={true}
       className={className}
       size={size}
-      variant={effectiveCertification ? "default" : "outline"}
+      variant="outline"
     >
       <Calendar className="mr-2 h-4 w-4" />
-      Book Now
+      Cannot Book
     </Button>
   );
 };
