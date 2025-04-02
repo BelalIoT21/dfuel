@@ -29,12 +29,11 @@ const CertificationsCard = () => {
       // Ensure user ID is formatted correctly (as a string)
       const userId = String(user.id);
       
-      // Direct API call to MongoDB - use the correct endpoint format
+      // Direct API call to MongoDB
       try {
         console.log(`Fetching certifications directly from MongoDB API for user ID: ${userId}`);
         const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000');
         
-        // Make sure we're using the correct URL format
         const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
           method: 'GET',
           headers: {
@@ -120,7 +119,7 @@ const CertificationsCard = () => {
         
         // Process and standardize machine data
         const processedMachines = allMachines.map(machine => {
-          const id = (machine.id || machine._id).toString();
+          const id = String(machine.id || machine._id);
           return {
             id,
             name: machine.name || `Machine ${id}`,
@@ -147,6 +146,7 @@ const CertificationsCard = () => {
         
         // Sort machines by ID
         const sortedMachines = processedMachines.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        console.log("Sorted machines:", sortedMachines);
         setMachines(sortedMachines);
       } else {
         console.error('Failed to fetch machines:', response.status);
@@ -173,6 +173,12 @@ const CertificationsCard = () => {
     }
   };
   
+  // Debug logging
+  useEffect(() => {
+    console.log("UserCertifications state updated:", userCertifications);
+    console.log("Machines state updated:", machines);
+  }, [userCertifications, machines]);
+  
   // Initial load of data
   useEffect(() => {
     const loadData = async () => {
@@ -182,6 +188,7 @@ const CertificationsCard = () => {
     };
     
     if (user?.id) {
+      console.log("User ID detected, loading certification data");
       loadData();
     }
   }, [user?.id]);
@@ -195,11 +202,16 @@ const CertificationsCard = () => {
   
   // Determine if user has safety certification (required for other machines)
   const hasSafetyCertification = userCertifications.includes('6');
+  console.log("Has safety certification:", hasSafetyCertification);
   
   // Filter certifications to those that the user has
   const userMachines = machines.filter(machine => {
-    return userCertifications.includes(machine.id);
+    const hasCert = userCertifications.includes(machine.id);
+    console.log(`Machine ${machine.id} (${machine.name}): User has certification = ${hasCert}`);
+    return hasCert;
   });
+  
+  console.log("User machines filtered:", userMachines);
   
   // Function to display readable time since certification
   const getTimeSince = () => {
