@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
@@ -136,59 +137,22 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
-  // Always show "Book Now" as the button text when the user can book
-  const buttonText = canBook ? "Book Now" : "";
+  // IMPORTANT FIX: Always show "Book Now" as the button text when canBook is true
+  let buttonText = canBook ? "Book Now" : "";
   let ButtonIcon = Calendar;
   
-  // Only override buttonText if the button is NOT clickable
-  if (!canBook) {
-    if (timeSlotUnavailable) {
-      ButtonIcon = CalendarX;
-      return (
-        <Button 
-          onClick={handleBooking} 
-          disabled={true}
-          className={className}
-          size={size}
-          variant="outline"
-        >
-          <ButtonIcon className="mr-2 h-4 w-4" />
-          Time Slot Unavailable
-        </Button>
-      );
-    } 
-    
-    if (!isAvailable) {
-      ButtonIcon = AlertTriangle;
-      return (
-        <Button 
-          onClick={handleBooking} 
-          disabled={true}
-          className={className}
-          size={size}
-          variant="outline"
-        >
-          <ButtonIcon className="mr-2 h-4 w-4" />
-          Machine Unavailable
-        </Button>
-      );
-    } 
-    
-    if (requiresCertification && !effectiveCertification) {
-      ButtonIcon = Award;
-      return (
-        <Button 
-          onClick={handleBooking} 
-          disabled={true}
-          className={className}
-          size={size}
-          variant="outline"
-        >
-          <ButtonIcon className="mr-2 h-4 w-4" />
-          Certification Required
-        </Button>
-      );
-    }
+  if (timeSlotUnavailable) {
+    buttonText = "Time Slot Unavailable";
+    ButtonIcon = CalendarX; 
+  } else if (!isAvailable) {
+    buttonText = "Machine Unavailable";
+    ButtonIcon = AlertTriangle; 
+  } else if (requiresCertification && !effectiveCertification) {
+    buttonText = "Certification Required";
+    ButtonIcon = Award; 
+  } else if (canBook) {
+    // Ensure "Book Now" is shown when the button is clickable
+    buttonText = "Book Now";
   }
 
   // Debug logs to trace button rendering
@@ -210,8 +174,8 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <Calendar className="mr-2 h-4 w-4" />
-      Book Now
+      <ButtonIcon className="mr-2 h-4 w-4" />
+      {buttonText}
     </Button>
   );
 };

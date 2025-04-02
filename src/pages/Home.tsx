@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { machineService } from '../services/machineService';
 import { apiService } from '../services/apiService';
-import BookMachineButton from '@/components/profile/BookMachineButton';
 
 interface ExtendedMachine {
   id: string;
@@ -139,71 +137,60 @@ const Home = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {machineData.map((machine) => (
-              <Card key={machine.id} className="h-full transition-all duration-300 hover:shadow-lg card-hover border-purple-100">
-                <CardHeader>
-                  <CardTitle>{machine.name}</CardTitle>
-                  <CardDescription>{machine.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
-                    <img
-                      src={machine.image || machine.imageUrl || '/placeholder.svg'}
-                      alt={machine.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-col space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-500">Status</p>
-                      <div className="flex gap-2 flex-wrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          machine.status === 'available' 
-                            ? 'bg-green-100 text-green-800' 
-                            : machine.status === 'maintenance'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {machine.status === 'available' 
-                            ? 'Available' 
-                            : machine.status === 'maintenance'
-                              ? 'Maintenance'
-                              : 'In Use'}
-                        </span>
-                        {machine.type && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            {machine.type}
-                          </span>
-                        )}
-                        {user.certifications && user.certifications.includes(machine.id) && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Certified
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Use BookMachineButton when certified, otherwise use regular button */}
-                    {user.certifications && user.certifications.includes(machine.id) && machine.status === 'available' ? (
-                      <BookMachineButton 
-                        machineId={machine.id} 
-                        isCertified={true}
-                        machineStatus={machine.status}
-                        requiresCertification={true}
-                        className="w-full mt-auto"
+              <Link to={`/machine/${machine.id}`} key={machine.id}>
+                <Card className="h-full transition-all duration-300 hover:shadow-lg card-hover border-purple-100">
+                  <CardHeader>
+                    <CardTitle>{machine.name}</CardTitle>
+                    <CardDescription>{machine.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-4">
+                      <img
+                        src={machine.image || machine.imageUrl || '/placeholder.svg'}
+                        alt={machine.name}
+                        className="w-full h-full object-cover"
                       />
-                    ) : (
+                    </div>
+                    <div className="flex flex-col space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Status</p>
+                        <div className="flex gap-2 flex-wrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            machine.status === 'available' 
+                              ? 'bg-green-100 text-green-800' 
+                              : machine.status === 'maintenance'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {machine.status === 'available' 
+                              ? 'Available' 
+                              : machine.status === 'maintenance'
+                                ? 'Maintenance'
+                                : 'In Use'}
+                          </span>
+                          {machine.type && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {machine.type}
+                            </span>
+                          )}
+                          {user.certifications && user.certifications.includes(machine.id) && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Certified
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="border-purple-200 bg-purple-100 hover:bg-purple-200 text-purple-800 w-full mt-auto"
-                        onClick={() => navigate(`/machine/${machine.id}`)}
                       >
                         Learn More
                       </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
