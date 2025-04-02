@@ -51,24 +51,70 @@ const BookMachineButton = ({
         if (cachedCertValue === 'true' && isMounted) {
           console.log(`BookMachineButton: Using cached certification status for machine ${machineId}`);
           setIsCertified(true);
+          setIsVerifying(false);
+          return; // Exit early with cached value
+        }
+        
+        // First try to check if the certification is in user object if available
+        if (user.certifications && Array.isArray(user.certifications)) {
+          const hasCert = user.certifications.some(cert => String(cert) === String(machineId));
+          if (hasCert && isMounted) {
+            console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
+            setIsCertified(true);
+            localStorage.setItem(cachedCertKey, 'true');
+            setIsVerifying(false);
+            return;
+          }
         }
         
         // Still verify with backend to keep data updated
-        const userCertifications = await certificationService.getUserCertifications(user.id);
-        const hasCert = userCertifications.some(cert => String(cert) === String(machineId));
-        
-        // Store for future quick access
-        localStorage.setItem(cachedCertKey, hasCert ? 'true' : 'false');
-        
-        if (isMounted) {
-          console.log(`BookMachineButton: User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
-          setIsCertified(hasCert);
+        try {
+          const userCertifications = await certificationService.getUserCertifications(user.id);
+          const hasCert = userCertifications.some(cert => String(cert) === String(machineId));
           
-          // Store all certifications locally as a fallback mechanism
-          certificationService.storeCertificationsLocally(user.id, userCertifications);
+          // Store for future quick access
+          localStorage.setItem(cachedCertKey, hasCert ? 'true' : 'false');
+          
+          if (isMounted) {
+            console.log(`BookMachineButton: User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
+            setIsCertified(hasCert);
+            
+            // Store all certifications locally as a fallback mechanism
+            if (userCertifications && userCertifications.length > 0) {
+              certificationService.storeCertificationsLocally(user.id, userCertifications);
+            }
+          }
+        } catch (certError) {
+          console.error('Error verifying certification from API:', certError);
+          
+          // Try to get certifications from local storage if API call fails
+          const storedCertsStr = localStorage.getItem(`user_${user.id}_certifications`);
+          if (storedCertsStr) {
+            try {
+              const storedCerts = JSON.parse(storedCertsStr);
+              if (Array.isArray(storedCerts)) {
+                const hasCert = storedCerts.some(cert => String(cert) === String(machineId));
+                if (isMounted) {
+                  console.log(`BookMachineButton: Using stored certifications, user ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
+                  setIsCertified(hasCert);
+                }
+              }
+            } catch (parseError) {
+              console.error('Error parsing stored certifications:', parseError);
+              // Keep the prop value as fallback
+              if (isMounted) {
+                setIsCertified(propIsCertified);
+              }
+            }
+          } else {
+            // Keep the prop value as fallback
+            if (isMounted) {
+              setIsCertified(propIsCertified);
+            }
+          }
         }
       } catch (error) {
-        console.error('Error verifying certification:', error);
+        console.error('Error in verifyCertification:', error);
         // Keep the prop value as fallback
         if (isMounted) {
           setIsCertified(propIsCertified);
