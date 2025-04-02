@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,11 +24,13 @@ const Index = () => {
   const attemptedEndpointsRef = useRef<string[]>([]);
   const originalHeightRef = useRef<number>(0);
 
+  // Safely access auth context
   let auth;
   try {
     auth = useAuth();
   } catch (error) {
     console.error("Auth context error:", error);
+    // We'll handle this with a fallback UI
   }
 
   const { user, loading: authLoading, login, register } = auth || { 
@@ -224,6 +227,7 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoading) {
       console.log("User is logged in, redirecting:", user);
+      // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoading]);
@@ -241,7 +245,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      throw error;
+      throw error; // Re-throw the error so the LoginForm can handle it
     }
   };
 
@@ -268,6 +272,7 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoading);
 
+  // If there's an auth context error, show a helpful message
   if (authError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -304,11 +309,12 @@ const Index = () => {
   const containerStyle = isMobile
     ? { 
         minHeight: '100vh', 
+        paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: keyboardVisible ? 'flex-start' : 'center', 
+        justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '1vh' : '0',
+        paddingTop: keyboardVisible ? '1vh' : '5vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -321,16 +327,44 @@ const Index = () => {
   return (
     <div 
       className="bg-gradient-to-b from-purple-50 to-white p-4" 
-      style={containerStyle}
+      style={isLogin ? {minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'} : {}}
     >
-      <div className={`w-full max-w-sm ${isMobile ? '' : 'mx-auto'}`}>
-        {(!isMobile || !keyboardVisible) && (
+      <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
+        {!isMobile && (
           <div className="text-center mb-2">
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
-            <p className={`mt-1 ${isMobile ? 'text-sm' : 'text-lg'} text-gray-600`}>
+            <h1 className="text-4xl font-bold text-purple-800 tracking-tight">Dfuel</h1>
+            <p className="mt-1 text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </p>
             {serverStatus && (
+              <div className={isConnected
+                ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
+                : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
+                {isConnected ? (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Connected
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    Disconnected
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isMobile && (
+          <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
+            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+            {!keyboardVisible && (
+              <p className="mt-1 text-sm md:text-lg text-gray-600">
+                {isLogin ? 'Welcome back!' : 'Create your account'}
+              </p>
+            )}
+            {serverStatus && !keyboardVisible && (
               <div className={isConnected
                 ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
                 : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>

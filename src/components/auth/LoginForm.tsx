@@ -145,6 +145,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
                   type="password"
                   placeholder="Password"
                   value={password}
+                  onChangeText={setPassword}
                   onChange={(e) => setPassword(e.target.value)}
                   className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
                 />
