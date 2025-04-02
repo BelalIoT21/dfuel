@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
@@ -148,18 +147,8 @@ const BookMachineButton = ({
     ButtonIcon = AlertTriangle; 
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
-    ButtonIcon = Award; 
+    ButtonIcon = AlertTriangle; 
   }
-
-  // Debug logs to trace button rendering
-  console.log(`BookMachineButton for machine ${machineId}:`, {
-    isCertified,
-    propIsCertified,
-    isAvailable,
-    requiresCertification,
-    canBook,
-    buttonText
-  });
 
   return (
     <Button 
