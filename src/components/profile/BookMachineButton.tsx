@@ -113,7 +113,7 @@ const BookMachineButton = ({
         return;
       } 
       
-      if (requiresCertification && !isCertified) {
+      if (requiresCertification && !effectiveCertification) {
         toast({
           title: "Certification Required",
           description: "You need to be certified to book this machine",
@@ -138,7 +138,7 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
-  let ButtonIcon = Calendar; // PascalCase is correct for React components
+  let ButtonIcon = Calendar;
   
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
