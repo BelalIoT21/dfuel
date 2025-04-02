@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import User from '../models/User';
 import asyncHandler from 'express-async-handler';
@@ -234,7 +235,8 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
       // Instead of 404, return empty array for better client-side handling
       // This avoids UI errors when user isn't found
       console.log("Returning empty array instead of 404 for better client compatibility");
-      return res.status(200).json([]);
+      res.status(200).json([]);
+      return; // Make sure to return here to prevent function from continuing
     }
     
     // Ensure certifications array exists
@@ -270,7 +272,8 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
       console.log(`User not found with ID: ${userId}`);
       
       // Return false instead of error for better client-side handling
-      return res.status(200).json(false);
+      res.status(200).json(false);
+      return; // Make sure to return here to prevent function from continuing
     }
     
     // Ensure certifications array exists
