@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
@@ -137,6 +136,61 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
+  // Always show "Book Now" as the button text when the user can book
+  const buttonText = canBook ? "Book Now" : "";
+  let ButtonIcon = Calendar;
+  
+  // Only override buttonText if the button is NOT clickable
+  if (!canBook) {
+    if (timeSlotUnavailable) {
+      ButtonIcon = CalendarX;
+      return (
+        <Button 
+          onClick={handleBooking} 
+          disabled={true}
+          className={className}
+          size={size}
+          variant="outline"
+        >
+          <ButtonIcon className="mr-2 h-4 w-4" />
+          Time Slot Unavailable
+        </Button>
+      );
+    } 
+    
+    if (!isAvailable) {
+      ButtonIcon = AlertTriangle;
+      return (
+        <Button 
+          onClick={handleBooking} 
+          disabled={true}
+          className={className}
+          size={size}
+          variant="outline"
+        >
+          <ButtonIcon className="mr-2 h-4 w-4" />
+          Machine Unavailable
+        </Button>
+      );
+    } 
+    
+    if (requiresCertification && !effectiveCertification) {
+      ButtonIcon = Award;
+      return (
+        <Button 
+          onClick={handleBooking} 
+          disabled={true}
+          className={className}
+          size={size}
+          variant="outline"
+        >
+          <ButtonIcon className="mr-2 h-4 w-4" />
+          Certification Required
+        </Button>
+      );
+    }
+  }
+
   // Debug logs to trace button rendering
   console.log(`BookMachineButton for machine ${machineId}:`, {
     isCertified,
@@ -144,80 +198,20 @@ const BookMachineButton = ({
     isAvailable,
     requiresCertification,
     effectiveCertification,
-    canBook
+    canBook,
+    buttonText
   });
 
-  if (canBook) {
-    return (
-      <Button 
-        onClick={handleBooking} 
-        className={className}
-        size={size}
-        variant="default"
-      >
-        <Calendar className="mr-2 h-4 w-4" />
-        Book Now
-      </Button>
-    );
-  }
-
-  // Handle the non-bookable cases with specific messages
-  if (timeSlotUnavailable) {
-    return (
-      <Button 
-        onClick={handleBooking} 
-        disabled={true}
-        className={className}
-        size={size}
-        variant="outline"
-      >
-        <CalendarX className="mr-2 h-4 w-4" />
-        Time Slot Unavailable
-      </Button>
-    );
-  } 
-  
-  if (!isAvailable) {
-    return (
-      <Button 
-        onClick={handleBooking} 
-        disabled={true}
-        className={className}
-        size={size}
-        variant="outline"
-      >
-        <AlertTriangle className="mr-2 h-4 w-4" />
-        Machine Unavailable
-      </Button>
-    );
-  } 
-  
-  if (requiresCertification && !effectiveCertification) {
-    return (
-      <Button 
-        onClick={handleBooking} 
-        disabled={true}
-        className={className}
-        size={size}
-        variant="outline"
-      >
-        <Award className="mr-2 h-4 w-4" />
-        Certification Required
-      </Button>
-    );
-  }
-
-  // Fallback case (should rarely happen)
   return (
     <Button 
       onClick={handleBooking} 
-      disabled={true}
+      disabled={!canBook}
       className={className}
       size={size}
-      variant="outline"
+      variant={canBook ? "default" : "outline"}
     >
       <Calendar className="mr-2 h-4 w-4" />
-      Cannot Book
+      Book Now
     </Button>
   );
 };
