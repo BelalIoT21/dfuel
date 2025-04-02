@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -404,16 +405,20 @@ const CertificationsCard = () => {
                       </Button>
                     )}
                     
-                    {machine.id !== "5" && machine.id !== "6" && (
-                      <BookMachineButton 
-                        machineId={machine.id} 
-                        isCertified={machine.isCertified}
-                        machineStatus={machineStatus}
-                        requiresCertification={requiresCertification}
-                        className="ml-auto"
-                        size="sm"
-                      />
-                    )}
+                    {/* Improved condition for showing Book Now button */}
+                    {machine.id !== "5" && // Not safety cabinet
+                     machine.id !== "6" && // Not safety course
+                     (
+                       <BookMachineButton 
+                         machineId={machine.id} 
+                         isCertified={machine.isCertified}
+                         machineStatus={machineStatus}
+                         requiresCertification={requiresCertification}
+                         className="ml-auto"
+                         size="sm"
+                       />
+                     )
+                    }
                   </div>
                 </div>
               );
