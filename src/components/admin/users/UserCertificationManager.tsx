@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Trash } from 'lucide-react';
-import { certificationDatabaseService } from '@/services/database/certificationService';
+import { certificationService } from '@/services/database/certificationService';
 import { machineService } from '@/services/machineService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,7 +37,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       console.log("Loading certifications for user ID:", userId);
       
       // Get fresh certifications from MongoDB
-      const certs = await certificationDatabaseService.getUserCertifications(userId);
+      const certs = await certificationService.getUserCertifications(userId);
       console.log("Received certifications from service:", certs);
       
       // Always convert to strings
@@ -125,7 +125,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationDatabaseService.addCertification(userId, certificationId);
+      const success = await certificationService.addCertification(userId, certificationId);
       
       if (success) {
         // Add the certification to local state immediately for UI responsiveness
@@ -172,7 +172,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationDatabaseService.removeCertification(userId, certificationId);
+      const success = await certificationService.removeCertification(userId, certificationId);
       
       if (success) {
         // Remove the certification from local state immediately for UI responsiveness
@@ -214,7 +214,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to clear all certifications for user ${userId}`);
       
-      const success = await certificationDatabaseService.clearUserCertifications(userId);
+      const success = await certificationService.clearUserCertifications(userId);
       
       if (success) {
         // Clear certifications in local state immediately for UI responsiveness

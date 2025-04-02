@@ -194,6 +194,11 @@ class ApiService {
   async addCertification(userId: string, certificationId: string): Promise<any> {
     return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);
   }
+
+  // Check if user has certification for a machine
+  async checkCertification(userId: string, machineId: string): Promise<any> { 
+    return this.request(`check/${userId}/${machineId}`, 'GET', undefined, true);
+  }
   
   // Remove certification
   async removeCertification(userId: string, certificationId: string): Promise<any> {

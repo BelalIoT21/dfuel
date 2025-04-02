@@ -28,16 +28,6 @@ const MachineDetail = () => {
 
   const getProperImageUrl = (url: string) => {
     if (!url) return '/placeholder.svg';
-    
-    if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      return `${apiUrl}/api${url}`;
-    }
-    
-    if (url.startsWith('data:')) {
-      return url;
-    }
-    
     return url;
   };
 
@@ -73,7 +63,7 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            const certificationResult = await certificationService.checkCertification(user.id, id);
+            const certificationResult = await certificationService.checkCertification(id, id);
             setIsCertified(certificationResult);
             console.log(`User certification status for machine ${id}: ${certificationResult}`);
             
@@ -94,53 +84,6 @@ const MachineDetail = () => {
 
     fetchMachineData();
   }, [id, user]);
-
-  const handleGetCertified = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to get certified",
-        variant: "destructive"
-      });
-      navigate('/login', { state: { from: `/machine/${id}` } });
-      return;
-    }
-
-    if (!hasSafetyCertification && id !== '6') {
-      toast({
-        title: "Safety Certification Required",
-        description: "You need to complete the safety course before getting certified for this machine",
-        variant: "destructive"
-      });
-      navigate('/machine/6');
-      return;
-    }
-
-    try {
-      const success = await certificationService.addCertification(user.id, id || '');
-      
-      if (success) {
-        setIsCertified(true);
-        toast({
-          title: "Certification Successful",
-          description: `You are now certified to use the ${machine.name}`,
-        });
-      } else {
-        toast({
-          title: "Certification Failed",
-          description: "Unable to add certification. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error getting certified:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleTakeCourse = () => {
     if (!id) return;
@@ -310,14 +253,13 @@ const MachineDetail = () => {
               </Button>
             )}
             
-            {isBookable && (
-              <BookMachineButton 
-                machineId={id || ''}
-                isCertified={isCertified || !requiresCertification}
-                machineStatus={machineStatus}
-                className="flex-1"
-              />
-            )}
+            <BookMachineButton 
+              machineId={id || ''}
+              isCertified={isCertified}
+              requiresCertification={machine?.requiresCertification !== false}
+              machineStatus={machineStatus}
+              className="flex-1"
+            />
           </div>
         </CardContent>
       </Card>
