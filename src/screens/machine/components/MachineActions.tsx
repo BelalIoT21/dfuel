@@ -17,6 +17,7 @@ interface MachineActionsProps {
   userId?: string;
   requiresCertification?: boolean;
   onGoBack?: () => void;
+  userCertifications?: string[];
 }
 
 const MachineActions = ({ 
@@ -31,9 +32,9 @@ const MachineActions = ({
   hasMachineSafetyCert = false,
   userId,
   requiresCertification = true,
-  onGoBack
+  onGoBack,
+  userCertifications = []
 }: MachineActionsProps) => {
-  const [certificationsChecked, setCertificationsChecked] = useState(false);
   const [certifiedState, setCertifiedState] = useState(isCertified);
   
   // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
@@ -62,9 +63,10 @@ const MachineActions = ({
       isAdmin,
       hasMachineSafetyCert,
       userId,
-      requiresCertification
+      requiresCertification,
+      userCertifications
     });
-  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, requiresCertification]);
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, requiresCertification, userCertifications]);
 
   const handleTakeCourse = () => {
     // If not Safety Course and user doesn't have Safety Course certification

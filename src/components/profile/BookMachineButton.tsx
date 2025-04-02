@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
@@ -55,8 +56,12 @@ const BookMachineButton = ({
         try {
           setIsVerifying(true);
           
-          // Use certification service with direct API call approach
-          const hasCertification = await certificationService.checkCertification(user.id, machineId);
+          // Get all user certifications directly from API - same as admin approach
+          const certifications = await certificationService.getUserCertifications(user.id);
+          console.log(`BookMachineButton: User certifications for machine ${machineId}:`, certifications);
+          
+          // Check if the certification is in the array
+          const hasCertification = certifications.includes(machineId);
           
           if (isMounted) {
             console.log(`BookMachineButton: User ${hasCertification ? 'has' : 'does not have'} certification for machine ${machineId}`);
