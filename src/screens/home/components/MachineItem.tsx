@@ -94,6 +94,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
 
   console.log(`Machine ${machineId} (${machineName}) - Using local image`);
 
+  // Make the entire card clickable to navigate to machine details
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('MachineDetail', { 
