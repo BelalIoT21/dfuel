@@ -344,29 +344,34 @@ const MachineDetail = () => {
           )}
           
           <div className="flex flex-col md:flex-row gap-3 pt-2">
-            {hasLinkedCourse && (
-              <Button 
-                onClick={handleTakeCourse} 
-                variant="outline"
-                className="flex-1"
-              >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Take Course
-              </Button>
+            {/* Only show course and quiz buttons if user is not certified */}
+            {!isCertified && (
+              <>
+                {hasLinkedCourse && (
+                  <Button 
+                    onClick={handleTakeCourse} 
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Take Course
+                  </Button>
+                )}
+                
+                {hasLinkedQuiz && (
+                  <Button 
+                    onClick={handleTakeQuiz} 
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <Award className="mr-2 h-4 w-4" />
+                    Take Quiz
+                  </Button>
+                )}
+              </>
             )}
             
-            {hasLinkedQuiz && (
-              <Button 
-                onClick={handleTakeQuiz} 
-                variant="outline"
-                className="flex-1"
-              >
-                <Award className="mr-2 h-4 w-4" />
-                Take Quiz
-              </Button>
-            )}
-            
-            {/* Only hide booking for special machines */}
+            {/* Always show book button for bookable machines */}
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
