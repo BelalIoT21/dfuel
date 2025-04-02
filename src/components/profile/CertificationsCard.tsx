@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Key, RefreshCw, Calendar, Award, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
 import { courseService } from '@/services/courseService';
@@ -13,9 +12,9 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import mongoDbService from '@/services/mongoDbService';
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
-const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
 
 const CertificationsCard = () => {
   let user = null;
@@ -36,11 +35,34 @@ const CertificationsCard = () => {
   const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
   const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
   const isMobile = useIsMobile();
+  const [userCertifications, setUserCertifications] = useState<string[]>([]);
   
   // Track safety certifications specifically
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
   const [hasSafetyCabinetCertification, setHasSafetyCabinetCertification] = useState(false);
 
+  const fetchUserCertifications = async () => {
+    if (!user?.id) return [];
+    
+    try {
+      console.log(`Fetching certifications for user ${user.id} from MongoDB`);
+      
+      // Use the same approach as admin to fetch certifications
+      const certifications = await certificationService.getUserCertifications(user.id);
+      console.log(`Received ${certifications.length} certifications from API`, certifications);
+      
+      return certifications.map(cert => cert.toString());
+    } catch (error) {
+      console.error("Error fetching certifications:", error);
+      
+      // Fallback to user object if API fails
+      if (user.certifications && Array.isArray(user.certifications)) {
+        return user.certifications.map(cert => cert.toString());
+      }
+      return [];
+    }
+  };
+  
   const fetchMachinesAndCertifications = async () => {
     if (!user) {
       setLoading(false);
@@ -50,23 +72,6 @@ const CertificationsCard = () => {
     setRefreshing(true);
     try {
       console.log("Fetching machines for CertificationsCard");
-      
-      // Check localStorage for machine data to speed up initial loading
-      const cachedMachinesStr = localStorage.getItem('cached_machines');
-      let cachedMachines = null;
-      
-      if (cachedMachinesStr) {
-        try {
-          cachedMachines = JSON.parse(cachedMachinesStr);
-          if (Array.isArray(cachedMachines) && cachedMachines.length > 0) {
-            console.log("Using cached machines data for initial display");
-            setMachines(cachedMachines);
-            setLoading(false);
-          }
-        } catch (e) {
-          console.error("Error parsing cached machines:", e);
-        }
-      }
       
       // Fetch all courses to build a map
       try {
@@ -88,59 +93,22 @@ const CertificationsCard = () => {
       
       let databaseMachines: any[] = [];
       try {
-        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
+        // Get all machines from database
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
-        
-        // Cache machines for future use
-        localStorage.setItem('cached_machines', JSON.stringify(databaseMachines));
       } catch (error) {
         console.error("Error fetching machines from database:", error);
         databaseMachines = [];
-        
-        // Use cached data if available and we failed to fetch new data
-        if (cachedMachines) {
-          databaseMachines = cachedMachines;
-        }
       }
       
-      // Get user certifications - use the enhanced method with caching
-      let userCertifications: string[] = [];
-      try {
-        userCertifications = await certificationService.getUserCertifications(user.id);
-        console.log("User certifications:", userCertifications);
-        
-        // Check for safety certifications
-        setHasSafetyCertification(userCertifications.includes('6'));
-        setHasSafetyCabinetCertification(userCertifications.includes('5'));
-        
-        // Store certifications locally
-        certificationService.storeCertificationsLocally(user.id, userCertifications);
-      } catch (error) {
-        console.error("Error fetching user certifications:", error);
-        
-        // Try to recover from localStorage if available
-        const userCertificationsStr = localStorage.getItem(`user_${user.id}_certifications`);
-        if (userCertificationsStr) {
-          try {
-            const storedCertifications = JSON.parse(userCertificationsStr);
-            if (Array.isArray(storedCertifications)) {
-              userCertifications = storedCertifications;
-              console.log("Using stored certifications from localStorage:", userCertifications);
-              setHasSafetyCertification(userCertifications.includes('6'));
-              setHasSafetyCabinetCertification(userCertifications.includes('5'));
-            }
-          } catch (storageError) {
-            console.error("Error parsing localStorage certifications:", storageError);
-          }
-        }
-        
-        if (user.certifications && Array.isArray(user.certifications)) {
-          userCertifications = user.certifications.map(cert => String(cert));
-          setHasSafetyCertification(userCertifications.includes('6'));
-          setHasSafetyCabinetCertification(userCertifications.includes('5'));
-        }
-      }
+      // Get user certifications directly from MongoDB, same as admin approach
+      const certifications = await fetchUserCertifications();
+      setUserCertifications(certifications);
+      console.log("User certifications fetched:", certifications);
+      
+      // Check for safety certifications
+      setHasSafetyCertification(certifications.includes('6'));
+      setHasSafetyCabinetCertification(certifications.includes('5'));
       
       // Include special machines if not already present
       for (const specialMachineId of SPECIAL_MACHINE_IDS) {
@@ -166,7 +134,7 @@ const CertificationsCard = () => {
       // Process machines - important to include ALL machines, not just certified ones
       const processedMachines = databaseMachines.map(machine => {
         const machineId = String(machine.id || machine._id);
-        const isCertified = userCertifications.includes(machineId);
+        const isCertified = certifications.includes(machineId);
         
         return {
           ...machine,
@@ -176,24 +144,12 @@ const CertificationsCard = () => {
         };
       });
       
-      // Fetch machine statuses (use cached statuses initially for speed)
+      // Fetch machine statuses
       const statuses = {};
-      const cachedStatusesStr = localStorage.getItem('cached_machine_statuses');
-      let cachedStatuses = {};
-      
-      if (cachedStatusesStr) {
-        try {
-          cachedStatuses = JSON.parse(cachedStatusesStr);
-          // Use cached statuses for initial display
-          setMachineStatuses(cachedStatuses);
-        } catch (e) {
-          console.error("Error parsing cached statuses:", e);
-        }
-      }
       
       // Fetch latest statuses in the background
       (async () => {
-        const updatedStatuses = {...cachedStatuses};
+        const updatedStatuses = {};
         for (const machine of processedMachines) {
           try {
             if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
@@ -208,9 +164,7 @@ const CertificationsCard = () => {
           }
         }
         
-        // Update statuses and cache them
         setMachineStatuses(updatedStatuses);
-        localStorage.setItem('cached_machine_statuses', JSON.stringify(updatedStatuses));
       })();
       
       setMachines(processedMachines);
@@ -249,11 +203,6 @@ const CertificationsCard = () => {
   
   const navigateToQuiz = (quizId: string) => {
     navigate(`/quiz/${quizId}`);
-  };
-
-  const handleBookMachine = (machineId: string) => {
-    console.log(`Booking machine ${machineId} from CertificationsCard`);
-    navigate(`/booking/${machineId}`);
   };
 
   if (!user) return null;

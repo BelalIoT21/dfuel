@@ -44,30 +44,18 @@ const BookMachineButton = ({
       try {
         setIsVerifying(true);
         
-        // Check localStorage first for quick rendering
-        const cachedCertKey = `user_${user.id}_certification_${machineId}`;
-        const cachedCertValue = localStorage.getItem(cachedCertKey);
-        
-        if (cachedCertValue === 'true' && isMounted) {
-          console.log(`BookMachineButton: Using cached certification status for machine ${machineId}`);
-          setIsCertified(true);
-          setIsVerifying(false);
-          return; // Exit early with cached value
-        }
-        
         // First try to check if the certification is in user object if available
         if (user.certifications && Array.isArray(user.certifications)) {
           const hasCert = user.certifications.some(cert => String(cert) === String(machineId));
           if (hasCert && isMounted) {
             console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
             setIsCertified(true);
-            localStorage.setItem(cachedCertKey, 'true');
             setIsVerifying(false);
             return;
           }
         }
         
-        // Use improved certification service with better error handling and caching
+        // Use certification service with better error handling
         const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
         
         if (isMounted) {
