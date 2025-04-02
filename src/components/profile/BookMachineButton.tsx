@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { certificationService } from '@/services/certificationService';
@@ -30,9 +30,13 @@ const BookMachineButton = ({
   const { user } = useAuth();
   const [isCertified, setIsCertified] = useState(propIsCertified);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [hasSafetyCert, setHasSafetyCert] = useState(false);
 
   // Special machine IDs that should not be bookable
   const NON_BOOKABLE_MACHINE_IDS = ['5', '6']; // Safety Cabinet and Safety Course
+  
+  // Safety course ID
+  const SAFETY_COURSE_ID = '6';
   
   // For debugging
   useEffect(() => {
@@ -40,16 +44,17 @@ const BookMachineButton = ({
       propIsCertified,
       requiresCertification,
       machineStatus,
-      currentIsCertified: isCertified
+      currentIsCertified: isCertified,
+      hasSafetyCert
     });
-  }, [machineId, propIsCertified, requiresCertification, machineStatus, isCertified]);
+  }, [machineId, propIsCertified, requiresCertification, machineStatus, isCertified, hasSafetyCert]);
   
   // Re-check certification status directly from the database when component mounts
   useEffect(() => {
     let isMounted = true;
     
     const verifyCertification = async () => {
-      if (!user || !user.id || !requiresCertification || isVerifying) return;
+      if (!user || !user.id || isVerifying) return;
       
       try {
         setIsVerifying(true);
@@ -62,25 +67,40 @@ const BookMachineButton = ({
         if (cachedCertValue === 'true' && isMounted) {
           console.log(`BookMachineButton: Using cached certification status for machine ${machineId}`);
           setIsCertified(true);
-          setIsVerifying(false);
-          return; // Exit early with cached value
+        }
+        
+        // Check for safety certification
+        const safetyCertKey = `user_${user.id}_certification_${SAFETY_COURSE_ID}`;
+        const cachedSafetyCert = localStorage.getItem(safetyCertKey);
+        
+        if (cachedSafetyCert === 'true' && isMounted) {
+          console.log(`BookMachineButton: User has cached safety certification`);
+          setHasSafetyCert(true);
         }
         
         // First try to check if the certification is in user object if available
         if (user.certifications && Array.isArray(user.certifications)) {
           const certIds = user.certifications.map(cert => String(cert));
           console.log(`User certifications from context:`, certIds);
+          
+          // Check for machine certification
           const hasCert = certIds.includes(String(machineId));
           if (hasCert && isMounted) {
             console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
             setIsCertified(true);
             localStorage.setItem(cachedCertKey, 'true');
-            setIsVerifying(false);
-            return;
+          }
+          
+          // Check for safety certification
+          const hasSafety = certIds.includes(SAFETY_COURSE_ID);
+          if (hasSafety && isMounted) {
+            console.log(`BookMachineButton: User has safety certification from user object`);
+            setHasSafetyCert(true);
+            localStorage.setItem(safetyCertKey, 'true');
           }
         }
         
-        // Make a direct API call to check certification
+        // Make a direct API call to check machine certification
         try {
           const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000');
           const response = await fetch(`${apiUrl}/api/certifications/check/${user.id}/${machineId}`, {
@@ -99,11 +119,35 @@ const BookMachineButton = ({
                 localStorage.setItem(cachedCertKey, 'true');
               }
             }
-            setIsVerifying(false);
-            return;
           }
         } catch (apiError) {
-          console.error("Direct API call failed:", apiError);
+          console.error("Direct API call failed for machine cert:", apiError);
+        }
+        
+        // Check for safety certification via API
+        if (machineId !== SAFETY_COURSE_ID) {
+          try {
+            const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000');
+            const safetyResponse = await fetch(`${apiUrl}/api/certifications/check/${user.id}/${SAFETY_COURSE_ID}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              }
+            });
+            
+            if (safetyResponse.ok) {
+              const hasSafety = await safetyResponse.json();
+              console.log(`API safety certification check: ${hasSafety}`);
+              
+              if (isMounted) {
+                setHasSafetyCert(!!hasSafety);
+                if (hasSafety) {
+                  localStorage.setItem(safetyCertKey, 'true');
+                }
+              }
+            }
+          } catch (safetyApiError) {
+            console.error("Direct API call failed for safety cert:", safetyApiError);
+          }
         }
         
         // Use improved certification service with better error handling and caching
@@ -114,6 +158,19 @@ const BookMachineButton = ({
           setIsCertified(hasCertFromService);
           if (hasCertFromService) {
             localStorage.setItem(cachedCertKey, 'true');
+          }
+        }
+        
+        // Check safety cert from service
+        if (machineId !== SAFETY_COURSE_ID) {
+          const hasSafetyFromService = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+          
+          if (isMounted) {
+            console.log(`BookMachineButton: Service check - User ${hasSafetyFromService ? 'has' : 'does not have'} safety certification`);
+            setHasSafetyCert(hasSafetyFromService);
+            if (hasSafetyFromService) {
+              localStorage.setItem(safetyCertKey, 'true');
+            }
           }
         }
       } catch (error) {
@@ -151,7 +208,8 @@ const BookMachineButton = ({
     isAvailable,
     effectiveCertification,
     canBook,
-    timeSlotUnavailable
+    timeSlotUnavailable,
+    hasSafetyCert
   });
   
   const handleBooking = () => {
@@ -175,11 +233,26 @@ const BookMachineButton = ({
       } 
       
       if (requiresCertification && !isCertified) {
+        if (machineId !== SAFETY_COURSE_ID && !hasSafetyCert) {
+          toast({
+            title: "Safety Course Required",
+            description: "You need to complete the safety course first",
+            variant: "destructive"
+          });
+          
+          // Navigate to safety course
+          navigate(`/machine/6`);
+          return;
+        }
+        
         toast({
           title: "Certification Required",
           description: "You need to be certified to book this machine",
           variant: "destructive"
         });
+        
+        // Navigate to machine details to get certified
+        navigate(`/machine/${machineId}`);
         return;
       }
       
@@ -198,6 +271,21 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
+  // If not safety certified and not the safety course, show "Take Safety Course" button
+  if (requiresCertification && !isCertified && machineId !== SAFETY_COURSE_ID && !hasSafetyCert) {
+    return (
+      <Button 
+        onClick={() => navigate(`/machine/6`)}
+        className={className}
+        size={size}
+        variant="outline"
+      >
+        <BookOpen className="mr-2 h-4 w-4" />
+        Take Safety Course First
+      </Button>
+    );
+  }
+
   let buttonText = "Book Now";
   let ButtonIcon = Calendar; // PascalCase is correct for React components
   
@@ -208,7 +296,7 @@ const BookMachineButton = ({
     buttonText = "Machine Unavailable";
     ButtonIcon = AlertTriangle; 
   } else if (requiresCertification && !isCertified) {
-    buttonText = "Certification Required";
+    buttonText = "Get Certified";
     ButtonIcon = AlertTriangle; 
   }
 

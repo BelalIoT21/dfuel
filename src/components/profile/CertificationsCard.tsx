@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Shield, AlertCircle, Check, RefreshCw } from 'lucide-react';
+import { Shield, AlertCircle, Check, RefreshCw, BookOpen, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 // Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
@@ -13,6 +14,7 @@ const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
 const CertificationsCard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [machines, setMachines] = useState<any[]>([]);
   const [userCertifications, setUserCertifications] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,6 +206,20 @@ const CertificationsCard = () => {
   const hasSafetyCertification = userCertifications.includes('6');
   console.log("Has safety certification:", hasSafetyCertification);
   
+  // Navigate to the safety course
+  const handleTakeSafetyCourse = () => {
+    navigate('/machine/6');
+    toast({
+      title: "Navigating to Safety Course",
+      description: "You'll need to complete this before using other machines",
+    });
+  };
+  
+  // Navigate to a specific machine
+  const handleGoToMachine = (machineId: string) => {
+    navigate(`/machine/${machineId}`);
+  };
+  
   // Filter certifications to those that the user has
   const userMachines = machines.filter(machine => {
     const hasCert = userCertifications.includes(machine.id);
@@ -267,6 +283,15 @@ const CertificationsCard = () => {
             <AlertTitle>Safety course required</AlertTitle>
             <AlertDescription>
               You need to complete the Machine Safety Course to get certified for other machines.
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 bg-amber-100 border-amber-300 hover:bg-amber-200 text-amber-800"
+                onClick={handleTakeSafetyCourse}
+              >
+                <BookOpen className="h-4 w-4 mr-1" />
+                Take Safety Course
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -275,12 +300,20 @@ const CertificationsCard = () => {
           <div className="text-center py-8">
             <Shield className="h-12 w-12 text-gray-300 mx-auto mb-2" />
             <p className="text-gray-500">You don't have any certifications yet.</p>
-            <p className="text-sm text-gray-400 mt-1">Complete the safety course to get started.</p>
+            <p className="text-sm text-gray-400 mt-1 mb-4">Complete the safety course to get started.</p>
+            <Button
+              variant="default"
+              onClick={handleTakeSafetyCourse}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Take Safety Course
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
             {userMachines.map(machine => (
-              <div key={machine.id} className="flex items-center justify-between p-3 border rounded-md">
+              <div key={machine.id} className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50 cursor-pointer" onClick={() => handleGoToMachine(machine.id)}>
                 <div>
                   <div className="font-medium">{machine.name}</div>
                   <div className="text-sm text-gray-500">{machine.type}</div>
@@ -291,6 +324,40 @@ const CertificationsCard = () => {
                 </div>
               </div>
             ))}
+            
+            {!userMachines.some(m => m.id === "6") && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleTakeSafetyCourse}
+                  className="w-full border-dashed border-purple-200 hover:border-purple-400 hover:bg-purple-50"
+                >
+                  <BookOpen className="h-4 w-4 mr-2 text-purple-600" />
+                  <span className="text-purple-700">Take Safety Course</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {machines.length > 0 && userMachines.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <h3 className="text-sm font-medium mb-2">Available machines:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {machines.filter(m => !userCertifications.includes(m.id) && m.id !== "5" && m.id !== "6").map(machine => (
+                <Button
+                  key={machine.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGoToMachine(machine.id)}
+                  className="justify-start"
+                  disabled={!hasSafetyCertification}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="truncate">{machine.name}</span>
+                </Button>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

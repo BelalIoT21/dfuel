@@ -49,8 +49,11 @@ export const addCertification = asyncHandler(async (req: Request, res: Response)
     
     console.log("User's existing certifications:", user.certifications);
     
+    // Convert all certifications to strings for consistent comparison
+    const certStrings = user.certifications.map(cert => String(cert));
+    
     // Check if user already has this certification
-    if (user.certifications.includes(machineIdStr)) {
+    if (certStrings.includes(machineIdStr)) {
       console.log(`User ${userIdStr} already has certification ${machineIdStr}`);
       res.status(200).json({ 
         success: true, 
@@ -106,11 +109,15 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
   }
   
   try {
+    // Convert IDs to strings for consistency
+    const userIdStr = String(userId);
+    const machineIdStr = String(machineId);
+    
     // Find user with various ID formats
-    let user = await findUserWithAnyIdFormat(userId);
+    let user = await findUserWithAnyIdFormat(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
+      console.log(`User not found with ID: ${userIdStr}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -125,10 +132,13 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
     
     console.log("User's existing certifications:", user.certifications);
     
+    // Convert all certifications to strings for consistent comparison
+    const certStrings = user.certifications.map(cert => String(cert));
+    
     // Check if user has this certification
-    const certIndex = user.certifications.indexOf(machineId);
+    const certIndex = certStrings.indexOf(machineIdStr);
     if (certIndex === -1) {
-      console.log(`User ${userId} does not have certification ${machineId}`);
+      console.log(`User ${userIdStr} does not have certification ${machineIdStr}`);
       res.status(200).json({ 
         success: true, 
         message: 'User does not have this certification' 
@@ -140,13 +150,13 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
     user.certifications.splice(certIndex, 1);
     
     // Remove certification date if exists
-    if (user.certificationDates && user.certificationDates[machineId]) {
-      delete user.certificationDates[machineId];
+    if (user.certificationDates && user.certificationDates[machineIdStr]) {
+      delete user.certificationDates[machineIdStr];
     }
     
     console.log(`Saving user with updated certifications: ${user.certifications}`);
     await user.save();
-    console.log(`Removed certification ${machineId} from user ${userId}`);
+    console.log(`Removed certification ${machineIdStr} from user ${userIdStr}`);
     
     res.status(200).json({ 
       success: true, 
@@ -180,11 +190,14 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
   }
   
   try {
+    // Convert ID to string for consistency
+    const userIdStr = String(userId);
+    
     // Find user with various ID formats
-    let user = await findUserWithAnyIdFormat(userId);
+    let user = await findUserWithAnyIdFormat(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
+      console.log(`User not found with ID: ${userIdStr}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -192,7 +205,7 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
       return;
     }
     
-    console.log(`Clearing certifications for user ${userId}`);
+    console.log(`Clearing certifications for user ${userIdStr}`);
     
     // Clear all certifications
     user.certifications = [];
@@ -201,7 +214,7 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
     user.certificationDates = {};
     
     await user.save();
-    console.log(`Cleared all certifications for user ${userId}`);
+    console.log(`Cleared all certifications for user ${userIdStr}`);
     
     res.status(200).json({ 
       success: true, 
@@ -235,11 +248,14 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
   }
   
   try {
+    // Convert ID to string for consistency
+    const userIdStr = String(userId);
+    
     // Find user with various ID formats
-    let user = await findUserWithAnyIdFormat(userId);
+    let user = await findUserWithAnyIdFormat(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
+      console.log(`User not found with ID: ${userIdStr}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -254,7 +270,7 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     
     // Return the certifications as an array of strings
     const certifications = user.certifications.map(cert => String(cert));
-    console.log(`Retrieved certifications for user ${userId}:`, certifications);
+    console.log(`Retrieved certifications for user ${userIdStr}:`, certifications);
     
     // Simply return the array directly, not wrapped in an object
     res.status(200).json(certifications);
@@ -286,11 +302,15 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
   }
   
   try {
+    // Convert IDs to strings for consistency
+    const userIdStr = String(userId);
+    const machineIdStr = String(machineId);
+    
     // Find user with various ID formats
-    let user = await findUserWithAnyIdFormat(userId);
+    let user = await findUserWithAnyIdFormat(userIdStr);
     
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
+      console.log(`User not found with ID: ${userIdStr}`);
       res.status(404).json({ 
         success: false, 
         message: 'User not found' 
@@ -305,10 +325,9 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
     
     // Convert all certifications to strings for consistent comparison
     const certStrings = user.certifications.map(cert => String(cert));
-    const machineIdStr = String(machineId);
     
     const hasCertification = certStrings.includes(machineIdStr);
-    console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
+    console.log(`User ${userIdStr} ${hasCertification ? 'has' : 'does not have'} certification ${machineIdStr}`);
     
     // Return a simple boolean response
     res.status(200).json(hasCertification);
