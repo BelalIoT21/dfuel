@@ -1,3 +1,4 @@
+
 import { apiService } from '../apiService';
 
 class CertificationDatabaseService {
@@ -22,6 +23,9 @@ class CertificationDatabaseService {
           const certifications = await response.json();
           console.log("Certifications from direct API call:", certifications);
           return certifications.map(cert => cert.toString());
+        } else if (response.status === 404) {
+          console.log("User not found (404), returning empty certifications array");
+          return [];
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
@@ -31,6 +35,10 @@ class CertificationDatabaseService {
       const response = await apiService.getUserCertifications(userId);
       
       if (response.error) {
+        if (response.status === 404) {
+          console.log("User not found in API response, returning empty array");
+          return [];
+        }
         console.error('Error fetching certifications:', response.error);
         return [];
       }
@@ -45,6 +53,17 @@ class CertificationDatabaseService {
           }
           return cert.toString();
         });
+      }
+      
+      // Check for certifications in localStorage as last resort
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (storedUser && storedUser.id === userId && Array.isArray(storedUser.certifications)) {
+          console.log("Using certifications from localStorage:", storedUser.certifications);
+          return storedUser.certifications.map(c => c.toString());
+        }
+      } catch (e) {
+        console.error("Failed to parse localStorage user:", e);
       }
       
       return [];

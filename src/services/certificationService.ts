@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -177,6 +176,9 @@ export class CertificationService {
           const certifications = await response.json();
           console.log("Certifications from direct API call:", certifications);
           return certifications.map(cert => cert.toString());
+        } else if (response.status === 404) {
+          console.log("User not found, using default certifications");
+          return DEFAULT_CERTIFICATIONS;
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
@@ -194,14 +196,29 @@ export class CertificationService {
             return typeof cert === 'object' ? cert.id?.toString() || cert._id?.toString() : cert.toString();
           });
           return certifications;
+        } else if (response.status === 404) {
+          console.log("User not found, using default certifications");
+          return DEFAULT_CERTIFICATIONS;
         }
       } catch (apiError) {
         console.error("API service call failed:", apiError);
       }
       
-      // If all else fails, check window.user
+      // Approach 3: Check window.user if available
       if (window.user && window.user.certifications && Array.isArray(window.user.certifications)) {
+        console.log("Using certifications from window.user:", window.user.certifications);
         return window.user.certifications.map(c => c.toString());
+      }
+      
+      // Approach 4: Check localStorage
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (storedUser && storedUser.certifications && Array.isArray(storedUser.certifications)) {
+          console.log("Using certifications from localStorage:", storedUser.certifications);
+          return storedUser.certifications.map(c => c.toString());
+        }
+      } catch (e) {
+        console.error("Failed to parse localStorage user:", e);
       }
       
       console.log("All certification fetch attempts failed, using default certifications");
