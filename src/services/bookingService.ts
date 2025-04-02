@@ -102,20 +102,10 @@ class BookingService {
       if (response.error) {
         console.error('Error creating booking:', response.error);
         
-        if (typeof response.error === 'string' && 
-            (response.error.toLowerCase().includes('time slot') || 
-             response.error.toLowerCase().includes('already booked'))) {
-          toast({
-            title: "Time Slot Unavailable",
-            description: "This time slot has already been booked. Please select another time.",
-            variant: "destructive"
-          });
-          return { success: false, message: "Time slot already booked" };
-        }
-        
+        // Show the error message from the API service
         toast({
           title: "Booking Failed",
-          description: "There was a problem creating your booking. Please try again.",
+          description: response.error,
           variant: "destructive"
         });
         return { success: false, message: response.error };
@@ -129,14 +119,13 @@ class BookingService {
     } catch (error) {
       console.error('Error creating booking:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: "Booking Failed",
         description: "There was a problem creating your booking. Please try again.",
         variant: "destructive"
       });
       
-      return { success: false, message: errorMessage };
+      return { success: false, message: "Failed to create booking" };
     }
   }
   

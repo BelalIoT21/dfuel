@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2, Search } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { bookingService } from '@/services/bookingService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import BookingDetailsDialog from '@/components/profile/BookingDetailsDialog';
 import { apiService } from '@/services/apiService';
+import { Input } from '@/components/ui/input';
 
 const ActiveBookings = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const ActiveBookings = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingBookingId, setDeletingBookingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     console.log("ActiveBookings component mounted");
@@ -242,16 +244,29 @@ const ActiveBookings = () => {
     setDialogOpen(false);
   };
 
+  // Filter bookings based on search query
+  const filteredBookings = bookings.filter(booking => {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
+    const userName = (booking.userName || '').toLowerCase();
+    const machineName = (booking.machineName || '').toLowerCase();
+    
+    return userName.includes(searchLower) || machineName.includes(searchLower);
+  });
+
   return (
-    <div className="container mx-auto max-w-4xl p-4 py-8">
-      <Button
-        variant="ghost"
-        className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900"
-        onClick={() => navigate(getBackDestination())}
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back to {user?.isAdmin ? 'Admin Dashboard' : 'Home'}
-      </Button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/profile')}
+          className="mb-4"
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Back to Profile
+        </Button>
+      </div>
 
       <Card className="shadow-lg border-purple-100">
         <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-lg">
@@ -265,12 +280,28 @@ const ActiveBookings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
+          {/* Add search input for admin */}
+          {user?.isAdmin && (
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search by username or machine name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
               <p className="text-gray-600">Loading bookings...</p>
             </div>
-          ) : bookings.length === 0 ? (
+          ) : filteredBookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-lg text-gray-500 mb-4">
                 {user?.isAdmin 
@@ -283,7 +314,7 @@ const ActiveBookings = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {bookings.map(booking => {
+              {filteredBookings.map(booking => {
                 const bookingId = booking.id || booking._id;
                 if (deletingBookingId === bookingId) return null; // Skip rendering if being deleted
                 
@@ -313,7 +344,7 @@ const ActiveBookings = () => {
                         <span>{booking.time}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex gap-2">
                       {booking.status?.toLowerCase() === 'pending' || booking.status?.toLowerCase() === 'approved' ? (
                         <Button 
                           variant="outline" 
