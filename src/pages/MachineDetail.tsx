@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -74,38 +73,33 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            // First, try to get all user certifications
-            console.log(`Checking certifications for user ${user.id} on machine ${id}`);
-            const userCertifications = await certificationService.getUserCertifications(user.id);
+            // Check for certification directly from the API
+            const userIdString = String(user.id);
+            const machineIdString = String(id);
+            
+            console.log(`Checking certification for user ${userIdString} on machine ${machineIdString}`);
+            
+            // First try to get all user certifications
+            const userCertifications = await certificationService.getUserCertifications(userIdString);
             console.log('User certifications:', userCertifications);
             
-            // Check if the current machine ID is in the user's certifications
-            const machineIdString = String(id);
+            // Check if this machine's ID is in the certifications array
             const hasCert = userCertifications.some(cert => String(cert) === machineIdString);
-            console.log(`User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineIdString}`);
+            console.log(`User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineIdString} based on certifications array`);
+            
+            // Set certified status
             setIsCertified(hasCert);
             
-            // If direct check failed, try the certification-specific endpoint as fallback
-            if (!hasCert) {
-              const certificationResult = await certificationService.checkCertification(user.id, id);
-              console.log(`Fallback certification check result: ${certificationResult}`);
-              setIsCertified(hasCert || certificationResult);
-            }
-            
-            // Check safety certification
+            // Also check for safety certification (ID 6)
             const safetyIdString = '6';
             const hasSafetyCert = userCertifications.some(cert => String(cert) === safetyIdString);
-            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
+            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification based on certifications array`);
             setHasSafetyCertification(hasSafetyCert);
-            
-            // If direct check failed, try the certification-specific endpoint
-            if (!hasSafetyCert) {
-              const safetyCertResult = await certificationService.checkCertification(user.id, '6');
-              console.log(`Fallback safety certification check result: ${safetyCertResult}`);
-              setHasSafetyCertification(hasSafetyCert || safetyCertResult);
-            }
           } catch (certError) {
-            console.error('Error checking certification:', certError);
+            console.error('Error checking certifications:', certError);
+            // If there's an error, leave the certification status as false
+            setIsCertified(false);
+            setHasSafetyCertification(false);
           }
         }
       } catch (err) {

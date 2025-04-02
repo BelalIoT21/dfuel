@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { certificationService } from '@/services/certificationService';
+import { useAuth } from '@/context/AuthContext';
 
 interface BookMachineButtonProps {
   machineId: string;
@@ -17,7 +19,7 @@ interface BookMachineButtonProps {
 
 const BookMachineButton = ({ 
   machineId, 
-  isCertified, 
+  isCertified: propIsCertified, 
   machineStatus, 
   requiresCertification = true,
   className = '',
@@ -26,9 +28,35 @@ const BookMachineButton = ({
 }: BookMachineButtonProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isCertified, setIsCertified] = useState(propIsCertified);
 
   // Special machine IDs that should not be bookable
   const NON_BOOKABLE_MACHINE_IDS = ['5', '6']; // Safety Cabinet and Safety Course
+  
+  // Re-check certification status directly from the database when component mounts
+  useEffect(() => {
+    const verifyCertification = async () => {
+      if (!user || !user.id || !requiresCertification) return;
+      
+      try {
+        // Use getUserCertifications instead of checkCertification since the endpoint is more reliable
+        const userCertifications = await certificationService.getUserCertifications(user.id);
+        console.log(`BookMachineButton: User certifications for ID ${user.id}:`, userCertifications);
+        
+        // Convert both to strings before comparison to handle any type inconsistencies
+        const hasCert = userCertifications.some(cert => String(cert) === String(machineId));
+        console.log(`BookMachineButton: User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
+        setIsCertified(hasCert);
+      } catch (error) {
+        console.error('Error verifying certification:', error);
+        // Keep the prop value as fallback
+        setIsCertified(propIsCertified);
+      }
+    };
+    
+    verifyCertification();
+  }, [user, machineId, requiresCertification, propIsCertified]);
   
   // If this is a non-bookable machine ID, don't render the button
   if (NON_BOOKABLE_MACHINE_IDS.includes(machineId)) {
@@ -85,17 +113,17 @@ const BookMachineButton = ({
   };
 
   let buttonText = "Book Now";
-  let buttonIcon = Calendar;
+  let ButtonIcon = Calendar; // PascalCase is correct for React components
   
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
-    buttonIcon = CalendarX;
+    ButtonIcon = CalendarX; 
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
-    buttonIcon = AlertTriangle;
+    ButtonIcon = AlertTriangle; 
   } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
-    buttonIcon = AlertTriangle;
+    ButtonIcon = AlertTriangle; 
   }
 
   return (
@@ -106,7 +134,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <buttonIcon className="mr-2 h-4 w-4" />
+      <ButtonIcon className="mr-2 h-4 w-4" />
       {buttonText}
     </Button>
   );
