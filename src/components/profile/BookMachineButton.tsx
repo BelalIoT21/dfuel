@@ -146,7 +146,7 @@ const BookMachineButton = ({
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
     ButtonIcon = AlertTriangle; 
-  } else if (requiresCertification && !isCertified) {
+  } else if (requiresCertification && !effectiveCertification) {
     buttonText = "Certification Required";
     ButtonIcon = Award; 
   }
@@ -157,6 +157,7 @@ const BookMachineButton = ({
     propIsCertified,
     isAvailable,
     requiresCertification,
+    effectiveCertification,
     canBook,
     buttonText
   });
