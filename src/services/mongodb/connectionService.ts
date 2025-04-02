@@ -1,6 +1,4 @@
-
 import { isWeb } from '../../utils/platform';
-// Update the import to use the named export
 import { mongoMachineService } from './machineService';
 import mongoSeedService from './seedService';
 
@@ -177,3 +175,38 @@ class MongoConnectionService {
 
 const mongoConnectionService = new MongoConnectionService();
 export default mongoConnectionService;
+
+// Export a function to check MongoDB connection status
+export const checkMongoDBConnection = async (): Promise<boolean> => {
+  try {
+    console.log("Checking MongoDB connection status...");
+    
+    // Try to make a simple API call to verify MongoDB connectivity
+    const response = await fetch(`${window.location.origin.replace(':5000', ':4000')}/api/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log("MongoDB connection check result:", data);
+      return data.dbStatus === "connected";
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error checking MongoDB connection:", error);
+    return false;
+  }
+};
+
+// Add connection debugging helper
+export const getMongoDBConnectionDetails = () => {
+  return {
+    apiUrl: process.env.API_URL || window.location.origin.replace(':5000', ':4000') + '/api',
+    dbUri: process.env.MONGODB_URI || "Not available in client",
+    tokenAvailable: !!localStorage.getItem('token')
+  };
+};
