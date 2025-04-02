@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -274,7 +273,7 @@ export class CertificationService {
         }
       }
       
-      // Second try - user object
+      // Second try - user object from window if available
       if (window.user && window.user.certifications && Array.isArray(window.user.certifications)) {
         const userObjCerts = window.user.certifications.map(c => String(c));
         console.log("Using window.user object for certifications:", userObjCerts);
@@ -283,63 +282,37 @@ export class CertificationService {
         return userObjCerts;
       }
       
-      // Attempt using different approaches with timeout to improve performance
-      const timeoutDuration = 1500; // 1.5 seconds timeout
+      // Set a shorter timeout to improve performance
+      const timeoutDuration = 1000; // 1 second timeout
       
       console.log(`Making API call to get certifications for userId=${stringUserId}`);
       
-      // Try direct fetch with timeout
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const certifications = await response.json();
-          console.log('Direct fetch certifications:', certifications);
-          
-          if (Array.isArray(certifications)) {
-            // Make sure all certification IDs are strings
-            const normalizedCerts = certifications.map(cert => {
-              if (typeof cert === 'object' && cert !== null) {
-                return cert._id ? cert._id.toString() : 
-                      cert.id ? cert.id.toString() : 
-                      String(cert);
-              }
-              return cert.toString ? cert.toString() : String(cert);
-            });
-            
-            console.log('Normalized certifications:', normalizedCerts);
-            // Cache the result
-            certificationCache.set(stringUserId, normalizedCerts);
-            this.storeCertificationsLocally(stringUserId, normalizedCerts);
-            return normalizedCerts;
-          }
-        }
-      } catch (directFetchError) {
-        console.error('Direct fetch error:', directFetchError);
-      }
-      
-      // Fallback to apiService with timeout
+      // Use API service with timeout
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
         
-        const response = await apiService.get(`certifications/user/${stringUserId}`);
+        // Use a shorter timeout for the API call
+        const response = await Promise.race([
+          apiService.get(`certifications/user/${stringUserId}`),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
+          )
+        ]);
+        
         clearTimeout(timeoutId);
         
         console.log("API get certifications raw response:", response);
+        
+        // If we got a 404, it likely means the user doesn't exist yet or is new
+        // In this case, let's provide default certifications rather than failing
+        if (response.status === 404 || response.error) {
+          console.log("User not found or error, using default certifications");
+          const defaultCerts = [...DEFAULT_CERTIFICATIONS];
+          certificationCache.set(stringUserId, defaultCerts);
+          this.storeCertificationsLocally(stringUserId, defaultCerts);
+          return defaultCerts;
+        }
         
         if (response.data && Array.isArray(response.data)) {
           // Make sure all certification IDs are strings and handle objects properly
@@ -358,11 +331,8 @@ export class CertificationService {
           this.storeCertificationsLocally(stringUserId, certifications);
           return certifications;
         }
-        
-        // Log error if unsuccessful
-        console.error("API get certifications error:", response.error || "Unknown error");
       } catch (apiError) {
-        console.error('API service error:', apiError);
+        console.error('API service error or timeout:', apiError);
       }
       
       // Default fallback: return a set of default certifications

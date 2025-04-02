@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
-import { ChevronLeft, Loader2, Calendar, Award } from 'lucide-react';
+import { ChevronLeft, Loader2, Calendar, Award, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from '@/components/profile/BookMachineButton';
 
@@ -101,47 +101,24 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            // Check for cached certification
-            const cachedCertKey = `user_${user.id}_certification_${id}`;
-            const cachedCertValue = localStorage.getItem(cachedCertKey);
-            
-            if (cachedCertValue) {
-              const isUserCertified = cachedCertValue === 'true';
-              console.log(`Using cached certification status for machine ${id}: ${isUserCertified}`);
-              setIsCertified(isUserCertified);
-            }
-            
-            // Check for cached safety certification
-            const cachedSafetyCertKey = `user_${user.id}_certification_6`;
-            const cachedSafetyCertValue = localStorage.getItem(cachedSafetyCertKey);
-            
-            if (cachedSafetyCertValue) {
-              const hasUserSafetyCert = cachedSafetyCertValue === 'true';
-              console.log(`Using cached safety certification status: ${hasUserSafetyCert}`);
-              setHasSafetyCertification(hasUserSafetyCert);
-            }
-            
-            // Get all user certifications in background
-            const userCertifications = await certificationService.getUserCertifications(user.id);
-            console.log('User certifications:', userCertifications);
-            
-            // Check if this machine's ID is in the certifications array
-            const hasCert = userCertifications.some(cert => String(cert) === String(id));
-            console.log(`User ${hasCert ? 'has' : 'does not have'} certification for machine ${id} based on certifications array`);
-            
-            // Set certified status
-            setIsCertified(hasCert);
-            localStorage.setItem(cachedCertKey, hasCert ? 'true' : 'false');
+            // Use improved checkCertification method
+            const isUserCertified = await certificationService.checkCertification(user.id, id);
+            console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
+            setIsCertified(isUserCertified);
             
             // Also check for safety certification (ID 6)
-            const safetyIdString = '6';
-            const hasSafetyCert = userCertifications.some(cert => String(cert) === safetyIdString);
-            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification based on certifications array`);
+            const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
+            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
             setHasSafetyCertification(hasSafetyCert);
-            localStorage.setItem(cachedSafetyCertKey, hasSafetyCert ? 'true' : 'false');
           } catch (certError) {
             console.error('Error checking certifications:', certError);
-            // If there's an error, try using the cached values or default to false
+            
+            // Try using the cached values if available
+            const cachedCertKey = `user_${user.id}_certification_${id}`;
+            const cachedSafetyCertKey = `user_${user.id}_certification_6`;
+            const cachedCertValue = localStorage.getItem(cachedCertKey);
+            const cachedSafetyCertValue = localStorage.getItem(cachedSafetyCertKey);
+            
             setIsCertified(cachedCertValue === 'true');
             setHasSafetyCertification(cachedSafetyCertValue === 'true');
           }
