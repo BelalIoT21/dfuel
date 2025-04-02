@@ -56,12 +56,26 @@ const BookMachineButton = ({
           }
         }
         
-        // Use certification service with better error handling
-        const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
+        // Skip the expensive API call if the prop already says user is certified
+        if (propIsCertified) {
+          console.log(`BookMachineButton: Using prop value for certification (${machineId}): ${propIsCertified}`);
+          setIsCertified(true);
+          setIsVerifying(false);
+          return;
+        }
         
-        if (isMounted) {
-          console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
-          setIsCertified(hasCertFromService);
+        // Use certification service with better error handling
+        try {
+          const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
+          
+          if (isMounted) {
+            console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
+            setIsCertified(hasCertFromService);
+          }
+        } catch (serviceError) {
+          console.error('Error in certification service check:', serviceError);
+          // Fall back to prop value on error
+          setIsCertified(propIsCertified);
         }
       } catch (error) {
         console.error('Error in verifyCertification:', error);
