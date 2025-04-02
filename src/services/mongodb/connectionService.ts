@@ -30,6 +30,12 @@ class MongoConnectionService {
    * Connect to MongoDB
    */
   async connect(): Promise<any | null> {
+    // If we're in a web environment, don't try to connect to MongoDB
+    if (isWeb()) {
+      console.log('MongoDB connection not supported in web environment');
+      return null;
+    }
+    
     // If already connected, return the existing client
     if (this.client) {
       return this.client;
@@ -59,38 +65,28 @@ class MongoConnectionService {
       
       console.log(`Connecting to MongoDB (Attempt ${this.connectionAttempts})...`);
       
-      // Implementation depends on environment
-      if (isWeb()) {
-        console.log('MongoDB connection not supported in web environment');
-        this.isConnecting = false;
-        return null;
-      } else {
-        // For Node.js environment
-        try {
-          // In a real implementation, you would use the MongoDB driver
-          // For demonstration purposes, we're simulating a successful connection
-          this.client = { connected: true };
-          this.db = { name: 'fabricLab' };
-          
-          console.log('Connected to MongoDB successfully');
-          
-          // Reset connection attempts on success
-          this.connectionAttempts = 0;
-          
-          // Initialize collections if needed
-          if (!this.initialized) {
-            await this.initializeCollections();
-          }
-          
-          return this.client;
-        } catch (error) {
-          console.error('Error connecting to MongoDB:', error);
-          this.client = null;
-          this.db = null;
-          this.isConnecting = false;
-          throw error;
-        }
+      // In a real implementation, you would use the MongoDB driver
+      // For demonstration purposes, we're simulating a successful connection
+      this.client = { connected: true };
+      this.db = { name: 'fabricLab' };
+      
+      console.log('Connected to MongoDB successfully');
+      
+      // Reset connection attempts on success
+      this.connectionAttempts = 0;
+      
+      // Initialize collections if needed
+      if (!this.initialized) {
+        await this.initializeCollections();
       }
+      
+      return this.client;
+    } catch (error) {
+      console.error('Error connecting to MongoDB:', error);
+      this.client = null;
+      this.db = null;
+      this.isConnecting = false;
+      throw error;
     } finally {
       this.isConnecting = false;
     }

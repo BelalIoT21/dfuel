@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Activity, Check } from "lucide-react";
@@ -84,9 +85,9 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
                 "Courses Active",
                 "Booking System",
                 "Quiz Engine"
-              ].map((status) => (
+              ].map((status, index) => (
                 <div 
-                  key={status}
+                  key={index}
                   className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100"
                 >
                   <div className="flex items-center gap-2">
