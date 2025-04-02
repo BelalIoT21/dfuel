@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
@@ -146,7 +147,6 @@ const BookMachineButton = ({
     canBook
   });
 
-  // Always show either the "Book Now" button or a disabled button with appropriate message
   if (canBook) {
     return (
       <Button 

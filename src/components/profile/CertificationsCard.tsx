@@ -405,20 +405,19 @@ const CertificationsCard = () => {
                       </Button>
                     )}
                     
-                    {/* Improved condition for showing Book Now button */}
-                    {machine.id !== "5" && // Not safety cabinet
+                    {machineStatus === 'available' && 
+                     machine.isCertified && 
+                     machine.id !== "5" && // Not safety cabinet
                      machine.id !== "6" && // Not safety course
                      (
-                       <BookMachineButton 
-                         machineId={machine.id} 
-                         isCertified={machine.isCertified}
-                         machineStatus={machineStatus}
-                         requiresCertification={requiresCertification}
-                         className="ml-auto"
-                         size="sm"
-                       />
-                     )
-                    }
+                      <BookMachineButton 
+                        machineId={machine.id} 
+                        isCertified={machine.isCertified}
+                        machineStatus={machineStatus}
+                        className="ml-auto"
+                        size="sm"
+                      />
+                    )}
                   </div>
                 </div>
               );
