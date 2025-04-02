@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,6 @@ const MachineDetail = () => {
         setLoading(true);
         setError(null);
         
-        // First check localStorage for quick rendering
         const cachedMachineStr = localStorage.getItem(`machine_${id}`);
         
         if (cachedMachineStr) {
@@ -59,7 +57,6 @@ const MachineDetail = () => {
             setMachine(cachedMachine);
             setMachineStatus(cachedMachine.status?.toLowerCase() || 'unknown');
             console.log('Using cached machine data for initial display');
-            // Continue fetching in background but show immediate UI
             setLoading(false);
           } catch (cacheError) {
             console.error('Error parsing cached machine:', cacheError);
@@ -79,10 +76,8 @@ const MachineDetail = () => {
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
-        // Cache machine data for future use
         localStorage.setItem(`machine_${id}`, JSON.stringify(machineData));
         
-        // Check for cached status
         const cachedStatusStr = localStorage.getItem(`machine_status_${id}`);
         if (cachedStatusStr) {
           setMachineStatus(cachedStatusStr.toLowerCase());
@@ -102,21 +97,17 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            // Use improved checkCertification method directly from the service
             const isUserCertified = await certificationService.checkCertification(user.id, id);
             console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
             setIsCertified(isUserCertified);
             
-            // Also check for safety certification (ID 6)
             const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
             console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
             setHasSafetyCertification(hasSafetyCert);
           } catch (certError) {
             console.error('Error checking certifications:', certError);
             
-            // Fallback to user object if API fails
             if (user.certifications && Array.isArray(user.certifications)) {
-              // String comparison for certification check
               const machineIdStr = String(id);
               setIsCertified(user.certifications.some(cert => String(cert) === machineIdStr));
               setHasSafetyCertification(user.certifications.some(cert => String(cert) === '6'));
@@ -217,7 +208,6 @@ const MachineDetail = () => {
   };
 
   const handleGoBack = () => {
-    // Always navigate back to dashboard instead of using the browser history
     if (user?.isAdmin) {
       navigate('/admin');
     } else {
@@ -259,7 +249,6 @@ const MachineDetail = () => {
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
   console.log("User certification status:", isCertified);
 
-  // Simplified BookMachineButton props for debugging
   console.log("BookMachineButton props:", {
     machineId: id,
     isCertified,
@@ -344,34 +333,28 @@ const MachineDetail = () => {
           )}
           
           <div className="flex flex-col md:flex-row gap-3 pt-2">
-            {/* Only show course and quiz buttons if user is not certified */}
-            {!isCertified && (
-              <>
-                {hasLinkedCourse && (
-                  <Button 
-                    onClick={handleTakeCourse} 
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Take Course
-                  </Button>
-                )}
-                
-                {hasLinkedQuiz && (
-                  <Button 
-                    onClick={handleTakeQuiz} 
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <Award className="mr-2 h-4 w-4" />
-                    Take Quiz
-                  </Button>
-                )}
-              </>
+            {hasLinkedCourse && (
+              <Button 
+                onClick={handleTakeCourse} 
+                variant="outline"
+                className="flex-1"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Take Course
+              </Button>
             )}
             
-            {/* Always show book button for bookable machines */}
+            {hasLinkedQuiz && (
+              <Button 
+                onClick={handleTakeQuiz} 
+                variant="outline"
+                className="flex-1"
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Take Quiz
+              </Button>
+            )}
+            
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
