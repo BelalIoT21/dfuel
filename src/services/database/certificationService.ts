@@ -6,38 +6,51 @@ class CertificationDatabaseService {
     try {
       console.log(`Calling API to get certifications for user ${userId}`);
       
+      // Ensure userId is a string
+      const userIdStr = String(userId);
+      
       // First try direct API call for most reliable results
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
+        // Make sure we're using the correct URL format
+        const response = await fetch(`${apiUrl}/api/certifications/user/${userIdStr}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
         
+        console.log(`Certification API request URL: ${apiUrl}/api/certifications/user/${userIdStr}`);
+        
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
             console.log(`Received ${data.length} certifications from direct API:`, data);
-            return data;
+            return data.map(cert => String(cert));
           }
+        } else {
+          console.error(`Certification API responded with: ${response.status} ${response.statusText}`);
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
       }
       
       // Fallback to apiService if direct call fails
-      const response = await apiService.getUserCertifications(userId);
-      
-      if (response.error) {
-        console.error('Error fetching certifications:', response.error);
+      try {
+        const response = await apiService.getUserCertifications(userIdStr);
+        
+        if (response.error) {
+          console.error('Error fetching certifications:', response.error);
+          return [];
+        }
+        
+        console.log('Received certifications from service:', response.data);
+        return Array.isArray(response.data) ? response.data.map(cert => String(cert)) : [];
+      } catch (error) {
+        console.error('API error fetching certifications:', error);
         return [];
       }
-      
-      console.log('Received certifications from service:', response.data);
-      return response.data || [];
     } catch (error) {
-      console.error('API error fetching certifications:', error);
+      console.error('Error in getUserCertifications:', error);
       return [];
     }
   }

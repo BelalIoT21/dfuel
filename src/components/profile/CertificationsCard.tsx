@@ -26,11 +26,16 @@ const CertificationsCard = () => {
       setRefreshing(true);
       console.log(`Fetching certifications for user ${user.id}`);
       
-      // Direct API call to MongoDB
+      // Ensure user ID is formatted correctly (as a string)
+      const userId = String(user.id);
+      
+      // Direct API call to MongoDB - use the correct endpoint format
       try {
-        console.log('Fetching certifications directly from MongoDB API');
+        console.log(`Fetching certifications directly from MongoDB API for user ID: ${userId}`);
         const apiUrl = import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000');
-        const response = await fetch(`${apiUrl}/api/certifications/user/${user.id}`, {
+        
+        // Make sure we're using the correct URL format
+        const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -48,7 +53,8 @@ const CertificationsCard = () => {
             return data.map(cert => String(cert));
           }
         } else {
-          console.error('Failed to fetch certifications from API:', response.status);
+          console.error(`Failed to fetch certifications from API: ${response.status} - ${response.statusText}`);
+          console.log('Response URL:', response.url);
         }
       } catch (apiError) {
         console.error("Error fetching certifications from MongoDB API:", apiError);
