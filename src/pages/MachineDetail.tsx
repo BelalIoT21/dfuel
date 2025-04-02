@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
 import { machineService } from '@/services/machineService';
 import { certificationService } from '@/services/certificationService';
-import { ChevronLeft, Loader2, Calendar, Award } from 'lucide-react';
+import { ChevronLeft, Loader2, Calendar, Award, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from '@/components/profile/BookMachineButton';
 
@@ -49,6 +49,22 @@ const MachineDetail = () => {
         setLoading(true);
         setError(null);
         
+        // First check localStorage for quick rendering
+        const cachedMachineStr = localStorage.getItem(`machine_${id}`);
+        
+        if (cachedMachineStr) {
+          try {
+            const cachedMachine = JSON.parse(cachedMachineStr);
+            setMachine(cachedMachine);
+            setMachineStatus(cachedMachine.status?.toLowerCase() || 'unknown');
+            console.log('Using cached machine data for initial display');
+            // Continue fetching in background but show immediate UI
+            setLoading(false);
+          } catch (cacheError) {
+            console.error('Error parsing cached machine:', cacheError);
+          }
+        }
+        
         console.log(`Fetching machine with ID: ${id}`);
         const machineData = await machineService.getMachineById(id);
         
@@ -62,44 +78,49 @@ const MachineDetail = () => {
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
+        // Cache machine data for future use
+        localStorage.setItem(`machine_${id}`, JSON.stringify(machineData));
+        
+        // Check for cached status
+        const cachedStatusStr = localStorage.getItem(`machine_status_${id}`);
+        if (cachedStatusStr) {
+          setMachineStatus(cachedStatusStr.toLowerCase());
+          console.log(`Using cached status for machine ${id}: ${cachedStatusStr}`);
+        }
+        
         try {
           const status = await machineService.getMachineStatus(id);
           setMachineStatus(status.toLowerCase());
+          localStorage.setItem(`machine_status_${id}`, status.toLowerCase());
           console.log(`Machine status: ${status}`);
         } catch (statusError) {
           console.error('Error fetching machine status:', statusError);
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
+          localStorage.setItem(`machine_status_${id}`, machineData.status?.toLowerCase() || 'unknown');
         }
         
         if (user) {
           try {
-            // Check for certification directly from the API
-            const userIdString = String(user.id);
-            const machineIdString = String(id);
-            
-            console.log(`Checking certification for user ${userIdString} on machine ${machineIdString}`);
-            
-            // First try to get all user certifications
-            const userCertifications = await certificationService.getUserCertifications(userIdString);
-            console.log('User certifications:', userCertifications);
-            
-            // Check if this machine's ID is in the certifications array
-            const hasCert = userCertifications.some(cert => String(cert) === machineIdString);
-            console.log(`User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineIdString} based on certifications array`);
-            
-            // Set certified status
-            setIsCertified(hasCert);
+            // Use improved checkCertification method
+            const isUserCertified = await certificationService.checkCertification(user.id, id);
+            console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
+            setIsCertified(isUserCertified);
             
             // Also check for safety certification (ID 6)
-            const safetyIdString = '6';
-            const hasSafetyCert = userCertifications.some(cert => String(cert) === safetyIdString);
-            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification based on certifications array`);
+            const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
+            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
             setHasSafetyCertification(hasSafetyCert);
           } catch (certError) {
             console.error('Error checking certifications:', certError);
-            // If there's an error, leave the certification status as false
-            setIsCertified(false);
-            setHasSafetyCertification(false);
+            
+            // Try using the cached values if available
+            const cachedCertKey = `user_${user.id}_certification_${id}`;
+            const cachedSafetyCertKey = `user_${user.id}_certification_6`;
+            const cachedCertValue = localStorage.getItem(cachedCertKey);
+            const cachedSafetyCertValue = localStorage.getItem(cachedSafetyCertKey);
+            
+            setIsCertified(cachedCertValue === 'true');
+            setHasSafetyCertification(cachedSafetyCertValue === 'true');
           }
         }
       } catch (err) {
@@ -200,7 +221,7 @@ const MachineDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !machine) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
@@ -209,7 +230,7 @@ const MachineDetail = () => {
     );
   }
 
-  if (error) {
+  if (error && !machine) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
         <div className="text-center max-w-md">
