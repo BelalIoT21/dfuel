@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,23 @@ const CertificationsCard = () => {
     try {
       console.log("Fetching machines for CertificationsCard");
       
+      // Check localStorage for machine data to speed up initial loading
+      const cachedMachinesStr = localStorage.getItem('cached_machines');
+      let cachedMachines = null;
+      
+      if (cachedMachinesStr) {
+        try {
+          cachedMachines = JSON.parse(cachedMachinesStr);
+          if (Array.isArray(cachedMachines) && cachedMachines.length > 0) {
+            console.log("Using cached machines data for initial display");
+            setMachines(cachedMachines);
+            setLoading(false);
+          }
+        } catch (e) {
+          console.error("Error parsing cached machines:", e);
+        }
+      }
+      
       // Fetch all courses to build a map
       try {
         const allCourses = await courseService.getCourses();
@@ -73,12 +91,20 @@ const CertificationsCard = () => {
         // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
+        
+        // Cache machines for future use
+        localStorage.setItem('cached_machines', JSON.stringify(databaseMachines));
       } catch (error) {
         console.error("Error fetching machines from database:", error);
         databaseMachines = [];
+        
+        // Use cached data if available and we failed to fetch new data
+        if (cachedMachines) {
+          databaseMachines = cachedMachines;
+        }
       }
       
-      // Get user certifications
+      // Get user certifications - use the enhanced method with caching
       let userCertifications: string[] = [];
       try {
         userCertifications = await certificationService.getUserCertifications(user.id);
@@ -87,8 +113,28 @@ const CertificationsCard = () => {
         // Check for safety certifications
         setHasSafetyCertification(userCertifications.includes('6'));
         setHasSafetyCabinetCertification(userCertifications.includes('5'));
+        
+        // Store certifications locally
+        certificationService.storeCertificationsLocally(user.id, userCertifications);
       } catch (error) {
         console.error("Error fetching user certifications:", error);
+        
+        // Try to recover from localStorage if available
+        const userCertificationsStr = localStorage.getItem(`user_${user.id}_certifications`);
+        if (userCertificationsStr) {
+          try {
+            const storedCertifications = JSON.parse(userCertificationsStr);
+            if (Array.isArray(storedCertifications)) {
+              userCertifications = storedCertifications;
+              console.log("Using stored certifications from localStorage:", userCertifications);
+              setHasSafetyCertification(userCertifications.includes('6'));
+              setHasSafetyCabinetCertification(userCertifications.includes('5'));
+            }
+          } catch (storageError) {
+            console.error("Error parsing localStorage certifications:", storageError);
+          }
+        }
+        
         if (user.certifications && Array.isArray(user.certifications)) {
           userCertifications = user.certifications.map(cert => String(cert));
           setHasSafetyCertification(userCertifications.includes('6'));
@@ -130,23 +176,43 @@ const CertificationsCard = () => {
         };
       });
       
-      // Fetch machine statuses
+      // Fetch machine statuses (use cached statuses initially for speed)
       const statuses = {};
-      for (const machine of processedMachines) {
+      const cachedStatusesStr = localStorage.getItem('cached_machine_statuses');
+      let cachedStatuses = {};
+      
+      if (cachedStatusesStr) {
         try {
-          if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
-            const status = await machineService.getMachineStatus(machine.id);
-            statuses[machine.id] = status.toLowerCase();
-          } else {
-            statuses[machine.id] = "available";
-          }
-        } catch (err) {
-          console.error(`Error getting status for machine ${machine.id}:`, err);
-          statuses[machine.id] = machine.status?.toLowerCase() || "available";
+          cachedStatuses = JSON.parse(cachedStatusesStr);
+          // Use cached statuses for initial display
+          setMachineStatuses(cachedStatuses);
+        } catch (e) {
+          console.error("Error parsing cached statuses:", e);
         }
       }
       
-      setMachineStatuses(statuses);
+      // Fetch latest statuses in the background
+      (async () => {
+        const updatedStatuses = {...cachedStatuses};
+        for (const machine of processedMachines) {
+          try {
+            if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
+              const status = await machineService.getMachineStatus(machine.id);
+              updatedStatuses[machine.id] = status.toLowerCase();
+            } else {
+              updatedStatuses[machine.id] = "available";
+            }
+          } catch (err) {
+            console.error(`Error getting status for machine ${machine.id}:`, err);
+            updatedStatuses[machine.id] = machine.status?.toLowerCase() || "available";
+          }
+        }
+        
+        // Update statuses and cache them
+        setMachineStatuses(updatedStatuses);
+        localStorage.setItem('cached_machine_statuses', JSON.stringify(updatedStatuses));
+      })();
+      
       setMachines(processedMachines);
       setAvailableMachineIds(processedMachines.map(m => m.id));
       
@@ -192,7 +258,7 @@ const CertificationsCard = () => {
 
   if (!user) return null;
 
-  if (loading) {
+  if (loading && machines.length === 0) {
     return (
       <Card>
         <CardHeader>

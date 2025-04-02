@@ -11,6 +11,9 @@ const CERTIFICATIONS = {
   SAFETY_COURSE: { id: "6", name: "Safety Course" },
 };
 
+// Cache for storing certification data to reduce API calls
+const certificationCache = new Map();
+
 export class CertificationService {
   async addCertification(userId: string, certificationId: string): Promise<boolean> {
     try {
@@ -40,6 +43,8 @@ export class CertificationService {
         
         if (directResponse.ok) {
           console.log("Direct API call successful");
+          // Clear the cache for this user
+          certificationCache.delete(stringUserId);
           return true;
         }
       } catch (directError) {
@@ -54,6 +59,8 @@ export class CertificationService {
         // Handle both formats of success response
         if (response.data?.success || response.status === 200 || response.status === 201) {
           console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
+          // Clear the cache for this user
+          certificationCache.delete(stringUserId);
           return true;
         }
       } catch (apiError) {
@@ -73,6 +80,8 @@ export class CertificationService {
         
         if (alternativeResponse.ok) {
           console.log("Alternative API call successful");
+          // Clear the cache for this user
+          certificationCache.delete(stringUserId);
           return true;
         }
       } catch (alternativeError) {
@@ -110,6 +119,8 @@ export class CertificationService {
       // Handle both formats of success response
       if (response.data?.success || response.status === 200) {
         console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
+        // Clear the cache for this user
+        certificationCache.delete(stringUserId);
         return true;
       }
       
@@ -144,6 +155,8 @@ export class CertificationService {
       // Handle both formats of success response
       if (response.data?.success || response.status === 200) {
         console.log(`API clear certifications succeeded for user ${userId}`);
+        // Clear the cache for this user
+        certificationCache.delete(stringUserId);
         return true;
       }
       
@@ -168,18 +181,33 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
+      // Check cache first
+      if (certificationCache.has(stringUserId)) {
+        console.log(`Using cached certifications for user ${stringUserId}`);
+        return certificationCache.get(stringUserId);
+      }
+      
+      // Attempt using different approaches with timeout to improve performance
+      const timeoutDuration = 1500; // 1.5 seconds timeout
+      
       console.log(`Making API call to get certifications for userId=${stringUserId}`);
       
-      // Try direct fetch first (most reliable)
+      // Try direct fetch with timeout
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+        
         const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const certifications = await response.json();
@@ -197,6 +225,8 @@ export class CertificationService {
             });
             
             console.log('Normalized certifications:', normalizedCerts);
+            // Cache the result
+            certificationCache.set(stringUserId, normalizedCerts);
             return normalizedCerts;
           }
         }
@@ -204,27 +234,54 @@ export class CertificationService {
         console.error('Direct fetch error:', directFetchError);
       }
       
-      // Fallback to apiService
-      const response = await apiService.get(`certifications/user/${stringUserId}`);
-      console.log("API get certifications raw response:", response);
-      
-      if (response.data && Array.isArray(response.data)) {
-        // Make sure all certification IDs are strings and handle objects properly
-        const certifications = response.data.map(cert => {
-          if (typeof cert === 'object' && cert !== null) {
-            // If it's an object, extract the ID
-            return cert._id ? cert._id.toString() : 
-                  cert.id ? cert.id.toString() : 
-                  String(cert);
-          }
-          return cert.toString ? cert.toString() : String(cert);
-        });
-        console.log("Processed certifications:", certifications);
-        return certifications;
+      // Fallback to apiService with timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+        
+        const response = await apiService.get(`certifications/user/${stringUserId}`);
+        clearTimeout(timeoutId);
+        
+        console.log("API get certifications raw response:", response);
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Make sure all certification IDs are strings and handle objects properly
+          const certifications = response.data.map(cert => {
+            if (typeof cert === 'object' && cert !== null) {
+              // If it's an object, extract the ID
+              return cert._id ? cert._id.toString() : 
+                    cert.id ? cert.id.toString() : 
+                    String(cert);
+            }
+            return cert.toString ? cert.toString() : String(cert);
+          });
+          console.log("Processed certifications:", certifications);
+          // Cache the result
+          certificationCache.set(stringUserId, certifications);
+          return certifications;
+        }
+        
+        // Log error if unsuccessful
+        console.error("API get certifications error:", response.error || "Unknown error");
+      } catch (apiError) {
+        console.error('API service error:', apiError);
       }
       
-      // Log error if unsuccessful
-      console.error("API get certifications error:", response.error || "Unknown error");
+      // If we reach here, use fallback from localStorage if available
+      const userCertificationsStr = localStorage.getItem(`user_${stringUserId}_certifications`);
+      if (userCertificationsStr) {
+        try {
+          const storedCertifications = JSON.parse(userCertificationsStr);
+          if (Array.isArray(storedCertifications)) {
+            console.log("Using localStorage fallback for certifications:", storedCertifications);
+            return storedCertifications;
+          }
+        } catch (parseError) {
+          console.error("Error parsing localStorage certifications:", parseError);
+        }
+      }
+      
+      // Empty array if all methods fail
       return [];
     } catch (error) {
       console.error('Error getting certifications:', error);
@@ -241,11 +298,9 @@ export class CertificationService {
         return false;
       }
       
-      // Ensure IDs are strings
+      // Use already cached data if possible
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
-      
-      console.log(`Making API call to check certification for userId=${stringUserId}, machineId=${stringMachineId}`);
       
       // First get all certifications and check if this machine ID is included
       // This is more reliable than individual endpoint checks
@@ -257,32 +312,9 @@ export class CertificationService {
         return true;
       }
       
-      // Fallback to direct check endpoint if array check fails
-      try {
-        // Try direct fetch 
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/certifications/check/${stringUserId}/${stringMachineId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log('Direct fetch certification check result:', result);
-          return !!result;
-        }
-      } catch (directFetchError) {
-        console.error('Direct fetch error for certification check:', directFetchError);
-      }
-      
-      // Final fallback: Use apiService
-      const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
-      console.log("API check certification response:", response);
-      
-      return !!response.data; // Convert to boolean
+      // Short-circuit remaining checks if we already checked through getUserCertifications
+      console.log(`User does not have certification for machine ${stringMachineId}`);
+      return false;
     } catch (error) {
       console.error('Error checking certification:', error);
       return false;
@@ -291,6 +323,15 @@ export class CertificationService {
   
   getAllCertifications() {
     return Object.values(CERTIFICATIONS);
+  }
+  
+  // Add method to store certifications in localStorage as fallback
+  storeCertificationsLocally(userId: string, certifications: string[]): void {
+    if (!userId) return;
+    
+    const stringUserId = userId.toString();
+    localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(certifications));
+    console.log(`Stored certifications locally for user ${stringUserId}:`, certifications);
   }
 }
 
