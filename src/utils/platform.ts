@@ -4,19 +4,19 @@
  * to help with conditional rendering and functionality
  */
 
-export const isWeb = typeof window !== 'undefined' && typeof document !== 'undefined';
+export const isWeb = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
 export const isPlatformNative = (): boolean => {
   if (typeof navigator !== 'undefined') {
     return navigator.product === 'ReactNative' || 
-           (isWeb && (isIOS() || isAndroid())) || 
+           (isWeb() && (isIOS() || isAndroid())) || 
            typeof (window as any).Capacitor !== 'undefined';
   }
   return false;
 };
 
 export const isIOS = (): boolean => {
-  if (!isWeb) {
+  if (!isWeb()) {
     return false;
   }
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream || 
@@ -24,7 +24,7 @@ export const isIOS = (): boolean => {
 };
 
 export const isAndroid = (): boolean => {
-  if (!isWeb) {
+  if (!isWeb()) {
     return false;
   }
   return /Android/.test(navigator.userAgent) || 
@@ -32,7 +32,7 @@ export const isAndroid = (): boolean => {
 };
 
 export const isMobile = (): boolean => {
-  if (!isWeb) {
+  if (!isWeb()) {
     return true; // If not web, assume mobile
   }
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -45,4 +45,3 @@ export const isMobile = (): boolean => {
 export const isCapacitor = (): boolean => {
   return typeof (window as any).Capacitor !== 'undefined';
 };
-

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { PendingBookingsCard } from "./PendingBookingsCard";
 import { bookingService } from '@/services/bookingService';
@@ -7,6 +6,7 @@ import mongoDbService from '@/services/mongoDbService';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/apiService';
+import { isWeb } from '@/utils/platform';
 
 export const PendingActions = () => {
   const [pendingBookings, setPendingBookings] = useState([]);
@@ -19,28 +19,30 @@ export const PendingActions = () => {
       setIsLoading(true);
       console.log("Fetching pending bookings...");
       
-      // Try direct API fetch first
-      try {
-        console.log("Fetching bookings directly from API");
-        const response = await apiService.request('bookings/all', 'GET');
-        console.log("API response for bookings:", response);
-        if (response?.data && Array.isArray(response.data)) {
-          console.log(`Found ${response.data.length} bookings via API`);
-          // Filter to only show pending bookings
-          const pendingOnly = response.data.filter(booking => 
-            booking.status === 'Pending' || booking.status === 'pending'
-          );
-          console.log(`Found ${pendingOnly.length} pending bookings from API`);
-          setPendingBookings(pendingOnly);
-          setIsLoading(false);
-          setIsRefreshing(false);
-          return;
+      // Only make API calls in web environment
+      if (isWeb()) {
+        try {
+          console.log("Fetching bookings directly from API");
+          const response = await apiService.request('bookings/all', 'GET');
+          console.log("API response for bookings:", response);
+          if (response?.data && Array.isArray(response.data)) {
+            console.log(`Found ${response.data.length} bookings via API`);
+            // Filter to only show pending bookings
+            const pendingOnly = response.data.filter(booking => 
+              booking.status === 'Pending' || booking.status === 'pending'
+            );
+            console.log(`Found ${pendingOnly.length} pending bookings from API`);
+            setPendingBookings(pendingOnly);
+            setIsLoading(false);
+            setIsRefreshing(false);
+            return;
+          }
+        } catch (apiError) {
+          console.error("API booking fetch error:", apiError);
         }
-      } catch (apiError) {
-        console.error("API booking fetch error:", apiError);
       }
       
-      // Try MongoDB as fallback
+      // Try MongoDB as fallback in non-web environments or if API fails
       let allBookings = [];
       try {
         console.log("Fetching bookings from MongoDB");
