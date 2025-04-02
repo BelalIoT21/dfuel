@@ -27,6 +27,11 @@ const BookMachineButton = ({
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Don't render button at all for safety cabinet or safety course
+  if (machineId === "5" || machineId === "6") {
+    return null;
+  }
+
   // Normalize machine status to lowercase for consistent comparison
   const normalizedStatus = machineStatus?.toLowerCase() || '';
   const isAvailable = normalizedStatus === 'available';

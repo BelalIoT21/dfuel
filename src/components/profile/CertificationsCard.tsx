@@ -381,8 +381,7 @@ const CertificationsCard = () => {
                     
                     {machineStatus === 'available' && 
                      machine.isCertified && 
-                     machine.id !== "5" && // Not safety cabinet
-                     machine.id !== "6" && // Not safety course
+                     !NON_BOOKABLE_MACHINE_IDS.includes(machine.id) && // Don't show booking button for non-bookable machines
                      (
                       <BookMachineButton 
                         machineId={machine.id} 

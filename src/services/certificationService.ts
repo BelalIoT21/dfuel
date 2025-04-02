@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -216,16 +215,6 @@ export class CertificationService {
         }
       }
       
-      // Third approach: Check database service
-      if (!success && window.certificationDatabaseService) {
-        try {
-          certifications = await window.certificationDatabaseService.getUserCertifications(stringUserId);
-          success = certifications.length > 0;
-        } catch (thirdError) {
-          console.error("Error fetching certifications via database service:", thirdError);
-        }
-      }
-      
       // If all fails, provide appropriate default certifications
       if (!success) {
         console.log("All certification fetching approaches failed, using defaults");
@@ -235,7 +224,7 @@ export class CertificationService {
           console.log("Returning default admin certifications");
           return [...DEFAULT_ADMIN_CERTIFICATIONS];
         } else {
-          console.log("Returning default user certifications for user", stringUserId);
+          console.log("Returning default user certifications");
           return [...DEFAULT_USER_CERTIFICATIONS];
         }
       }
@@ -265,26 +254,14 @@ export class CertificationService {
       
       console.log(`Making API call to check certification for userId=${stringUserId}, machineId=${stringMachineId}`);
       
-      // First try API call
-      try {
-        const response = await apiService.get(`certifications/check/${stringUserId}/${stringMachineId}`);
-        console.log("API check certification response:", response);
-        
-        if (response.data !== undefined) {
-          return !!response.data; // Convert to boolean
-        }
-      } catch (error) {
-        console.error("Error checking certification via API:", error);
-      }
-      
-      // If API fails, check against user's certifications directly
-      const userCerts = await this.getUserCertifications(stringUserId);
-      
       // Special handling for safety machines (IDs 5 and 6)
       // These are always considered certified for demonstration purposes
       if (stringMachineId === "5" || stringMachineId === "6") {
         return true;
       }
+      
+      // If API fails, check against user's certifications directly
+      const userCerts = await this.getUserCertifications(stringUserId);
       
       // For other machines, check if the user has the certification
       return userCerts.includes(stringMachineId);

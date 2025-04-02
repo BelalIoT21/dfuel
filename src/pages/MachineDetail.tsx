@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -212,10 +211,7 @@ const MachineDetail = () => {
 
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
-  console.log("MachineDetail - displaying image:", machineImageUrl);
-  
-  console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
-  console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
+  const isBookable = machine && machine.id !== "5" && machine.id !== "6";
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -314,12 +310,14 @@ const MachineDetail = () => {
               </Button>
             )}
             
-            <BookMachineButton 
-              machineId={id || ''}
-              isCertified={isCertified || !requiresCertification}
-              machineStatus={machineStatus}
-              className="flex-1"
-            />
+            {isBookable && (
+              <BookMachineButton 
+                machineId={id || ''}
+                isCertified={isCertified || !requiresCertification}
+                machineStatus={machineStatus}
+                className="flex-1"
+              />
+            )}
           </div>
         </CardContent>
       </Card>
