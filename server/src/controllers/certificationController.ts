@@ -227,10 +227,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
   
   if (!userId) {
     console.log('Missing required userId parameter');
-    return res.status(400).json({ 
+    res.status(400).json({ 
       success: false, 
       message: 'User ID is required' 
     });
+    return;
   }
   
   try {
@@ -239,10 +240,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false, 
         message: 'User not found' 
       });
+      return;
     }
     
     // Ensure certifications array exists
@@ -252,10 +254,10 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     
     // Return the certifications
     console.log(`Retrieved certifications for user ${userId}:`, user.certifications);
-    return res.status(200).json(user.certifications);
+    res.status(200).json(user.certifications);
   } catch (error) {
     console.error('Error getting user certifications:', error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       success: false, 
       message: 'Failed to get user certifications',
       error: error instanceof Error ? error.message : 'Unknown error'
