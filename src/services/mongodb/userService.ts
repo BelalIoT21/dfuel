@@ -1,25 +1,11 @@
 
 import { Collection } from 'mongodb';
 import { MongoUser } from './types';
-import mongoConnectionService from './connectionService';
 
 class MongoUserService {
   private usersCollection: Collection<MongoUser> | null = null;
 
-  async initCollection(): Promise<void> {
-    if (!this.usersCollection) {
-      const db = await mongoConnectionService.connect();
-      if (db) {
-        this.usersCollection = db.collection<MongoUser>('users');
-        if (this.usersCollection) {
-          await this.usersCollection.createIndex({ email: 1 }, { unique: true });
-        }
-      }
-    }
-  }
-
   async getUsers(): Promise<MongoUser[]> {
-    await this.initCollection();
     if (!this.usersCollection) return [];
 
     try {
@@ -31,7 +17,6 @@ class MongoUserService {
   }
 
   async getUserByEmail(email: string): Promise<MongoUser | null> {
-    await this.initCollection();
     if (!this.usersCollection) return null;
     if (!email) return null;
 
@@ -44,7 +29,6 @@ class MongoUserService {
   }
 
   async getUserById(id: string): Promise<MongoUser | null> {
-    await this.initCollection();
     if (!this.usersCollection) return null;
     if (!id) return null;
 
@@ -57,7 +41,6 @@ class MongoUserService {
   }
 
   async createUser(user: MongoUser): Promise<MongoUser | null> {
-    await this.initCollection();
     if (!this.usersCollection) return null;
 
     try {
@@ -90,7 +73,6 @@ class MongoUserService {
   }
 
   async updateUser(id: string, updates: Partial<MongoUser> & { currentPassword?: string }): Promise<boolean> {
-    await this.initCollection();
     if (!this.usersCollection) return false;
     if (!id) return false;
 
@@ -154,7 +136,6 @@ class MongoUserService {
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    await this.initCollection();
     if (!this.usersCollection) return false;
     if (!id) return false;
 
@@ -175,7 +156,6 @@ class MongoUserService {
   }
 
   async updateUserCertifications(userId: string, certificationId: string): Promise<boolean> {
-    await this.initCollection();
     if (!this.usersCollection) return false;
     if (!userId || !certificationId) return false;
 
@@ -200,7 +180,6 @@ class MongoUserService {
   }
 
   async removeUserCertification(userId: string, certificationId: string): Promise<boolean> {
-    await this.initCollection();
     if (!this.usersCollection) return false;
     if (!userId || !certificationId) return false;
 
@@ -219,7 +198,6 @@ class MongoUserService {
   }
 
   async clearUserCertifications(userId: string): Promise<boolean> {
-    await this.initCollection();
     if (!this.usersCollection) return false;
     if (!userId) return false;
 

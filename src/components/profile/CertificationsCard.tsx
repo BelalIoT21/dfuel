@@ -14,13 +14,22 @@ import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
-const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
+
+interface User {
+  id: string;
+  certifications?: string[];
+}
+
+type AuthUser = {
+  id: string;
+  certifications?: string[];
+};
 
 const CertificationsCard = () => {
-  let user = null;
+  let user: AuthUser | null = null;
   try {
     const auth = useAuth();
-    user = auth.user;
+    user = auth.user as AuthUser;
   } catch (error) {
     console.error('Error using Auth context in CertificationsCard:', error);
     return null; // Don't render anything if auth is not available
@@ -48,26 +57,6 @@ const CertificationsCard = () => {
     
     setRefreshing(true);
     try {
-      console.log("Fetching machines for CertificationsCard");
-      
-      // Fetch all courses to build a map
-      try {
-        const allCourses = await courseService.getCourses();
-        const coursesById: Record<string, any> = {};
-        
-        if (Array.isArray(allCourses)) {
-          allCourses.forEach(course => {
-            const courseId = course.id || course._id;
-            coursesById[courseId] = course;
-          });
-        }
-        
-        console.log("Courses map created:", Object.keys(coursesById).length);
-        setCoursesMap(coursesById);
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-      }
-      
       let databaseMachines: any[] = [];
       try {
         // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines

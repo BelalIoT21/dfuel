@@ -98,7 +98,7 @@ const BookMachineButton = ({
       size={size}
       variant={canBook ? "default" : "outline"}
     >
-      <buttonIcon className="mr-2 h-4 w-4" />
+      {React.createElement(buttonIcon, { className: "mr-2 h-4 w-4" })}
       {buttonText}
     </Button>
   );

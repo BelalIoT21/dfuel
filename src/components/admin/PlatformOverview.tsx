@@ -1,24 +1,38 @@
-
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Activity, Check } from "lucide-react";
 
 interface PlatformOverviewProps {
-  allUsers: any[];
+  allUsers: {
+    id: string;
+    name: string;
+    lastLogin?: string;
+    certifications?: string[] | number;
+  }[];
 }
 
 export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
   // Helper function to format dates safely
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'Not available';
     
-    const date = new Date(dateStr);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
+    try {
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? 'Not available' : date.toLocaleString();
+    } catch {
       return 'Not available';
     }
-    
-    return date.toLocaleString();
+  };
+
+  // Calculate certification count safely
+  const getCertificationCount = (user: PlatformOverviewProps['allUsers'][0]) => {
+    if (Array.isArray(user.certifications)) {
+      return user.certifications.length;
+    }
+    if (typeof user.certifications === 'number') {
+      return user.certifications;
+    }
+    return 0;
   };
 
   return (
@@ -37,14 +51,19 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
             {allUsers.length > 0 ? (
               <div className="space-y-3">
                 {allUsers.slice(0, 5).map((user) => (
-                  <div key={user.id} className="flex justify-between border-b pb-2 last:border-0">
+                  <div 
+                    key={user.id} 
+                    className="flex justify-between border-b pb-2 last:border-0"
+                  >
                     <div>
-                      <span className="font-medium text-sm">{user.name}</span>
-                      <div className="text-xs text-gray-500">Last login: {formatDate(user.lastLogin)}</div>
+                      <span className="font-medium text-sm">{user.name || 'Unknown User'}</span>
+                      <div className="text-xs text-gray-500">
+                        Last login: {formatDate(user.lastLogin)}
+                      </div>
                     </div>
                     <div className="text-xs">
                       <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                        {Array.isArray(user.certifications) ? user.certifications.length : 0} certifications
+                        {getCertificationCount(user)} certifications
                       </span>
                     </div>
                   </div>
@@ -60,30 +79,24 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
           <div>
             <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">System Status</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-xs md:text-sm font-medium text-green-800">System Online</span>
+              {[
+                "System Online",
+                "Courses Active",
+                "Booking System",
+                "Quiz Engine"
+              ].map((status) => (
+                <div 
+                  key={status}
+                  className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-xs md:text-sm font-medium text-green-800">
+                      {status}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-xs md:text-sm font-medium text-green-800">Courses Active</span>
-                </div>
-              </div>
-              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-xs md:text-sm font-medium text-green-800">Booking System</span>
-                </div>
-              </div>
-              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-xs md:text-sm font-medium text-green-800">Quiz Engine</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
