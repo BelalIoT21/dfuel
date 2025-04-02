@@ -188,10 +188,10 @@ const Home = () => {
                         </div>
                       </div>
                       
-                      {/* Fixed BookMachineButton - always display it */}
+                      {/* BookMachineButton based on user certification for specific machine */}
                       <BookMachineButton 
                         machineId={machine.id} 
-                        isCertified={isCertified || false}
+                        isCertified={isCertified}
                         machineStatus={machine.status}
                         requiresCertification={machine.requiresCertification}
                         className="w-full mt-auto"

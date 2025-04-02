@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle, Award, Lock, Unlock, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
@@ -201,7 +202,7 @@ const BookMachineButton = ({
         size={size}
         variant="outline"
       >
-        <Award className="mr-2 h-4 w-4" />
+        <Lock className="mr-2 h-4 w-4" />
         Certification Required
       </Button>
     );
