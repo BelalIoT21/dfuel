@@ -273,6 +273,15 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
   
   console.log(`Request to check certification: userId=${userId}, machineId=${machineId}`);
   
+  if (!userId || !machineId) {
+    console.log('Missing required parameters:', { userId, machineId });
+    res.status(400).json({ 
+      success: false, 
+      message: 'User ID and machine ID are required' 
+    });
+    return;
+  }
+  
   try {
     // Find user with various ID formats
     let user = await findUserWithAnyIdFormat(userId);
