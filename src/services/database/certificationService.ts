@@ -4,65 +4,14 @@ class CertificationDatabaseService {
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
       console.log(`Calling API to get certifications for user ${userId}`);
-      
-      // First try direct API call for most reliable results
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            console.log(`Received ${data.length} certifications from direct API:`, data);
-            
-            // Update localStorage with fresh data
-            try {
-              localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(data));
-            } catch (e) {
-              console.error("Error updating localStorage from direct API:", e);
-            }
-            
-            return data;
-          }
-        }
-      } catch (directError) {
-        console.error("Direct API call failed:", directError);
-      }
-      
-      // Fallback to apiService if direct call fails
       const response = await apiService.getUserCertifications(userId);
       
       if (response.error) {
         console.error('Error fetching certifications:', response.error);
-        
-        // Try localStorage as fallback
-        try {
-          const localCerts = localStorage.getItem(`user_${userId}_certifications`);
-          if (localCerts) {
-            const parsedCerts = JSON.parse(localCerts);
-            console.log('Using localStorage certifications as fallback:', parsedCerts);
-            return parsedCerts;
-          }
-        } catch (e) {
-          console.error("Error reading localStorage certifications:", e);
-        }
-        
         return [];
       }
       
       console.log('Received certifications from service:', response.data);
-      
-      // Update localStorage with the retrieved data
-      try {
-        localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(response.data));
-      } catch (e) {
-        console.error("Error updating localStorage from apiService:", e);
-      }
-      
       return response.data || [];
     } catch (error) {
       console.error('API error fetching certifications:', error);
@@ -88,7 +37,7 @@ class CertificationDatabaseService {
       // First attempt - direct API call
       try {
         console.log('Attempt 1: Direct API call');
-        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
+        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -99,6 +48,7 @@ class CertificationDatabaseService {
         
         // Log full details of the response
         console.log("Direct API call status:", directResponse.status);
+        console.log("Direct API call headers:", Object.fromEntries([...directResponse.headers]));
         
         // Clone the response for text and json parsing
         const responseClone = directResponse.clone();
@@ -117,18 +67,6 @@ class CertificationDatabaseService {
         
         if (directResponse.ok || (responseData && responseData.success)) {
           console.log("Direct API call successful");
-          
-          // Update localStorage with the new certification
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringMachineId)) {
-              existingCerts.push(stringMachineId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-            }
-          } catch (e) {
-            console.error("Error updating localStorage after direct API call:", e);
-          }
-          
           return true;
         }
       } catch (directError) {
@@ -143,18 +81,6 @@ class CertificationDatabaseService {
         
         if (response.data?.success || response.status === 200 || response.status === 201) {
           console.log("Certification added successfully via apiService");
-          
-          // Update localStorage with the new certification
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringMachineId)) {
-              existingCerts.push(stringMachineId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-            }
-          } catch (e) {
-            console.error("Error updating localStorage after apiService call:", e);
-          }
-          
           return true;
         }
       } catch (apiError) {
@@ -172,18 +98,6 @@ class CertificationDatabaseService {
         console.log("Fallback API response:", fallbackResponse);
         if (fallbackResponse.data?.success || fallbackResponse.status === 200 || fallbackResponse.status === 201) {
           console.log("Certification added successfully using fallback method");
-          
-          // Update localStorage with the new certification
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringMachineId)) {
-              existingCerts.push(stringMachineId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-            }
-          } catch (e) {
-            console.error("Error updating localStorage after fallback call:", e);
-          }
-          
           return true;
         }
       } catch (fallbackError) {
@@ -193,7 +107,7 @@ class CertificationDatabaseService {
       // Fourth attempt - alternative endpoint
       try {
         console.log("Attempt 4: Using alternative API endpoint");
-        const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/api/certifications`, {
+        const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -213,35 +127,10 @@ class CertificationDatabaseService {
         
         if (alternativeResponse.ok) {
           console.log("Alternative API endpoint successful");
-          
-          // Update localStorage with the new certification
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringMachineId)) {
-              existingCerts.push(stringMachineId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-            }
-          } catch (e) {
-            console.error("Error updating localStorage after alternative API call:", e);
-          }
-          
           return true;
         }
       } catch (alternativeError) {
         console.error("Alternative API endpoint failed:", alternativeError);
-      }
-      
-      // Last attempt - just update localStorage
-      try {
-        console.log("All server attempts failed, updating localStorage only");
-        const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-        if (!existingCerts.includes(stringMachineId)) {
-          existingCerts.push(stringMachineId);
-          localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-          console.log("Updated localStorage only as fallback");
-        }
-      } catch (e) {
-        console.error("Error updating localStorage as fallback:", e);
       }
       
       console.log("All attempts to add certification failed");

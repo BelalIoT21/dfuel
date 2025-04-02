@@ -1,218 +1,481 @@
 
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Shield, AlertCircle, Check, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { Key, RefreshCw, Calendar, Award, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
-import { useToast } from '@/components/ui/use-toast';
+import { courseService } from '@/services/courseService';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import BookMachineButton from './BookMachineButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-// Define special machine IDs
-const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
+const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
+const MACHINE_ID_LASER_CUTTER = "1"; // Laser Cutter ID
 
 const CertificationsCard = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [machines, setMachines] = useState<any[]>([]);
-  const [userCertifications, setUserCertifications] = useState<string[]>([]);
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.error('Error using Auth context in CertificationsCard:', error);
+    return null; // Don't render anything if auth is not available
+  }
+
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [machines, setMachines] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
+  const [machineStatuses, setMachineStatuses] = useState({});
+  const [availableMachineIds, setAvailableMachineIds] = useState<string[]>([]);
+  const [coursesMap, setCoursesMap] = useState<Record<string, any>>({});
+  const isMobile = useIsMobile();
   
-  // Function to fetch certifications from the server
-  const fetchCertifications = async () => {
-    if (!user?.id) return [];
-    
-    try {
-      setRefreshing(true);
-      console.log(`Fetching certifications for user ${user.id}`);
-      const certs = await certificationService.getUserCertifications(user.id);
-      console.log(`Received ${certs.length} certifications:`, certs);
-      setUserCertifications(certs);
-      setRefreshing(false);
-      return certs;
-    } catch (error) {
-      console.error("Error fetching certifications:", error);
-      setRefreshing(false);
-      toast({
-        title: "Error",
-        description: "Could not load your certifications. Please try again.",
-        variant: "destructive"
-      });
-      // Fallback to cached certifications if any
-      return userCertifications;
+  // Track safety certifications specifically
+  const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
+  const [hasSafetyCabinetCertification, setHasSafetyCabinetCertification] = useState(false);
+
+  const fetchMachinesAndCertifications = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  };
-  
-  // Function to fetch machines
-  const fetchMachines = async () => {
+    
+    setRefreshing(true);
     try {
-      console.log("Fetching available machines");
-      const allMachines = await machineService.getAllMachines();
-      console.log(`Fetched ${allMachines.length} machines`);
+      console.log("Fetching machines for CertificationsCard");
       
-      // Process and standardize machine data
-      const processedMachines = allMachines.map(machine => {
-        const id = (machine.id || machine._id).toString();
+      // Check localStorage for machine data to speed up initial loading
+      const cachedMachinesStr = localStorage.getItem('cached_machines');
+      let cachedMachines = null;
+      
+      if (cachedMachinesStr) {
+        try {
+          cachedMachines = JSON.parse(cachedMachinesStr);
+          if (Array.isArray(cachedMachines) && cachedMachines.length > 0) {
+            console.log("Using cached machines data for initial display");
+            setMachines(cachedMachines);
+            setLoading(false);
+          }
+        } catch (e) {
+          console.error("Error parsing cached machines:", e);
+        }
+      }
+      
+      // Fetch all courses to build a map
+      try {
+        const allCourses = await courseService.getCourses();
+        const coursesById: Record<string, any> = {};
+        
+        if (Array.isArray(allCourses)) {
+          allCourses.forEach(course => {
+            const courseId = course.id || course._id;
+            coursesById[courseId] = course;
+          });
+        }
+        
+        console.log("Courses map created:", Object.keys(coursesById).length);
+        setCoursesMap(coursesById);
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      }
+      
+      let databaseMachines: any[] = [];
+      try {
+        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
+        databaseMachines = await machineService.getAllMachines();
+        console.log("Fetched machines from database:", databaseMachines.length);
+        
+        // Cache machines for future use
+        localStorage.setItem('cached_machines', JSON.stringify(databaseMachines));
+      } catch (error) {
+        console.error("Error fetching machines from database:", error);
+        databaseMachines = [];
+        
+        // Use cached data if available and we failed to fetch new data
+        if (cachedMachines) {
+          databaseMachines = cachedMachines;
+        }
+      }
+      
+      // Get user certifications - use the enhanced method with caching
+      let userCertifications: string[] = [];
+      try {
+        userCertifications = await certificationService.getUserCertifications(user.id);
+        console.log("User certifications:", userCertifications);
+        
+        // Check for safety certifications
+        setHasSafetyCertification(userCertifications.includes('6'));
+        setHasSafetyCabinetCertification(userCertifications.includes('5'));
+        
+        // Store certifications locally
+        certificationService.storeCertificationsLocally(user.id, userCertifications);
+      } catch (error) {
+        console.error("Error fetching user certifications:", error);
+        
+        // Try to recover from localStorage if available
+        const userCertificationsStr = localStorage.getItem(`user_${user.id}_certifications`);
+        if (userCertificationsStr) {
+          try {
+            const storedCertifications = JSON.parse(userCertificationsStr);
+            if (Array.isArray(storedCertifications)) {
+              userCertifications = storedCertifications;
+              console.log("Using stored certifications from localStorage:", userCertifications);
+              setHasSafetyCertification(userCertifications.includes('6'));
+              setHasSafetyCabinetCertification(userCertifications.includes('5'));
+            }
+          } catch (storageError) {
+            console.error("Error parsing localStorage certifications:", storageError);
+          }
+        }
+        
+        if (user.certifications && Array.isArray(user.certifications)) {
+          userCertifications = user.certifications.map(cert => String(cert));
+          setHasSafetyCertification(userCertifications.includes('6'));
+          setHasSafetyCabinetCertification(userCertifications.includes('5'));
+        }
+      }
+      
+      // Include special machines if not already present
+      for (const specialMachineId of SPECIAL_MACHINE_IDS) {
+        if (!databaseMachines.some(m => String(m.id) === specialMachineId || String(m._id) === specialMachineId)) {
+          // Add default data for special machines
+          const specialMachine = {
+            _id: specialMachineId,
+            id: specialMachineId,
+            name: specialMachineId === "5" ? "Safety Cabinet" : "Machine Safety Course",
+            type: specialMachineId === "5" ? "Safety Equipment" : "Safety Course",
+            description: specialMachineId === "5" 
+              ? "For safely storing hazardous materials" 
+              : "Essential safety training for all machine users",
+            status: "available",
+            linkedCourseId: specialMachineId,
+            linkedQuizId: specialMachineId,
+            requiresCertification: specialMachineId === "5" // Safety cabinet requires certification, Safety course does not
+          };
+          databaseMachines.push(specialMachine);
+        }
+      }
+      
+      // Process machines - important to include ALL machines, not just certified ones
+      const processedMachines = databaseMachines.map(machine => {
+        const machineId = String(machine.id || machine._id);
+        const isCertified = userCertifications.includes(machineId);
+        
         return {
-          id,
-          name: machine.name || `Machine ${id}`,
-          type: machine.type || 'Machine'
+          ...machine,
+          id: machineId,
+          isCertified,
+          type: machine.type || "Machine"
         };
       });
       
-      // Add special machines if they don't exist
-      if (!processedMachines.some(m => m.id === "5")) {
-        processedMachines.push({
-          id: "5",
-          name: "Safety Cabinet",
-          type: "Safety Equipment"
-        });
+      // Fetch machine statuses (use cached statuses initially for speed)
+      const statuses = {};
+      const cachedStatusesStr = localStorage.getItem('cached_machine_statuses');
+      let cachedStatuses = {};
+      
+      if (cachedStatusesStr) {
+        try {
+          cachedStatuses = JSON.parse(cachedStatusesStr);
+          // Use cached statuses for initial display
+          setMachineStatuses(cachedStatuses);
+        } catch (e) {
+          console.error("Error parsing cached statuses:", e);
+        }
       }
       
-      if (!processedMachines.some(m => m.id === "6")) {
-        processedMachines.push({
-          id: "6",
-          name: "Machine Safety Course",
-          type: "Safety Course"
-        });
-      }
+      // Fetch latest statuses in the background
+      (async () => {
+        const updatedStatuses = {...cachedStatuses};
+        for (const machine of processedMachines) {
+          try {
+            if (machine.id && machine.id !== "5" && machine.id !== "6") { // Safety machines are always available
+              const status = await machineService.getMachineStatus(machine.id);
+              updatedStatuses[machine.id] = status.toLowerCase();
+            } else {
+              updatedStatuses[machine.id] = "available";
+            }
+          } catch (err) {
+            console.error(`Error getting status for machine ${machine.id}:`, err);
+            updatedStatuses[machine.id] = machine.status?.toLowerCase() || "available";
+          }
+        }
+        
+        // Update statuses and cache them
+        setMachineStatuses(updatedStatuses);
+        localStorage.setItem('cached_machine_statuses', JSON.stringify(updatedStatuses));
+      })();
       
-      // Sort machines by ID
-      const sortedMachines = processedMachines.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-      setMachines(sortedMachines);
+      setMachines(processedMachines);
+      setAvailableMachineIds(processedMachines.map(m => m.id));
+      
+      // Log the machines for debugging
+      console.log("All machines after processing:", processedMachines.map(m => ({ id: m.id, name: m.name })));
     } catch (error) {
-      console.error("Error fetching machines:", error);
+      console.error("Error in fetchMachinesAndCertifications:", error);
       toast({
         title: "Error",
-        description: "Could not load machine data. Please try again.",
-        variant: "destructive"
+        description: "Failed to load certifications. Please try again.",
+        variant: "destructive",
       });
-      
-      // Add fallback for special machines
-      setMachines([
-        { id: "5", name: "Safety Cabinet", type: "Safety Equipment" },
-        { id: "6", name: "Machine Safety Course", type: "Safety Course" }
-      ]);
-    }
-  };
-  
-  // Initial load of data
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchCertifications(), fetchMachines()]);
+    } finally {
+      setRefreshing(false);
       setLoading(false);
-    };
-    
-    if (user?.id) {
-      loadData();
     }
-  }, [user?.id]);
-  
-  // Handle manual refresh
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchCertifications();
-    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    fetchMachinesAndCertifications();
+  }, [user]);
+
+  const handleRefresh = () => {
+    fetchMachinesAndCertifications();
+  };
+
+  const navigateToMachine = (machineId: string) => {
+    navigate(`/machine/${machineId}`);
   };
   
-  // Determine if user has safety certification (required for other machines)
-  const hasSafetyCertification = userCertifications.includes('6');
-  
-  // Filter certifications to those that the user has
-  const userMachines = machines.filter(machine => {
-    return userCertifications.includes(machine.id);
-  });
-  
-  // Function to display readable time since certification
-  const getTimeSince = () => {
-    return "recently"; // Placeholder - could be enhanced with actual timestamps
+  const navigateToCourse = (courseId: string) => {
+    navigate(`/course/${courseId}`);
   };
   
-  if (loading) {
+  const navigateToQuiz = (quizId: string) => {
+    navigate(`/quiz/${quizId}`);
+  };
+
+  const handleBookMachine = (machineId: string) => {
+    console.log(`Booking machine ${machineId} from CertificationsCard`);
+    navigate(`/booking/${machineId}`);
+  };
+
+  if (!user) return null;
+
+  if (loading && machines.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2 text-purple-600" />
-            Your Certifications
+          <CardTitle>
+            <div className="flex items-center">
+              <Award className="mr-2 h-5 w-5 text-purple-600" />
+              Certifications
+            </div>
           </CardTitle>
-          <CardDescription>Machines you are certified to use</CardDescription>
+          <CardDescription>Machines you're certified to use</CardDescription>
         </CardHeader>
-        <CardContent className="h-40 flex items-center justify-center">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Loading your certifications...</p>
-          </div>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
         </CardContent>
       </Card>
     );
   }
+
+  // Both safety course and safety cabinet are special and should always be shown
+  const safetyCourse = machines.find(m => m.id === "6");
+  const safetyCabinet = machines.find(m => m.id === "5");
+  const hasCompletedSafetyCourse = hasSafetyCertification;
+  const hasCompletedSafetyCabinet = hasSafetyCabinetCertification;
   
+  // Modified to show ALL machines if user has completed safety course
+  // This allows users to see machines they're not certified for yet
+  const displayMachines = hasCompletedSafetyCourse
+    ? machines // Show all machines if user has safety certification
+    : machines.filter(machine => 
+        machine.isCertified || // Show machines user is certified for
+        machine.id === "5" ||  // Always show safety cabinet
+        machine.id === "6"     // Always show safety course
+      );
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center">
-            <Shield className="h-5 w-5 mr-2 text-purple-600" />
-            Your Certifications
-          </CardTitle>
+          <div>
+            <CardTitle>
+              <div className="flex items-center">
+                <Award className="mr-2 h-5 w-5 text-purple-600" />
+                Certifications
+              </div>
+            </CardTitle>
+            <CardDescription>Machines you're certified to use</CardDescription>
+          </div>
           <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleRefresh}
+            variant="outline" 
+            size={isMobile ? "icon" : "sm"}
+            onClick={handleRefresh} 
             disabled={refreshing}
-            className="h-8 px-2"
+            className={isMobile ? "h-9 w-9 p-0" : ""}
           >
-            <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <RefreshCw className={`h-4 w-4 ${isMobile ? "" : "mr-1"}`} />
+                {!isMobile && <span>Refresh</span>}
+              </>
+            )}
           </Button>
         </div>
-        <CardDescription>Machines you are certified to use</CardDescription>
       </CardHeader>
-      
       <CardContent>
-        {!hasSafetyCertification && (
-          <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-800" />
-            <AlertTitle>Safety course required</AlertTitle>
-            <AlertDescription>
+        {!hasCompletedSafetyCourse && safetyCourse && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-md mb-4">
+            <h3 className="text-amber-800 font-medium mb-2">Safety Course Required</h3>
+            <p className="text-amber-700 text-sm mb-3">
               You need to complete the Machine Safety Course to get certified for other machines.
-            </AlertDescription>
-          </Alert>
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-amber-100 border-amber-300 text-amber-800"
+                onClick={() => navigateToCourse(safetyCourse.linkedCourseId)}
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Take Safety Course
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-amber-100 border-amber-300 text-amber-800"
+                onClick={() => navigateToQuiz(safetyCourse.linkedQuizId)}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Take Safety Quiz
+              </Button>
+            </div>
+          </div>
         )}
         
-        {userMachines.length === 0 ? (
-          <div className="text-center py-8">
-            <Shield className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">You don't have any certifications yet.</p>
-            <p className="text-sm text-gray-400 mt-1">Complete the safety course to get started.</p>
+        {hasCompletedSafetyCourse && !hasCompletedSafetyCabinet && safetyCabinet && (
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-md mb-4">
+            <h3 className="text-blue-800 font-medium mb-2">Safety Cabinet Certification</h3>
+            <p className="text-blue-700 text-sm mb-3">
+              Get certified to use the Safety Cabinet for storing materials.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-blue-100 border-blue-300 text-blue-800"
+                onClick={() => navigateToCourse(safetyCabinet.linkedCourseId)}
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Safety Cabinet Course
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="bg-blue-100 border-blue-300 text-blue-800"
+                onClick={() => navigateToQuiz(safetyCabinet.linkedQuizId)}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Safety Cabinet Quiz
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {displayMachines.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-gray-500 mb-4">You're not certified for any machines yet.</p>
+            {hasCompletedSafetyCourse ? (
+              <Button onClick={() => navigate('/machines')}>
+                Find Machines to Get Certified
+              </Button>
+            ) : safetyCourse ? (
+              <Button onClick={() => navigateToCourse(safetyCourse.linkedCourseId)}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                Take Safety Course
+              </Button>
+            ) : (
+              <Button onClick={() => navigate('/machines')}>
+                Browse Machines
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="space-y-3">
-            {userMachines.map(machine => (
-              <div key={machine.id} className="flex items-center justify-between p-3 border rounded-md">
-                <div>
-                  <div className="font-medium">{machine.name}</div>
-                  <div className="text-sm text-gray-500">{machine.type}</div>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+            {displayMachines.map((machine) => {
+              const machineStatus = machineStatuses[machine.id] || machine.status || 'unknown';
+              const requiresCertification = machine.requiresCertification !== false;
+              
+              return (
+                <div 
+                  key={machine.id} 
+                  className="border rounded-md p-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-medium">{machine.name}</h3>
+                      <p className="text-sm text-gray-500">{machine.type}</p>
+                    </div>
+                    <div className={`
+                      px-2 py-1 rounded-full text-xs font-medium 
+                      ${machine.isCertified ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}
+                    `}>
+                      {machine.isCertified ? 'Certified' : 'Not Certified'}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigateToMachine(machine.id)}
+                    >
+                      View Details
+                    </Button>
+                    
+                    {machine.linkedCourseId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToCourse(machine.linkedCourseId)}
+                      >
+                        <BookOpen className="mr-1 h-4 w-4" />
+                        Course
+                      </Button>
+                    )}
+                    
+                    {machine.linkedQuizId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigateToQuiz(machine.linkedQuizId)}
+                      >
+                        <Award className="mr-1 h-4 w-4" />
+                        Quiz
+                      </Button>
+                    )}
+                    
+                    {machineStatus === 'available' && 
+                     machine.isCertified && 
+                     machine.id !== "5" && // Not safety cabinet
+                     machine.id !== "6" && // Not safety course
+                     (
+                      <BookMachineButton 
+                        machineId={machine.id} 
+                        isCertified={machine.isCertified}
+                        machineStatus={machineStatus}
+                        className="ml-auto"
+                        size="sm"
+                      />
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center text-green-600">
-                  <Check className="h-4 w-4 mr-1" />
-                  <span className="text-xs">{getTimeSince()}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <p className="text-xs text-gray-500">
-          Certifications are required to book machines.
-        </p>
-      </CardFooter>
     </Card>
   );
 };

@@ -15,84 +15,119 @@ export async function addUserCertification(userId: string, machineId: string): P
   const certificationAttempts = [];
   let success = false;
 
-  // Try multiple methods to ensure certification is added both to database and locally
-  
-  // Method 1: Use the certification service (primary method)
+  // Method 1: Direct API call - most reliable method first
   try {
-    console.log('Attempting to add certification using certificationService');
-    success = await certificationService.addCertification(userIdStr, machineIdStr);
-    certificationAttempts.push({method: "certificationService", success});
+    console.log('Method 1: Attempting direct API call to add certification');
+    const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+    });
     
-    if (success) {
-      console.log('Certification successfully added via certificationService');
-      
-      // Also try to sync with database service as backup
-      try {
-        await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
-      } catch (dbErr) {
-        console.error("Error with database service after successful certification:", dbErr);
-      }
-      
-      return true;
-    }
-  } catch (err) {
-    console.error("Error with certificationService:", err);
-    certificationAttempts.push({method: "certificationService", error: String(err)});
-  }
-  
-  // Method 2: Direct API call if Method 1 fails
-  if (!success) {
+    let directResult;
     try {
-      console.log('Method 2: Attempting direct API call to add certification');
-      const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-      });
+      const responseText = await directResponse.text();
+      console.log('Direct API response text:', responseText);
       
-      let directResult;
-      try {
-        const responseText = await directResponse.text();
-        console.log('Direct API response text:', responseText);
-        
-        if (responseText) {
-          directResult = JSON.parse(responseText);
-        } else {
-          directResult = { success: directResponse.ok };
-        }
-      } catch (parseError) {
-        console.error('Error parsing API response:', parseError);
+      if (responseText) {
+        directResult = JSON.parse(responseText);
+      } else {
         directResult = { success: directResponse.ok };
       }
-      
-      certificationAttempts.push({method: "direct API", response: directResult});
-      console.log('Direct API call response:', directResult);
-      
-      if (directResponse.ok || (directResult && directResult.success)) {
-        success = true;
-        console.log('Direct API call successful');
-        return true;
-      }
-    } catch (directError) {
-      console.error('Direct API call failed:', directError);
-      certificationAttempts.push({method: "direct API", error: String(directError)});
+    } catch (parseError) {
+      console.error('Error parsing API response:', parseError);
+      directResult = { success: directResponse.ok };
     }
+    
+    certificationAttempts.push({method: "direct API", response: directResult});
+    console.log('Direct API call response:', directResult);
+    
+    if (directResponse.ok || (directResult && directResult.success)) {
+      success = true;
+      console.log('Direct API call successful');
+    }
+  } catch (directError) {
+    console.error('Direct API call failed:', directError);
+    certificationAttempts.push({method: "direct API", error: String(directError)});
   }
   
-  // Method 3: Use certificationDatabaseService if Method 1 and 2 fail
+  // Method 2: Use certificationDatabaseService if Method 1 fails
   if (!success) {
-    console.log('Method 3: Trying certificationDatabaseService');
+    console.log('Method 2: Trying certificationDatabaseService');
     try {
       success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
       certificationAttempts.push({method: "certificationDatabaseService", success});
       console.log(`Database service attempt result: ${success ? 'success' : 'failed'}`);
-      if (success) return true;
     } catch (err) {
       console.error("Error with certificationDatabaseService:", err);
       certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
+    }
+  }
+  
+  // Method 3: Use certificationService if Method 1 and 2 fail
+  if (!success) {
+    console.log('Method 3: Trying certificationService');
+    try {
+      success = await certificationService.addCertification(userIdStr, machineIdStr);
+      certificationAttempts.push({method: "certificationService", success});
+      console.log(`certificationService attempt result: ${success ? 'success' : 'failed'}`);
+    } catch (err) {
+      console.error("Error with certificationService:", err);
+      certificationAttempts.push({method: "certificationService", error: String(err)});
+    }
+  }
+  
+  // Method 4: Emergency fallback using additional endpoint paths
+  if (!success) {
+    console.log('Method 4: Trying alternative endpoints');
+    
+    const endpointsToTry = [
+      `${import.meta.env.VITE_API_URL}/api/certifications`,
+      `${import.meta.env.VITE_API_URL}/certifications/add`,
+      `${import.meta.env.VITE_API_URL}/api/certifications/add`
+    ];
+    
+    for (const endpoint of endpointsToTry) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        const emergencyResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+        });
+        
+        let emergencyResult;
+        try {
+          const responseText = await emergencyResponse.text();
+          console.log(`${endpoint} response text:`, responseText);
+          
+          if (responseText) {
+            emergencyResult = JSON.parse(responseText);
+          } else {
+            emergencyResult = { success: emergencyResponse.ok };
+          }
+        } catch (parseError) {
+          console.error('Error parsing API response:', parseError);
+          emergencyResult = { success: emergencyResponse.ok };
+        }
+        
+        certificationAttempts.push({method: `emergency API (${endpoint})`, response: emergencyResult});
+        
+        if (emergencyResponse.ok || (emergencyResult && emergencyResult.success)) {
+          success = true;
+          console.log(`Emergency API call to ${endpoint} successful`);
+          break;
+        }
+      } catch (emergencyError) {
+        console.error(`Emergency API call to ${endpoint} failed:`, emergencyError);
+        certificationAttempts.push({method: `emergency API (${endpoint})`, error: String(emergencyError)});
+      }
     }
   }
   
