@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -247,10 +248,8 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
-      // Always get fresh certifications from the API
+      // Use already cached data if possible
       const allCerts = await this.getUserCertifications(stringUserId);
-      console.log(`User certifications for ${userId}:`, allCerts);
-      
       const hasCertBasedOnArray = allCerts.some(cert => String(cert) === stringMachineId);
       
       if (hasCertBasedOnArray) {

@@ -246,7 +246,6 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     // Return the certifications
     console.log(`Retrieved certifications for user ${userId}:`, user.certifications);
     res.status(200).json(user.certifications);
-    return;
   } catch (error) {
     console.error('Error getting user certifications:', error);
     res.status(500).json({ 
@@ -254,7 +253,6 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
       message: 'Failed to get user certifications',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    return;
   }
 });
 
@@ -287,7 +285,6 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
     const hasCertification = user.certifications.includes(machineId);
     console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
     res.status(200).json(hasCertification);
-    return;
   } catch (error) {
     console.error('Error checking certification:', error);
     res.status(500).json({ 
@@ -295,7 +292,6 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
       message: 'Failed to check certification',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    return;
   }
 });
 

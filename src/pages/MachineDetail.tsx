@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -102,7 +101,7 @@ const MachineDetail = () => {
         
         if (user) {
           try {
-            // Use improved checkCertification method directly from the service
+            // Use improved checkCertification method
             const isUserCertified = await certificationService.checkCertification(user.id, id);
             console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
             setIsCertified(isUserCertified);
@@ -113,10 +112,15 @@ const MachineDetail = () => {
             setHasSafetyCertification(hasSafetyCert);
           } catch (certError) {
             console.error('Error checking certifications:', certError);
-            // Don't use localStorage as fallback - we no longer want to use it
-            // Let's set default values based on the props
-            setIsCertified(false);
-            setHasSafetyCertification(false);
+            
+            // Try using the cached values if available
+            const cachedCertKey = `user_${user.id}_certification_${id}`;
+            const cachedSafetyCertKey = `user_${user.id}_certification_6`;
+            const cachedCertValue = localStorage.getItem(cachedCertKey);
+            const cachedSafetyCertValue = localStorage.getItem(cachedSafetyCertKey);
+            
+            setIsCertified(cachedCertValue === 'true');
+            setHasSafetyCertification(cachedSafetyCertValue === 'true');
           }
         }
       } catch (err) {
@@ -251,14 +255,6 @@ const MachineDetail = () => {
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
   console.log("User certification status:", isCertified);
 
-  // Add debug logs for BookMachineButton props
-  console.log("BookMachineButton props:", {
-    machineId: id,
-    isCertified,
-    machineStatus,
-    requiresCertification
-  });
-
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
       <Button
@@ -342,7 +338,6 @@ const MachineDetail = () => {
                 variant="outline"
                 className="flex-1"
               >
-                <BookOpen className="mr-2 h-4 w-4" />
                 Take Course
               </Button>
             )}
@@ -353,7 +348,6 @@ const MachineDetail = () => {
                 variant="outline"
                 className="flex-1"
               >
-                <Award className="mr-2 h-4 w-4" />
                 Take Quiz
               </Button>
             )}
@@ -362,9 +356,8 @@ const MachineDetail = () => {
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
-                isCertified={isCertified}
+                isCertified={isCertified || !requiresCertification}
                 machineStatus={machineStatus}
-                requiresCertification={requiresCertification}
                 className="flex-1"
               />
             )}
