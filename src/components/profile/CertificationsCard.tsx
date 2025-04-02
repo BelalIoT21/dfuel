@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 // Define the non-bookable machine IDs
 const NON_BOOKABLE_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
+// Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
 interface User {
@@ -71,7 +71,7 @@ const CertificationsCard = () => {
         databaseMachines = [];
       }
       
-      // Get user certifications
+      // Get user certifications - using fixed data approach
       let userCertifications: string[] = [];
       try {
         userCertifications = await certificationService.getUserCertifications(user.id);

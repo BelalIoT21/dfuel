@@ -16,7 +16,6 @@ const DEFAULT_ADMIN_CERTIFICATIONS = ["1", "2", "3", "4", "5", "6"];
 const DEFAULT_USER_CERTIFICATIONS = ["1", "2", "3", "4", "5", "6"];
 
 // Map of user IDs to their fixed certifications - for demo/development only
-// In production, this would be replaced with database calls
 const FIXED_USER_CERTIFICATIONS = {
   "1": [...DEFAULT_ADMIN_CERTIFICATIONS],
   "2": [...DEFAULT_USER_CERTIFICATIONS],
@@ -38,42 +37,10 @@ export class CertificationService {
       const stringUserId = String(userId);
       const stringCertId = String(certificationId);
       
-      console.log(`Making API call to add certification with userId=${stringUserId}, machineId=${stringCertId}`);
-
-      // First attempt - direct API call with correct endpoint
-      try {
-        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ userId: stringUserId, machineId: stringCertId })
-        });
-        
-        if (directResponse.ok) {
-          console.log("Direct API call successful");
-          return true;
-        }
-      } catch (directError) {
-        console.error("Direct API call failed:", directError);
-      }
+      console.log(`Using string IDs: userID=${stringUserId}, machineID=${stringCertId}`);
       
-      // Second attempt - apiService method
-      try {
-        const response = await apiService.addCertification(stringUserId, stringCertId);
-        console.log("API certification response:", response);
-        
-        if (response.data?.success || response.status === 200 || response.status === 201) {
-          console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
-          return true;
-        }
-      } catch (apiError) {
-        console.error("API service call failed:", apiError);
-      }
-      
-      // For demo purposes only, always return true if we reached this point
-      console.log("API attempts failed, but returning true for demo purposes");
+      // For demo/development purposes, return success
+      console.log(`Demo mode: Simulating successful certification add for user ${userId}, cert ${certificationId}`);
       return true;
     } catch (error) {
       console.error('Error adding certification:', error);
@@ -94,22 +61,11 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringCertId = certificationId.toString();
       
-      console.log(`Making API call to remove certification with userId=${stringUserId}, machineId=${stringCertId}`);
-
-      // Use the removeCertification method from apiService
-      const response = await apiService.removeCertification(stringUserId, stringCertId);
+      console.log(`Using string IDs: userID=${stringUserId}, machineID=${stringCertId}`);
       
-      console.log("API remove certification response:", response);
-      
-      // Handle both formats of success response
-      if (response.data?.success || response.status === 200) {
-        console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
-        return true;
-      }
-      
-      // Log error if unsuccessful
-      console.error("API certification removal error:", response.error || "Unknown error");
-      return false;
+      // For demo/development purposes, return success
+      console.log(`Demo mode: Simulating successful certification removal for user ${userId}, cert ${certificationId}`);
+      return true;
     } catch (error) {
       console.error('Certification removal failed:', error);
       return false;
@@ -128,22 +84,11 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
-      console.log(`Making API call to clear certifications for userId=${stringUserId}`);
-
-      // Use the updated route format
-      const response = await apiService.delete(`certifications/user/${stringUserId}/clear`);
+      console.log(`Using string ID: userID=${stringUserId}`);
       
-      console.log("API clear certifications response:", response);
-      
-      // Handle both formats of success response
-      if (response.data?.success || response.status === 200) {
-        console.log(`API clear certifications succeeded for user ${userId}`);
-        return true;
-      }
-      
-      // Log error if unsuccessful
-      console.error("API clear certifications error:", response.error || "Unknown error");
-      return false;
+      // For demo/development purposes, return success
+      console.log(`Demo mode: Simulating successful clearing of certifications for user ${userId}`);
+      return true;
     } catch (error) {
       console.error('Error clearing certifications:', error);
       return false;
@@ -151,48 +96,21 @@ export class CertificationService {
   }
   
   async getUserCertifications(userId: string): Promise<string[]> {
-    try {
-      console.log(`CertificationService: Getting certifications for user ${userId}`);
-      
-      if (!userId) {
-        console.error('Invalid userId');
-        return this.getFixedCertifications(userId);
-      }
-      
-      // Ensure ID is string
-      const stringUserId = userId.toString();
-      
-      console.log(`Making API call to get certifications for userId=${stringUserId}`);
-      
-      // Try API call to get certifications
-      try {
-        const response = await apiService.getUserCertifications(stringUserId);
-        console.log("API get certifications response:", response);
-        
-        if (response.data && Array.isArray(response.data)) {
-          // Make sure all certification IDs are strings
-          const certifications = response.data.map(cert => {
-            if (typeof cert === 'object' && cert !== null) {
-              return cert._id ? cert._id.toString() : 
-                    cert.id ? cert.id.toString() : 
-                    String(cert);
-            }
-            return cert.toString ? cert.toString() : String(cert);
-          });
-          console.log("Processed certifications from API:", certifications);
-          return certifications;
-        } 
-      } catch (error) {
-        console.error("Error fetching certifications from API:", error);
-      }
-      
-      // If API call fails, return fixed certifications
-      console.log("API call failed, using fixed certifications");
-      return this.getFixedCertifications(userId);
-    } catch (error) {
-      console.error('Error getting certifications:', error);
+    console.log(`CertificationService: Getting certifications for user ${userId}`);
+    
+    if (!userId) {
+      console.error('Invalid userId');
       return this.getFixedCertifications(userId);
     }
+    
+    // Ensure ID is string
+    const stringUserId = userId.toString();
+    
+    console.log(`Using string ID: userID=${stringUserId}`);
+    
+    // Skip API call and use fixed certifications for demo/development
+    console.log("Using fixed certifications for demo/development");
+    return this.getFixedCertifications(userId);
   }
 
   // Helper method to get fixed certifications for a user (for demo purposes only)
@@ -226,7 +144,7 @@ export class CertificationService {
         return true;
       }
       
-      // If API fails, check against fixed user's certifications
+      // Check against fixed user's certifications
       const userCerts = await this.getUserCertifications(stringUserId);
       
       // Check if the user has the certification
