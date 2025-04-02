@@ -27,7 +27,10 @@ const BookMachineButton = ({
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const isAvailable = machineStatus?.toLowerCase() === 'available';
+  // Normalize machine status to lowercase for consistent comparison
+  const normalizedStatus = machineStatus?.toLowerCase() || '';
+  const isAvailable = normalizedStatus === 'available';
+  
   // If certification is not required, consider the user as certified
   const effectiveCertification = requiresCertification ? isCertified : true;
   const canBook = effectiveCertification && isAvailable && !timeSlotUnavailable;
@@ -46,7 +49,7 @@ const BookMachineButton = ({
       if (!isAvailable) {
         toast({
           title: "Machine Unavailable",
-          description: "This machine is currently unavailable for booking",
+          description: `This machine is currently ${machineStatus || 'unavailable'} for booking`,
           variant: "destructive"
         });
         return;
