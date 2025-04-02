@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -159,7 +160,7 @@ export class CertificationService {
       
       // Try multiple approaches to get certifications
       
-      // Approach 1: Direct fetch with full URL
+      // Approach 1: Direct fetch with full URL - this matches admin approach
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
         const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {

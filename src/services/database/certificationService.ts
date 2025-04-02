@@ -4,7 +4,7 @@ import { apiService } from '../apiService';
 class CertificationDatabaseService {
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      console.log(`Calling API to get certifications for user ${userId}`);
+      console.log(`Getting certifications for user ${userId} from database service`);
       
       // First, try direct fetch with full URL to avoid any path issues
       try {
