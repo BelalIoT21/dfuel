@@ -70,6 +70,15 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   // Check if user is certified for this machine
   const isCertified = certsArray.includes(machineId);
   
+  // Handle navigation to machine detail screen
+  const handleMachinePress = () => {
+    navigation.navigate('MachineDetail', { 
+      machineId: machineId,
+      name: machineName,
+      requiresCertification: machine.requiresCertification !== false // Default to true if not specified
+    });
+  };
+  
   // Get appropriate image source based on machine ID
   const getImageSource = () => {
     // Use local images for known machine IDs
@@ -95,13 +104,7 @@ const MachineItem = ({ machine, navigation, userCertifications = [] }) => {
   console.log(`Machine ${machineId} (${machineName}) - Using local image`);
 
   return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('MachineDetail', { 
-        machineId: machineId,
-        name: machineName,
-        requiresCertification: machine.requiresCertification !== false // Default to true if not specified
-      })}
-    >
+    <TouchableOpacity onPress={handleMachinePress}>
       <Card style={styles.card}>
         <Card.Cover 
           source={getImageSource()} 

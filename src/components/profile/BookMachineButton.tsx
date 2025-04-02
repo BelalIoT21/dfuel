@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
+import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { certificationService } from '@/services/certificationService';
@@ -204,28 +204,14 @@ const BookMachineButton = ({
       </Button>
     );
   } 
-  
-  if (requiresCertification && !effectiveCertification) {
-    // Use a regular button that navigates to course instead of showing as disabled
-    return (
-      <Button 
-        onClick={handleBooking} 
-        className={className}
-        size={size}
-        variant="outline"
-      >
-        <Award className="mr-2 h-4 w-4" />
-        Get Certified
-      </Button>
-    );
-  }
 
-  // Default "Book Now" button
+  // Always show "Book Now" button regardless of certification status
   return (
     <Button 
       onClick={handleBooking} 
       className={className}
       size={size}
+      disabled={requiresCertification && !effectiveCertification}
       variant={effectiveCertification ? "default" : "outline"}
     >
       <Calendar className="mr-2 h-4 w-4" />

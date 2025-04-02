@@ -358,7 +358,8 @@ const CertificationsCard = () => {
               return (
                 <div 
                   key={machine.id} 
-                  className="border rounded-md p-3 hover:bg-gray-50 transition-colors"
+                  className="border rounded-md p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => navigateToMachine(machine.id)}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -373,15 +374,7 @@ const CertificationsCard = () => {
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => navigateToMachine(machine.id)}
-                    >
-                      View Details
-                    </Button>
-                    
+                  <div className="flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
                     {machine.linkedCourseId && (
                       <Button 
                         variant="outline" 

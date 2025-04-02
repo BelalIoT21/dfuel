@@ -122,18 +122,6 @@ const MachineActions = ({
           >
             Take Quiz
           </Button>
-          
-          {(!certifiedState && (canGetCertified || isSafetyCourse)) && (
-            <Button 
-              mode="contained" 
-              icon="certificate" 
-              style={styles.actionButton}
-              onPress={onGetCertified}
-              disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
-            >
-              Get Certified
-            </Button>
-          )}
         </>
       )}
       
@@ -159,7 +147,17 @@ const MachineActions = ({
             >
               Book Machine
             </Button>
-          ) : null}
+          ) : (
+            <Button 
+              mode="contained" 
+              icon="calendar-plus" 
+              style={[styles.actionButton, {backgroundColor: '#22c55e'}]}
+              onPress={onBookMachine}
+              disabled={machineStatus !== 'available' || (!certifiedState && requiresCertification)}
+            >
+              Book Now
+            </Button>
+          )}
         </>
       )}
     </View>
