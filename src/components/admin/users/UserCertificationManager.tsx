@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Trash } from 'lucide-react';
-import { certificationDatabaseService } from '@/services/database/certificationService';
+import { Loader2, Trash, Certificate } from 'lucide-react';
+import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -36,8 +37,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log("Loading certifications for user ID:", userId);
       
-      // Get fresh certifications from MongoDB
-      const certs = await certificationDatabaseService.getUserCertifications(userId);
+      // Get fresh certifications from service
+      const certs = await certificationService.getUserCertifications(userId);
       console.log("Received certifications from service:", certs);
       
       // Always convert to strings
@@ -89,12 +90,19 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
         }
       }
       
+      // Sort machines by ID to ensure consistent order
+      processedMachines.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+      
       console.log("Available machines for certification:", processedMachines.map(m => ({ id: m.id, name: m.name })));
       setAvailableMachines(processedMachines);
     } catch (error) {
       console.error("Error fetching available machines:", error);
       // Fallback to special machines only
       setAvailableMachines([
+        { id: "1", name: "Laser Cutter" },
+        { id: "2", name: "Ultimaker" },
+        { id: "3", name: "X1 Carbon 3D Printer" },
+        { id: "4", name: "Bambu Lab X1" },
         { id: "5", name: "Safety Cabinet" },
         { id: "6", name: "Safety Course" }
       ]);
@@ -125,7 +133,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to add certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationDatabaseService.addCertification(userId, certificationId);
+      const success = await certificationService.addCertification(userId, certificationId);
       
       if (success) {
         // Add the certification to local state immediately for UI responsiveness
@@ -172,7 +180,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     try {
       console.log(`Attempting to remove certification ${certificationId} for user ${userId}`);
       
-      const success = await certificationDatabaseService.removeCertification(userId, certificationId);
+      const success = await certificationService.removeCertification(userId, certificationId);
       
       if (success) {
         // Remove the certification from local state immediately for UI responsiveness
@@ -198,8 +206,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
     }
   };
 
-  // Handle clearing all certifications
-  const handleClearAllCertifications = async () => {
+  // Clear all certifications for a user
+  const handleClearCertifications = async () => {
     const userId = getUserId();
     
     if (!userId) {
@@ -212,20 +220,18 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
 
     setIsClearing(true);
     try {
-      console.log(`Attempting to clear all certifications for user ${userId}`);
-      
-      const success = await certificationDatabaseService.clearUserCertifications(userId);
-      
-      if (success) {
-        // Clear certifications in local state immediately for UI responsiveness
-        setUserCertifications([]);
-        onCertificationAdded();
-        
-        toast({
-          title: "Success",
-          description: "All certifications cleared successfully."
-        });
+      // Remove all certifications one by one
+      for (const certId of userCertifications) {
+        await certificationService.removeCertification(userId, certId);
       }
+      
+      setUserCertifications([]);
+      onCertificationAdded();
+      
+      toast({
+        title: "Success",
+        description: `All certifications cleared successfully.`
+      });
     } catch (error) {
       console.error("Error clearing certifications:", error);
       toast({
@@ -236,116 +242,123 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
       setIsClearing(false);
     }
   };
-  
-  // Compare two arrays of certification IDs (handling both string and non-string types)
-  const certificationArraysMatch = (arr1: any[], arr2: any[]): boolean => {
-    const normalized1 = arr1.map(item => item?.toString() || '').sort();
-    const normalized2 = arr2.map(item => item?.toString() || '').sort();
-    
-    if (normalized1.length !== normalized2.length) return false;
-    
-    for (let i = 0; i < normalized1.length; i++) {
-      if (normalized1[i] !== normalized2[i]) return false;
-    }
-    
-    return true;
-  };
-  
-  // Check if a certification is already added for this user
-  const isCertificationAdded = (certId: string): boolean => {
-    if (!certId) return false;
-    
-    // First check our local state
-    const inLocalState = userCertifications.some(id => id.toString() === certId.toString());
-    if (inLocalState) return true;
-    
-    // Then check user object directly (as a fallback)
-    if (user && user.certifications && Array.isArray(user.certifications)) {
-      return user.certifications.some((id: any) => id?.toString() === certId.toString());
-    }
-    
-    return false;
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">Manage Certifications</Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 px-2 lg:px-3"
+        >
+          <Certificate className="h-4 w-4 mr-2" />
+          Certifications
+        </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      
+      <DialogContent className={isMobile ? "w-[95vw] max-w-md" : "max-w-md"}>
         <DialogHeader>
-          <DialogTitle>Manage Certifications for {user.name}</DialogTitle>
+          <DialogTitle>Manage User Certifications</DialogTitle>
           <DialogDescription>
-            Add or remove certifications for this user.
+            Add or remove machine certifications for {user.name}
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className={isMobile ? "h-[50vh]" : "max-h-[70vh]"}>
-          <div className="py-4 px-1">
-            <h4 className="text-sm font-medium mb-2">Certifications</h4>
-            {availableMachines.length === 0 ? (
-              <div className="text-center p-4">
-                <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Loading machines...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {availableMachines.map(machine => {
-                  const isCertified = isCertificationAdded(machine.id);
-                  return (
-                    <div key={machine.id} className="flex justify-between items-center border p-2 rounded">
-                      <span>{machine.name}</span>
-                      <div>
-                        {isCertified ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveCertification(machine.id)}
-                            disabled={loading === machine.id}
-                            className="bg-red-50 hover:bg-red-100 border-red-200"
-                          >
-                            {loading === machine.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Remove
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleAddCertification(machine.id)}
-                            disabled={loading === machine.id}
-                          >
-                            {loading === machine.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Add
-                          </Button>
-                        )}
+        <div className="py-4">
+          {userCertifications.length > 0 ? (
+            <div className="mb-4">
+              <h3 className="mb-2 font-medium">Current Certifications:</h3>
+              <ScrollArea className="h-[200px] rounded-md border p-2">
+                <div className="space-y-2">
+                  {userCertifications.map(certId => {
+                    const machine = availableMachines.find(m => m.id === certId);
+                    const machineName = machine ? machine.name : `Machine ${certId}`;
+                    
+                    return (
+                      <div key={certId} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <span className="font-medium">{machineName} (ID: {certId})</span>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveCertification(certId)}
+                          disabled={loading === certId}
+                        >
+                          {loading === certId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="mb-4 text-center py-8 bg-gray-50 rounded">
+              <p className="text-gray-500">No certifications found</p>
+            </div>
+          )}
+          
+          <div>
+            <h3 className="mb-2 font-medium">Available Machines:</h3>
+            <ScrollArea className="h-[200px] rounded-md border p-2">
+              <div className="space-y-2">
+                {availableMachines.map(machine => {
+                  const isCertified = userCertifications.includes(machine.id);
+                  
+                  return (
+                    <div key={machine.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span className="font-medium">
+                        {machine.name} (ID: {machine.id})
+                        {isCertified && <span className="ml-2 text-green-500">✓</span>}
+                      </span>
+                      <Button
+                        variant={isCertified ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => isCertified 
+                          ? handleRemoveCertification(machine.id) 
+                          : handleAddCertification(machine.id)
+                        }
+                        disabled={loading === machine.id}
+                      >
+                        {loading === machine.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          isCertified ? "Remove" : "Add"
+                        )}
+                      </Button>
                     </div>
                   );
                 })}
               </div>
-            )}
-
-            {/* Always show the Clear All button if there are certifications */}
-            {userCertifications.length > 0 && (
-              <div className="mt-4 border-t pt-4">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-red-200 hover:bg-red-50 text-red-700"
-                  onClick={handleClearAllCertifications}
-                  disabled={isClearing}
-                >
-                  {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Trash className="h-4 w-4 mr-2" />
-                  Clear All Certifications
-                </Button>
-              </div>
-            )}
+            </ScrollArea>
           </div>
-        </ScrollArea>
+        </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+          {userCertifications.length > 0 && (
+            <Button 
+              variant="destructive" 
+              onClick={handleClearCertifications}
+              disabled={isClearing}
+              className="mr-auto"
+            >
+              {isClearing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Clearing...
+                </>
+              ) : (
+                "Clear All"
+              )}
+            </Button>
+          )}
+          
+          <Button onClick={() => setOpen(false)}>
+            Done
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

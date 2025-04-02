@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, BookOpen } from 'lucide-react';
@@ -45,9 +46,10 @@ const BookMachineButton = ({
       requiresCertification,
       machineStatus,
       currentIsCertified: isCertified,
-      hasSafetyCert
+      hasSafetyCert,
+      userCertifications: user?.certifications,
     });
-  }, [machineId, propIsCertified, requiresCertification, machineStatus, isCertified, hasSafetyCert]);
+  }, [machineId, propIsCertified, requiresCertification, machineStatus, isCertified, hasSafetyCert, user]);
   
   // Re-check certification status directly from the database when component mounts
   useEffect(() => {
@@ -59,6 +61,15 @@ const BookMachineButton = ({
       try {
         setIsVerifying(true);
         console.log(`Verifying certification for user ${user.id} and machine ${machineId}`);
+        
+        // First check if user is admin - admins are always certified for everything
+        if (user.isAdmin) {
+          console.log("User is admin - automatically certified for all machines");
+          setIsCertified(true);
+          setHasSafetyCert(true);
+          setIsVerifying(false);
+          return;
+        }
         
         // Check localStorage first for quick rendering
         const cachedCertKey = `user_${user.id}_certification_${machineId}`;
@@ -78,8 +89,9 @@ const BookMachineButton = ({
           setHasSafetyCert(true);
         }
         
-        // First try to check if the certification is in user object if available
+        // Check if certifications are in user object directly
         if (user.certifications && Array.isArray(user.certifications)) {
+          // Ensure all certifications are strings for comparison
           const certIds = user.certifications.map(cert => String(cert));
           console.log(`User certifications from context:`, certIds);
           
@@ -151,27 +163,31 @@ const BookMachineButton = ({
         }
         
         // Use improved certification service with better error handling and caching
-        const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
-        
-        if (isMounted) {
-          console.log(`BookMachineButton: Service check - User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
-          setIsCertified(hasCertFromService);
-          if (hasCertFromService) {
-            localStorage.setItem(cachedCertKey, 'true');
-          }
-        }
-        
-        // Check safety cert from service
-        if (machineId !== SAFETY_COURSE_ID) {
-          const hasSafetyFromService = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+        try {
+          const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
           
           if (isMounted) {
-            console.log(`BookMachineButton: Service check - User ${hasSafetyFromService ? 'has' : 'does not have'} safety certification`);
-            setHasSafetyCert(hasSafetyFromService);
-            if (hasSafetyFromService) {
-              localStorage.setItem(safetyCertKey, 'true');
+            console.log(`BookMachineButton: Service check - User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
+            setIsCertified(hasCertFromService);
+            if (hasCertFromService) {
+              localStorage.setItem(cachedCertKey, 'true');
             }
           }
+          
+          // Check safety cert from service
+          if (machineId !== SAFETY_COURSE_ID) {
+            const hasSafetyFromService = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+            
+            if (isMounted) {
+              console.log(`BookMachineButton: Service check - User ${hasSafetyFromService ? 'has' : 'does not have'} safety certification`);
+              setHasSafetyCert(hasSafetyFromService);
+              if (hasSafetyFromService) {
+                localStorage.setItem(safetyCertKey, 'true');
+              }
+            }
+          }
+        } catch (serviceError) {
+          console.error("Certification service call failed:", serviceError);
         }
       } catch (error) {
         console.error('Error in verifyCertification:', error);
