@@ -163,7 +163,7 @@ export const removeCertification = asyncHandler(async (req: Request, res: Respon
 });
 
 // @desc    Clear all certifications for a user
-// @route   DELETE /api/certifications/user/:userId/clear
+// @route   DELETE /api/certifications/clear/:userId
 // @access  Private
 export const clearUserCertifications = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -231,12 +231,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
-      
-      // Instead of 404, return empty array for better client-side handling
-      // This avoids UI errors when user isn't found
-      console.log("Returning empty array instead of 404 for better client compatibility");
-      res.status(200).json([]);
-      return; // Make sure to return here to prevent function from continuing
+      res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+      return;
     }
     
     // Ensure certifications array exists
@@ -249,10 +248,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     res.status(200).json(user.certifications);
   } catch (error) {
     console.error('Error getting user certifications:', error);
-    
-    // Return empty array on error for graceful client-side handling
-    console.log("Returning empty array on error for better client compatibility");
-    res.status(200).json([]);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to get user certifications',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
@@ -270,10 +270,11 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
-      
-      // Return false instead of error for better client-side handling
-      res.status(200).json(false);
-      return; // Make sure to return here to prevent function from continuing
+      res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+      return;
     }
     
     // Ensure certifications array exists
@@ -286,9 +287,11 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
     res.status(200).json(hasCertification);
   } catch (error) {
     console.error('Error checking certification:', error);
-    
-    // Return false on error for graceful client-side handling
-    res.status(200).json(false);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to check certification',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

@@ -28,9 +28,6 @@ class ApiService {
         return Promise.reject(error);
       }
     );
-
-    // Log the base URL for debugging
-    console.log('API Service initialized with base URL:', this.endpoints[this.currentEndpointIndex]);
   }
   
   // Set authorization token for subsequent requests
@@ -190,25 +187,21 @@ class ApiService {
   
   // Get user certifications
   async getUserCertifications(userId: string): Promise<any> {
-    console.log(`Getting certifications for user ${userId}`);
     return this.request(`certifications/user/${userId}`, 'GET', undefined, true);
   }
   
   // Add certification
   async addCertification(userId: string, certificationId: string): Promise<any> {
-    console.log(`Adding certification ${certificationId} for user ${userId}`);
     return this.request('certifications', 'POST', { userId, machineId: certificationId }, true);
   }
   
   // Remove certification
   async removeCertification(userId: string, certificationId: string): Promise<any> {
-    console.log(`Removing certification ${certificationId} for user ${userId}`);
     return this.request(`certifications/${userId}/${certificationId}`, 'DELETE', undefined, true);
   }
 
   // Clear all certifications for a user
   async clearUserCertifications(userId: string): Promise<any> {
-    console.log(`Clearing all certifications for user ${userId}`);
     return this.request(`certifications/user/${userId}/clear`, 'DELETE', undefined, true);
   }
   

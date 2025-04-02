@@ -24,7 +24,6 @@ const MachineDetail = () => {
   const [machineStatus, setMachineStatus] = useState('unknown');
   const [isCertified, setIsCertified] = useState(false);
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
-  const [certificationsChecked, setCertificationsChecked] = useState(false);
 
   const fromAdmin = location.pathname.includes('/admin') || location.state?.fromAdmin;
 
@@ -43,31 +42,6 @@ const MachineDetail = () => {
     return url;
   };
 
-  // Separate function to check user certifications
-  const checkUserCertifications = async (userId: string, machineId: string) => {
-    console.log(`Checking certifications for user ${userId} and machine ${machineId}`);
-    try {
-      // First check machine certification
-      const isUserCertified = await certificationService.checkCertification(userId, machineId);
-      console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${machineId}`);
-      setIsCertified(isUserCertified);
-      
-      // Then check safety certification (ID 6)
-      const hasSafetyCert = await certificationService.checkCertification(userId, '6');
-      console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
-      setHasSafetyCertification(hasSafetyCert);
-      
-      setCertificationsChecked(true);
-      return { isUserCertified, hasSafetyCert };
-    } catch (certError) {
-      console.error('Error checking certifications:', certError);
-      setIsCertified(false);
-      setHasSafetyCertification(false);
-      setCertificationsChecked(true);
-      return { isUserCertified: false, hasSafetyCert: false };
-    }
-  };
-
   useEffect(() => {
     if (!id) return;
 
@@ -75,6 +49,22 @@ const MachineDetail = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // First check localStorage for quick rendering
+        const cachedMachineStr = localStorage.getItem(`machine_${id}`);
+        
+        if (cachedMachineStr) {
+          try {
+            const cachedMachine = JSON.parse(cachedMachineStr);
+            setMachine(cachedMachine);
+            setMachineStatus(cachedMachine.status?.toLowerCase() || 'unknown');
+            console.log('Using cached machine data for initial display');
+            // Continue fetching in background but show immediate UI
+            setLoading(false);
+          } catch (cacheError) {
+            console.error('Error parsing cached machine:', cacheError);
+          }
+        }
         
         console.log(`Fetching machine with ID: ${id}`);
         const machineData = await machineService.getMachineById(id);
@@ -89,21 +79,45 @@ const MachineDetail = () => {
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
+        // Cache machine data for future use
+        localStorage.setItem(`machine_${id}`, JSON.stringify(machineData));
+        
+        // Check for cached status
+        const cachedStatusStr = localStorage.getItem(`machine_status_${id}`);
+        if (cachedStatusStr) {
+          setMachineStatus(cachedStatusStr.toLowerCase());
+          console.log(`Using cached status for machine ${id}: ${cachedStatusStr}`);
+        }
+        
         try {
           const status = await machineService.getMachineStatus(id);
           setMachineStatus(status.toLowerCase());
+          localStorage.setItem(`machine_status_${id}`, status.toLowerCase());
           console.log(`Machine status: ${status}`);
         } catch (statusError) {
           console.error('Error fetching machine status:', statusError);
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
+          localStorage.setItem(`machine_status_${id}`, machineData.status?.toLowerCase() || 'unknown');
         }
         
-        // Check certifications if user is logged in
-        if (user && user.id) {
-          await checkUserCertifications(user.id, id);
-        } else {
-          console.log('No user logged in, skipping certification check');
-          setCertificationsChecked(true);
+        if (user) {
+          try {
+            // Use improved checkCertification method directly from the service
+            const isUserCertified = await certificationService.checkCertification(user.id, id);
+            console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
+            setIsCertified(isUserCertified);
+            
+            // Also check for safety certification (ID 6)
+            const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
+            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
+            setHasSafetyCertification(hasSafetyCert);
+          } catch (certError) {
+            console.error('Error checking certifications:', certError);
+            // Don't use localStorage as fallback - we no longer want to use it
+            // Let's set default values based on the props
+            setIsCertified(false);
+            setHasSafetyCertification(false);
+          }
         }
       } catch (err) {
         console.error('Error fetching machine details:', err);
@@ -115,13 +129,6 @@ const MachineDetail = () => {
 
     fetchMachineData();
   }, [id, user]);
-
-  // Re-check certifications when user changes
-  useEffect(() => {
-    if (user && user.id && id && !certificationsChecked) {
-      checkUserCertifications(user.id, id);
-    }
-  }, [user, id, certificationsChecked]);
 
   const handleGetCertified = async () => {
     if (!user) {
@@ -239,20 +246,15 @@ const MachineDetail = () => {
 
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
-  // Force admin users to be considered certified for testing purposes
-  const effectiveCertification = user?.isAdmin ? true : isCertified;
-  
   console.log("MachineDetail - displaying image:", machineImageUrl);
   console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
   console.log("User certification status:", isCertified);
-  console.log("User is admin:", user?.isAdmin);
-  console.log("Effective certification status:", effectiveCertification);
 
   // Add debug logs for BookMachineButton props
   console.log("BookMachineButton props:", {
     machineId: id,
-    isCertified: effectiveCertification,
+    isCertified,
     machineStatus,
     requiresCertification
   });
@@ -320,14 +322,13 @@ const MachineDetail = () => {
           {requiresCertification && (
             <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
-              {effectiveCertification ? (
+              {isCertified ? (
                 <div className="flex items-center text-green-600">
                   <Award className="mr-2 h-5 w-5" />
-                  <span>{user?.isAdmin ? 'Admin access - certified to use this machine' : 'You are certified to use this machine'}</span>
+                  <span>You are certified to use this machine</span>
                 </div>
               ) : (
                 <div className="flex items-center text-amber-600">
-                  <Award className="mr-2 h-5 w-5" />
                   <span>You need to get certified before using this machine</span>
                 </div>
               )}
@@ -361,7 +362,7 @@ const MachineDetail = () => {
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
-                isCertified={effectiveCertification}
+                isCertified={isCertified}
                 machineStatus={machineStatus}
                 requiresCertification={requiresCertification}
                 className="flex-1"

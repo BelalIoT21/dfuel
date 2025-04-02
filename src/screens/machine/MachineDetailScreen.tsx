@@ -20,8 +20,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
     isCertified, 
     setIsCertified, 
     hasMachineSafetyCert, 
-    userId,
-    userCertifications
+    userId 
   } = useMachineDetails(machineId, user, navigation);
 
   const handleTakeCourse = () => {
@@ -119,8 +118,7 @@ const MachineDetailScreen = ({ route, navigation }) => {
           hasMachineSafetyCert={hasMachineSafetyCert}
           userId={userId}
           requiresCertification={requiresCertification}
-          onGoBack={handleGoBack}
-          userCertifications={userCertifications}
+          onGoBack={handleGoBack} // Pass the new handler
         />
       </View>
     </ScrollView>

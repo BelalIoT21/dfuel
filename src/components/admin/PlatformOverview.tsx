@@ -37,7 +37,7 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
             {allUsers.length > 0 ? (
               <div className="space-y-3">
                 {allUsers.slice(0, 5).map((user) => (
-                  <div key={user.id || user._id} className="flex justify-between border-b pb-2 last:border-0">
+                  <div key={user.id} className="flex justify-between border-b pb-2 last:border-0">
                     <div>
                       <span className="font-medium text-sm">{user.name}</span>
                       <div className="text-xs text-gray-500">Last login: {formatDate(user.lastLogin)}</div>
@@ -60,19 +60,30 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
           <div>
             <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">System Status</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-              {[
-                { id: 1, label: "System Online" },
-                { id: 2, label: "Courses Active" },
-                { id: 3, label: "Booking System" },
-                { id: 4, label: "Quiz Engine" }
-              ].map(item => (
-                <div key={item.id} className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span className="text-xs md:text-sm font-medium text-green-800">{item.label}</span>
-                  </div>
+              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-xs md:text-sm font-medium text-green-800">System Online</span>
                 </div>
-              ))}
+              </div>
+              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-xs md:text-sm font-medium text-green-800">Courses Active</span>
+                </div>
+              </div>
+              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-xs md:text-sm font-medium text-green-800">Booking System</span>
+                </div>
+              </div>
+              <div className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-xs md:text-sm font-medium text-green-800">Quiz Engine</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

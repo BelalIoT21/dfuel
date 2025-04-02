@@ -1,72 +1,18 @@
-
 import { apiService } from '../apiService';
 
 class CertificationDatabaseService {
   async getUserCertifications(userId: string): Promise<string[]> {
     try {
-      console.log(`Getting certifications for user ${userId} from database service`);
-      
-      // First, try direct fetch with full URL to avoid any path issues
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log("Direct API call status:", response.status);
-        
-        if (response.ok) {
-          const certifications = await response.json();
-          console.log("Certifications from direct API call:", certifications);
-          return certifications.map(cert => cert.toString());
-        } else if (response.status === 404) {
-          console.log("User not found (404), returning empty certifications array");
-          return [];
-        }
-      } catch (directError) {
-        console.error("Direct API call failed:", directError);
-      }
-      
-      // Fallback to apiService
+      console.log(`Calling API to get certifications for user ${userId}`);
       const response = await apiService.getUserCertifications(userId);
       
       if (response.error) {
-        if (response.status === 404) {
-          console.log("User not found in API response, returning empty array");
-          return [];
-        }
         console.error('Error fetching certifications:', response.error);
         return [];
       }
       
       console.log('Received certifications from service:', response.data);
-      
-      // Ensure we have an array of strings
-      if (Array.isArray(response.data)) {
-        return response.data.map(cert => {
-          if (typeof cert === 'object' && cert !== null) {
-            return cert._id?.toString() || cert.id?.toString() || String(cert);
-          }
-          return cert.toString();
-        });
-      }
-      
-      // Check for certifications in localStorage as last resort
-      try {
-        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (storedUser && storedUser.id === userId && Array.isArray(storedUser.certifications)) {
-          console.log("Using certifications from localStorage:", storedUser.certifications);
-          return storedUser.certifications.map(c => c.toString());
-        }
-      } catch (e) {
-        console.error("Failed to parse localStorage user:", e);
-      }
-      
-      return [];
+      return response.data || [];
     } catch (error) {
       console.error('API error fetching certifications:', error);
       return [];
@@ -90,8 +36,8 @@ class CertificationDatabaseService {
       
       // First attempt - direct API call
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const directResponse = await fetch(`${apiUrl}/api/certifications`, {
+        console.log('Attempt 1: Direct API call');
+        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,9 +46,26 @@ class CertificationDatabaseService {
           body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
         });
         
+        // Log full details of the response
         console.log("Direct API call status:", directResponse.status);
+        console.log("Direct API call headers:", Object.fromEntries([...directResponse.headers]));
         
-        if (directResponse.ok) {
+        // Clone the response for text and json parsing
+        const responseClone = directResponse.clone();
+        const responseText = await responseClone.text();
+        console.log("Direct API call response text:", responseText);
+        
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (e) {
+          console.log("Response was not valid JSON");
+          responseData = { error: "Not JSON" };
+        }
+        
+        console.log("Direct fetch API response data:", responseData);
+        
+        if (directResponse.ok || (responseData && responseData.success)) {
           console.log("Direct API call successful");
           return true;
         }
@@ -110,13 +73,10 @@ class CertificationDatabaseService {
         console.error("Direct API call failed:", directError);
       }
       
-      // Second attempt - use apiService
+      // Second attempt - use apiService.addCertification
       try {
-        const response = await apiService.post('certifications', {
-          userId: stringUserId,
-          machineId: stringMachineId
-        });
-        
+        console.log('Attempt 2: Using apiService.addCertification');
+        const response = await apiService.addCertification(stringUserId, stringMachineId);
         console.log("API response for adding certification:", response);
         
         if (response.data?.success || response.status === 200 || response.status === 201) {
@@ -125,6 +85,52 @@ class CertificationDatabaseService {
         }
       } catch (apiError) {
         console.error("API service call failed:", apiError);
+      }
+      
+      // Third attempt - use generic POST method
+      try {
+        console.log("Attempt 3: Using generic POST method");
+        const fallbackResponse = await apiService.post('certifications', {
+          userId: stringUserId,
+          machineId: stringMachineId
+        });
+        
+        console.log("Fallback API response:", fallbackResponse);
+        if (fallbackResponse.data?.success || fallbackResponse.status === 200 || fallbackResponse.status === 201) {
+          console.log("Certification added successfully using fallback method");
+          return true;
+        }
+      } catch (fallbackError) {
+        console.error("Fallback certification method failed:", fallbackError);
+      }
+      
+      // Fourth attempt - alternative endpoint
+      try {
+        console.log("Attempt 4: Using alternative API endpoint");
+        const alternativeResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ userId: stringUserId, machineId: stringMachineId })
+        });
+        
+        // Try to get response text
+        let responseText = "";
+        try {
+          responseText = await alternativeResponse.text();
+          console.log("Alternative endpoint response text:", responseText);
+        } catch (e) {
+          console.error("Could not read alternative endpoint response text:", e);
+        }
+        
+        if (alternativeResponse.ok) {
+          console.log("Alternative API endpoint successful");
+          return true;
+        }
+      } catch (alternativeError) {
+        console.error("Alternative API endpoint failed:", alternativeError);
       }
       
       console.log("All attempts to add certification failed");

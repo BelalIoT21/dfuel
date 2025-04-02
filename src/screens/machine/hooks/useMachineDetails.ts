@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
 import { certificationService } from '../../../services/certificationService';
+import mongoDbService from '../../../services/mongoDbService';
 
 // Define consistent machine data
 const MACHINE_TYPES = {
@@ -30,7 +31,6 @@ export const useMachineDetails = (machineId, user, navigation) => {
   const [loading, setLoading] = useState(true);
   const [isCertified, setIsCertified] = useState(false);
   const [hasMachineSafetyCert, setHasMachineSafetyCert] = useState(false);
-  const [userCertifications, setUserCertifications] = useState([]);
 
   // Safety course has ID 6
   const SAFETY_COURSE_ID = "6";
@@ -78,108 +78,27 @@ export const useMachineDetails = (machineId, user, navigation) => {
         
         console.log("User ID for certification check:", user.id);
         
-        // Admin users are always considered certified
-        if (user.isAdmin) {
-          console.log("Admin user is always certified");
-          setIsCertified(true);
-          setHasMachineSafetyCert(true);
-          setUserCertifications([machineId, SAFETY_COURSE_ID]); // Set admin certifications
-          setLoading(false);
-          return;
-        }
-        
-        // Try different approaches to get the user's certifications
-        let foundCertifications = [];
-        let success = false;
-        
-        // Approach 1: Try using certificationService directly - same as admin approach
+        // Check if user is certified for this machine using API
         try {
-          console.log("Attempting to fetch certifications via direct certificationService");
-          const certifications = await certificationService.getUserCertifications(user.id);
-          console.log("Got certifications from service:", certifications);
-          if (Array.isArray(certifications) && certifications.length > 0) {
-            foundCertifications = certifications.map(cert => cert.toString());
-            success = true;
-          }
-        } catch (error) {
-          console.error("Failed to get certifications via service:", error);
+          const isUserCertified = await certificationService.checkCertification(user.id, machineId);
+          console.log("User certification check result:", isUserCertified);
+          setIsCertified(isUserCertified);
+        } catch (certError) {
+          console.error("Error checking certification:", certError);
+          // Use user object as fallback 
+          setIsCertified(user.certifications && user.certifications.includes(machineId));
         }
         
-        // Approach 2: If first approach failed, try direct fetch
-        if (!success) {
-          try {
-            console.log("Attempting direct fetch for certifications");
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-            const response = await fetch(`${apiUrl}/api/certifications/user/${user.id}`, {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (response.ok) {
-              const certifications = await response.json();
-              console.log("Certifications from direct fetch:", certifications);
-              if (Array.isArray(certifications)) {
-                foundCertifications = certifications.map(cert => cert.toString());
-                success = true;
-              }
-            } else {
-              console.log("Direct fetch response not OK:", response.status);
-              if (response.status === 404) {
-                // If user not found, use default certifications
-                foundCertifications = ["6"]; // Default to safety course
-                success = true;
-              }
-            }
-          } catch (fetchError) {
-            console.error("Direct fetch failed:", fetchError);
-          }
+        // Check if user has completed Safety Course (ID 6)
+        try {
+          const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+          console.log("User safety certification check result:", hasSafetyCert);
+          setHasMachineSafetyCert(hasSafetyCert);
+        } catch (safetyCertError) {
+          console.error("Error checking safety certification:", safetyCertError);
+          // Use user object as fallback
+          setHasMachineSafetyCert(user.certifications && user.certifications.includes(SAFETY_COURSE_ID));
         }
-        
-        // Approach 3: Fall back to user.certifications if available
-        if (!success && user && user.certifications) {
-          console.log("Using certifications from user object:", user.certifications);
-          if (Array.isArray(user.certifications)) {
-            foundCertifications = user.certifications.map(cert => 
-              typeof cert === 'object' ? (cert.id || cert._id || '').toString() : cert.toString()
-            );
-            success = true;
-          }
-        }
-        
-        // Approach 4: If all else fails, try to find certifications in localStorage
-        if (!success) {
-          try {
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            if (storedUser && storedUser.certifications) {
-              console.log("Using certifications from localStorage:", storedUser.certifications);
-              foundCertifications = storedUser.certifications.map(cert => cert.toString());
-              success = true;
-            }
-          } catch (e) {
-            console.error("Failed to parse localStorage user:", e);
-          }
-        }
-        
-        // If still no success, use default certifications as a last resort
-        if (!success) {
-          console.log("All attempts failed, using default certifications");
-          foundCertifications = ["6"]; // Default to safety course at minimum
-        }
-        
-        console.log("Final certifications array:", foundCertifications);
-        setUserCertifications(foundCertifications);
-        
-        // Check if user is certified for this machine
-        const isUserCertified = foundCertifications.includes(machineId);
-        console.log(`Is user certified for machine ${machineId}:`, isUserCertified);
-        setIsCertified(isUserCertified);
-        
-        // Check if user has safety certification
-        const hasSafetyCert = foundCertifications.includes(SAFETY_COURSE_ID);
-        console.log("User has safety certification:", hasSafetyCert);
-        setHasMachineSafetyCert(hasSafetyCert);
       } catch (error) {
         console.error('Error loading machine details:', error);
         Alert.alert('Error', 'Failed to load machine details');
@@ -198,7 +117,6 @@ export const useMachineDetails = (machineId, user, navigation) => {
     isCertified,
     hasMachineSafetyCert,
     setIsCertified,
-    userId: user?.id,
-    userCertifications
+    userId: user?.id
   };
 };

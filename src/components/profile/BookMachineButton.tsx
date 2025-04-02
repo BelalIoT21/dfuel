@@ -40,48 +40,38 @@ const BookMachineButton = ({
     let isMounted = true;
     
     const verifyCertification = async () => {
-      if (!user || !user.id || isVerifying) return;
+      if (!user || !user.id || !requiresCertification || isVerifying) return;
       
-      // Admins are always considered certified
-      if (user.isAdmin) {
-        if (isMounted) {
-          console.log(`BookMachineButton: Admin user can always book machine ${machineId}`);
-          setIsCertified(true);
-          return;
-        }
-      }
-      
-      // For regular users, check certification if required
-      if (requiresCertification) {
-        try {
-          setIsVerifying(true);
-          
-          // Get all user certifications directly from API - same as admin approach
-          const certifications = await certificationService.getUserCertifications(user.id);
-          console.log(`BookMachineButton: User certifications for machine ${machineId}:`, certifications);
-          
-          // Check if the certification is in the array
-          const hasCertification = certifications.includes(machineId);
-          
-          if (isMounted) {
-            console.log(`BookMachineButton: User ${hasCertification ? 'has' : 'does not have'} certification for machine ${machineId}`);
-            setIsCertified(hasCertification);
-          }
-        } catch (error) {
-          console.error('Error in verifyCertification:', error);
-          // Keep the prop value as fallback
-          if (isMounted) {
-            setIsCertified(propIsCertified);
-          }
-        } finally {
-          if (isMounted) {
+      try {
+        setIsVerifying(true);
+        
+        // First try to check if the certification is in user object if available
+        if (user.certifications && Array.isArray(user.certifications)) {
+          const hasCert = user.certifications.some(cert => String(cert) === String(machineId));
+          if (hasCert && isMounted) {
+            console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
+            setIsCertified(true);
             setIsVerifying(false);
+            return;
           }
         }
-      } else {
-        // If certification is not required, set to true
+        
+        // Use certification service with better error handling
+        const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
+        
         if (isMounted) {
-          setIsCertified(true);
+          console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
+          setIsCertified(hasCertFromService);
+        }
+      } catch (error) {
+        console.error('Error in verifyCertification:', error);
+        // Keep the prop value as fallback
+        if (isMounted) {
+          setIsCertified(propIsCertified);
+        }
+      } finally {
+        if (isMounted) {
+          setIsVerifying(false);
         }
       }
     };
@@ -99,9 +89,8 @@ const BookMachineButton = ({
   }
 
   const isAvailable = machineStatus?.toLowerCase() === 'available';
-  
-  // Admin users can always book machines regardless of certification
-  const effectiveCertification = user?.isAdmin ? true : (requiresCertification ? isCertified : true);
+  // If certification is not required, consider the user as certified
+  const effectiveCertification = requiresCertification ? isCertified : true;
   const canBook = effectiveCertification && isAvailable && !timeSlotUnavailable;
   
   const handleBooking = () => {
@@ -124,7 +113,7 @@ const BookMachineButton = ({
         return;
       } 
       
-      if (requiresCertification && !effectiveCertification) {
+      if (requiresCertification && !isCertified) {
         toast({
           title: "Certification Required",
           description: "You need to be certified to book this machine",
@@ -157,7 +146,7 @@ const BookMachineButton = ({
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
     ButtonIcon = AlertTriangle; 
-  } else if (requiresCertification && !effectiveCertification) {
+  } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
     ButtonIcon = Award; 
   }
@@ -168,8 +157,6 @@ const BookMachineButton = ({
     propIsCertified,
     isAvailable,
     requiresCertification,
-    effectiveCertification,
-    isAdmin: user?.isAdmin,
     canBook,
     buttonText
   });

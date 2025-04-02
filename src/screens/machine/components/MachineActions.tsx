@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { certificationService } from '../../../services/certificationService';
+import { certificationDatabaseService } from '../../../services/database/certificationService';
 
 interface MachineActionsProps {
   isCertified: boolean;
@@ -16,8 +17,6 @@ interface MachineActionsProps {
   hasMachineSafetyCert?: boolean;
   userId?: string;
   requiresCertification?: boolean;
-  onGoBack?: () => void;
-  userCertifications?: string[];
 }
 
 const MachineActions = ({ 
@@ -31,10 +30,9 @@ const MachineActions = ({
   isAdmin = false,
   hasMachineSafetyCert = false,
   userId,
-  requiresCertification = true,
-  onGoBack,
-  userCertifications = []
+  requiresCertification = true
 }: MachineActionsProps) => {
+  const [certificationsChecked, setCertificationsChecked] = useState(false);
   const [certifiedState, setCertifiedState] = useState(isCertified);
   
   // Check if this machine type is bookable - Safety Cabinet and Safety Course are not bookable
@@ -43,14 +41,15 @@ const MachineActions = ({
   // Determine if user can get certified (must have Safety Course certification - ID 6)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
+  // Special handling for special users (disabled for admins for testing)
+  const isSpecialUser = false;
+  
   // Is this the Safety Course itself? (ID 6)
   const isSafetyCourse = machineType === 'Safety Course';
 
-  // Admin users are always considered certified
   useEffect(() => {
-    const effectiveCertification = isAdmin ? true : isCertified;
-    setCertifiedState(effectiveCertification);
-  }, [isCertified, isAdmin]);
+    setCertifiedState(isCertified);
+  }, [isCertified]);
 
   // Debug logging
   useEffect(() => {
@@ -63,10 +62,9 @@ const MachineActions = ({
       isAdmin,
       hasMachineSafetyCert,
       userId,
-      requiresCertification,
-      userCertifications
+      requiresCertification
     });
-  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, requiresCertification, userCertifications]);
+  }, [certifiedState, machineStatus, machineType, isBookable, canGetCertified, isAdmin, hasMachineSafetyCert, userId, requiresCertification]);
 
   const handleTakeCourse = () => {
     // If not Safety Course and user doesn't have Safety Course certification
@@ -131,6 +129,7 @@ const MachineActions = ({
               icon="certificate" 
               style={styles.actionButton}
               onPress={onGetCertified}
+              disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
             >
               Get Certified
             </Button>
