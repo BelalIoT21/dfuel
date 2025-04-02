@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Button } from 'react-native-paper';
 import { certificationService } from '../../../services/certificationService';
-import { certificationDatabaseService } from '../../../services/database/certificationService';
 
 interface MachineActionsProps {
   isCertified: boolean;
@@ -17,6 +16,7 @@ interface MachineActionsProps {
   hasMachineSafetyCert?: boolean;
   userId?: string;
   requiresCertification?: boolean;
+  onGoBack?: () => void;
 }
 
 const MachineActions = ({ 
@@ -30,7 +30,8 @@ const MachineActions = ({
   isAdmin = false,
   hasMachineSafetyCert = false,
   userId,
-  requiresCertification = true
+  requiresCertification = true,
+  onGoBack
 }: MachineActionsProps) => {
   const [certificationsChecked, setCertificationsChecked] = useState(false);
   const [certifiedState, setCertifiedState] = useState(isCertified);

@@ -329,6 +329,7 @@ const MachineDetail = () => {
                 </div>
               ) : (
                 <div className="flex items-center text-amber-600">
+                  <Award className="mr-2 h-5 w-5" />
                   <span>You need to get certified before using this machine</span>
                 </div>
               )}

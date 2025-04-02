@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { machineService } from '../../../services/machineService';
 import { certificationService } from '../../../services/certificationService';
-import mongoDbService from '../../../services/mongoDbService';
 
 // Define consistent machine data
 const MACHINE_TYPES = {
@@ -85,8 +84,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           setIsCertified(isUserCertified);
         } catch (certError) {
           console.error("Error checking certification:", certError);
-          // Use user object as fallback 
-          setIsCertified(user.certifications && user.certifications.includes(machineId));
+          // Set default to false - no longer using user object as fallback
+          setIsCertified(false);
         }
         
         // Check if user has completed Safety Course (ID 6)
@@ -96,8 +95,8 @@ export const useMachineDetails = (machineId, user, navigation) => {
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (safetyCertError) {
           console.error("Error checking safety certification:", safetyCertError);
-          // Use user object as fallback
-          setHasMachineSafetyCert(user.certifications && user.certifications.includes(SAFETY_COURSE_ID));
+          // Set default to false - no longer using user object as fallback
+          setHasMachineSafetyCert(false);
         }
       } catch (error) {
         console.error('Error loading machine details:', error);
