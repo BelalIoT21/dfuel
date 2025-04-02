@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
 import { useToast } from '@/components/ui/use-toast';
+import { apiService } from '@/services/apiService';
 
 // Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Safety Course
@@ -27,20 +27,66 @@ const CertificationsCard = () => {
     try {
       setRefreshing(true);
       console.log(`Fetching certifications for user ${user.id}`);
-      const certs = await certificationService.getUserCertifications(user.id);
-      console.log(`Received ${certs.length} certifications:`, certs);
-      setUserCertifications(certs);
-      setRefreshing(false);
-      return certs;
+      
+      // Try direct API first (most reliable)
+      try {
+        console.log('Trying direct API to fetch certifications');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000')}/api/certifications/user/${user.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('API response for certifications:', data);
+          
+          if (data && Array.isArray(data.certifications)) {
+            console.log(`Received ${data.certifications.length} certifications from API:`, data.certifications);
+            
+            // Update local certifications service to keep it in sync
+            try {
+              await certificationService.syncUserCertifications(user.id, data.certifications);
+            } catch (syncError) {
+              console.error("Error syncing with local certifications:", syncError);
+            }
+            
+            setUserCertifications(data.certifications);
+            setRefreshing(false);
+            return data.certifications;
+          }
+        }
+      } catch (apiError) {
+        console.error("Error fetching certifications from API:", apiError);
+      }
+      
+      // Fall back to certification service
+      try {
+        const certs = await certificationService.getUserCertifications(user.id);
+        console.log(`Received ${certs.length} certifications from service:`, certs);
+        setUserCertifications(certs);
+        setRefreshing(false);
+        return certs;
+      } catch (error) {
+        console.error("Error fetching certifications from service:", error);
+        setRefreshing(false);
+        toast({
+          title: "Error",
+          description: "Could not load your certifications. Please try again.",
+          variant: "destructive"
+        });
+        // Fallback to cached certifications if any
+        return userCertifications;
+      }
     } catch (error) {
-      console.error("Error fetching certifications:", error);
+      console.error("Error in fetchCertifications:", error);
       setRefreshing(false);
       toast({
         title: "Error",
         description: "Could not load your certifications. Please try again.",
         variant: "destructive"
       });
-      // Fallback to cached certifications if any
       return userCertifications;
     }
   };
