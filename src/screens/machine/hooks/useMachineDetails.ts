@@ -77,26 +77,31 @@ export const useMachineDetails = (machineId, user, navigation) => {
         
         console.log("User ID for certification check:", user.id);
         
-        // Check if user is certified for this machine using API
-        try {
-          const isUserCertified = await certificationService.checkCertification(user.id, machineId);
-          console.log("User certification check result:", isUserCertified);
-          setIsCertified(isUserCertified);
-        } catch (certError) {
-          console.error("Error checking certification:", certError);
-          // Set default to false - no longer using user object as fallback
-          setIsCertified(false);
-        }
-        
-        // Check if user has completed Safety Course (ID 6)
-        try {
-          const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
-          console.log("User safety certification check result:", hasSafetyCert);
-          setHasMachineSafetyCert(hasSafetyCert);
-        } catch (safetyCertError) {
-          console.error("Error checking safety certification:", safetyCertError);
-          // Set default to false - no longer using user object as fallback
-          setHasMachineSafetyCert(false);
+        // Admin users are always considered certified
+        if (user.isAdmin) {
+          console.log("Admin user is always certified");
+          setIsCertified(true);
+          setHasMachineSafetyCert(true);
+        } else {
+          // Check if user is certified for this machine using API
+          try {
+            const isUserCertified = await certificationService.checkCertification(user.id, machineId);
+            console.log("User certification check result:", isUserCertified);
+            setIsCertified(isUserCertified);
+          } catch (certError) {
+            console.error("Error checking certification:", certError);
+            setIsCertified(false);
+          }
+          
+          // Check if user has completed Safety Course (ID 6)
+          try {
+            const hasSafetyCert = await certificationService.checkCertification(user.id, SAFETY_COURSE_ID);
+            console.log("User safety certification check result:", hasSafetyCert);
+            setHasMachineSafetyCert(hasSafetyCert);
+          } catch (safetyCertError) {
+            console.error("Error checking safety certification:", safetyCertError);
+            setHasMachineSafetyCert(false);
+          }
         }
       } catch (error) {
         console.error('Error loading machine details:', error);

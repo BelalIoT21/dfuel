@@ -42,15 +42,14 @@ const MachineActions = ({
   // Determine if user can get certified (must have Safety Course certification - ID 6)
   const canGetCertified = hasMachineSafetyCert || isAdmin;
   
-  // Special handling for special users (disabled for admins for testing)
-  const isSpecialUser = false;
-  
   // Is this the Safety Course itself? (ID 6)
   const isSafetyCourse = machineType === 'Safety Course';
 
+  // Admin users are always considered certified
   useEffect(() => {
-    setCertifiedState(isCertified);
-  }, [isCertified]);
+    const effectiveCertification = isAdmin ? true : isCertified;
+    setCertifiedState(effectiveCertification);
+  }, [isCertified, isAdmin]);
 
   // Debug logging
   useEffect(() => {
@@ -130,7 +129,6 @@ const MachineActions = ({
               icon="certificate" 
               style={styles.actionButton}
               onPress={onGetCertified}
-              disabled={isSpecialUser && !isAdmin} // Disable for special users unless admin
             >
               Get Certified
             </Button>

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ const MachineDetail = () => {
   const [machineStatus, setMachineStatus] = useState('unknown');
   const [isCertified, setIsCertified] = useState(false);
   const [hasSafetyCertification, setHasSafetyCertification] = useState(false);
+  const [certificationsChecked, setCertificationsChecked] = useState(false);
 
   const fromAdmin = location.pathname.includes('/admin') || location.state?.fromAdmin;
 
@@ -39,6 +41,31 @@ const MachineDetail = () => {
     }
     
     return url;
+  };
+
+  // Separate function to check user certifications
+  const checkUserCertifications = async (userId: string, machineId: string) => {
+    console.log(`Checking certifications for user ${userId} and machine ${machineId}`);
+    try {
+      // First check machine certification
+      const isUserCertified = await certificationService.checkCertification(userId, machineId);
+      console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${machineId}`);
+      setIsCertified(isUserCertified);
+      
+      // Then check safety certification (ID 6)
+      const hasSafetyCert = await certificationService.checkCertification(userId, '6');
+      console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
+      setHasSafetyCertification(hasSafetyCert);
+      
+      setCertificationsChecked(true);
+      return { isUserCertified, hasSafetyCert };
+    } catch (certError) {
+      console.error('Error checking certifications:', certError);
+      setIsCertified(false);
+      setHasSafetyCertification(false);
+      setCertificationsChecked(true);
+      return { isUserCertified: false, hasSafetyCert: false };
+    }
   };
 
   useEffect(() => {
@@ -71,22 +98,12 @@ const MachineDetail = () => {
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
         }
         
-        if (user) {
-          try {
-            // Use improved checkCertification method directly from the service
-            const isUserCertified = await certificationService.checkCertification(user.id, id);
-            console.log(`User ${isUserCertified ? 'has' : 'does not have'} certification for machine ${id}`);
-            setIsCertified(isUserCertified);
-            
-            // Also check for safety certification (ID 6)
-            const hasSafetyCert = await certificationService.checkCertification(user.id, '6');
-            console.log(`User ${hasSafetyCert ? 'has' : 'does not have'} safety certification`);
-            setHasSafetyCertification(hasSafetyCert);
-          } catch (certError) {
-            console.error('Error checking certifications:', certError);
-            setIsCertified(false);
-            setHasSafetyCertification(false);
-          }
+        // Check certifications if user is logged in
+        if (user && user.id) {
+          await checkUserCertifications(user.id, id);
+        } else {
+          console.log('No user logged in, skipping certification check');
+          setCertificationsChecked(true);
         }
       } catch (err) {
         console.error('Error fetching machine details:', err);
@@ -98,6 +115,13 @@ const MachineDetail = () => {
 
     fetchMachineData();
   }, [id, user]);
+
+  // Re-check certifications when user changes
+  useEffect(() => {
+    if (user && user.id && id && !certificationsChecked) {
+      checkUserCertifications(user.id, id);
+    }
+  }, [user, id, certificationsChecked]);
 
   const handleGetCertified = async () => {
     if (!user) {
@@ -215,15 +239,20 @@ const MachineDetail = () => {
 
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
+  // Force admin users to be considered certified for testing purposes
+  const effectiveCertification = user?.isAdmin ? true : isCertified;
+  
   console.log("MachineDetail - displaying image:", machineImageUrl);
   console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
   console.log("User certification status:", isCertified);
+  console.log("User is admin:", user?.isAdmin);
+  console.log("Effective certification status:", effectiveCertification);
 
   // Add debug logs for BookMachineButton props
   console.log("BookMachineButton props:", {
     machineId: id,
-    isCertified,
+    isCertified: effectiveCertification,
     machineStatus,
     requiresCertification
   });
@@ -291,10 +320,10 @@ const MachineDetail = () => {
           {requiresCertification && (
             <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <h3 className="font-medium text-gray-800 mb-2">Certification Status</h3>
-              {isCertified ? (
+              {effectiveCertification ? (
                 <div className="flex items-center text-green-600">
                   <Award className="mr-2 h-5 w-5" />
-                  <span>You are certified to use this machine</span>
+                  <span>{user?.isAdmin ? 'Admin access - certified to use this machine' : 'You are certified to use this machine'}</span>
                 </div>
               ) : (
                 <div className="flex items-center text-amber-600">
@@ -332,7 +361,7 @@ const MachineDetail = () => {
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
-                isCertified={isCertified}
+                isCertified={effectiveCertification}
                 machineStatus={machineStatus}
                 requiresCertification={requiresCertification}
                 className="flex-1"
