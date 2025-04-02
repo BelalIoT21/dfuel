@@ -248,8 +248,10 @@ export class CertificationService {
       const stringUserId = userId.toString();
       const stringMachineId = machineId.toString();
       
-      // Use already cached data if possible
+      // Always get fresh certifications from the API
       const allCerts = await this.getUserCertifications(stringUserId);
+      console.log(`User certifications for ${userId}:`, allCerts);
+      
       const hasCertBasedOnArray = allCerts.some(cert => String(cert) === stringMachineId);
       
       if (hasCertBasedOnArray) {
