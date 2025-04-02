@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,9 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Define the non-bookable machine IDs
+const NON_BOOKABLE_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
@@ -381,8 +385,7 @@ const CertificationsCard = () => {
                     
                     {machineStatus === 'available' && 
                      machine.isCertified && 
-                     !NON_BOOKABLE_MACHINE_IDS.includes(machine.id) && // Don't show booking button for non-bookable machines
-                     (
+                     !NON_BOOKABLE_MACHINE_IDS.includes(machine.id) && (
                       <BookMachineButton 
                         machineId={machine.id} 
                         isCertified={machine.isCertified}
