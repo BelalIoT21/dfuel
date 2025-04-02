@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle } from 'lucide-react';
@@ -39,7 +40,11 @@ const BookMachineButton = ({
       if (!user || !user.id || !requiresCertification) return;
       
       try {
+        // Use getUserCertifications instead of checkCertification since the endpoint is more reliable
         const userCertifications = await certificationService.getUserCertifications(user.id);
+        console.log(`BookMachineButton: User certifications for ID ${user.id}:`, userCertifications);
+        
+        // Convert both to strings before comparison to handle any type inconsistencies
         const hasCert = userCertifications.some(cert => String(cert) === String(machineId));
         console.log(`BookMachineButton: User ${hasCert ? 'has' : 'does not have'} certification for machine ${machineId}`);
         setIsCertified(hasCert);
