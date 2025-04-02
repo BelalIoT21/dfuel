@@ -1,77 +1,93 @@
 
 import { Card, CardContent } from '@/components/ui/card';
-import { Server, Laptop, Globe, Database } from 'lucide-react';
-import { isWeb, isPlatformNative, isIOS, isAndroid, isMobile, isCapacitor } from '@/utils/platform';
+import { Globe, Laptop, Smartphone } from 'lucide-react';
+import { isWeb, isPlatformNative, isIOS, isAndroid } from '@/utils/platform';
 
 export const PlatformOverview = () => {
-  const platformInfo = [
-    { 
-      name: 'Web Platform',
-      value: isWeb() ? 'Yes' : 'No',
-      icon: <Globe className="h-4 w-4 text-purple-600" />,
-      description: 'Running in a web browser'
-    },
-    { 
-      name: 'Native Platform',
-      value: isPlatformNative() ? 'Yes' : 'No',
-      icon: <Laptop className="h-4 w-4 text-purple-600" />,
-      description: 'Running on a native platform (React Native, Capacitor, etc)'
-    },
-    { 
-      name: 'iOS',
-      value: isIOS() ? 'Yes' : 'No',
-      icon: <Laptop className="h-4 w-4 text-purple-600" />,
-      description: 'Running on iOS device'
-    },
-    { 
-      name: 'Android',
-      value: isAndroid() ? 'Yes' : 'No',
-      icon: <Laptop className="h-4 w-4 text-purple-600" />,
-      description: 'Running on Android device'
-    },
-    { 
-      name: 'Mobile Device',
-      value: isMobile() ? 'Yes' : 'No',
-      icon: <Laptop className="h-4 w-4 text-purple-600" />,
-      description: 'Running on a mobile device'
-    },
-    { 
-      name: 'Capacitor',
-      value: isCapacitor() ? 'Yes' : 'No',
-      icon: <Laptop className="h-4 w-4 text-purple-600" />,
-      description: 'Running in a Capacitor container'
-    },
-    { 
-      name: 'MongoDB Direct Access',
-      value: !isWeb() ? 'Available' : 'Not Available',
-      icon: <Database className="h-4 w-4 text-purple-600" />,
-      description: 'Direct MongoDB connection status'
-    },
-    { 
-      name: 'API Access',
-      value: 'Available',
-      icon: <Server className="h-4 w-4 text-purple-600" />,
-      description: 'API access status'
-    }
-  ];
-
   return (
     <Card className="mb-6">
       <CardContent className="p-4">
         <h3 className="text-lg font-medium mb-4">Platform Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {platformInfo.map((info, index) => (
-            <div key={`platform-info-${index}`} className="border rounded-md p-3 flex items-center gap-3">
-              <div className="bg-purple-100 p-2 rounded-full">
-                {info.icon}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Web Platform Card */}
+          <div className="border rounded-md p-3 relative overflow-hidden">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <h4 className="text-base font-semibold">Web Platform</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Running in a web browser
+                  </p>
+                </div>
+                <p className="text-base font-bold mt-4">
+                  {isWeb() ? 'Yes' : 'No'}
+                </p>
               </div>
-              <div>
-                <p className="font-medium">{info.name}</p>
-                <p className="text-sm text-gray-500">{info.description}</p>
-                <p className="text-sm font-bold mt-1">{info.value}</p>
+              <div className="bg-purple-100 p-2 rounded-full">
+                <Globe className="h-5 w-5 text-purple-600" />
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Native Platform Card */}
+          <div className="border rounded-md p-3 relative overflow-hidden">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <h4 className="text-base font-semibold">Native Platform</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Running on a native platform (React Native, Capacitor, etc)
+                  </p>
+                </div>
+                <p className="text-base font-bold mt-4">
+                  {isPlatformNative() ? 'Yes' : 'No'}
+                </p>
+              </div>
+              <div className="bg-purple-100 p-2 rounded-full">
+                <Laptop className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* iOS Platform Card */}
+          <div className="border rounded-md p-3 relative overflow-hidden">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <h4 className="text-base font-semibold">iOS</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Running on iOS device
+                  </p>
+                </div>
+                <p className="text-base font-bold mt-4">
+                  {isIOS() ? 'Yes' : 'No'}
+                </p>
+              </div>
+              <div className="bg-purple-100 p-2 rounded-full">
+                <Smartphone className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Android Platform Card */}
+          <div className="border rounded-md p-3 relative overflow-hidden">
+            <div className="flex items-start justify-between">
+              <div className="flex flex-col h-full justify-between">
+                <div>
+                  <h4 className="text-base font-semibold">Android</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Running on Android device
+                  </p>
+                </div>
+                <p className="text-base font-bold mt-4">
+                  {isAndroid() ? 'Yes' : 'No'}
+                </p>
+              </div>
+              <div className="bg-purple-100 p-2 rounded-full">
+                <Smartphone className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
