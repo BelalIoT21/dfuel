@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award, Lock, Unlock, Check } from 'lucide-react';
@@ -55,65 +56,12 @@ const BookMachineButton = ({
           }
         }
         
-        // Skip the expensive API call if the prop already says user is certified
-        if (propIsCertified) {
-          console.log(`BookMachineButton: Using prop value for certification (${machineId}): ${propIsCertified}`);
-          setIsCertified(true);
-          setIsVerifying(false);
-          return;
-        }
-        
         // Use certification service with better error handling
-        try {
-          // Force convert to strings to ensure consistent comparison
-          const userIdStr = String(user.id);
-          const machineIdStr = String(machineId);
-          
-          console.log(`BookMachineButton: Checking certification for user ${userIdStr}, machine ${machineIdStr}`);
-          
-          // Direct API call to avoid potential errors in service
-          try {
-            const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-            
-            // Try the /api/certifications/check endpoint first (most reliable)
-            const directResponse = await fetch(`${apiUrl}/api/certifications/check/${userIdStr}/${machineIdStr}`, {
-              headers: {
-                'Accept': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : ''
-              }
-            });
-            
-            if (directResponse.ok) {
-              // Check content type to ensure we're getting JSON
-              const contentType = directResponse.headers.get('content-type');
-              if (contentType && contentType.includes('application/json')) {
-                const directResult = await directResponse.json();
-                if (isMounted) {
-                  console.log(`Direct API certification check result for machine ${machineId}:`, directResult);
-                  setIsCertified(directResult === true);
-                  setIsVerifying(false);
-                  return;
-                }
-              } else {
-                console.warn('Non-JSON response from certification check API');
-              }
-            }
-          } catch (directError) {
-            console.error('Direct certification check API error:', directError);
-          }
-          
-          // Fall back to certification service if direct call fails
-          const hasCertFromService = await certificationService.checkCertification(userIdStr, machineIdStr);
-          
-          if (isMounted) {
-            console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
-            setIsCertified(hasCertFromService);
-          }
-        } catch (serviceError) {
-          console.error('Error in certification service check:', serviceError);
-          // Fall back to prop value on error
-          setIsCertified(propIsCertified);
+        const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
+        
+        if (isMounted) {
+          console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
+          setIsCertified(hasCertFromService);
         }
       } catch (error) {
         console.error('Error in verifyCertification:', error);
@@ -139,14 +87,6 @@ const BookMachineButton = ({
   if (NON_BOOKABLE_MACHINE_IDS.includes(machineId)) {
     return null;
   }
-
-  // For debugging
-  console.log(`BookMachineButton for ${machineId}:`, {
-    propIsCertified,
-    isCertified,
-    machineStatus,
-    requiresCertification
-  });
 
   const isAvailable = machineStatus?.toLowerCase() === 'available';
   // If certification is not required, consider the user as certified

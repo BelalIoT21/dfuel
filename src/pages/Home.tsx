@@ -142,18 +142,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {machineData.map((machine) => {
               // Check if user is certified for this machine
-              // First check user object certifications array
-              let isCertified = false;
-              
-              // Debug log to see what certifications are available
-              console.log("User certifications:", user.certifications);
-              console.log("Current machine ID:", machine.id);
-              
-              // Check in user object certifications (properly compare string values)
-              if (user.certifications && Array.isArray(user.certifications)) {
-                isCertified = user.certifications.some(cert => String(cert) === String(machine.id));
-                console.log(`User certification check for machine ${machine.id}:`, isCertified);
-              }
+              const isCertified = user.certifications && user.certifications.includes(machine.id);
               
               return (
                 <Card key={machine.id} className="h-full transition-all duration-300 hover:shadow-lg card-hover border-purple-100">
