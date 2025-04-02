@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Trash, Certificate } from 'lucide-react';
+import { Loader2, Trash, Award } from 'lucide-react';
 import { certificationService } from '@/services/certificationService';
 import { machineService } from '@/services/machineService';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -251,7 +250,7 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
           size="sm" 
           className="h-8 px-2 lg:px-3"
         >
-          <Certificate className="h-4 w-4 mr-2" />
+          <Award className="h-4 w-4 mr-2" />
           Certifications
         </Button>
       </DialogTrigger>
