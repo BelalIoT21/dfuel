@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 
 class CertificationDatabaseService {
@@ -6,51 +5,67 @@ class CertificationDatabaseService {
     try {
       console.log(`Calling API to get certifications for user ${userId}`);
       
-      // Ensure userId is a string
-      const userIdStr = String(userId);
-      
       // First try direct API call for most reliable results
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        // Make sure we're using the correct URL format
-        const response = await fetch(`${apiUrl}/api/certifications/user/${userIdStr}`, {
+        const response = await fetch(`${apiUrl}/api/certifications/user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
         
-        console.log(`Certification API request URL: ${apiUrl}/api/certifications/user/${userIdStr}`);
-        
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
             console.log(`Received ${data.length} certifications from direct API:`, data);
-            return data.map(cert => String(cert));
+            
+            // Update localStorage with fresh data
+            try {
+              localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(data));
+            } catch (e) {
+              console.error("Error updating localStorage from direct API:", e);
+            }
+            
+            return data;
           }
-        } else {
-          console.error(`Certification API responded with: ${response.status} ${response.statusText}`);
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
       }
       
       // Fallback to apiService if direct call fails
-      try {
-        const response = await apiService.getUserCertifications(userIdStr);
+      const response = await apiService.getUserCertifications(userId);
+      
+      if (response.error) {
+        console.error('Error fetching certifications:', response.error);
         
-        if (response.error) {
-          console.error('Error fetching certifications:', response.error);
-          return [];
+        // Try localStorage as fallback
+        try {
+          const localCerts = localStorage.getItem(`user_${userId}_certifications`);
+          if (localCerts) {
+            const parsedCerts = JSON.parse(localCerts);
+            console.log('Using localStorage certifications as fallback:', parsedCerts);
+            return parsedCerts;
+          }
+        } catch (e) {
+          console.error("Error reading localStorage certifications:", e);
         }
         
-        console.log('Received certifications from service:', response.data);
-        return Array.isArray(response.data) ? response.data.map(cert => String(cert)) : [];
-      } catch (error) {
-        console.error('API error fetching certifications:', error);
         return [];
       }
+      
+      console.log('Received certifications from service:', response.data);
+      
+      // Update localStorage with the retrieved data
+      try {
+        localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(response.data));
+      } catch (e) {
+        console.error("Error updating localStorage from apiService:", e);
+      }
+      
+      return response.data || [];
     } catch (error) {
-      console.error('Error in getUserCertifications:', error);
+      console.error('API error fetching certifications:', error);
       return [];
     }
   }
@@ -102,6 +117,18 @@ class CertificationDatabaseService {
         
         if (directResponse.ok || (responseData && responseData.success)) {
           console.log("Direct API call successful");
+          
+          // Update localStorage with the new certification
+          try {
+            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+            if (!existingCerts.includes(stringMachineId)) {
+              existingCerts.push(stringMachineId);
+              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
+            }
+          } catch (e) {
+            console.error("Error updating localStorage after direct API call:", e);
+          }
+          
           return true;
         }
       } catch (directError) {
@@ -116,6 +143,18 @@ class CertificationDatabaseService {
         
         if (response.data?.success || response.status === 200 || response.status === 201) {
           console.log("Certification added successfully via apiService");
+          
+          // Update localStorage with the new certification
+          try {
+            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+            if (!existingCerts.includes(stringMachineId)) {
+              existingCerts.push(stringMachineId);
+              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
+            }
+          } catch (e) {
+            console.error("Error updating localStorage after apiService call:", e);
+          }
+          
           return true;
         }
       } catch (apiError) {
@@ -133,6 +172,18 @@ class CertificationDatabaseService {
         console.log("Fallback API response:", fallbackResponse);
         if (fallbackResponse.data?.success || fallbackResponse.status === 200 || fallbackResponse.status === 201) {
           console.log("Certification added successfully using fallback method");
+          
+          // Update localStorage with the new certification
+          try {
+            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+            if (!existingCerts.includes(stringMachineId)) {
+              existingCerts.push(stringMachineId);
+              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
+            }
+          } catch (e) {
+            console.error("Error updating localStorage after fallback call:", e);
+          }
+          
           return true;
         }
       } catch (fallbackError) {
@@ -162,10 +213,35 @@ class CertificationDatabaseService {
         
         if (alternativeResponse.ok) {
           console.log("Alternative API endpoint successful");
+          
+          // Update localStorage with the new certification
+          try {
+            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+            if (!existingCerts.includes(stringMachineId)) {
+              existingCerts.push(stringMachineId);
+              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
+            }
+          } catch (e) {
+            console.error("Error updating localStorage after alternative API call:", e);
+          }
+          
           return true;
         }
       } catch (alternativeError) {
         console.error("Alternative API endpoint failed:", alternativeError);
+      }
+      
+      // Last attempt - just update localStorage
+      try {
+        console.log("All server attempts failed, updating localStorage only");
+        const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+        if (!existingCerts.includes(stringMachineId)) {
+          existingCerts.push(stringMachineId);
+          localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
+          console.log("Updated localStorage only as fallback");
+        }
+      } catch (e) {
+        console.error("Error updating localStorage as fallback:", e);
       }
       
       console.log("All attempts to add certification failed");

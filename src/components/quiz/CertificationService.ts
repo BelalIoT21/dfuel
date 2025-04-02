@@ -1,7 +1,6 @@
 
 import { certificationService } from '@/services/certificationService';
 import { certificationDatabaseService } from '@/services/database/certificationService';
-import { apiService } from '@/services/apiService';
 
 export async function addUserCertification(userId: string, machineId: string): Promise<boolean> {
   console.log(`Adding certification for user ${userId} and machine ${machineId}`);
@@ -16,66 +15,76 @@ export async function addUserCertification(userId: string, machineId: string): P
   const certificationAttempts = [];
   let success = false;
 
-  // Try direct API call to MongoDB (most reliable method)
+  // Try multiple methods to ensure certification is added both to database and locally
+  
+  // Method 1: Use the certification service (primary method)
   try {
-    console.log('Attempting direct API call to add certification');
-    const directResponse = await fetch(`${import.meta.env.VITE_API_URL || window.location.origin.replace(':5000', ':4000')}/api/certifications`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
-    });
+    console.log('Attempting to add certification using certificationService');
+    success = await certificationService.addCertification(userIdStr, machineIdStr);
+    certificationAttempts.push({method: "certificationService", success});
     
-    let directResult;
-    try {
-      const responseText = await directResponse.text();
-      console.log('Direct API response text:', responseText);
+    if (success) {
+      console.log('Certification successfully added via certificationService');
       
-      if (responseText) {
-        directResult = JSON.parse(responseText);
-      } else {
-        directResult = { success: directResponse.ok };
+      // Also try to sync with database service as backup
+      try {
+        await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
+      } catch (dbErr) {
+        console.error("Error with database service after successful certification:", dbErr);
       }
-    } catch (parseError) {
-      console.error('Error parsing API response:', parseError);
-      directResult = { success: directResponse.ok };
-    }
-    
-    certificationAttempts.push({method: "direct API", response: directResult});
-    console.log('Direct API call response:', directResult);
-    
-    if (directResponse.ok || (directResult && directResult.success)) {
-      success = true;
-      console.log('Direct API call successful');
+      
       return true;
     }
-  } catch (directError) {
-    console.error('Direct API call failed:', directError);
-    certificationAttempts.push({method: "direct API", error: String(directError)});
+  } catch (err) {
+    console.error("Error with certificationService:", err);
+    certificationAttempts.push({method: "certificationService", error: String(err)});
   }
   
-  // Fallback: Use the certification service
+  // Method 2: Direct API call if Method 1 fails
   if (!success) {
     try {
-      console.log('Attempting to add certification using certificationService');
-      success = await certificationService.addCertification(userIdStr, machineIdStr);
-      certificationAttempts.push({method: "certificationService", success});
+      console.log('Method 2: Attempting direct API call to add certification');
+      const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ userId: userIdStr, machineId: machineIdStr })
+      });
       
-      if (success) {
-        console.log('Certification successfully added via certificationService');
+      let directResult;
+      try {
+        const responseText = await directResponse.text();
+        console.log('Direct API response text:', responseText);
+        
+        if (responseText) {
+          directResult = JSON.parse(responseText);
+        } else {
+          directResult = { success: directResponse.ok };
+        }
+      } catch (parseError) {
+        console.error('Error parsing API response:', parseError);
+        directResult = { success: directResponse.ok };
+      }
+      
+      certificationAttempts.push({method: "direct API", response: directResult});
+      console.log('Direct API call response:', directResult);
+      
+      if (directResponse.ok || (directResult && directResult.success)) {
+        success = true;
+        console.log('Direct API call successful');
         return true;
       }
-    } catch (err) {
-      console.error("Error with certificationService:", err);
-      certificationAttempts.push({method: "certificationService", error: String(err)});
+    } catch (directError) {
+      console.error('Direct API call failed:', directError);
+      certificationAttempts.push({method: "direct API", error: String(directError)});
     }
   }
   
-  // Fallback: Use certificationDatabaseService
+  // Method 3: Use certificationDatabaseService if Method 1 and 2 fail
   if (!success) {
-    console.log('Trying certificationDatabaseService');
+    console.log('Method 3: Trying certificationDatabaseService');
     try {
       success = await certificationDatabaseService.addCertification(userIdStr, machineIdStr);
       certificationAttempts.push({method: "certificationDatabaseService", success});
@@ -84,27 +93,6 @@ export async function addUserCertification(userId: string, machineId: string): P
     } catch (err) {
       console.error("Error with certificationDatabaseService:", err);
       certificationAttempts.push({method: "certificationDatabaseService", error: String(err)});
-    }
-  }
-  
-  // Last resort: Try apiService
-  if (!success) {
-    try {
-      console.log('Trying apiService');
-      const apiResult = await apiService.request(`certifications`, 'POST', {
-        userId: userIdStr, 
-        machineId: machineIdStr
-      });
-      
-      console.log('apiService response:', apiResult);
-      if (apiResult && (apiResult.success || apiResult.data)) {
-        success = true;
-        console.log('apiService call successful');
-        return true;
-      }
-    } catch (apiErr) {
-      console.error("Error with apiService:", apiErr);
-      certificationAttempts.push({method: "apiService", error: String(apiErr)});
     }
   }
   
