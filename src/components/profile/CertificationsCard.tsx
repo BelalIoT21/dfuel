@@ -46,27 +46,51 @@ const CertificationsCard = () => {
           const data = await response.json();
           console.log('API response for certifications:', data);
           
+          // Ensure we always have an array of strings
           if (Array.isArray(data)) {
-            console.log(`Received ${data.length} certifications from API:`, data);
-            setUserCertifications(data.map(cert => String(cert)));
+            const certStrings = data.map(cert => String(cert));
+            console.log(`Received ${certStrings.length} certifications from API:`, certStrings);
+            setUserCertifications(certStrings);
             setRefreshing(false);
-            return data.map(cert => String(cert));
+            return certStrings;
+          } else {
+            console.error('API returned non-array data:', data);
+            // If data is not an array, check if it's in a response structure
+            if (data && Array.isArray(data.certifications)) {
+              const certStrings = data.certifications.map((cert: any) => String(cert));
+              setUserCertifications(certStrings);
+              setRefreshing(false);
+              return certStrings;
+            }
           }
         } else {
           console.error(`Failed to fetch certifications from API: ${response.status} - ${response.statusText}`);
           console.log('Response URL:', response.url);
+          
+          // Try falling back to user object certifications
+          if (user.certifications && Array.isArray(user.certifications)) {
+            const userCerts = user.certifications.map(cert => String(cert));
+            console.log('Using certifications from user object:', userCerts);
+            setUserCertifications(userCerts);
+            setRefreshing(false);
+            return userCerts;
+          }
         }
       } catch (apiError) {
         console.error("Error fetching certifications from MongoDB API:", apiError);
       }
       
-      // Fallback to default
+      // Check if user object has certifications as a final fallback
+      if (user.certifications && Array.isArray(user.certifications)) {
+        const userCerts = user.certifications.map(cert => String(cert));
+        console.log('Using certifications from user object as fallback:', userCerts);
+        setUserCertifications(userCerts);
+        setRefreshing(false);
+        return userCerts;
+      }
+      
+      // Final fallback to default (empty array)
       setRefreshing(false);
-      toast({
-        title: "Error",
-        description: "Could not load your certifications from the database. Please try again.",
-        variant: "destructive"
-      });
       return [];
     } catch (error) {
       console.error("Error in fetchCertifications:", error);

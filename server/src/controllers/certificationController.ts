@@ -252,9 +252,12 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
       user.certifications = [];
     }
     
-    // Return the certifications
-    console.log(`Retrieved certifications for user ${userId}:`, user.certifications);
-    res.status(200).json(user.certifications);
+    // Return the certifications as an array of strings
+    const certifications = user.certifications.map(cert => String(cert));
+    console.log(`Retrieved certifications for user ${userId}:`, certifications);
+    
+    // Simply return the array directly, not wrapped in an object
+    res.status(200).json(certifications);
   } catch (error) {
     console.error('Error getting user certifications:', error);
     res.status(500).json({ 
@@ -300,8 +303,14 @@ export const checkCertification = asyncHandler(async (req: Request, res: Respons
       user.certifications = [];
     }
     
-    const hasCertification = user.certifications.includes(machineId);
+    // Convert all certifications to strings for consistent comparison
+    const certStrings = user.certifications.map(cert => String(cert));
+    const machineIdStr = String(machineId);
+    
+    const hasCertification = certStrings.includes(machineIdStr);
     console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
+    
+    // Return a simple boolean response
     res.status(200).json(hasCertification);
   } catch (error) {
     console.error('Error checking certification:', error);

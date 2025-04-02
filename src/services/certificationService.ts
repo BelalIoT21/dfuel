@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -218,7 +217,7 @@ export class CertificationService {
       
       if (!userId) {
         console.error('Invalid userId');
-        return DEFAULT_CERTIFICATIONS;
+        return [];
       }
       
       // Ensure ID is string
@@ -228,13 +227,13 @@ export class CertificationService {
       const fetchAttempts = [];
       let certifications: string[] = [];
       
-      // First try - API service (prioritize server data)
+      // First try - Direct fetch with correct endpoint
       try {
         console.log(`Making API call to get certifications for userId=${stringUserId}`);
         
         // Set a reasonable timeout to avoid hanging
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
         const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
@@ -257,6 +256,7 @@ export class CertificationService {
             
             fetchAttempts.push({ method: 'direct API', success: true, count: certifications.length });
             
+            console.log('Returning certifications:', certifications);
             return certifications;
           }
         }
@@ -267,7 +267,7 @@ export class CertificationService {
         fetchAttempts.push({ method: 'direct API', error: String(apiError) });
       }
       
-      // Second try - Check cache
+      // Check cache and other fallbacks
       if (certificationCache.has(stringUserId)) {
         console.log(`Using cached certifications for user ${stringUserId}`);
         certifications = certificationCache.get(stringUserId);
@@ -291,7 +291,7 @@ export class CertificationService {
       return DEFAULT_CERTIFICATIONS;
     } catch (error) {
       console.error('Error getting user certifications:', error);
-      return DEFAULT_CERTIFICATIONS;
+      return [];
     }
   }
   
@@ -304,10 +304,14 @@ export class CertificationService {
         return false;
       }
       
+      // Ensure IDs are strings
+      const stringUserId = userId.toString();
+      const stringMachineId = machineId.toString();
+      
       // Try direct API first
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const response = await fetch(`${apiUrl}/api/certifications/check/${userId}/${machineId}`, {
+        const response = await fetch(`${apiUrl}/api/certifications/check/${stringUserId}/${stringMachineId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -317,15 +321,19 @@ export class CertificationService {
           const result = await response.json();
           console.log(`Direct API certification check result:`, result);
           return !!result; // Convert to boolean
+        } else {
+          console.log(`API check certification returned status: ${response.status}`);
         }
       } catch (error) {
         console.error('Error checking certification via direct API:', error);
       }
       
       // Fallback: Get all certifications and check
-      const certifications = await this.getUserCertifications(userId);
-      const hasCertification = certifications.includes(machineId);
-      console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
+      const certifications = await this.getUserCertifications(stringUserId);
+      console.log('Retrieved certifications for check:', certifications, 'Looking for:', stringMachineId);
+      
+      const hasCertification = certifications.includes(stringMachineId);
+      console.log(`User ${stringUserId} ${hasCertification ? 'has' : 'does not have'} certification ${stringMachineId}`);
       return hasCertification;
     } catch (error) {
       console.error('Error checking certification:', error);
