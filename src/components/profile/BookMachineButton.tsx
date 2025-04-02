@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, CalendarX, AlertTriangle, Award } from 'lucide-react';
@@ -45,23 +44,12 @@ const BookMachineButton = ({
       try {
         setIsVerifying(true);
         
-        // First try to check if the certification is in user object if available
-        if (user.certifications && Array.isArray(user.certifications)) {
-          const hasCert = user.certifications.some(cert => String(cert) === String(machineId));
-          if (hasCert && isMounted) {
-            console.log(`BookMachineButton: User has certification from user object for machine ${machineId}`);
-            setIsCertified(true);
-            setIsVerifying(false);
-            return;
-          }
-        }
-        
-        // Use certification service with better error handling
-        const hasCertFromService = await certificationService.checkCertification(user.id, machineId);
+        // Use certification service with direct API call approach - same as admin
+        const hasCertification = await certificationService.checkCertification(user.id, machineId);
         
         if (isMounted) {
-          console.log(`BookMachineButton: User ${hasCertFromService ? 'has' : 'does not have'} certification for machine ${machineId}`);
-          setIsCertified(hasCertFromService);
+          console.log(`BookMachineButton: User ${hasCertification ? 'has' : 'does not have'} certification for machine ${machineId}`);
+          setIsCertified(hasCertification);
         }
       } catch (error) {
         console.error('Error in verifyCertification:', error);
