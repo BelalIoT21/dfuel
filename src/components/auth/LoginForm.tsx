@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LoginFormProps {
@@ -15,28 +14,18 @@ interface LoginFormProps {
 }
 
 const formAnimation = {
-  hidden: { opacity: 0, x: -20 },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    x: 0,
     transition: {
-      staggerChildren: 0.1,
-      duration: 0.3
-    }
-  },
-  exit: {
-    opacity: 0,
-    x: 20,
-    transition: {
-      duration: 0.2
+      staggerChildren: 0.1
     }
   }
 };
 
 const itemAnimation = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
 export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
@@ -114,56 +103,51 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </Alert>
         )}
         
-        <AnimatePresence mode="wait">
-          <motion.form 
-            key="login-form"
-            onSubmit={handleSubmit} 
-            className="space-y-2.5"
-            variants={formAnimation}
-            initial="hidden"
-            animate="show"
-            exit="exit"
-          >
-            <motion.div className="space-y-1" variants={itemAnimation}>
-              <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
+        <motion.form 
+          onSubmit={handleSubmit} 
+          className="space-y-2.5"
+          variants={formAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div className="space-y-1" variants={itemAnimation}>
+            <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${emailError ? 'border-red-500' : ''}`}
+            />
+            {emailError && <p className="text-xs text-red-500">{emailError}</p>}
+          </motion.div>
+          
+          <motion.div className="space-y-1" variants={itemAnimation}>
+            <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
+            <div className="relative">
               <Input
-                id="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${emailError ? 'border-red-500' : ''}`}
+                id="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
               />
-              {emailError && <p className="text-xs text-red-500">{emailError}</p>}
-            </motion.div>
-            
-            <motion.div className="space-y-1" variants={itemAnimation}>
-              <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
-                />
-              </div>
-              {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
-            </motion.div>
-            
-            <motion.div variants={itemAnimation}>
-              <Button 
-                type="submit" 
-                className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm mt-1' : 'h-10 text-sm mt-2'} bg-purple-600 hover:bg-purple-700`}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Signing In...' : 'Sign In'}
-              </Button>
-            </motion.div>
-          </motion.form>
-        </AnimatePresence>
+            </div>
+            {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
+          </motion.div>
+          
+          <motion.div variants={itemAnimation}>
+            <Button 
+              type="submit" 
+              className={`w-full ${isMobile ? 'h-7 text-xs md:text-sm mt-1' : 'h-10 text-sm mt-2'} bg-purple-600 hover:bg-purple-700`}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </motion.div>
+        </motion.form>
 
         <motion.div 
           className="mt-3 text-center"

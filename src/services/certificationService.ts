@@ -184,26 +184,6 @@ export class CertificationService {
       
       console.log(`Making API call to get certifications for userId=${stringUserId}`);
       
-      // Try different API endpoints to get certifications
-      try {
-        // Try endpoint without /api prefix first
-        const directResponse = await fetch(`${import.meta.env.VITE_API_URL}/certifications/user/${stringUserId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (directResponse.ok) {
-          const certData = await directResponse.json();
-          console.log("Direct API call successful:", certData);
-          if (Array.isArray(certData)) {
-            return certData.map(cert => String(cert));
-          }
-        }
-      } catch (directError) {
-        console.error("Direct API call failed:", directError);
-      }
-      
       // Try to get certifications from the API
       try {
         const controller = new AbortController();
@@ -243,25 +223,6 @@ export class CertificationService {
         }
       } catch (apiError) {
         console.error('API service error or timeout:', apiError);
-      }
-      
-      // Try with /api prefix as a fallback
-      try {
-        const apiPrefixResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/certifications/user/${stringUserId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (apiPrefixResponse.ok) {
-          const certData = await apiPrefixResponse.json();
-          console.log("API prefix call successful:", certData);
-          if (Array.isArray(certData)) {
-            return certData.map(cert => String(cert));
-          }
-        }
-      } catch (apiPrefixError) {
-        console.error("API prefix call failed:", apiPrefixError);
       }
       
       // Default fallback: return a set of default certifications

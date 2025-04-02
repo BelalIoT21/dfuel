@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import User from '../models/User';
 import asyncHandler from 'express-async-handler';
@@ -218,20 +219,11 @@ export const clearUserCertifications = asyncHandler(async (req: Request, res: Re
 
 // @desc    Get user certifications
 // @route   GET /api/certifications/user/:userId
-// @access  Public
+// @access  Private
 export const getUserCertifications = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   
   console.log(`Request to get certifications for user: ${userId}`);
-  
-  if (!userId) {
-    console.error('Missing required userId');
-    res.status(400).json({ 
-      success: false, 
-      message: 'User ID is required' 
-    });
-    return;
-  }
   
   try {
     // Find user with various ID formats
@@ -239,7 +231,10 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     
     if (!user) {
       console.log(`User not found with ID: ${userId}`);
-      res.status(200).json([]);
+      res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
       return;
     }
     
@@ -254,7 +249,11 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
     return;
   } catch (error) {
     console.error('Error getting user certifications:', error);
-    res.status(200).json([]);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to get user certifications',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
     return;
   }
 });

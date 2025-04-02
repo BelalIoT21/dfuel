@@ -23,7 +23,7 @@ router.delete('/:userId/:machineId', protect, removeCertification);
 // Clear all certifications for a user
 router.delete('/user/:userId/clear', protect, clearUserCertifications);
 
-// Get user certifications - remove protect middleware to allow public access
+// Get user certifications - ensuring this route is properly defined
 router.get('/user/:userId', getUserCertifications);
 
 // Check certification

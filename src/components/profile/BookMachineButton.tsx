@@ -113,7 +113,7 @@ const BookMachineButton = ({
         return;
       } 
       
-      if (requiresCertification && !effectiveCertification) {
+      if (requiresCertification && !isCertified) {
         toast({
           title: "Certification Required",
           description: "You need to be certified to book this machine",
@@ -137,9 +137,8 @@ const BookMachineButton = ({
     navigate(`/booking/${machineId}`);
   };
 
-  // IMPORTANT FIX: Always show "Book Now" as the button text when canBook is true
-  let buttonText = canBook ? "Book Now" : "";
-  let ButtonIcon = Calendar;
+  let buttonText = "Book Now";
+  let ButtonIcon = Calendar; // PascalCase is correct for React components
   
   if (timeSlotUnavailable) {
     buttonText = "Time Slot Unavailable";
@@ -147,12 +146,9 @@ const BookMachineButton = ({
   } else if (!isAvailable) {
     buttonText = "Machine Unavailable";
     ButtonIcon = AlertTriangle; 
-  } else if (requiresCertification && !effectiveCertification) {
+  } else if (requiresCertification && !isCertified) {
     buttonText = "Certification Required";
     ButtonIcon = Award; 
-  } else if (canBook) {
-    // Ensure "Book Now" is shown when the button is clickable
-    buttonText = "Book Now";
   }
 
   // Debug logs to trace button rendering
@@ -161,7 +157,6 @@ const BookMachineButton = ({
     propIsCertified,
     isAvailable,
     requiresCertification,
-    effectiveCertification,
     canBook,
     buttonText
   });
