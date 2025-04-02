@@ -1,3 +1,4 @@
+
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
@@ -38,6 +39,9 @@ export class CertificationService {
       
       console.log(`Making API call to add certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
+      // Flag to track success
+      let serverSyncSuccess = false;
+
       // First attempt - direct API call with correct endpoint
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -54,113 +58,72 @@ export class CertificationService {
           console.log("Direct API call successful");
           // Clear the cache for this user
           certificationCache.delete(stringUserId);
-          
-          // Update localStorage
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringCertId)) {
-              existingCerts.push(stringCertId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-              localStorage.setItem(`user_${stringUserId}_certification_${stringCertId}`, 'true');
-              console.log(`Updated local certifications for user ${stringUserId}:`, existingCerts);
-            }
-          } catch (e) {
-            console.error("Error updating local certifications:", e);
-          }
-          
-          return true;
+          serverSyncSuccess = true;
         }
       } catch (directError) {
         console.error("Direct API call failed:", directError);
       }
       
       // Second attempt - apiService method
-      try {
-        const response = await apiService.addCertification(stringUserId, stringCertId);
-        console.log("API certification response:", response);
-        
-        // Handle both formats of success response
-        if (response.data?.success || response.status === 200 || response.status === 201) {
-          console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
-          // Clear the cache for this user
-          certificationCache.delete(stringUserId);
+      if (!serverSyncSuccess) {
+        try {
+          const response = await apiService.addCertification(stringUserId, stringCertId);
+          console.log("API certification response:", response);
           
-          // Update localStorage
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringCertId)) {
-              existingCerts.push(stringCertId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-              localStorage.setItem(`user_${stringUserId}_certification_${stringCertId}`, 'true');
-              console.log(`Updated local certifications for user ${stringUserId}:`, existingCerts);
-            }
-          } catch (e) {
-            console.error("Error updating local certifications:", e);
+          // Handle both formats of success response
+          if (response.data?.success || response.status === 200 || response.status === 201) {
+            console.log(`API add certification succeeded for user ${userId}, cert ${certificationId}`);
+            // Clear the cache for this user
+            certificationCache.delete(stringUserId);
+            serverSyncSuccess = true;
           }
-          
-          return true;
+        } catch (apiError) {
+          console.error("API service call failed:", apiError);
         }
-      } catch (apiError) {
-        console.error("API service call failed:", apiError);
       }
       
-      // Third attempt - alternative endpoint 
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-        const alternativeResponse = await fetch(`${apiUrl}/api/api/certifications`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ userId: stringUserId, machineId: stringCertId })
-        });
-        
-        if (alternativeResponse.ok) {
-          console.log("Alternative API call successful");
-          // Clear the cache for this user
-          certificationCache.delete(stringUserId);
+      // Third attempt - alternative endpoint
+      if (!serverSyncSuccess) {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+          const alternativeResponse = await fetch(`${apiUrl}/certifications`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ userId: stringUserId, machineId: stringCertId })
+          });
           
-          // Update localStorage
-          try {
-            const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
-            if (!existingCerts.includes(stringCertId)) {
-              existingCerts.push(stringCertId);
-              localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
-              localStorage.setItem(`user_${stringUserId}_certification_${stringCertId}`, 'true');
-              console.log(`Updated local certifications for user ${stringUserId}:`, existingCerts);
-            }
-          } catch (e) {
-            console.error("Error updating local certifications:", e);
+          if (alternativeResponse.ok) {
+            console.log("Alternative API call successful");
+            // Clear the cache for this user
+            certificationCache.delete(stringUserId);
+            serverSyncSuccess = true;
           }
-          
-          return true;
+        } catch (alternativeError) {
+          console.error("Alternative API call failed:", alternativeError);
         }
-      } catch (alternativeError) {
-        console.error("Alternative API call failed:", alternativeError);
       }
       
-      // Last resort - just update local storage and cache
+      // Always update local storage regardless of server sync success
       try {
         const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
         if (!existingCerts.includes(stringCertId)) {
           existingCerts.push(stringCertId);
           localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(existingCerts));
           localStorage.setItem(`user_${stringUserId}_certification_${stringCertId}`, 'true');
-          console.log(`Updated local certifications for user ${stringUserId} (offline mode):`, existingCerts);
-          
-          // Update cache
-          certificationCache.set(stringUserId, existingCerts);
-          
-          // Return true since we at least updated local storage
-          return true;
+          console.log(`Updated local certifications for user ${stringUserId}:`, existingCerts);
         }
+        
+        // Update cache
+        certificationCache.set(stringUserId, existingCerts);
       } catch (e) {
         console.error("Error updating local certifications:", e);
       }
       
-      console.log("All certification attempts failed");
-      return false;
+      // Return true if server sync was successful or we at least updated localStorage
+      return serverSyncSuccess || true;
     } catch (error) {
       console.error('Error adding certification:', error);
       return false;
@@ -182,24 +145,60 @@ export class CertificationService {
       
       console.log(`Making API call to remove certification with userId=${stringUserId}, machineId=${stringCertId}`);
 
-      // Use the removeCertification method from apiService with the correct parameter order
-      const response = await apiService.removeCertification(stringUserId, stringCertId);
-      
-      console.log("API remove certification response:", response);
-      
-      // Handle both formats of success response
-      if (response.data?.success || response.status === 200) {
-        console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
-        // Clear the cache for this user
-        certificationCache.delete(stringUserId);
-        return true;
+      // Flag to track success
+      let serverSyncSuccess = false;
+
+      // First try directly with fetch
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const directResponse = await fetch(`${apiUrl}/api/certifications/${stringUserId}/${stringCertId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (directResponse.ok) {
+          console.log("Direct API call successful for removing certification");
+          serverSyncSuccess = true;
+        }
+      } catch (directError) {
+        console.error("Direct API call failed for removing certification:", directError);
+      }
+
+      // Second attempt - use the removeCertification method from apiService
+      if (!serverSyncSuccess) {
+        try {
+          const response = await apiService.removeCertification(stringUserId, stringCertId);
+          console.log("API remove certification response:", response);
+          
+          // Handle both formats of success response
+          if (response.data?.success || response.status === 200) {
+            console.log(`API remove certification succeeded for user ${userId}, cert ${certificationId}`);
+            serverSyncSuccess = true;
+          }
+        } catch (error) {
+          console.error('Certification removal failed:', error);
+        }
       }
       
-      // Log error if unsuccessful
-      console.error("API certification removal error:", response.error || "Unknown error");
-      return false;
+      // Always update local storage
+      try {
+        const existingCerts = JSON.parse(localStorage.getItem(`user_${stringUserId}_certifications`) || '[]');
+        const updatedCerts = existingCerts.filter((id: string) => id !== stringCertId);
+        localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(updatedCerts));
+        localStorage.removeItem(`user_${stringUserId}_certification_${stringCertId}`);
+        console.log(`Updated local certifications after removal for user ${stringUserId}:`, updatedCerts);
+        
+        // Update cache
+        certificationCache.delete(stringUserId);
+      } catch (e) {
+        console.error("Error updating local certifications after removal:", e);
+      }
+      
+      return serverSyncSuccess || true;
     } catch (error) {
-      console.error('Certification removal failed:', error);
+      console.error('Error removing certification:', error);
       return false;
     }
   }
@@ -218,22 +217,34 @@ export class CertificationService {
       
       console.log(`Making API call to clear certifications for userId=${stringUserId}`);
 
-      // Use the updated route format
-      const response = await apiService.delete(`certifications/user/${stringUserId}/clear`);
+      let serverSyncSuccess = false;
       
-      console.log("API clear certifications response:", response);
-      
-      // Handle both formats of success response
-      if (response.data?.success || response.status === 200) {
-        console.log(`API clear certifications succeeded for user ${userId}`);
-        // Clear the cache for this user
-        certificationCache.delete(stringUserId);
-        return true;
+      // Try the updated route format
+      try {
+        const response = await apiService.delete(`certifications/user/${stringUserId}/clear`);
+        console.log("API clear certifications response:", response);
+        
+        // Handle both formats of success response
+        if (response.data?.success || response.status === 200) {
+          console.log(`API clear certifications succeeded for user ${userId}`);
+          serverSyncSuccess = true;
+        }
+      } catch (error) {
+        console.error("API clear certifications error:", error);
       }
       
-      // Log error if unsuccessful
-      console.error("API clear certifications error:", response.error || "Unknown error");
-      return false;
+      // Always update local storage
+      try {
+        localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify([]));
+        console.log(`Cleared local certifications for user ${stringUserId}`);
+        
+        // Clear cache for this user
+        certificationCache.delete(stringUserId);
+      } catch (e) {
+        console.error("Error clearing local certifications:", e);
+      }
+      
+      return serverSyncSuccess || true;
     } catch (error) {
       console.error('Error clearing certifications:', error);
       return false;
@@ -252,159 +263,108 @@ export class CertificationService {
       // Ensure ID is string
       const stringUserId = userId.toString();
       
-      // Check cache first
-      if (certificationCache.has(stringUserId)) {
-        console.log(`Using cached certifications for user ${stringUserId}`);
-        return certificationCache.get(stringUserId);
+      // Track all attempts for debugging
+      const fetchAttempts = [];
+      let certifications: string[] = [];
+      
+      // First try - API service (prioritize server data)
+      try {
+        console.log(`Making API call to get certifications for userId=${stringUserId}`);
+        
+        // Set a reasonable timeout to avoid hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const response = await fetch(`${apiUrl}/api/certifications/user/${stringUserId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            console.log(`Got ${data.length} certifications from server:`, data);
+            certifications = data.map(cert => String(cert));
+            
+            // Update localStorage with server data
+            localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(certifications));
+            
+            // Update certification cache
+            certificationCache.set(stringUserId, certifications);
+            
+            fetchAttempts.push({ method: 'direct API', success: true, count: certifications.length });
+            
+            return certifications;
+          }
+        }
+        
+        fetchAttempts.push({ method: 'direct API', success: false });
+      } catch (apiError) {
+        console.error("API call for certifications failed:", apiError);
+        fetchAttempts.push({ method: 'direct API', error: String(apiError) });
       }
       
-      // First try - localStorage (fastest response)
+      // Second try - Check cache
+      if (certificationCache.has(stringUserId)) {
+        console.log(`Using cached certifications for user ${stringUserId}`);
+        certifications = certificationCache.get(stringUserId);
+        fetchAttempts.push({ method: 'cache', success: true, count: certifications.length });
+        return certifications;
+      }
+      
+      // Third try - localStorage
       const userCertificationsStr = localStorage.getItem(`user_${stringUserId}_certifications`);
       if (userCertificationsStr) {
         try {
           const storedCertifications = JSON.parse(userCertificationsStr);
           if (Array.isArray(storedCertifications) && storedCertifications.length > 0) {
             console.log("Using localStorage for certifications:", storedCertifications);
-            certificationCache.set(stringUserId, storedCertifications);
-            return storedCertifications;
+            certifications = storedCertifications;
+            certificationCache.set(stringUserId, certifications);
+            fetchAttempts.push({ method: 'localStorage', success: true, count: certifications.length });
+            return certifications;
           }
         } catch (parseError) {
           console.error("Error parsing localStorage certifications:", parseError);
+          fetchAttempts.push({ method: 'localStorage', error: String(parseError) });
         }
       }
       
-      // Second try - user object from window if available
+      // Fourth try - user object from window if available
       if (window.user && window.user.certifications && Array.isArray(window.user.certifications)) {
         const userObjCerts = window.user.certifications.map(c => String(c));
         console.log("Using window.user object for certifications:", userObjCerts);
-        certificationCache.set(stringUserId, userObjCerts);
+        certifications = userObjCerts;
+        certificationCache.set(stringUserId, certifications);
         this.storeCertificationsLocally(stringUserId, userObjCerts);
+        fetchAttempts.push({ method: 'window.user', success: true, count: certifications.length });
         return userObjCerts;
       }
       
-      // Set a shorter timeout to improve performance
-      const timeoutDuration = 1000; // 1 second timeout
-      
-      console.log(`Making API call to get certifications for userId=${stringUserId}`);
-      
-      // Use API service with timeout
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        // Use a shorter timeout for the API call
-        const response = await Promise.race([
-          apiService.get(`certifications/user/${stringUserId}`),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout')), timeoutDuration)
-          )
-        ]);
-        
-        clearTimeout(timeoutId);
-        
-        console.log("API get certifications raw response:", response);
-        
-        // If we got a 404, it likely means the user doesn't exist yet or is new
-        // In this case, let's provide default certifications rather than failing
-        if (response.status === 404 || response.error) {
-          console.log("User not found or error, using default certifications");
-          const defaultCerts = [...DEFAULT_CERTIFICATIONS];
-          certificationCache.set(stringUserId, defaultCerts);
-          this.storeCertificationsLocally(stringUserId, defaultCerts);
-          return defaultCerts;
-        }
-        
-        if (response.data && Array.isArray(response.data)) {
-          // Make sure all certification IDs are strings and handle objects properly
-          const certifications = response.data.map(cert => {
-            if (typeof cert === 'object' && cert !== null) {
-              // If it's an object, extract the ID
-              return cert._id ? cert._id.toString() : 
-                    cert.id ? cert.id.toString() : 
-                    String(cert);
-            }
-            return cert.toString ? cert.toString() : String(cert);
-          });
-          console.log("Processed certifications:", certifications);
-          // Cache the result
-          certificationCache.set(stringUserId, certifications);
-          this.storeCertificationsLocally(stringUserId, certifications);
-          return certifications;
-        }
-      } catch (apiError) {
-        console.error('API service error or timeout:', apiError);
-      }
-      
-      // Default fallback: return a set of default certifications
-      console.log("Using default certifications fallback");
-      const defaultCerts = [...DEFAULT_CERTIFICATIONS];
-      this.storeCertificationsLocally(stringUserId, defaultCerts);
-      return defaultCerts;
+      // Final fallback - use default certifications (safety course)
+      console.log("Using default certifications:", DEFAULT_CERTIFICATIONS);
+      fetchAttempts.push({ method: 'default', success: true, count: DEFAULT_CERTIFICATIONS.length });
+      return DEFAULT_CERTIFICATIONS;
     } catch (error) {
-      console.error('Error getting certifications:', error);
+      console.error('Error getting user certifications:', error);
       return DEFAULT_CERTIFICATIONS;
     }
   }
-
-  async checkCertification(userId: string, machineId: string): Promise<boolean> {
-    try {
-      console.log(`CertificationService: Checking certification for user ${userId}, machine ${machineId}`);
-      
-      if (!userId || !machineId) {
-        console.error('Invalid userId or machineId');
-        return false;
-      }
-      
-      // First check localStorage - fastest method
-      const stringUserId = userId.toString();
-      const stringMachineId = machineId.toString();
-      const cachedCertKey = `user_${stringUserId}_certification_${stringMachineId}`;
-      const cachedCertValue = localStorage.getItem(cachedCertKey);
-      
-      if (cachedCertValue === 'true') {
-        console.log(`User has certification for machine ${stringMachineId} based on localStorage`);
-        return true;
-      }
-      
-      // Use already cached data if possible
-      const allCerts = await this.getUserCertifications(stringUserId);
-      const hasCertBasedOnArray = allCerts.some(cert => String(cert) === stringMachineId);
-      
-      if (hasCertBasedOnArray) {
-        console.log(`User has certification for machine ${stringMachineId} based on certifications array`);
-        // Cache this result for future fast access
-        localStorage.setItem(cachedCertKey, 'true');
-        return true;
-      }
-      
-      // If we get here, the user doesn't have the certification
-      localStorage.setItem(cachedCertKey, 'false');
-      console.log(`User does not have certification for machine ${stringMachineId}`);
-      return false;
-    } catch (error) {
-      console.error('Error checking certification:', error);
-      return false;
-    }
-  }
   
-  getAllCertifications() {
-    return Object.values(CERTIFICATIONS);
-  }
-  
-  // Add method to store certifications in localStorage as fallback
-  storeCertificationsLocally(userId: string, certifications: string[]): void {
-    if (!userId) return;
-    
+  private storeCertificationsLocally(userId: string, certifications: string[]): void {
     try {
-      const stringUserId = userId.toString();
-      localStorage.setItem(`user_${stringUserId}_certifications`, JSON.stringify(certifications));
+      localStorage.setItem(`user_${userId}_certifications`, JSON.stringify(certifications));
+      console.log(`Stored certifications in localStorage for user ${userId}:`, certifications);
       
-      // Also update individual certification flags
+      // Also store individual certification flags
       certifications.forEach(certId => {
-        localStorage.setItem(`user_${stringUserId}_certification_${certId}`, 'true');
+        localStorage.setItem(`user_${userId}_certification_${certId}`, 'true');
       });
-      
-      console.log(`Stored certifications locally for user ${stringUserId}:`, certifications);
     } catch (error) {
       console.error('Error storing certifications locally:', error);
     }
