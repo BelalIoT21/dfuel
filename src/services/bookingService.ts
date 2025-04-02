@@ -3,30 +3,21 @@ import { apiService } from './apiService';
 import { machineService } from './machineService';
 import mongoDbService from './mongoDbService';
 import { toast } from '@/hooks/use-toast';
-import { isWeb } from '@/utils/platform';
 
 class BookingService {
   async getAllBookings() {
     try {
       console.log('Fetching all bookings');
+      const response = await apiService.getAllBookings();
       
-      // Web environment - use API
-      if (isWeb()) {
-        const response = await apiService.getAllBookings();
-        
-        if (response.error) {
-          console.error('Error fetching all bookings:', response.error);
-          return [];
-        }
-        
-        // Process and format bookings
-        const bookings = await this.processBookings(response.data || []);
-        return bookings;
-      } 
+      if (response.error) {
+        console.error('Error fetching all bookings:', response.error);
+        return [];
+      }
       
-      // Non-web environment - use MongoDB service
-      const bookings = await mongoDbService.getAllBookings();
-      return this.processBookings(bookings || []);
+      // Process and format bookings
+      const bookings = await this.processBookings(response.data || []);
+      return bookings;
     } catch (error) {
       console.error('Error fetching all bookings:', error);
       return [];
@@ -86,32 +77,29 @@ class BookingService {
   
   async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
     try {
-      // For web environment
-      if (isWeb()) {
-        // Get all bookings and check if this time slot is already booked
-        const allBookings = await this.getAllBookings();
-        
-        if (Array.isArray(allBookings)) {
-          // Check if any booking exists for this machine, date, and time
-          const isBooked = allBookings.some(booking => 
-            booking.machineId === machineId && 
-            new Date(booking.date).toDateString() === new Date(date).toDateString() && 
-            booking.time === time &&
-            (booking.status === 'Pending' || booking.status === 'Approved')
-          );
-          
-          if (isBooked) {
-            console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
-            return false;
-          }
-        }
-        
-        // If no booking found, time slot is available
-        return true;
+      // First check with MongoDB service
+      const isAvailable = await mongoDbService.isTimeSlotAvailable(machineId, date, time);
+      if (!isAvailable) {
+        console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
+        return false;
       }
       
-      // For non-web environment
-      return await mongoDbService.isTimeSlotAvailable(machineId, date, time);
+      // If MongoDB says it's available, double-check with API
+      try {
+        const response = await apiService.request(`machines/${machineId}/availability`, 'GET', {
+          date,
+          time
+        });
+        
+        if (response.data && response.data.available === false) {
+          console.log(`API reports time slot ${date} at ${time} for machine ${machineId} is not available`);
+          return false;
+        }
+      } catch (apiError) {
+        console.log('API availability check failed, relying on MongoDB result');
+      }
+      
+      return true;
     } catch (error) {
       console.error('Error checking time slot availability:', error);
       return false; // Default to unavailable on error

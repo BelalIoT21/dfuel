@@ -32,7 +32,7 @@ class MongoConnectionService {
   async connect(): Promise<any | null> {
     // If already connected, return the existing client
     if (this.client) {
-      return this.db;
+      return this.client;
     }
     
     // If already connecting, return the existing promise
@@ -82,7 +82,7 @@ class MongoConnectionService {
             await this.initializeCollections();
           }
           
-          return this.db;
+          return this.client;
         } catch (error) {
           console.error('Error connecting to MongoDB:', error);
           this.client = null;
@@ -106,14 +106,10 @@ class MongoConnectionService {
       console.log('Initializing MongoDB collections...');
       
       // Seed machines if necessary
-      if (mongoMachineService && typeof mongoMachineService.ensureMachinesExist === 'function') {
-        await mongoMachineService.ensureMachinesExist();
-      }
+      await mongoMachineService.ensureMachinesExist();
       
       // Run other seed operations if needed
-      if (mongoSeedService && typeof mongoSeedService.seedIfNeeded === 'function') {
-        await mongoSeedService.seedIfNeeded();
-      }
+      await mongoSeedService.seedIfNeeded();
       
       this.initialized = true;
       console.log('MongoDB collections initialized');
@@ -157,7 +153,7 @@ class MongoConnectionService {
    * Check if connected to MongoDB
    */
   isConnected(): boolean {
-    return !!this.client && !!this.db;
+    return !!this.client;
   }
 }
 

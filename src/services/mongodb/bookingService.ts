@@ -1,4 +1,3 @@
-
 import { Collection } from 'mongodb';
 import mongoose from 'mongoose';
 import { Booking } from '../../../server/src/models/Booking';
@@ -6,7 +5,6 @@ import { User } from '../../../server/src/models/User';
 import { Machine } from '../../../server/src/models/Machine';
 import mongoConnectionService from './connectionService';
 import { MongoBooking } from './types';
-import { isWeb } from '@/utils/platform';
 
 class MongoBookingService {
   private bookingsCollection: Collection | null = null;
@@ -15,12 +13,6 @@ class MongoBookingService {
   
   async initCollections(): Promise<void> {
     try {
-      // Skip initialization in web environment
-      if (isWeb()) {
-        console.log("Skipping MongoDB initialization in web environment");
-        return;
-      }
-      
       if (!this.bookingsCollection || !this.usersCollection || !this.machinesCollection) {
         const db = await mongoConnectionService.connect();
         if (db) {
@@ -39,12 +31,6 @@ class MongoBookingService {
   }
   
   async getAllBookings(): Promise<any[]> {
-    // Skip MongoDB operations in web environment
-    if (isWeb()) {
-      console.log("Fetching all bookings from API");
-      return [];
-    }
-    
     await this.initCollections();
     if (!this.bookingsCollection) {
       console.error("Bookings collection not initialized");
@@ -533,7 +519,7 @@ class MongoBookingService {
   }
   
   private async enrichBookingsWithDetails(bookings: any[]): Promise<any[]> {
-    if (!this.usersCollection || !this.machinesCollection || isWeb()) {
+    if (!this.usersCollection || !this.machinesCollection) {
       return bookings;
     }
     
