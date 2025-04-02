@@ -142,16 +142,15 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {machineData.map((machine) => {
               // Check if user is certified for this machine
-              // First check user object certifications array
               let isCertified = false;
               
-              // Debug log to see what certifications are available
-              console.log("User certifications:", user.certifications);
-              console.log("Current machine ID:", machine.id);
-              
-              // Check in user object certifications (properly compare string values)
+              // Check in user object certifications array (properly compare string values)
               if (user.certifications && Array.isArray(user.certifications)) {
-                isCertified = user.certifications.some(cert => String(cert) === String(machine.id));
+                isCertified = user.certifications.some(cert => {
+                  const certString = String(cert);
+                  const machineString = String(machine.id);
+                  return certString === machineString;
+                });
                 console.log(`User certification check for machine ${machine.id}:`, isCertified);
               }
               
@@ -199,7 +198,7 @@ const Home = () => {
                         </div>
                       </div>
                       
-                      {/* BookMachineButton based on user certification for specific machine */}
+                      {/* Always show BookMachineButton */}
                       <BookMachineButton 
                         machineId={machine.id} 
                         isCertified={isCertified}

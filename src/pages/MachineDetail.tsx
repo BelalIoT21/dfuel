@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -112,10 +113,18 @@ const MachineDetail = () => {
             setHasSafetyCertification(hasSafetyCert);
           } catch (certError) {
             console.error('Error checking certifications:', certError);
-            // Don't use localStorage as fallback - we no longer want to use it
-            // Let's set default values based on the props
-            setIsCertified(false);
-            setHasSafetyCertification(false);
+            
+            // Fallback to user object if API fails
+            if (user.certifications && Array.isArray(user.certifications)) {
+              // String comparison for certification check
+              const machineIdStr = String(id);
+              setIsCertified(user.certifications.some(cert => String(cert) === machineIdStr));
+              setHasSafetyCertification(user.certifications.some(cert => String(cert) === '6'));
+              console.log('Using user object for certification fallback');
+            } else {
+              setIsCertified(false);
+              setHasSafetyCertification(false);
+            }
           }
         }
       } catch (err) {
@@ -250,7 +259,7 @@ const MachineDetail = () => {
   console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
   console.log("User certification status:", isCertified);
 
-  // Add debug logs for BookMachineButton props
+  // Simplified BookMachineButton props for debugging
   console.log("BookMachineButton props:", {
     machineId: id,
     isCertified,
@@ -357,7 +366,7 @@ const MachineDetail = () => {
               </Button>
             )}
             
-            {/* Don't render booking button for special machines */}
+            {/* Only hide booking for special machines */}
             {id !== '5' && id !== '6' && (
               <BookMachineButton 
                 machineId={id || ''}
