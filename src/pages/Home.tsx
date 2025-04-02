@@ -17,6 +17,7 @@ interface ExtendedMachine {
   imageUrl?: string;
   type: string;
   status: 'available' | 'maintenance' | 'in-use';
+  requiresCertification?: boolean;
 }
 
 const Home = () => {
@@ -66,7 +67,8 @@ const Home = () => {
               image: machine.imageUrl || machine.image || '/placeholder.svg',
               imageUrl: machine.imageUrl || machine.image || '/placeholder.svg',
               type: machine.type || 'Machine',
-              status: (machine.status?.toLowerCase() || 'available') as 'available' | 'maintenance' | 'in-use'
+              status: (machine.status?.toLowerCase() || 'available') as 'available' | 'maintenance' | 'in-use',
+              requiresCertification: machine.requiresCertification !== false // Default to true if not specified
             };
           });
           
@@ -186,12 +188,12 @@ const Home = () => {
                         </div>
                       </div>
                       
-                      {/* Always use BookMachineButton, which will handle certification and availability logic */}
+                      {/* Fixed BookMachineButton - always display it */}
                       <BookMachineButton 
                         machineId={machine.id} 
                         isCertified={isCertified || false}
                         machineStatus={machine.status}
-                        requiresCertification={true}
+                        requiresCertification={machine.requiresCertification}
                         className="w-full mt-auto"
                       />
                     </div>
