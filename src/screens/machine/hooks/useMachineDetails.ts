@@ -86,19 +86,41 @@ export const useMachineDetails = (machineId, user, navigation) => {
           return;
         }
         
-        // Get all user certifications directly from API - same as admin approach
+        // Get all user certifications - try both API paths
         try {
-          const certifications = await certificationService.getUserCertifications(user.id);
-          console.log("User certifications from API:", certifications);
+          // First try certifications endpoint without the /api prefix (it's added by apiService)
+          let certifications = [];
+          try {
+            certifications = await certificationService.getUserCertifications(user.id);
+            console.log("Got certifications from primary endpoint:", certifications);
+          } catch (error) {
+            console.log("Failed on primary endpoint, trying alternative");
+            // If that fails, try direct fetch with full URL including /api
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            const response = await fetch(`${apiUrl}/api/certifications/user/${user.id}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (response.ok) {
+              certifications = await response.json();
+              console.log("Got certifications from alternative endpoint:", certifications);
+            }
+          }
+          
           setUserCertifications(certifications);
           
           // Check if user is certified for this machine
-          const isUserCertified = certifications.includes(machineId);
+          const isUserCertified = certifications.includes(machineId) || 
+                                 certifications.some(cert => cert.toString() === machineId);
           console.log("User certification check result:", isUserCertified);
           setIsCertified(isUserCertified);
           
           // Check if user has safety certification
-          const hasSafetyCert = certifications.includes(SAFETY_COURSE_ID);
+          const hasSafetyCert = certifications.includes(SAFETY_COURSE_ID) || 
+                               certifications.some(cert => cert.toString() === SAFETY_COURSE_ID);
           console.log("User safety certification check result:", hasSafetyCert);
           setHasMachineSafetyCert(hasSafetyCert);
         } catch (certError) {
