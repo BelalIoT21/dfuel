@@ -259,37 +259,37 @@ export const getUserCertifications = asyncHandler(async (req: Request, res: Resp
 // @desc    Check if user has certification
 // @route   GET /api/certifications/check/:userId/:machineId
 // @access  Private
-export const checkCertification = asyncHandler(async (req: Request, res: Response) => {
-  const { userId, machineId } = req.params;
-  
-  console.log(`Request to check certification: userId=${userId}, machineId=${machineId}`);
-  
+interface CertificationResponse {
+  isCertified: boolean;
+  message?: string;
+  error?: string;
+}
+
+export const checkCertification = asyncHandler(async (req: Request, res: Response<CertificationResponse>) => {
   try {
-    // Find user with various ID formats
-    let user = await findUserWithAnyIdFormat(userId);
+    const { userId, machineId } = req.params;
+    console.log(`Checking certification for user ${userId} and machine ${machineId}`);
     
+    const user = await User.findById(userId).select('certifications');
     if (!user) {
-      console.log(`User not found with ID: ${userId}`);
-      res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
+      console.log('User not found');
+      res.status(200).json({ isCertified: false }); // Explicitly return false
       return;
     }
+
+    const isCertified: boolean = user.certifications.includes(machineId);
+    console.log(`Certification check result: ${isCertified}`);
     
-    // Ensure certifications array exists
-    if (!user.certifications) {
-      user.certifications = [];
-    }
+    // Return explicit boolean in response
+    res.status(200).json({ 
+      isCertified,
+      message: isCertified ? 'User is certified' : 'User is not certified'
+    });
     
-    const hasCertification = user.certifications.includes(machineId);
-    console.log(`User ${userId} ${hasCertification ? 'has' : 'does not have'} certification ${machineId}`);
-    res.status(200).json(hasCertification);
   } catch (error) {
-    console.error('Error checking certification:', error);
+    console.error('Certification check error:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Failed to check certification',
+      isCertified: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

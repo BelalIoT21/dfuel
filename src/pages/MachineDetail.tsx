@@ -61,29 +61,44 @@ const MachineDetail = () => {
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
         }
         
-        if (user) {
-          try {
-            const certificationResult = await certificationService.checkCertification(id, id);
-            setIsCertified(certificationResult);
-            console.log(`User certification status for machine ${id}: ${certificationResult}`);
-            
-            const safetyCertResult = await certificationService.checkCertification(user.id, '6');
-            setHasSafetyCertification(safetyCertResult);
-            console.log(`User has safety certification: ${safetyCertResult}`);
-          } catch (certError) {
-            console.error('Error checking certification:', certError);
+        if (user && id) {
+          const checkCertStatus = async () => {
+            try {
+              console.log('[MachineDetail] Initiating certification check...');
+              
+              // Debug: First get all certifications
+              const allCerts = await certificationService.getUserCertifications(user.id);
+              console.log('[MachineDetail] All user certifications:', allCerts);
+              
+              // Then check specific certification
+              const isCert = await certificationService.checkCertification(user.id, id);
+              console.log('[MachineDetail] Certification check result:', isCert);
+              
+              setIsCertified(isCert);
+              
+              // Check safety certification separately
+              const hasSafetyCert = allCerts.includes('6') || 
+                                   await certificationService.checkCertification(user.id, '6');
+              setHasSafetyCertification(hasSafetyCert);
+              
+                } catch (error) {
+                  console.error('[MachineDetail] Certification check failed:', error);
+                  setIsCertified(false);
+                }
+              };
+              
+              checkCertStatus();
+            }
+          } catch (error) {
+            console.error('Error fetching machine data:', error);
+            setError('Failed to load machine data');
+          } finally {
+            setLoading(false);
           }
-        }
-      } catch (err) {
-        console.error('Error fetching machine details:', err);
-        setError('Failed to load machine details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMachineData();
-  }, [id, user]);
+        };
+    
+        fetchMachineData();
+      }, [user, id]);
 
   const handleTakeCourse = () => {
     if (!id) return;

@@ -61,16 +61,16 @@ class ApiService {
       
       // Make the request
       let response;
-      
+    try {
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await this.api.get(cleanEndpoint);
+          response = await this.api.get(cleanEndpoint, { params: data });
           break;
         case 'POST':
-          response = await this.api.post(cleanEndpoint, data || {});
+          response = await this.api.post(cleanEndpoint, data);
           break;
         case 'PUT':
-          response = await this.api.put(cleanEndpoint, data || {});
+          response = await this.api.put(cleanEndpoint, data);
           break;
         case 'DELETE':
           response = await this.api.delete(cleanEndpoint, { data });
@@ -78,23 +78,43 @@ class ApiService {
         default:
           throw new Error(`Unsupported method: ${method}`);
       }
-      
-      return {
-        data: response.data,
-        status: response.status
-      };
     } catch (error: any) {
-      const status = error.response?.status || 500;
-      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
-      
-      console.error(`API Error (${status}): ${errorMsg}`);
-      
-      return {
-        error: errorMsg,
-        status
-      };
+      // Handle network errors or invalid JSON responses
+      if (error.response?.data?.includes('<!DOCTYPE html>')) {
+        throw new Error('Received HTML response instead of JSON');
+      }
+      throw error;
     }
+
+    return {
+      data: response.data,
+      status: response.status
+    };
+
+  } catch (error: any) {
+    const status = error.response?.status || 500;
+    let errorMsg = 'Unknown error occurred';
+
+    if (error.response?.data) {
+      if (typeof error.response.data === 'string') {
+        errorMsg = error.response.data;
+      } else if (error.response.data.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.response.data.error) {
+        errorMsg = error.response.data.error;
+      }
+    } else {
+      errorMsg = error.message || errorMsg;
+    }
+
+    console.error(`API Error (${status}): ${errorMsg}`);
+    return {
+      error: errorMsg,
+      status,
+      details: error.response?.data
+    };
   }
+}
   
   // Auth functions
   async login(email: string, password: string): Promise<any> {
