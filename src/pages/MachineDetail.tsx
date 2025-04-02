@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,22 +49,6 @@ const MachineDetail = () => {
         setLoading(true);
         setError(null);
         
-        // First check localStorage for quick rendering
-        const cachedMachineStr = localStorage.getItem(`machine_${id}`);
-        
-        if (cachedMachineStr) {
-          try {
-            const cachedMachine = JSON.parse(cachedMachineStr);
-            setMachine(cachedMachine);
-            setMachineStatus(cachedMachine.status?.toLowerCase() || 'unknown');
-            console.log('Using cached machine data for initial display');
-            // Continue fetching in background but show immediate UI
-            setLoading(false);
-          } catch (cacheError) {
-            console.error('Error parsing cached machine:', cacheError);
-          }
-        }
-        
         console.log(`Fetching machine with ID: ${id}`);
         const machineData = await machineService.getMachineById(id);
         
@@ -79,25 +62,13 @@ const MachineDetail = () => {
         console.log('Retrieved machine data:', machineData);
         setMachine(machineData);
         
-        // Cache machine data for future use
-        localStorage.setItem(`machine_${id}`, JSON.stringify(machineData));
-        
-        // Check for cached status
-        const cachedStatusStr = localStorage.getItem(`machine_status_${id}`);
-        if (cachedStatusStr) {
-          setMachineStatus(cachedStatusStr.toLowerCase());
-          console.log(`Using cached status for machine ${id}: ${cachedStatusStr}`);
-        }
-        
         try {
           const status = await machineService.getMachineStatus(id);
           setMachineStatus(status.toLowerCase());
-          localStorage.setItem(`machine_status_${id}`, status.toLowerCase());
           console.log(`Machine status: ${status}`);
         } catch (statusError) {
           console.error('Error fetching machine status:', statusError);
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
-          localStorage.setItem(`machine_status_${id}`, machineData.status?.toLowerCase() || 'unknown');
         }
         
         if (user) {
@@ -113,8 +84,6 @@ const MachineDetail = () => {
             setHasSafetyCertification(hasSafetyCert);
           } catch (certError) {
             console.error('Error checking certifications:', certError);
-            // Don't use localStorage as fallback - we no longer want to use it
-            // Let's set default values based on the props
             setIsCertified(false);
             setHasSafetyCertification(false);
           }
