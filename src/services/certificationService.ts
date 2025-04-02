@@ -1,4 +1,3 @@
-
 import { apiService } from './apiService';
 
 // Define constant certifications for reference
