@@ -9,7 +9,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import { courseDatabaseService } from '@/services/database/courseService';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
 
 const AdminCourses = () => {
   const { user } = useAuth();
@@ -102,12 +101,9 @@ const AdminCourses = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <Button asChild className="w-full md:w-auto">
-                <Link to="/admin/courses/new" className="flex items-center justify-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Course
-                </Link>
-              </Button>
+              <div>
+                <Button onClick={() => navigate('/admin/courses/new')}>Add New Course</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
