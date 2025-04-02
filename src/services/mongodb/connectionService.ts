@@ -48,10 +48,21 @@ class MongoConnectionService {
     
     try {
       this.isConnecting = true;
-      
+      this.connectionPromise = this._connectToMongoDB();
+      return await this.connectionPromise;
+    } finally {
+      this.isConnecting = false;
+      this.connectionPromise = null;
+    }
+  }
+  
+  /**
+   * Internal method to handle the actual MongoDB connection
+   */
+  private async _connectToMongoDB(): Promise<any | null> {
+    try {
       if (this.connectionAttempts >= this.maxConnectionAttempts) {
         console.error(`Maximum connection attempts (${this.maxConnectionAttempts}) reached.`);
-        this.isConnecting = false;
         return null;
       }
       
@@ -59,7 +70,6 @@ class MongoConnectionService {
       
       if (!this.uri) {
         console.error('MongoDB URI is not defined');
-        this.isConnecting = false;
         return null;
       }
       
@@ -68,7 +78,7 @@ class MongoConnectionService {
       // In a real implementation, you would use the MongoDB driver
       // For demonstration purposes, we're simulating a successful connection
       this.client = { connected: true };
-      this.db = { name: 'fabricLab' };
+      this.db = { name: 'fabricLab', collection: (name: string) => ({ name, find: () => ({ toArray: () => [] }) }) };
       
       console.log('Connected to MongoDB successfully');
       
@@ -85,10 +95,7 @@ class MongoConnectionService {
       console.error('Error connecting to MongoDB:', error);
       this.client = null;
       this.db = null;
-      this.isConnecting = false;
       throw error;
-    } finally {
-      this.isConnecting = false;
     }
   }
   
@@ -141,6 +148,7 @@ class MongoConnectionService {
       } finally {
         this.client = null;
         this.db = null;
+        this.initialized = false;
       }
     }
   }
