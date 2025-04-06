@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Activity, Check } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PlatformOverviewProps {
   allUsers: {
@@ -54,29 +56,31 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
           <div>
             <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">Recent User Activity</h3>
             {allUsers.length > 0 ? (
-              <div className="space-y-3">
-                {allUsers.slice(0, 5).map((user, index) => {
-                  const userKey = getUserKey(user, index);
-                  return (
-                    <div 
-                      key={userKey}
-                      className="flex justify-between border-b pb-2 last:border-0"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {user.name || 'Unknown User'}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          Last login: {formatDate(user.lastLogin)}
+              <ScrollArea className="h-[200px] rounded-md border">
+                <div className="space-y-3 p-2">
+                  {allUsers.slice(0, 10).map((user, index) => {
+                    const userKey = getUserKey(user, index);
+                    return (
+                      <div 
+                        key={userKey}
+                        className="flex justify-between border-b pb-2 last:border-0"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">
+                            {user.name || 'Unknown User'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Last login: {formatDate(user.lastLogin)}
+                          </span>
+                        </div>
+                        <span className="px-2 py-2 bg-purple-100 text-purple-800 rounded-full text-xs">
+                          {getCertificationCount(user)} certifications
                         </span>
                       </div>
-                      <span className="px-2 py-2 bg-purple-100 text-purple-800 rounded-full text-xs">
-                        {getCertificationCount(user)} certifications
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             ) : (
               <div className="text-center py-4 text-gray-500">
                 <p className="text-sm">No user activity recorded yet.</p>
