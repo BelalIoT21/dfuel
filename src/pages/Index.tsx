@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +16,7 @@ const Index = () => {
   const [serverStatus, setServerStatus] = useState<string | null>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const prevServerStatusRef = useRef<string | null>(null);
@@ -33,7 +33,7 @@ const Index = () => {
     // We'll handle this with a fallback UI
   }
 
-  const { user, loading: authLoading, login, register } = auth || { 
+  const { user, loading: authLoadingState, login, register } = auth || { 
     user: null, 
     loading: false,
     login: async () => { 
@@ -225,12 +225,12 @@ const Index = () => {
   }, [serverStatus]);
 
   useEffect(() => {
-    if (user && !authLoading) {
+    if (user && !authLoadingState) {
       console.log("User is logged in, redirecting:", user);
       // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
-  }, [user, navigate, authLoading]);
+  }, [user, navigate, authLoadingState]);
 
   const handleLogin = async (email: string, password: string) => {
     console.log("Attempting login with:", email);
@@ -250,19 +250,23 @@ const Index = () => {
   };
 
   const handleRegister = async (email: string, password: string, name: string) => {
-    console.log("Attempting registration for:", email);
     try {
-      if (!register) {
-        throw new Error("Authentication service is not available");
+      setAuthLoading(true);
+      console.debug(`Attempting registration for: ${email}`);
+      await register(email, password, name);
+      return true; // Return true to indicate success
+    } catch (error: any) {
+      // For user exists errors, we want to show the error in the form
+      if (error.name === 'UserExistsError' || error.message?.includes('already exists')) {
+        // Re-throw to be handled by the form
+        throw error;
       }
-      const success = await register(email, password, name);
-      console.log("Registration result:", success);
-      if (!success) {
-        throw new Error("Registration failed");
-      }
-    } catch (error) {
-      console.error("Registration error:", error);
-      throw error;
+      
+      // Only log unexpected errors
+      console.error('Unexpected registration error:', error);
+      return false;
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -270,7 +274,7 @@ const Index = () => {
     setIsLogin(!isLogin);
   };
 
-  console.log("Rendering Index component, auth loading:", authLoading);
+  console.log("Rendering Index component, auth loading:", authLoadingState);
 
   // If there's an auth context error, show a helpful message
   if (authError) {
@@ -290,7 +294,7 @@ const Index = () => {
 
   const isConnected = serverStatus === 'connected';
 
-  if (authLoading) {
+  if (authLoadingState) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
         <div className="inline-block h-8 w-8 rounded-full border-4 border-t-purple-500 border-opacity-25 animate-spin"></div>

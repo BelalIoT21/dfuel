@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,46 +74,64 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Registration form submitted", { email, password, name });
+    console.debug("Registration form submitted", { email, password, name });
     setFormError('');
+    setRegistrationSuccess(false);
     
     if (!validateForm()) return;
     
     if (isSubmitting) {
-      console.log("Form already submitting, preventing duplicate submission");
+      console.debug("Form already submitting, preventing duplicate submission");
       return;
     }
     
     try {
       setIsSubmitting(true);
-      console.log("Attempting registration with:", { email, password, name });
-      await onRegister(email, password, name);
-      console.log("Registration successful");
+      console.debug("Attempting registration with:", { email, password, name });
       
-      setRegistrationSuccess(true);
-      
-      // Clear form after successful registration
-      setEmail('');
-      setPassword('');
-      setName('');
-      
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        onToggleMode();
-      }, 2000);
-      
-    } catch (error) {
-      console.error("Authentication error:", error);
-      
-      // Check for specific error about user already existing
-      if (error instanceof Error && error.message.includes("already exists")) {
-        setFormError("A user with this email already exists. Please try logging in instead.");
+      // Always display the error when a user exists
+      try {
+        await onRegister(email, password, name);
         
-        // Focus on the email input for better UX
-        const emailInput = document.getElementById('email');
-        if (emailInput) emailInput.focus();
+        // If we got here, registration was successful
+        console.debug("Registration successful");
+        
+        setRegistrationSuccess(true);
+        
+        // Clear form after successful registration
+        setEmail('');
+        setPassword('');
+        setName('');
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          onToggleMode();
+        }, 2000);
+      } catch (error: any) {
+        // This is where the user already exists error is handled
+        if (error.name === 'UserExistsError' || 
+            error.message === 'User already exists' || 
+            (typeof error.message === 'string' && error.message.includes('User already exists'))) {
+          setFormError('This email is already registered. Please try logging in instead.');
+          
+          // Focus on email field
+          const emailInput = document.getElementById('email') as HTMLInputElement;
+          if (emailInput) {
+            emailInput.focus();
+          }
+        } else {
+          throw error; // Re-throw to be caught by the outer catch block
+        }
+      }
+    } catch (error: any) {
+      // Handle other errors
+      if (error.message === 'Server error' || 
+         (typeof error.message === 'string' && error.message.includes('Server error'))) {
+        setFormError('Unable to connect to the server. Please try again later.');
       } else {
-        setFormError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
+        // Only log for unexpected errors
+        console.error("Authentication error:", error);
+        setFormError('Registration failed. Please try again later.');
       }
     } finally {
       setIsSubmitting(false);
@@ -139,14 +156,14 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5" : "mb-3 py-2"}>
+          <Alert variant="destructive" className={`${isMobile ? "mb-2 py-2" : "mb-4 py-3"} border-2 border-red-500`}>
             <div className="flex items-center">
               {formError.includes("already exists") ? (
-                <Mail className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+                <Mail className={isMobile ? "h-4 w-4 mr-2" : "h-5 w-5 mr-2"} />
               ) : (
-                <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+                <AlertCircle className={isMobile ? "h-4 w-4 mr-2" : "h-5 w-5 mr-2"} />
               )}
-              <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
+              <AlertDescription className={`${isMobile ? "text-sm" : "text-base"} font-medium`}>{formError}</AlertDescription>
             </div>
           </Alert>
         )}

@@ -82,7 +82,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (email: string, password: string, name: string) => {
-    return await registerFn(email, password, name);
+    try {
+      if (!registerFn) {
+        throw new Error("Authentication functions not available");
+      }
+      
+      // Use debug level logging
+      console.debug(`Auth context: Registration attempt for ${email}`);
+      
+      const registrationResult = await registerFn(email, password, name);
+      return !!registrationResult;
+    } catch (error: any) {
+      // Silence user exists errors
+      if (error.name === 'UserExistsError' || 
+          error.message === 'User already exists' || 
+          (typeof error.message === 'string' && error.message.includes('User already exists'))) {
+        throw error; // Re-throw without logging
+      }
+      
+      // Only log unexpected errors
+      console.error("Authentication context error:", error);
+      throw error;
+    }
   };
 
   const logout = async () => {

@@ -284,7 +284,7 @@ class MongoDbService {
       const response = await apiService.request(`courses/${courseId}`, 'DELETE');
       if (response?.data) {
         console.log(`Course ${courseId} deleted successfully via API`);
-        return true;
+      return true;
       }
       console.log(`Failed to delete course ${courseId} via API`);
       return false;
