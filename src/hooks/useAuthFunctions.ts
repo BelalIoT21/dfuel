@@ -96,7 +96,12 @@ export const useAuthFunctions = (
       const response = await apiService.register({ email, password, name: name || '' });
       console.log("Registration response:", response);
       
+      // Check for specific error about user already existing
       if (response.error) {
+        if (response.error.includes("User already exists") || 
+            response.data?.message?.includes("User already exists")) {
+          throw new Error("A user with this email already exists");
+        }
         throw new Error(response.error);
       }
       
@@ -148,11 +153,21 @@ export const useAuthFunctions = (
       return true;
     } catch (error) {
       console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Registration failed",
-        variant: "destructive"
-      });
+      
+      // Show a specific toast for user already exists error
+      if (error instanceof Error && error.message.includes("user with this email already exists")) {
+        toast({
+          title: "Email already registered",
+          description: "This email address is already in use. Please try logging in instead.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Registration failed",
+          description: error instanceof Error ? error.message : "Registration failed",
+          variant: "destructive"
+        });
+      }
       return false;
     } finally {
       setIsLoading(false);

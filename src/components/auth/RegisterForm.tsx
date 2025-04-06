@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, Mail } from "lucide-react";
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -93,13 +93,6 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       
       setRegistrationSuccess(true);
       
-      // Show success toast
-      toast({
-        title: "Registration successful!",
-        description: "Your account has been created. Redirecting to login...",
-        variant: "default"
-      });
-      
       // Clear form after successful registration
       setEmail('');
       setPassword('');
@@ -112,14 +105,17 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       
     } catch (error) {
       console.error("Authentication error:", error);
-      setFormError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
       
-      // Show error toast
-      toast({
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : 'Please try again with different information.',
-        variant: "destructive"
-      });
+      // Check for specific error about user already existing
+      if (error instanceof Error && error.message.includes("already exists")) {
+        setFormError("A user with this email already exists. Please try logging in instead.");
+        
+        // Focus on the email input for better UX
+        const emailInput = document.getElementById('email');
+        if (emailInput) emailInput.focus();
+      } else {
+        setFormError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -145,7 +141,11 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         {formError && (
           <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5" : "mb-3 py-2"}>
             <div className="flex items-center">
-              <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+              {formError.includes("already exists") ? (
+                <Mail className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+              ) : (
+                <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
+              )}
               <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
             </div>
           </Alert>
