@@ -56,7 +56,7 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
           <div>
             <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">Recent User Activity</h3>
             {allUsers.length > 0 ? (
-              <ScrollArea className="h-[200px] rounded-md border">
+              <ScrollArea className="h-[120px] rounded-md border">
                 <div className="space-y-3 p-2">
                   {allUsers.slice(0, 10).map((user, index) => {
                     const userKey = getUserKey(user, index);
