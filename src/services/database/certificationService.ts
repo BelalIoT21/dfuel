@@ -74,6 +74,22 @@ export class CertificationService {
       return false;
     }
   }
+
+  async clearUserCertifications(userId: string): Promise<boolean> {
+    try {
+      const response = await apiService.clearUserCertifications(userId);
+      
+      if (response.error) {
+        console.error('Failed to clear certifications:', response.error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error clearing certifications:', error);
+      return false;
+    }
+  }
 }
 
 export const certificationService = new CertificationService();

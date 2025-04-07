@@ -58,6 +58,20 @@ export class UserDatabaseService extends BaseService {
       console.log("Registering via API:", email);
       const response = await apiService.register({ email, password, name });
       
+      // Check for error response indicating user already exists
+      if (response.error) {
+        console.error("API registration error:", response.error);
+        
+        // Check for "User already exists" in error message
+        if (response.error.includes("User already exists") || 
+            (response.data && response.data.message && 
+             response.data.message.includes("User already exists"))) {
+          throw new Error("A user with this email already exists");
+        }
+        
+        throw new Error(response.error);
+      }
+      
       if (response.data?.data?.user) {
         console.log("API registration successful");
         
@@ -74,7 +88,7 @@ export class UserDatabaseService extends BaseService {
       return null;
     } catch (error) {
       console.error("API error in registration:", error);
-      return null;
+      throw error; // Propagate the error up so it can be handled appropriately
     }
   }
   
