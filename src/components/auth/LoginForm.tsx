@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,12 +79,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   };
 
   const cardHeaderClass = isMobile 
-    ? "pb-0.5 pt-1.5 px-3 md:p-6" 
+    ? "pb-0.5 pt-1.5 px-4 md:p-6" 
     : "pb-2 pt-4 px-6";
   
   const cardContentClass = isMobile
-    ? "p-3 pt-1.5 md:p-6"
-    : "p-6 pt-3";
+    ? "p-3 pt-0.5 md:p-6"
+    : "p-6 pt-2";
 
   return (
     <Card className="shadow-lg border-purple-100 w-full">
@@ -95,7 +96,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className={isMobile ? "mb-1.5 py-1" : "mb-3 py-2"}>
+          <Alert variant="destructive" className={isMobile ? "mb-1 py-1" : "mb-3 py-2"}> {/* Reduced mb-1.5 to mb-1 */}
             <div className="flex items-center">
               <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
               <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
@@ -105,7 +106,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className={isMobile ? "space-y-2" : "space-y-2.5"}
+          className={isMobile ? "space-y-1.5" : "space-y-2.5"} // Reduced space-y-2 to space-y-1.5
           variants={formAnimation}
           initial="hidden"
           animate="show"
@@ -150,7 +151,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         </motion.form>
 
         <motion.div 
-          className={isMobile ? "mt-2 text-center" : "mt-3 text-center"}
+          className={isMobile ? "mt-1.5 text-center" : "mt-3 text-center"} // Changed from mt-2 to mt-1.5
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -139,11 +140,11 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
   };
 
   const cardHeaderClass = isMobile 
-    ? "pb-0.5 pt-1.5 px-3 md:p-6" 
+    ? "pb-0.5 pt-1 px-3 md:p-6" // Reduced pt-1.5 to pt-1
     : "pb-2 pt-4 px-6";
   
   const cardContentClass = isMobile
-    ? "p-3 pt-1.5 md:p-6"
+    ? "p-3 pt-0.5 md:p-6" // Reduced pt-1.5 to pt-0.5
     : "p-6 pt-3";
 
   return (
@@ -156,7 +157,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className={`${isMobile ? "mb-1.5 py-1.5" : "mb-4 py-3"} border-2 border-red-500`}>
+          <Alert variant="destructive" className={`${isMobile ? "mb-1 py-1" : "mb-4 py-3"} border-2 border-red-500`}> {/* Reduced from mb-1.5 to mb-1 */}
             <div className="flex items-center">
               {formError.includes("already exists") ? (
                 <Mail className={isMobile ? "h-3 w-3 mr-1.5" : "h-5 w-5 mr-2"} />
@@ -169,7 +170,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         )}
         
         {registrationSuccess && (
-          <Alert className={`mb-1.5 bg-green-50 border-green-200 ${isMobile ? "py-1" : "py-2"}`}>
+          <Alert className={`mb-1 bg-green-50 border-green-200 ${isMobile ? "py-1" : "py-2"}`}> {/* Reduced from mb-1.5 to mb-1 */}
             <Check className={isMobile ? "h-3 w-3 mr-1.5 text-green-500" : "h-4 w-4 mr-2 text-green-500"} />
             <AlertDescription className={`${isMobile ? "text-xs" : "text-sm"} text-green-700`}>
               Registration successful! Redirecting to login...
@@ -179,7 +180,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className={isMobile ? "space-y-1.5" : "space-y-2.5"}
+          className={isMobile ? "space-y-1" : "space-y-2.5"} // Reduced space-y-1.5 to space-y-1
           variants={formAnimation}
           initial="hidden"
           animate="show"
@@ -237,7 +238,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
         </motion.form>
 
         <motion.div 
-          className={isMobile ? "mt-1.5 text-center" : "mt-3 text-center"}
+          className={isMobile ? "mt-1 text-center" : "mt-3 text-center"} // Reduced from mt-1.5 to mt-1
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
