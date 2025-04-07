@@ -325,8 +325,8 @@ export const UserCertificationManager = ({ user, onCertificationAdded }: UserCer
               </div>
             )}
 
-            {/* Only show the Clear All button when machines have loaded and user has certifications */}
-            {availableMachines.length > 0 && userCertifications.length > 0 && (
+            {/* Always show the Clear All button if there are certifications */}
+            {userCertifications.length > 0 && (
               <div className="mt-4 border-t pt-4">
                 <Button 
                   variant="outline"
