@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { User } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
@@ -16,11 +17,11 @@ export const useAuthFunctions = (
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      console.debug("Login attempt:", email);
+      console.log("Login attempt:", email);
   
       // MongoDB login via API
       const response = await apiService.login(email, password);
-      console.debug("Login response received");
+      console.log("Login response:", response);
   
       if (response.error) {
         // Provide more detailed error message based on status code
@@ -86,78 +87,75 @@ export const useAuthFunctions = (
   /**
    * Handles user registration.
    */
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name?: string): Promise<boolean> => {
     try {
-      const response = await apiService.register(email, password, name);
+      setIsLoading(true);
+      console.log("Registration attempt:", email);
+      
+      // Call API to register user
+      const response = await apiService.register({ email, password, name: name || '' });
+      console.log("Registration response:", response);
       
       if (response.error) {
-        // Check for specific error messages
-        if (response.error === 'User already exists' || 
-            (typeof response.error === 'string' && response.error.includes('User already exists'))) {
-          toast({
-            title: "Registration Failed",
-            description: "This email is already registered. Please try logging in instead.",
-            variant: "destructive",
-          });
-          const userExistsError = new Error('User already exists');
-          userExistsError.name = 'UserExistsError';
-          throw userExistsError;
-        }
-        
-        // Handle server errors
-        if (response.error.includes('Server error')) {
-          toast({
-            title: "Registration Failed",
-            description: "Unable to connect to the server. Please try again later.",
-            variant: "destructive",
-          });
-          throw new Error('Server error');
-        }
-        
-        toast({
-          title: "Registration Failed",
-          description: response.error,
-          variant: "destructive",
-        });
         throw new Error(response.error);
       }
-
-      // Registration successful
+      
+      if (!response.data) {
+        throw new Error("Invalid response from server");
+      }
+      
+      // Extract user data and token
+      const userData = response.data.data?.user;
+      const token = response.data.data?.token;
+      
+      if (!userData) {
+        console.error("Invalid response format:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      // If we're registering from admin interface, just return success
+      if (user && user.isAdmin) {
+        toast({
+          title: "Registration successful",
+          description: `User ${userData.name || name || 'User'} created successfully!`
+        });
+        return true;
+      }
+      
+      // For normal registration, set token and user
+      if (token) {
+        localStorage.setItem('token', token);
+        apiService.setToken(token);
+      }
+      
+      // Normalize user data
+      const normalizedUser = {
+        id: String(userData._id),
+        name: userData.name || name || 'User',
+        email: userData.email,
+        isAdmin: Boolean(userData.isAdmin),
+        certifications: Array.isArray(userData.certifications) ? userData.certifications : []
+      };
+      
+      // Update user state
+      setUser(normalizedUser as User);
+      
       toast({
-        title: "Registration Successful",
-        description: "Account created successfully.",
+        title: "Registration successful",
+        description: `Welcome, ${normalizedUser.name}!`
       });
       
-      return response.data;
-    } catch (error: any) {
-      // No logging here - just handle different error types
-      
-      // Check if the error is about user already existing
-      if (error.name === 'UserExistsError' || 
-          error.message === 'User already exists' || 
-          (typeof error.message === 'string' && error.message.includes('User already exists'))) {
-        const userExistsError = new Error('User already exists');
-        userExistsError.name = 'UserExistsError';
-        throw userExistsError;
-      }
-      
-      // Check for ReferenceError which might indicate a bug in the code
-      if (error instanceof ReferenceError) {
-        const userExistsError = new Error('User already exists');
-        userExistsError.name = 'UserExistsError';
-        throw userExistsError;
-      }
-      
-      // Handle 400 Bad Request which is likely a user exists error
-      if (error.response?.status === 400) {
-        const userExistsError = new Error('User already exists');
-        userExistsError.name = 'UserExistsError';
-        throw userExistsError;
-      }
-      
-      // Only log for unexpected errors
-      console.error('Unexpected registration error:', error);
-      throw error;
+      return true;
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: error instanceof Error ? error.message : "Registration failed",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
