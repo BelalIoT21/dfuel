@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -302,15 +303,16 @@ const Index = () => {
     );
   }
 
+  // Adjust the positioning for mobile view, especially when keyboard is visible
   const containerStyle = isMobile
     ? { 
         minHeight: '100vh', 
         paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: 'flex-start', 
+        justifyContent: keyboardVisible ? 'flex-start' : 'center', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '1vh' : '5vh',
+        paddingTop: keyboardVisible ? '0' : '5vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -323,6 +325,7 @@ const Index = () => {
   return (
     <div 
       className="bg-gradient-to-b from-purple-50 to-white p-4 min-h-screen flex items-center justify-center" 
+      style={containerStyle}
     >
       <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
         {!isMobile && (
@@ -352,8 +355,13 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
-            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
+          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-8' : 'mb-2'}`}>
+            {!keyboardVisible && (
+              <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
+            )}
+            {keyboardVisible && (
+              <h1 className="text-sm font-medium text-purple-800">dfUEL MakerSpace</h1>
+            )}
             {!keyboardVisible && (
               <p className="mt-1 text-sm md:text-lg text-gray-600">
                 {isLogin ? 'Welcome back!' : 'Create your account'}
