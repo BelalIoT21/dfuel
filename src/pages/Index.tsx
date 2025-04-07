@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -308,9 +309,9 @@ const Index = () => {
         paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: 'flex-start', 
+        justifyContent: keyboardVisible ? 'flex-start' : 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '1vh' : '5vh',
+        paddingTop: keyboardVisible ? '0' : '2vh', // Reduced from 5vh to 2vh by default
       } 
     : { 
         minHeight: '100vh', 
@@ -323,8 +324,9 @@ const Index = () => {
   return (
     <div 
       className="bg-gradient-to-b from-purple-50 to-white p-4 min-h-screen flex items-center justify-center" 
+      style={containerStyle}
     >
-      <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
+      <div className={`w-full max-w-sm ${isMobile ? 'space-y-0' : 'mx-auto'}`}>
         {!isMobile && (
           <div className="text-center mb-2">
             <h1 className="text-4xl font-bold text-purple-800 tracking-tight">dfUEL MakerSpace</h1>
@@ -352,10 +354,15 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
-            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
+          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-3' : 'mb-1'}`}> {/* Reduced mb-2 to mb-1 */}
             {!keyboardVisible && (
-              <p className="mt-1 text-sm md:text-lg text-gray-600">
+              <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
+            )}
+            {keyboardVisible && (
+              <h1 className="text-[10px] font-medium text-purple-800">dfUEL MakerSpace</h1>
+            )}
+            {!keyboardVisible && (
+              <p className="mt-0.5 text-sm md:text-lg text-gray-600"> {/* Reduced mt-1 to mt-0.5 */}
                 {isLogin ? 'Welcome back!' : 'Create your account'}
               </p>
             )}
@@ -379,7 +386,7 @@ const Index = () => {
           </div>
         )}
 
-        <div className="relative">
+        <div className="relative mt-0">
           <AnimatePresence mode="wait">
             {isLogin ? (
               <motion.div
@@ -389,6 +396,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className="absolute w-full"
+                style={{ top: '0' }}
               >
                 <LoginForm 
                   onLogin={handleLogin} 
@@ -403,6 +411,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className="absolute w-full"
+                style={{ top: '0' }}
               >
                 <RegisterForm 
                   onRegister={handleRegister} 
