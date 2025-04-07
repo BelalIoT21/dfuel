@@ -325,7 +325,7 @@ const Index = () => {
       className="bg-gradient-to-b from-purple-50 to-white p-4 min-h-screen flex items-center justify-center" 
       style={containerStyle}
     >
-      <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
+      <div className={`w-full max-w-sm ${isMobile ? 'space-y-0' : 'mx-auto'}`}>
         {!isMobile && (
           <div className="text-center mb-2">
             <h1 className="text-4xl font-bold text-purple-800 tracking-tight">dfUEL MakerSpace</h1>
@@ -353,12 +353,12 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-5' : 'mb-2'}`}>
+          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-3' : 'mb-2'}`}>
             {!keyboardVisible && (
               <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
             )}
             {keyboardVisible && (
-              <h1 className="text-xs font-medium text-purple-800">dfUEL MakerSpace</h1>
+              <h1 className="text-[10px] font-medium text-purple-800">dfUEL MakerSpace</h1>
             )}
             {!keyboardVisible && (
               <p className="mt-1 text-sm md:text-lg text-gray-600">

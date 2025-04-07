@@ -78,24 +78,24 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   };
 
   const cardHeaderClass = isMobile 
-    ? "pb-1 pt-2 px-3 md:p-6" 
+    ? "pb-0.5 pt-1.5 px-3 md:p-6" 
     : "pb-2 pt-4 px-6";
   
   const cardContentClass = isMobile
-    ? "p-3 md:p-6"
+    ? "p-3 pt-1.5 md:p-6"
     : "p-6 pt-3";
 
   return (
     <Card className="shadow-lg border-purple-100 w-full">
       <CardHeader className={cardHeaderClass}>
-        <CardTitle className={isMobile ? "text-xl md:text-2xl" : "text-2xl"}>Sign In</CardTitle>
+        <CardTitle className={isMobile ? "text-lg md:text-2xl" : "text-2xl"}>Sign In</CardTitle>
         <CardDescription className={isMobile ? "text-xs md:text-sm" : "text-sm"}>
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
       <CardContent className={cardContentClass}>
         {formError && (
-          <Alert variant="destructive" className={isMobile ? "mb-2 py-1.5" : "mb-3 py-2"}>
+          <Alert variant="destructive" className={isMobile ? "mb-1.5 py-1" : "mb-3 py-2"}>
             <div className="flex items-center">
               <AlertCircle className={isMobile ? "h-3 w-3 mr-1.5" : "h-4 w-4 mr-2"} />
               <AlertDescription className={isMobile ? "text-xs" : "text-sm"}>{formError}</AlertDescription>
@@ -105,12 +105,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         
         <motion.form 
           onSubmit={handleSubmit} 
-          className="space-y-2.5"
+          className={isMobile ? "space-y-2" : "space-y-2.5"}
           variants={formAnimation}
           initial="hidden"
           animate="show"
         >
-          <motion.div className="space-y-1" variants={itemAnimation}>
+          <motion.div className="space-y-0.5" variants={itemAnimation}>
             <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
               id="email"
@@ -123,7 +123,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
             {emailError && <p className="text-xs text-red-500">{emailError}</p>}
           </motion.div>
           
-          <motion.div className="space-y-1" variants={itemAnimation}>
+          <motion.div className="space-y-0.5" variants={itemAnimation}>
             <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
             <div className="relative">
               <Input
@@ -150,7 +150,7 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
         </motion.form>
 
         <motion.div 
-          className="mt-3 text-center"
+          className={isMobile ? "mt-2 text-center" : "mt-3 text-center"}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
