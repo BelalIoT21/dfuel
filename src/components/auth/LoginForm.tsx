@@ -79,12 +79,12 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
   };
 
   const cardHeaderClass = isMobile 
-    ? "pb-0.5 pt-1.5 px-4 md:p-6" 
+    ? "pb-0.5 pt-1.5 px-3 md:p-6" 
     : "pb-2 pt-4 px-6";
   
   const cardContentClass = isMobile
-    ? "p-3 pt-0.5 md:p-6"
-    : "p-6 pt-2";
+    ? "p-3 pt-0.5 md:p-6" // Reduced pt-1.5 to pt-0.5 for mobile
+    : "p-6 pt-3";
 
   return (
     <Card className="shadow-lg border-purple-100 w-full">
