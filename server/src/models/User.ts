@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 interface IUser extends mongoose.Document {
-  _id: string | number; // Allow both string and number IDs for backwards compatibility
+  _id: string;
   name: string;
   email: string;
   password: string;
@@ -24,7 +24,7 @@ interface IUser extends mongoose.Document {
 
 const userSchema = new Schema<IUser>(
   {
-    _id: { type: Schema.Types.Mixed, required: true }, // Using Mixed type to support both string and number
+    _id: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },

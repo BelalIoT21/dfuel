@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,16 +28,6 @@ const MachineDetail = () => {
 
   const getProperImageUrl = (url: string) => {
     if (!url) return '/placeholder.svg';
-    
-    if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      return `${apiUrl}/api${url}`;
-    }
-    
-    if (url.startsWith('data:')) {
-      return url;
-    }
-    
     return url;
   };
 
@@ -72,76 +61,44 @@ const MachineDetail = () => {
           setMachineStatus(machineData.status?.toLowerCase() || 'unknown');
         }
         
-        if (user) {
-          try {
-            const certificationResult = await certificationService.checkCertification(user.id, id);
-            setIsCertified(certificationResult);
-            console.log(`User certification status for machine ${id}: ${certificationResult}`);
-            
-            const safetyCertResult = await certificationService.checkCertification(user.id, '6');
-            setHasSafetyCertification(safetyCertResult);
-            console.log(`User has safety certification: ${safetyCertResult}`);
-          } catch (certError) {
-            console.error('Error checking certification:', certError);
+        if (user && id) {
+          const checkCertStatus = async () => {
+            try {
+              console.log('[MachineDetail] Initiating certification check...');
+              
+              // Debug: First get all certifications
+              const allCerts = await certificationService.getUserCertifications(user.id);
+              console.log('[MachineDetail] All user certifications:', allCerts);
+              
+              // Then check specific certification
+              const isCert = await certificationService.checkCertification(user.id, id);
+              console.log('[MachineDetail] Certification check result:', isCert);
+              
+              setIsCertified(isCert);
+              
+              // Check safety certification separately
+              const hasSafetyCert = allCerts.includes('6') || 
+                                   await certificationService.checkCertification(user.id, '6');
+              setHasSafetyCertification(hasSafetyCert);
+              
+                } catch (error) {
+                  console.error('[MachineDetail] Certification check failed:', error);
+                  setIsCertified(false);
+                }
+              };
+              
+              checkCertStatus();
+            }
+          } catch (error) {
+            console.error('Error fetching machine data:', error);
+            setError('Failed to load machine data');
+          } finally {
+            setLoading(false);
           }
-        }
-      } catch (err) {
-        console.error('Error fetching machine details:', err);
-        setError('Failed to load machine details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMachineData();
-  }, [id, user]);
-
-  const handleGetCertified = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to get certified",
-        variant: "destructive"
-      });
-      navigate('/login', { state: { from: `/machine/${id}` } });
-      return;
-    }
-
-    if (!hasSafetyCertification && id !== '6') {
-      toast({
-        title: "Safety Certification Required",
-        description: "You need to complete the safety course before getting certified for this machine",
-        variant: "destructive"
-      });
-      navigate('/machine/6');
-      return;
-    }
-
-    try {
-      const success = await certificationService.addCertification(user.id, id || '');
-      
-      if (success) {
-        setIsCertified(true);
-        toast({
-          title: "Certification Successful",
-          description: `You are now certified to use the ${machine.name}`,
-        });
-      } else {
-        toast({
-          title: "Certification Failed",
-          description: "Unable to add certification. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error getting certified:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-    }
-  };
+        };
+    
+        fetchMachineData();
+      }, [user, id]);
 
   const handleTakeCourse = () => {
     if (!id) return;
@@ -212,10 +169,7 @@ const MachineDetail = () => {
 
   const machineImageUrl = getProperImageUrl(machine?.imageUrl || machine?.image || '/placeholder.svg');
   
-  console.log("MachineDetail - displaying image:", machineImageUrl);
-  
-  console.log("Machine has linked course:", hasLinkedCourse, machine?.linkedCourseId);
-  console.log("Machine has linked quiz:", hasLinkedQuiz, machine?.linkedQuizId);
+  const isBookable = machine && machine.id !== "5" && machine.id !== "6";
 
   return (
     <div className="container mx-auto max-w-4xl p-4 py-8">
@@ -316,7 +270,8 @@ const MachineDetail = () => {
             
             <BookMachineButton 
               machineId={id || ''}
-              isCertified={isCertified || !requiresCertification}
+              isCertified={isCertified}
+              requiresCertification={machine?.requiresCertification !== false}
               machineStatus={machineStatus}
               className="flex-1"
             />

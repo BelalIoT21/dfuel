@@ -1,4 +1,3 @@
-
 import { apiService } from '../apiService';
 import { BaseService } from './baseService';
 import mongoDbService from '../mongoDbService';
@@ -516,6 +515,13 @@ export class MachineDatabaseService extends BaseService {
       console.error(`Error linking machine ${machineId} with course and quiz:`, error);
       return false;
     }
+  }
+
+  // Generate a unique ID using Web Crypto API
+  private generateUniqueId(): string {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   }
 }
 

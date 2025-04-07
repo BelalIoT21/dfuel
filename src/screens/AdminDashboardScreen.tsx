@@ -32,7 +32,7 @@ const AdminDashboardScreen = ({ navigation }) => {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Admin Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Dfuel Platform Management</Text>
+        <Text style={styles.headerSubtitle}>dfUEL MakerSpace Platform Management</Text>
       </View>
 
       {/* Stats Overview */}

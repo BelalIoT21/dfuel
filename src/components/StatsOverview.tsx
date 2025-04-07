@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { apiService } from '@/services/apiService';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +13,7 @@ export const StatsOverview = () => {
       try {
         setIsLoading(true);
         
-        // Only make API calls in a web environment to avoid MongoDB errors
+        // Only make API calls in a web environment
         if (isWeb()) {
           const response = await apiService.getAllBookings();
           
