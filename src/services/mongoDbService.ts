@@ -3,23 +3,53 @@ import mongoUserService from './mongodb/userService';
 import mongoMachineService from './mongodb/machineService';
 import mongoCourseService from './mongodb/courseService';
 import mongoQuizService from './mongodb/quizService';
+import mongoBookingService from './mongodb/bookingService';
 import { apiService } from './apiService';
 import { getApiUrl } from '@/utils/env';
 
 class MongoDbService {
-  async getAllBookings() {
+  async createBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     try {
-      console.log("MongoDbService: Fetching all bookings from API");
-      const response = await apiService.request('bookings/all', 'GET');
-      if (response?.data && Array.isArray(response.data)) {
-        console.log(`Found ${response.data.length} bookings via API`);
-        return response.data;
-      }
-      console.log("No bookings found via API");
-      return [];
+      return await mongoBookingService.createBooking(userId, machineId, date, time);
     } catch (error) {
-      console.error('Error fetching all bookings:', error);
-      return [];
+      console.error('Error creating booking via MongoDB:', error);
+      return false;
+    }
+  }
+
+  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
+    try {
+      return await mongoBookingService.updateBookingStatus(bookingId, status);
+    } catch (error) {
+      console.error('Error updating booking status via MongoDB:', error);
+      return false;
+    }
+  }
+
+  async deleteBooking(bookingId: string): Promise<boolean> {
+    try {
+      return await mongoBookingService.deleteBooking(bookingId);
+    } catch (error) {
+      console.error('Error deleting booking via MongoDB:', error);
+      return false;
+    }
+  }
+
+  async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
+    try {
+      // Check if the machine has any approved bookings for this time slot
+      const bookings = await this.getAllBookings();
+      const timeSlotBooked = bookings.some(booking => 
+        booking.machineId === machineId && 
+        booking.date.substring(0, 10) === date.substring(0, 10) && 
+        booking.time === time && 
+        (booking.status === 'Approved' || booking.status === 'Pending')
+      );
+      
+      return !timeSlotBooked;
+    } catch (error) {
+      console.error('Error checking time slot availability:', error);
+      return false; // Default to unavailable on error
     }
   }
 
@@ -54,20 +84,16 @@ class MongoDbService {
     try {
       console.log(`MongoDbService: Attempting to delete user ${userId}`);
       
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No authentication token found');
-        return false;
-      }
-
-      // Set token in apiService
-      apiService.setToken(token);
-      
       // Make API call to delete the user
       try {
         console.log(`Attempting API deletion for user ${userId}`);
-        const response = await apiService.request(`users/${userId}`, 'DELETE');
+        const token = localStorage.getItem('token');
+        if (token) {
+          apiService.setToken(token);
+        }
+        
+        // Use direct endpoint without leading slash and with proper content type
+        const response = await apiService.request(`users/${userId}`, 'DELETE', null, true);
         console.log(`API deletion response:`, response);
         
         if (response && response.status >= 200 && response.status < 300) {
@@ -93,6 +119,42 @@ class MongoDbService {
     } catch (error) {
       console.error('Error in deleteUser method:', error);
       return false;
+    }
+  }
+
+  async getAllBookings() {
+    try {
+      console.log("MongoDbService: Fetching all bookings");
+      
+      // Try direct MongoDB service first
+      try {
+        const bookings = await mongoBookingService.getAllBookings();
+        if (Array.isArray(bookings) && bookings.length > 0) {
+          console.log(`Found ${bookings.length} bookings via MongoDB service`);
+          return bookings;
+        }
+      } catch (mongoError) {
+        console.error("MongoDB bookings fetch error:", mongoError);
+      }
+      
+      // Try direct API fetch as fallback
+      try {
+        console.log("Fetching all bookings from API");
+        const response = await apiService.request('bookings/all', 'GET');
+        if (response?.data && Array.isArray(response.data)) {
+          console.log(`Found ${response.data.length} bookings via API`);
+          return response.data;
+        }
+      } catch (apiError) {
+        console.error("API bookings fetch error:", apiError);
+      }
+      
+      // If both failed, return empty array
+      console.log("Failed to fetch bookings from both MongoDB and API");
+      return [];
+    } catch (error) {
+      console.error('Error fetching all bookings:', error);
+      return [];
     }
   }
 
@@ -209,188 +271,100 @@ class MongoDbService {
 
   private getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token || ''}`
-    };
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
   async getAllCourses() {
     try {
-      console.log("MongoDbService: Fetching all courses from API");
-      const response = await apiService.request('courses/all', 'GET');
-      if (response?.data && Array.isArray(response.data)) {
-        console.log(`Found ${response.data.length} courses via API`);
-        return response.data;
-      }
-      console.log("No courses found via API");
-      return [];
+      return await mongoCourseService.getAllCourses();
     } catch (error) {
-      console.error('Error fetching all courses:', error);
+      console.error('Error fetching courses from MongoDB:', error);
       return [];
     }
   }
 
   async getCourseById(courseId: string) {
     try {
-      console.log(`MongoDbService: Fetching course ${courseId} from API`);
-      const response = await apiService.request(`courses/${courseId}`, 'GET');
-      if (response?.data) {
-        console.log(`Found course ${courseId} via API`);
-        return response.data;
-      }
-      console.log(`Course ${courseId} not found via API`);
-      return null;
+      return await mongoCourseService.getCourseById(courseId);
     } catch (error) {
-      console.error(`Error fetching course ${courseId}:`, error);
+      console.error('Error fetching course from MongoDB:', error);
       return null;
     }
   }
 
   async createCourse(courseData: any) {
     try {
-      console.log("MongoDbService: Creating new course via API");
-      const response = await apiService.request('courses', 'POST', courseData);
-      if (response?.data) {
-        console.log("Course created successfully via API");
-        return true;
-      }
-      console.log("Failed to create course via API");
-      return false;
+      console.log('MongoDbService attempting to create course with data:', courseData);
+      return await mongoCourseService.createCourse(courseData);
     } catch (error) {
-      console.error('Error creating course:', error);
+      console.error('Error creating course in MongoDB:', error);
       return false;
     }
   }
 
   async updateCourse(courseId: string, updateData: any) {
     try {
-      console.log(`MongoDbService: Updating course ${courseId} via API`);
-      const response = await apiService.request(`courses/${courseId}`, 'PUT', updateData);
-      if (response?.data) {
-        console.log(`Course ${courseId} updated successfully via API`);
-        return true;
-      }
-      console.log(`Failed to update course ${courseId} via API`);
-      return false;
+      return await mongoCourseService.updateCourse(courseId, updateData);
     } catch (error) {
-      console.error(`Error updating course ${courseId}:`, error);
+      console.error('Error updating course in MongoDB:', error);
       return false;
     }
   }
 
   async deleteCourse(courseId: string) {
     try {
-      console.log(`MongoDbService: Deleting course ${courseId} via API`);
-      const response = await apiService.request(`courses/${courseId}`, 'DELETE');
-      if (response?.data) {
-        console.log(`Course ${courseId} deleted successfully via API`);
-        return true;
-      }
-      console.log(`Failed to delete course ${courseId} via API`);
-      return false;
+      return await mongoCourseService.deleteCourse(courseId);
     } catch (error) {
-      console.error(`Error deleting course ${courseId}:`, error);
+      console.error('Error deleting course from MongoDB:', error);
       return false;
     }
   }
 
   async getAllQuizzes() {
     try {
-      console.log("MongoDbService: Fetching all quizzes from API");
-      const response = await apiService.request('quizzes/all', 'GET');
-      if (response?.data && Array.isArray(response.data)) {
-        console.log(`Found ${response.data.length} quizzes via API`);
-        return response.data;
-      }
-      console.log("No quizzes found via API");
-      return [];
+      return await mongoQuizService.getAllQuizzes();
     } catch (error) {
-      console.error('Error fetching all quizzes:', error);
+      console.error('Error fetching quizzes from MongoDB:', error);
       return [];
     }
   }
 
   async getQuizById(quizId: string) {
     try {
-      console.log(`MongoDbService: Fetching quiz ${quizId} from API`);
-      const response = await apiService.request(`quizzes/${quizId}`, 'GET');
-      if (response?.data) {
-        console.log(`Found quiz ${quizId} via API`);
-        return response.data;
-      }
-      console.log(`Quiz ${quizId} not found via API`);
-      return null;
+      return await mongoQuizService.getQuizById(quizId);
     } catch (error) {
-      console.error(`Error fetching quiz ${quizId}:`, error);
+      console.error('Error fetching quiz from MongoDB:', error);
       return null;
     }
   }
 
   async createQuiz(quizData: any) {
     try {
-      console.log("MongoDbService: Creating new quiz via API");
-      const response = await apiService.request('quizzes', 'POST', quizData);
-      if (response?.data) {
-        console.log("Quiz created successfully via API");
-        return true;
-      }
-      console.log("Failed to create quiz via API");
-      return false;
+      return await mongoQuizService.createQuiz(quizData);
     } catch (error) {
-      console.error('Error creating quiz:', error);
+      console.error('Error creating quiz in MongoDB:', error);
       return false;
     }
   }
 
   async updateQuiz(quizId: string, updateData: any) {
     try {
-      console.log(`MongoDbService: Updating quiz ${quizId} via API`);
-      const response = await apiService.request(`quizzes/${quizId}`, 'PUT', updateData);
-      if (response?.data) {
-        console.log(`Quiz ${quizId} updated successfully via API`);
-        return true;
-      }
-      console.log(`Failed to update quiz ${quizId} via API`);
-      return false;
+      return await mongoQuizService.updateQuiz(quizId, updateData);
     } catch (error) {
-      console.error(`Error updating quiz ${quizId}:`, error);
+      console.error('Error updating quiz in MongoDB:', error);
       return false;
     }
   }
 
   async deleteQuiz(quizId: string) {
     try {
-      console.log(`MongoDbService: Deleting quiz ${quizId} via API`);
-      const response = await apiService.request(`quizzes/${quizId}`, 'DELETE');
-      if (response?.data) {
-        console.log(`Quiz ${quizId} deleted successfully via API`);
-        return true;
-      }
-      console.log(`Failed to delete quiz ${quizId} via API`);
-      return false;
+      return await mongoQuizService.deleteQuiz(quizId);
     } catch (error) {
-      console.error(`Error deleting quiz ${quizId}:`, error);
-      return false;
-    }
-  }
-
-  async updateBookingStatus(bookingId: string, status: string): Promise<boolean> {
-    try {
-      console.log(`Updating booking status via API: ID=${bookingId}, status=${status}`);
-      const response = await apiService.request(`bookings/${bookingId}/status`, 'PUT', { status }, true);
-      
-      if (response.data?.success) {
-        console.log(`Successfully updated booking status to ${status}`);
-        return true;
-      }
-      
-      console.error(`Failed to update booking status: ${response.error}`);
-      return false;
-    } catch (error) {
-      console.error(`Error updating booking status:`, error);
+      console.error('Error deleting quiz from MongoDB:', error);
       return false;
     }
   }
 }
 
-export default new MongoDbService();
+const mongoDbService = new MongoDbService();
+export default mongoDbService;

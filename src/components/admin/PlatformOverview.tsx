@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Activity, Check } from "lucide-react";
@@ -35,11 +36,6 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
     return 0;
   };
 
-  // Generate a unique key for a user
-  const getUserKey = (user: PlatformOverviewProps['allUsers'][0], index: number) => {
-    return user.id || `user-${index}`;
-  };
-
   return (
     <Card className="lg:col-span-2 border-purple-100">
       <CardHeader className="p-4 md:p-6">
@@ -55,27 +51,24 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
             <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">Recent User Activity</h3>
             {allUsers.length > 0 ? (
               <div className="space-y-3">
-                {allUsers.slice(0, 5).map((user, index) => {
-                  const userKey = getUserKey(user, index);
-                  return (
-                    <div 
-                      key={userKey}
-                      className="flex justify-between border-b pb-2 last:border-0"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">
-                          {user.name || 'Unknown User'}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          Last login: {formatDate(user.lastLogin)}
-                        </span>
+                {allUsers.slice(0, 5).map((user) => (
+                  <div 
+                    key={user.id} 
+                    className="flex justify-between border-b pb-2 last:border-0"
+                  >
+                    <div>
+                      <span className="font-medium text-sm">{user.name || 'Unknown User'}</span>
+                      <div className="text-xs text-gray-500">
+                        Last login: {formatDate(user.lastLogin)}
                       </div>
-                      <span className="px-2 py-2 bg-purple-100 text-purple-800 rounded-full text-xs">
+                    </div>
+                    <div className="text-xs">
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
                         {getCertificationCount(user)} certifications
                       </span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-4 text-gray-500">
@@ -94,7 +87,7 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
                 "Quiz Engine"
               ].map((status, index) => (
                 <div 
-                  key={`status-${index}`}
+                  key={index}
                   className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100"
                 >
                   <div className="flex items-center gap-2">

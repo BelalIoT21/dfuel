@@ -13,10 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import BookMachineButton from './BookMachineButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Define the non-bookable machine IDs
-const NON_BOOKABLE_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
-
-// Define special machine IDs
 const SPECIAL_MACHINE_IDS = ["5", "6"]; // Safety Cabinet and Machine Safety Course
 
 interface User {
@@ -63,7 +59,7 @@ const CertificationsCard = () => {
     try {
       let databaseMachines: any[] = [];
       try {
-        // Get ALL machines
+        // Changed to use getAllMachines instead of getMachines to ensure we get ALL machines
         databaseMachines = await machineService.getAllMachines();
         console.log("Fetched machines from database:", databaseMachines.length);
       } catch (error) {
@@ -71,7 +67,7 @@ const CertificationsCard = () => {
         databaseMachines = [];
       }
       
-      // Get user certifications - using fixed data approach
+      // Get user certifications
       let userCertifications: string[] = [];
       try {
         userCertifications = await certificationService.getUserCertifications(user.id);
@@ -82,7 +78,11 @@ const CertificationsCard = () => {
         setHasSafetyCabinetCertification(userCertifications.includes('5'));
       } catch (error) {
         console.error("Error fetching user certifications:", error);
-        userCertifications = [];
+        if (user.certifications && Array.isArray(user.certifications)) {
+          userCertifications = user.certifications.map(cert => String(cert));
+          setHasSafetyCertification(userCertifications.includes('6'));
+          setHasSafetyCabinetCertification(userCertifications.includes('5'));
+        }
       }
       
       // Include special machines if not already present
@@ -381,7 +381,9 @@ const CertificationsCard = () => {
                     
                     {machineStatus === 'available' && 
                      machine.isCertified && 
-                     !NON_BOOKABLE_MACHINE_IDS.includes(machine.id) && (
+                     machine.id !== "5" && // Not safety cabinet
+                     machine.id !== "6" && // Not safety course
+                     (
                       <BookMachineButton 
                         machineId={machine.id} 
                         isCertified={machine.isCertified}

@@ -19,6 +19,13 @@ export async function seedUsers() {
     
     const users = [
       {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: hashedPassword,
+        role: 'user',
+        certifications: []
+      },
+      {
         name: 'Admin User',
         email: 'admin@example.com',
         password: hashedPassword,

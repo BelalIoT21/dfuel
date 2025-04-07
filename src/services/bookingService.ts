@@ -1,11 +1,13 @@
+
 import { apiService } from './apiService';
 import { machineService } from './machineService';
+import mongoDbService from './mongoDbService';
 import { toast } from '@/hooks/use-toast';
 
 class BookingService {
   async getAllBookings() {
     try {
-      console.log('Fetching all bookings via API');
+      console.log('Fetching all bookings');
       const response = await apiService.getAllBookings();
       
       if (response.error) {
@@ -24,13 +26,13 @@ class BookingService {
   
   async getUserBookings(userId?: string) {
     try {
-      console.log(`Fetching bookings for user ${userId} via API`);
+      console.log(`Fetching bookings for user ${userId}`);
       const response = await apiService.getUserBookings(userId);
       
       if (response.error) {
-        // Don't consider empty bookings an error
-        if (response.error.includes("No bookings found") || 
-            response.error.includes("Bookings not found")) {
+        // Don't consider empty bookings an error, just return an empty array
+        if (response.error.includes("No bookings found") || response.error.includes("Bookings not found")) {
+          console.log('No bookings found for user, returning empty array');
           return [];
         }
         console.error('Error fetching user bookings:', response.error);
@@ -66,7 +68,7 @@ class BookingService {
         ...booking,
         machineName: machineName || 'Unknown Machine',
         id: booking._id || booking.id,
-        machineId: machineId
+        machineId: machineId // Ensure machineId is consistently available
       };
     }));
     
@@ -75,40 +77,92 @@ class BookingService {
   
   async isTimeSlotAvailable(machineId: string, date: string, time: string): Promise<boolean> {
     try {
-      const response = await apiService.request(
-        `machines/${machineId}/availability`, 
-        'GET', 
-        { date, time }
-      );
-      
-      if (response.data?.available === false) {
-        console.log(`Time slot ${date} at ${time} for machine ${machineId} is not available`);
+      // First check with MongoDB service
+      const isAvailable = await mongoDbService.isTimeSlotAvailable(machineId, date, time);
+      if (!isAvailable) {
+        console.log(`Time slot ${date} at ${time} for machine ${machineId} is already booked`);
         return false;
+      }
+      
+      // If MongoDB says it's available, double-check with API
+      try {
+        const response = await apiService.request(`machines/${machineId}/availability`, 'GET', {
+          date,
+          time
+        });
+        
+        if (response.data && response.data.available === false) {
+          console.log(`API reports time slot ${date} at ${time} for machine ${machineId} is not available`);
+          return false;
+        }
+      } catch (apiError) {
+        console.log('API availability check failed, relying on MongoDB result');
       }
       
       return true;
     } catch (error) {
       console.error('Error checking time slot availability:', error);
-      return false;
+      return false; // Default to unavailable on error
     }
   }
   
   async createBooking(userId: string, machineId: string, date: string, time: string) {
     try {
-      console.log(`Creating booking via API for machine ${machineId}, date ${date}, time ${time}`);
+      console.log(`Creating booking for machine ${machineId}, date ${date}, time ${time}`);
       
+      // First check if the time slot is available
+      const isAvailable = await this.isTimeSlotAvailable(machineId, date, time);
+      if (!isAvailable) {
+        console.log(`Time slot is already booked`);
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+        return { success: false, message: "Time slot already booked" };
+      }
+      
+      try {
+        console.log("Attempting to create booking via MongoDB");
+        const mongoSuccess = await mongoDbService.createBooking(userId, machineId, date, time);
+        if (mongoSuccess) {
+          console.log("Successfully created booking");
+          toast({
+            title: "Booking Created",
+            description: "Your booking has been created successfully.",
+          });
+          return { success: true };
+        }
+        console.log("MongoDB booking creation failed, falling back to API");
+      } catch (mongoError) {
+        console.error("MongoDB booking creation error");
+      }
+      
+      // Fallback to API
       const response = await apiService.addBooking(userId, machineId, date, time);
       
       if (response.error) {
-        console.error('Error creating booking:', response.error);
+        console.error('Error creating booking via API:', response.error);
         
-        // Show the error message from the API service
-        toast({
-          title: "Booking Failed",
-          description: response.error,
-          variant: "destructive"
-        });
-        return { success: false, message: response.error };
+        // Check for specific error messages related to time slot booking
+        if (typeof response.error === 'string' && 
+            (response.error.toLowerCase().includes('time slot') || 
+             response.error.toLowerCase().includes('already booked') || 
+             response.error.toLowerCase().includes('already exists'))) {
+          toast({
+            title: "Time Slot Unavailable",
+            description: "This time slot has already been booked. Please select another time.",
+            variant: "destructive"
+          });
+          return { success: false, message: "Time slot already booked" };
+        } else {
+          toast({
+            title: "Booking Failed",
+            description: "There was a problem creating your booking. Please try again.",
+            variant: "destructive"
+          });
+          return { success: false, message: response.error };
+        }
       }
       
       toast({
@@ -119,19 +173,41 @@ class BookingService {
     } catch (error) {
       console.error('Error creating booking:', error);
       
-      toast({
-        title: "Booking Failed",
-        description: "There was a problem creating your booking. Please try again.",
-        variant: "destructive"
-      });
+      // Ensure we show the proper toast for uncaught errors too
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      return { success: false, message: "Failed to create booking" };
+      if (errorMessage.toLowerCase().includes('time slot') || 
+          errorMessage.toLowerCase().includes('already booked')) {
+        toast({
+          title: "Time Slot Unavailable",
+          description: "This time slot has already been booked. Please select another time.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Booking Failed",
+          description: "There was a problem creating your booking. Please try again.",
+          variant: "destructive"
+        });
+      }
+      
+      return { success: false, message: errorMessage };
     }
   }
   
   async cancelBooking(bookingId: string) {
     try {
-      console.log(`Cancelling booking ${bookingId} via API`);
+      console.log(`Cancelling booking ${bookingId}`);
+      
+      // Try MongoDB service first
+      try {
+        const success = await mongoDbService.updateBookingStatus(bookingId, 'Canceled');
+        if (success) return true;
+      } catch (error) {
+        console.error('MongoDB error cancelling booking:', error);
+      }
+      
+      // Fallback to API
       const response = await apiService.cancelBooking(bookingId);
       
       if (response.error) {
@@ -148,7 +224,17 @@ class BookingService {
   
   async updateBookingStatus(bookingId: string, status: string) {
     try {
-      console.log(`Updating booking ${bookingId} status to ${status} via API`);
+      console.log(`Updating booking ${bookingId} status to ${status}`);
+      
+      // Try MongoDB service first
+      try {
+        const success = await mongoDbService.updateBookingStatus(bookingId, status);
+        if (success) return true;
+      } catch (error) {
+        console.error('MongoDB error updating booking status:', error);
+      }
+      
+      // Fallback to API
       const response = await apiService.updateBookingStatus(bookingId, status);
       
       if (response.error) {
@@ -165,15 +251,56 @@ class BookingService {
   
   async deleteBooking(bookingId: string) {
     try {
-      console.log(`Deleting booking ${bookingId} via API`);
-      const response = await apiService.delete(`bookings/${bookingId}`);
+      console.log(`Deleting booking ${bookingId}`);
       
-      if (response.error) {
-        console.error('Error deleting booking:', response.error);
-        return false;
+      // First try MongoDB direct deletion
+      let success = false;
+      try {
+        success = await mongoDbService.deleteBooking(bookingId);
+        if (success) {
+          console.log(`Successfully deleted booking ${bookingId} via MongoDB`);
+          return true;
+        }
+      } catch (mongoError) {
+        console.error('MongoDB error deleting booking:', mongoError);
       }
       
-      return true;
+      // Try API's delete endpoint with both paths
+      try {
+        // Try /bookings/:id endpoint
+        const response = await apiService.delete(`bookings/${bookingId}`);
+        if (response.data?.success) {
+          console.log(`Successfully deleted booking ${bookingId} via API`);
+          return true;
+        }
+      } catch (apiError) {
+        console.error('API error deleting booking:', apiError);
+      }
+      
+      try {
+        // Try /auth/bookings/:id endpoint
+        const authResponse = await apiService.delete(`auth/bookings/${bookingId}`);
+        if (authResponse.data?.success) {
+          console.log(`Successfully deleted booking ${bookingId} via auth API`);
+          return true;
+        }
+      } catch (authError) {
+        console.error('Auth API error deleting booking:', authError);
+      }
+      
+      // If all else fails, try cancelling
+      try {
+        success = await this.cancelBooking(bookingId);
+        if (success) {
+          console.log(`Successfully marked booking ${bookingId} as canceled`);
+          return true;
+        }
+      } catch (cancelError) {
+        console.error('Error cancelling booking as fallback:', cancelError);
+      }
+      
+      console.error(`All booking deletion methods failed for ${bookingId}`);
+      return false;
     } catch (error) {
       console.error('Error deleting booking:', error);
       return false;

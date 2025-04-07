@@ -10,7 +10,6 @@ import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
 import { Building2, Plus, Edit } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { apiService } from '@/services/apiService';
 
 const AdminMachines = () => {
   const { user } = useAuth();
@@ -21,6 +20,7 @@ const AdminMachines = () => {
   const [machinesList, setMachinesList] = useState<any[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [coursesList, setCoursesList] = useState<any[]>([]);
+  const [quizzesList, setQuizzesList] = useState<any[]>([]);
   const isMobile = useIsMobile();
   
   const getProperImageUrl = (imageUrl: string) => {
@@ -83,27 +83,37 @@ const AdminMachines = () => {
       }
     };
     
-    const fetchCourses = async () => {
+    const fetchCoursesAndQuizzes = async () => {
       try {
-        const coursesResponse = await apiService.getAllCourses();
-        if (coursesResponse.success) {
-          setCoursesList(coursesResponse.data);
-        } else {
-          console.warn("Failed to fetch courses:", coursesResponse.error);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
+        if (response.ok) {
+          const courses = await response.json();
+          setCoursesList(courses);
+        }
+        
+        const quizResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/quizzes`);
+        if (quizResponse.ok) {
+          const quizzes = await quizResponse.json();
+          setQuizzesList(quizzes);
         }
       } catch (error) {
-        console.warn("Error in fetchCourses:", error);
+        console.error("Error fetching courses and quizzes:", error);
       }
     };
     
     fetchMachines();
     fetchUsers();
-    fetchCourses();
+    fetchCoursesAndQuizzes();
   }, []);
   
   const getCourseName = (courseId: string) => {
     const course = coursesList.find(c => c.id === courseId || c._id === courseId);
     return course ? course.title : `Course ${courseId}`;
+  };
+  
+  const getQuizName = (quizId: string) => {
+    const quiz = quizzesList.find(q => q.id === quizId || q._id === quizId);
+    return quiz ? quiz.title : `Quiz ${quizId}`;
   };
   
   if (!user?.isAdmin) {
@@ -248,6 +258,9 @@ const AdminMachines = () => {
                           </div>
                           <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
                             Course: {machine.linkedCourseId ? getCourseName(machine.linkedCourseId) : 'None'}
+                          </div>
+                          <div className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                            Quiz: {machine.linkedQuizId ? getQuizName(machine.linkedQuizId) : 'None'}
                           </div>
                           <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
                             Users Certified: {getUsersCertifiedCount(machineId)}

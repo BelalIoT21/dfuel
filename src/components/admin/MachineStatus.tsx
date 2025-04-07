@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -207,29 +208,16 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
       
       // Get auth token from sessionStorage instead of localStorage
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      // Normalize the status to match server expectations
-      let normalizedStatus = selectedStatus;
-      if (selectedStatus === 'available') {
-        normalizedStatus = 'Available';
-      } else if (selectedStatus === 'maintenance') {
-        normalizedStatus = 'Maintenance';
-      } else if (selectedStatus === 'in-use') {
-        normalizedStatus = 'In Use';
-      }
       
       // Use direct fetch to update machine status
       const response = await fetch(`http://localhost:4000/api/machines/${machineId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}` // Include the auth token
         },
         body: JSON.stringify({
-          status: normalizedStatus,
+          status: selectedStatus,
           maintenanceNote: maintenanceNote
         }),
       });
@@ -238,6 +226,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         const responseText = await response.text();
         let responseData;
         try {
+          // Only try to parse as JSON if the response is not empty
           responseData = responseText ? JSON.parse(responseText) : {};
         } catch (parseError) {
           console.warn('Unable to parse response as JSON:', responseText);
@@ -248,7 +237,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         // Update the machine statuses and notes
         setMachineStatuses(prev => ({
           ...prev,
-          [machineId]: selectedStatus // Keep the frontend status lowercase
+          [machineId]: selectedStatus
         }));
         
         setMachineNotes(prev => ({
@@ -261,7 +250,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
           (machine.id === machineId || machine._id === machineId)
             ? { 
                 ...machine, 
-                status: selectedStatus, // Keep the frontend status lowercase
+                status: selectedStatus, 
                 maintenanceNote: maintenanceNote 
               } 
             : machine
@@ -280,17 +269,20 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
         
         // For rate limit errors, show a specific message
         if (statusCode === 429) {
+          // Try to parse error message from JSON response with retry info
           try {
             const responseText = await response.text();
             if (responseText) {
               try {
                 const errorData = JSON.parse(responseText);
                 errorMessage = errorData.message || "Rate limit exceeded. Please wait before trying again.";
+                // Check if we have retry information
                 if (errorData.retryAfter) {
                   retryAfter = parseInt(errorData.retryAfter);
                   setRateLimitRemaining(retryAfter);
                 }
               } catch (parseError) {
+                // If it's not JSON, use the text directly
                 errorMessage = responseText;
               }
             }
@@ -299,6 +291,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
             errorMessage = "Rate limit exceeded. Please wait before trying again.";
           }
         } else {
+          // Try to parse error message from JSON response, but handle non-JSON responses
           try {
             const responseText = await response.text();
             if (responseText) {
@@ -306,6 +299,7 @@ export const MachineStatus = ({ machineData, setMachineData }: MachineStatusProp
                 const errorData = JSON.parse(responseText);
                 errorMessage = errorData.message || errorMessage;
               } catch (parseError) {
+                // If it's not JSON, use the text directly
                 errorMessage = responseText;
               }
             }

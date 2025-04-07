@@ -1,3 +1,4 @@
+
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
@@ -142,7 +143,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   // Basic statistics for the admin dashboard
   const stats = [
     { 
-      id: 'users',
       title: `Total Users`, 
       value: userCount, 
       icon: <Users className="h-5 w-5 text-purple-600" />,
@@ -150,7 +150,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       link: '/admin/users'
     },
     { 
-      id: 'machines',
       title: 'Total Machines', 
       value: machineCount, 
       icon: <Settings className="h-5 w-5 text-purple-600" />,
@@ -158,7 +157,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
       link: '/admin/machines'
     },
     { 
-      id: 'bookings',
       title: 'Active Bookings', 
       value: isLoading ? '...' : bookingsCount, 
       icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
@@ -169,8 +167,8 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-6">
-      {stats.map((stat) => (
-        <StatCard key={stat.id} {...stat} />
+      {stats.map((stat, index) => (
+        <StatCard key={index} {...stat} />
       ))}
     </div>
   );

@@ -39,11 +39,7 @@ class DatabaseService {
   async addCertification(userId: string, machineId: string): Promise<boolean> {
     return certificationDatabaseService.addCertification(userId, machineId);
   }
-
-  async removeCertification(userId: string, machineId: string): Promise<boolean> {
-    return certificationDatabaseService.removeCertification(userId, machineId);
-  }
-
+  
   // Booking methods
   async addBooking(userId: string, machineId: string, date: string, time: string): Promise<boolean> {
     return bookingDatabaseService.addBooking(userId, machineId, date, time);

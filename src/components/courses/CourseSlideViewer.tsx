@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,9 +91,9 @@ const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides: propSlide
     return (
       <div>
         {currentSlide.elements.map((element) => (
-          <div key={element.id}>
+          <React.Fragment key={element.id}>
             {renderElementContent(element)}
-          </div>
+          </React.Fragment>
         ))}
       </div>
     );
