@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -309,9 +308,9 @@ const Index = () => {
         paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: keyboardVisible ? 'flex-start' : 'flex-start', 
+        justifyContent: keyboardVisible ? 'flex-start' : 'center', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '0' : '2vh', // Reduced from 5vh to 2vh by default
+        paddingTop: keyboardVisible ? '0' : '5vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -354,7 +353,7 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-3' : 'mb-1'}`}> {/* Reduced mb-2 to mb-1 */}
+          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-3' : 'mb-2'}`}>
             {!keyboardVisible && (
               <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
             )}
@@ -362,7 +361,7 @@ const Index = () => {
               <h1 className="text-[10px] font-medium text-purple-800">dfUEL MakerSpace</h1>
             )}
             {!keyboardVisible && (
-              <p className="mt-0.5 text-sm md:text-lg text-gray-600"> {/* Reduced mt-1 to mt-0.5 */}
+              <p className="mt-1 text-sm md:text-lg text-gray-600">
                 {isLogin ? 'Welcome back!' : 'Create your account'}
               </p>
             )}
