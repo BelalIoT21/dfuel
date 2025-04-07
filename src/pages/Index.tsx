@@ -311,7 +311,7 @@ const Index = () => {
         flexDirection: 'column',
         justifyContent: keyboardVisible ? 'flex-start' : 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '0' : '2vh', // Reduced from 5vh to 2vh by default
+        paddingTop: keyboardVisible ? '0' : '10vh', // Reduced from 5vh to 2vh by default
       } 
     : { 
         minHeight: '100vh', 

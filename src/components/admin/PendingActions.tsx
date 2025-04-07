@@ -17,21 +17,14 @@ export const PendingActions = () => {
   const fetchPendingBookings = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log("Fetching pending bookings...");
       
-      // Only make API calls in web environment
       if (isWeb()) {
         try {
-          console.log("Fetching bookings directly from API");
           const response = await apiService.request('bookings/all', 'GET');
-          console.log("API response for bookings:", response);
           if (response?.data && Array.isArray(response.data)) {
-            console.log(`Found ${response.data.length} bookings via API`);
-            // Filter to only show pending bookings
             const pendingOnly = response.data.filter(booking => 
               booking.status === 'Pending' || booking.status === 'pending'
             );
-            console.log(`Found ${pendingOnly.length} pending bookings from API`);
             setPendingBookings(pendingOnly);
             setIsLoading(false);
             setIsRefreshing(false);
@@ -42,30 +35,20 @@ export const PendingActions = () => {
         }
       }
       
-      // Try MongoDB as fallback in non-web environments or if API fails
       let allBookings = [];
       try {
-        console.log("Fetching bookings from MongoDB");
         allBookings = await mongoDbService.getAllBookings();
-        console.log(`Found ${allBookings.length} bookings in MongoDB`);
       } catch (mongoError) {
         console.error("MongoDB booking fetch error:", mongoError);
       }
       
-      // If MongoDB fails or returns empty, use the service
       if (!allBookings || allBookings.length === 0) {
-        console.log("Falling back to bookingService");
         allBookings = await bookingService.getAllBookings();
-        console.log(`Found ${allBookings.length} total bookings via bookingService`);
       }
       
-      console.log("All bookings before filtering:", JSON.stringify(allBookings));
-      
-      // Filter to only show pending bookings
       const pendingOnly = Array.isArray(allBookings) ? allBookings.filter(booking => 
         booking.status === 'Pending' || booking.status === 'pending'
       ) : [];
-      console.log(`Found ${pendingOnly.length} pending bookings:`, JSON.stringify(pendingOnly));
       
       setPendingBookings(pendingOnly);
     } catch (error) {
@@ -80,19 +63,14 @@ export const PendingActions = () => {
   useEffect(() => {
     fetchPendingBookings();
     
-    // Set up polling to refresh pending bookings every 10 seconds
     const intervalId = setInterval(() => {
-      console.log("Auto-refreshing pending bookings");
       fetchPendingBookings();
     }, 10000);
     
     return () => clearInterval(intervalId);
   }, [fetchPendingBookings]);
 
-  // Handle booking status change to completely refresh the list
   const handleBookingStatusChange = useCallback(async () => {
-    console.log("Booking status changed, refreshing list");
-    // Force immediate refresh of the bookings list
     await fetchPendingBookings();
   }, [fetchPendingBookings]);
 

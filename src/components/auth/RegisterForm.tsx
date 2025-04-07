@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,7 +115,7 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           setFormError('This email is already registered. Please try logging in instead.');
           
           // Focus on email field
-          const emailInput = document.getElementById('email') as HTMLInputElement;
+          const emailInput = document.getElementById('register-email') as HTMLInputElement;
           if (emailInput) {
             emailInput.focus();
           }
@@ -186,9 +185,9 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           animate="show"
         >
           <motion.div className="space-y-0.5" variants={itemAnimation}>
-            <Label htmlFor="name" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Full Name</Label>
+            <Label htmlFor="register-name" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Full Name</Label>
             <Input
-              id="name"
+              id="register-name"
               placeholder="Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -199,9 +198,9 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           </motion.div>
           
           <motion.div className="space-y-0.5" variants={itemAnimation}>
-            <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
+            <Label htmlFor="register-email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
-              id="email"
+              id="register-email"
               type="email"
               placeholder="Email"
               value={email}
@@ -213,16 +212,18 @@ export const RegisterForm = ({ onRegister, onToggleMode }: RegisterFormProps) =>
           </motion.div>
           
           <motion.div className="space-y-0.5" variants={itemAnimation}>
-            <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full ${isMobile ? 'h-6 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
-              disabled={isSubmitting || registrationSuccess}
-            />
+            <Label htmlFor="register-password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
+            <div className="relative">
+              <Input
+                id="register-password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full ${isMobile ? 'h-6 text-xs md:text-sm' : 'h-10 text-sm'} ${passwordError ? 'border-red-500' : ''}`}
+                disabled={isSubmitting || registrationSuccess}
+              />
+            </div>
             {passwordError && <p className="text-xs text-red-500">{passwordError}</p>}
           </motion.div>
           

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -112,9 +111,9 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           animate="show"
         >
           <motion.div className="space-y-0.5" variants={itemAnimation}>
-            <Label htmlFor="email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
+            <Label htmlFor="login-email" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Email</Label>
             <Input
-              id="email"
+              id="login-email"
               type="email"
               placeholder="Email"
               value={email}
@@ -125,10 +124,10 @@ export const LoginForm = ({ onLogin, onToggleMode }: LoginFormProps) => {
           </motion.div>
           
           <motion.div className="space-y-0.5" variants={itemAnimation}>
-            <Label htmlFor="password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
+            <Label htmlFor="login-password" className={isMobile ? "text-xs md:text-sm" : "text-sm"}>Password</Label>
             <div className="relative">
               <Input
-                id="password"
+                id="login-password"
                 type="password"
                 placeholder="Password"
                 value={password}

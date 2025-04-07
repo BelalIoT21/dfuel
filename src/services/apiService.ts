@@ -59,10 +59,6 @@ class ApiService {
     }
     
     try {
-      // Log the actual URL being requested (for debugging)
-      const fullUrl = `${this.api.defaults.baseURL}/${cleanEndpoint}`;
-      console.log(`Making ${method} request to: ${fullUrl}`);
-      
       // Make the request
       let response;
       try {

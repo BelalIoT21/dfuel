@@ -42,7 +42,6 @@ const AdminMachines = () => {
     const fetchMachines = async () => {
       try {
         setInitialLoadComplete(false);
-        console.log("Fetching machines from database...");
         const timestamp = new Date().getTime();
         const fetchedMachines = await machineDatabaseService.getAllMachines();
         
@@ -52,17 +51,14 @@ const AdminMachines = () => {
             return id !== '5' && id !== '6';
           }).map(machine => {
             const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
-            console.log(`Machine ${machine.id || machine._id} image URL: ${imageUrl}`);
             return {
               ...machine,
               imageUrl: imageUrl,
               image: imageUrl
             };
           });
-          console.log("Filtered machines:", filteredMachines);
           setMachinesList(filteredMachines);
         } else {
-          console.log("No machines found in database");
           setMachinesList([]);
         }
         
@@ -171,36 +167,12 @@ const AdminMachines = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
-      <div className="max-w-6xl mx-auto page-transition">
-        <div className="mb-6">
-          <BackToAdminButton />
-        </div>
-        
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <h1 className="text-3xl font-bold mb-4 md:mb-0">Machine Management</h1>
-        </div>
-        
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-              <div className="w-full md:w-1/3">
-                <Input
-                  placeholder="Search machines..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button asChild className="w-full md:w-auto">
-                <Link to="/admin/machines/new" className="flex items-center justify-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Machine
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <BackToAdminButton />
+      </div>
+      
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>All Machines</CardTitle>
@@ -217,7 +189,6 @@ const AdminMachines = () => {
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
                   const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
-                  console.log(`AdminMachines - Machine ${machineId} image: ${imageUrl}`);
                   
                   return (
                     <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
