@@ -15,7 +15,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const Index = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [serverStatus, setServerStatus] = useState<string | null>(null);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const navigate = useNavigate();
@@ -55,37 +54,6 @@ const Index = () => {
     originalHeightRef.current = window.innerHeight;
     console.log("Original window height:", originalHeightRef.current);
   }, []);
-
-  useEffect(() => {
-    const handleKeyboardVisibility = () => {
-      if (isAndroid() || isIOS()) {
-        const currentHeight = window.innerHeight;
-        const threshold = originalHeightRef.current * 0.85; // Higher threshold
-        const isKeyboardOpen = currentHeight < threshold;
-        
-        console.log(`Keyboard detection: height ${currentHeight}/${originalHeightRef.current}, threshold: ${threshold}`);
-        
-        if (isKeyboardOpen !== keyboardVisible) {
-          console.log(`Keyboard ${isKeyboardOpen ? 'shown' : 'hidden'}`);
-          setKeyboardVisible(isKeyboardOpen);
-        }
-      }
-    };
-    
-    if (isAndroid() || isIOS()) {
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleKeyboardVisibility);
-        return () => {
-          window.visualViewport?.removeEventListener('resize', handleKeyboardVisibility);
-        };
-      } else {
-        window.addEventListener('resize', handleKeyboardVisibility);
-        return () => {
-          window.removeEventListener('resize', handleKeyboardVisibility);
-        };
-      }
-    }
-  }, [keyboardVisible]);
 
   useEffect(() => {
     const checkServer = async () => {
@@ -309,9 +277,9 @@ const Index = () => {
         paddingBottom: '0', 
         display: 'flex', 
         flexDirection: 'column',
-        justifyContent: keyboardVisible ? 'flex-start' : 'flex-start', 
+        justifyContent: 'flex-start', 
         transition: 'all 0.3s ease',
-        paddingTop: keyboardVisible ? '0' : '2vh', // Reduced from 5vh to 2vh by default
+        paddingTop: '10vh',
       } 
     : { 
         minHeight: '100vh', 
@@ -354,19 +322,16 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-3' : 'mb-1'}`}> {/* Reduced mb-2 to mb-1 */}
-            {!keyboardVisible && (
+          <div className={`text-center relative 'mb-0 h-3' : 'mb-1'}`}> {/* Reduced mb-2 to mb-1 */}
+            { (
               <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
             )}
-            {keyboardVisible && (
-              <h1 className="text-[10px] font-medium text-purple-800">dfUEL MakerSpace</h1>
-            )}
-            {!keyboardVisible && (
+            { (
               <p className="mt-0.5 text-sm md:text-lg text-gray-600"> {/* Reduced mt-1 to mt-0.5 */}
                 {isLogin ? 'Welcome back!' : 'Create your account'}
               </p>
             )}
-            {serverStatus && !keyboardVisible && (
+            {serverStatus && (
               <div className={isConnected
                 ? 'mt-1 text-xs text-green-600 flex items-center justify-center' 
                 : 'mt-1 text-xs text-red-600 flex items-center justify-center'}>
