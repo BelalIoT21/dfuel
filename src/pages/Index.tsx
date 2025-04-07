@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -303,7 +302,6 @@ const Index = () => {
     );
   }
 
-  // Adjust the positioning for mobile view, especially when keyboard is visible
   const containerStyle = isMobile
     ? { 
         minHeight: '100vh', 
@@ -355,12 +353,12 @@ const Index = () => {
         )}
 
         {isMobile && (
-          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-8' : 'mb-2'}`}>
+          <div className={`text-center relative ${keyboardVisible ? 'mb-0 h-5' : 'mb-2'}`}>
             {!keyboardVisible && (
               <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
             )}
             {keyboardVisible && (
-              <h1 className="text-sm font-medium text-purple-800">dfUEL MakerSpace</h1>
+              <h1 className="text-xs font-medium text-purple-800">dfUEL MakerSpace</h1>
             )}
             {!keyboardVisible && (
               <p className="mt-1 text-sm md:text-lg text-gray-600">
@@ -387,7 +385,7 @@ const Index = () => {
           </div>
         )}
 
-        <div className="relative">
+        <div className="relative mt-0">
           <AnimatePresence mode="wait">
             {isLogin ? (
               <motion.div
@@ -397,6 +395,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className="absolute w-full"
+                style={{ top: '0' }}
               >
                 <LoginForm 
                   onLogin={handleLogin} 
@@ -411,6 +410,7 @@ const Index = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className="absolute w-full"
+                style={{ top: '0' }}
               >
                 <RegisterForm 
                   onRegister={handleRegister} 
