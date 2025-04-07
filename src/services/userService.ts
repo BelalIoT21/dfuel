@@ -48,7 +48,19 @@ export class UserService {
   
   // Register new user
   async registerUser(email: string, password: string, name: string): Promise<UserWithoutSensitiveInfo | null> {
-    return databaseService.registerUser(email, password, name);
+    try {
+      // First check if the user already exists
+      const existingUser = await this.findUserByEmail(email);
+      if (existingUser) {
+        throw new Error("A user with this email already exists");
+      }
+      
+      return databaseService.registerUser(email, password, name);
+    } catch (error) {
+      console.error('Error in userService.registerUser:', error);
+      // Make sure to propagate the error up
+      throw error;
+    }
   }
   
   // Update user profile

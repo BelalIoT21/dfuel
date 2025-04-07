@@ -26,6 +26,7 @@ export const UserSearch = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -48,10 +49,12 @@ export const UserSearch = ({
       email: '',
       password: ''
     });
+    setError(null);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!newUser.name || !newUser.email || !newUser.password) {
       toast({
@@ -100,12 +103,20 @@ export const UserSearch = ({
         setDialogOpen(false);
         resetForm();
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not add user. Please try again.",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      // Silently handle user exists case
+      if (error.name === 'UserExistsError' || 
+          (error.message && error.message.includes('already exists'))) {
+        setError("A user with this email already exists");
+      } else {
+        // Only log true errors
+        console.error("Unexpected error during user addition:", error);
+        toast({
+          title: "Error",
+          description: "Could not add user. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsAdding(false);
     }
@@ -126,7 +137,17 @@ export const UserSearch = ({
             />
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog 
+            open={dialogOpen} 
+            onOpenChange={(open) => {
+              if (open) {
+                setDialogOpen(true);
+              } else {
+                setDialogOpen(false);
+                resetForm();
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -143,6 +164,13 @@ export const UserSearch = ({
               
               <form onSubmit={handleSubmit}>
                 <div className="grid gap-4 py-4">
+                  {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                      <strong className="font-bold">Error:</strong>
+                      <span className="block sm:inline"> {error}</span>
+                    </div>
+                  )}
+                  
                   <div className="grid gap-2">
                     <label htmlFor="name">Full Name</label>
                     <Input
