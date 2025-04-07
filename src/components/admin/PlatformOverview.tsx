@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Activity } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Activity, Check } from "lucide-react";
 
 interface PlatformOverviewProps {
   allUsers: {
@@ -52,12 +50,12 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
         <CardDescription>Current status of the Learnit platform</CardDescription>
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0">
-        <div>
-          <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">Recent User Activity</h3>
-          {allUsers.length > 0 ? (
-            <ScrollArea className="h-[180px] rounded-md border">
-              <div className="space-y-3 p-2">
-                {allUsers.slice(0, 10).map((user, index) => {
+        <div className="space-y-4 md:space-y-6">
+          <div>
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">Recent User Activity</h3>
+            {allUsers.length > 0 ? (
+              <div className="space-y-3">
+                {allUsers.slice(0, 5).map((user, index) => {
                   const userKey = getUserKey(user, index);
                   return (
                     <div 
@@ -79,12 +77,36 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
                   );
                 })}
               </div>
-            </ScrollArea>
-          ) : (
-            <div className="text-center py-4 text-gray-500">
-              <p className="text-sm">No user activity recorded yet.</p>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                <p className="text-sm">No user activity recorded yet.</p>
+              </div>
+            )}
+          </div>
+          
+          <div>
+            <h3 className="text-xs md:text-sm font-medium text-gray-600 mb-2">System Status</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+              {[
+                "System Online",
+                "Courses Active",
+                "Booking System",
+                "Quiz Engine"
+              ].map((status, index) => (
+                <div 
+                  key={`status-${index}`}
+                  className="border rounded-lg p-2 md:p-3 bg-green-50 border-green-100"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <span className="text-xs md:text-sm font-medium text-green-800">
+                      {status}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>

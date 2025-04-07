@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { TextInput, Button, Surface, ActivityIndicator } from 'react-native-paper';
@@ -66,7 +67,7 @@ const LoginScreen = ({ navigation }) => {
         ]}
       >
         <View style={styles.logoContainer}>
-          <Text style={styles.title}>dfUEL MakerSpace</Text>
+          <Text style={styles.title}>Dfuel</Text>
           <Text style={styles.subtitle}>
             {isLogin ? 'Welcome back!' : 'Create your account'}
           </Text>

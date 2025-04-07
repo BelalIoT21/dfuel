@@ -1,13 +1,14 @@
+
 {
   "expo": {
-    "name": "dfUEL MakerSpace",
+    "name": "Dfuel",
     "slug": "dfuel",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./public/dfuel-logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./public/dfuel-logo.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#7c3aed"
     },
@@ -19,12 +20,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./public/dfuel-logo.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7c3aed"
       }
     },
     "web": {
-      "favicon": "./public/dfuel-logo.png"
+      "favicon": "./assets/favicon.ico"
     },
     "plugins": [
       "expo-dev-client"
