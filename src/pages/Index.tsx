@@ -336,7 +336,7 @@ const Index = () => {
       <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
         {!isMobile && (
           <div className="text-center mb-2">
-            <h1 className="text-4xl font-bold text-purple-800 tracking-tight">Dfuel</h1>
+            <h1 className="text-4xl font-bold text-purple-800 tracking-tight">dfUEL MakerSpace</h1>
             <p className="mt-1 text-lg text-gray-600">
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </p>
@@ -362,7 +362,7 @@ const Index = () => {
 
         {isMobile && (
           <div className={`text-center relative ${keyboardVisible ? 'hidden' : 'mb-2'}`}>
-            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>Dfuel</h1>
+            <h1 className={`text-xl md:text-4xl font-bold text-purple-800 tracking-tight`}>dfUEL MakerSpace</h1>
             {!keyboardVisible && (
               <p className="mt-1 text-sm md:text-lg text-gray-600">
                 {isLogin ? 'Welcome back!' : 'Create your account'}
