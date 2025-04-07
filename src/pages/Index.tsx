@@ -24,11 +24,13 @@ const Index = () => {
   const attemptedEndpointsRef = useRef<string[]>([]);
   const originalHeightRef = useRef<number>(0);
 
+  // Safely access auth context
   let auth;
   try {
     auth = useAuth();
   } catch (error) {
     console.error("Auth context error:", error);
+    // We'll handle this with a fallback UI
   }
 
   const { user, loading: authLoadingState, login, register } = auth || { 
@@ -225,6 +227,7 @@ const Index = () => {
   useEffect(() => {
     if (user && !authLoadingState) {
       console.log("User is logged in, redirecting:", user);
+      // Redirect admin users to the admin dashboard and regular users to the home page
       navigate(user.isAdmin ? '/admin' : '/home');
     }
   }, [user, navigate, authLoadingState]);
@@ -242,7 +245,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      throw error;
+      throw error; // Re-throw the error so the LoginForm can handle it
     }
   };
 
@@ -251,11 +254,15 @@ const Index = () => {
       setAuthLoading(true);
       console.debug(`Attempting registration for: ${email}`);
       await register(email, password, name);
-      return true;
+      return true; // Return true to indicate success
     } catch (error: any) {
+      // For user exists errors, we want to show the error in the form
       if (error.name === 'UserExistsError' || error.message?.includes('already exists')) {
+        // Re-throw to be handled by the form
         throw error;
       }
+      
+      // Only log unexpected errors
       console.error('Unexpected registration error:', error);
       return false;
     } finally {
@@ -269,6 +276,7 @@ const Index = () => {
 
   console.log("Rendering Index component, auth loading:", authLoadingState);
 
+  // If there's an auth context error, show a helpful message
   if (authError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-purple-50 to-white p-4">
@@ -322,7 +330,8 @@ const Index = () => {
 
   return (
     <div 
-      className="bg-gradient-to-b from-purple-50 to-white p-4 min-h-screen flex items-center justify-center" 
+      className="bg-gradient-to-b from-purple-50 to-white p-4" 
+      style={isLogin ? {minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'} : {}}
     >
       <div className={`w-full max-w-sm ${isMobile ? 'space-y-1' : 'mx-auto'}`}>
         {!isMobile && (
@@ -379,46 +388,35 @@ const Index = () => {
           </div>
         )}
 
-        <div className="relative">
-          <AnimatePresence mode="wait">
-            {isLogin ? (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="absolute w-full"
-              >
-                <LoginForm 
-                  onLogin={handleLogin} 
-                  onToggleMode={toggleMode} 
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="register"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="absolute w-full"
-              >
-                <RegisterForm 
-                  onRegister={handleRegister} 
-                  onToggleMode={toggleMode} 
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        <div className="invisible">
-          <RegisterForm 
-            onRegister={handleRegister} 
-            onToggleMode={toggleMode} 
-          />
-        </div>
+        <AnimatePresence mode="wait">
+          {isLogin ? (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <LoginForm 
+                onLogin={handleLogin} 
+                onToggleMode={toggleMode} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="register"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <RegisterForm 
+                onRegister={handleRegister} 
+                onToggleMode={toggleMode} 
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
