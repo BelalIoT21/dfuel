@@ -26,8 +26,22 @@ const VideoUpload = ({
   label = "Upload Video",
   previewHeight = "max-h-[300px]"
 }: VideoUploadProps) => {
-  const [preview, setPreview] = useState<string | null>(existingUrl || null);
+  // Format existing URL if it's a server path
+  const formatExistingUrl = (url?: string) => {
+    if (!url) return null;
+    
+    if (url.startsWith('/utils/videos') || url.startsWith('/utils/images')) {
+      console.log("Converting server path to absolute URL:", url);
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      return `${apiUrl}/api${url}`;
+    }
+    
+    return url;
+  };
+
+  const [preview, setPreview] = useState<string | null>(formatExistingUrl(existingUrl) || null);
   const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
   const { toast } = useToast();
   
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -46,10 +60,19 @@ const VideoUpload = ({
     }
     
     setLoading(true);
+    setFileName(file.name);
+    
     try {
       const dataUrl = await fileToDataUrl(file);
+      console.log(`Video processed: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      
       setPreview(dataUrl);
       onFileChange(dataUrl);
+      
+      toast({
+        title: "Success",
+        description: "Video uploaded successfully",
+      });
     } catch (error) {
       console.error("Error processing file:", error);
       toast({
@@ -64,6 +87,7 @@ const VideoUpload = ({
   
   const clearFile = () => {
     setPreview(null);
+    setFileName(null);
     onFileChange(null);
   };
   
@@ -75,15 +99,24 @@ const VideoUpload = ({
             src={preview} 
             controls
             className={`w-full h-auto ${previewHeight}`}
+            onError={(e) => {
+              console.error(`Failed to load video: ${preview}`);
+            }}
           />
-          <Button 
-            variant="destructive" 
-            size="icon" 
-            className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-80"
-            onClick={clearFile}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="p-2 bg-gray-50 flex justify-between items-center">
+            <div className="text-sm">
+              {fileName && <p className="font-medium truncate">{fileName}</p>}
+              {!fileName && existingUrl && <p className="text-xs text-gray-500">Existing video</p>}
+            </div>
+            <Button 
+              variant="destructive" 
+              size="icon" 
+              className="h-8 w-8 rounded-full opacity-80"
+              onClick={clearFile}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ) : (
         <>
@@ -102,6 +135,9 @@ const VideoUpload = ({
           </div>
           <p className="text-xs text-gray-500">
             Max video size: {MAX_VIDEO_SIZE_MB}MB
+          </p>
+          <p className="text-xs text-gray-500">
+            Supports mp4, webm, ogg, mov formats
           </p>
         </>
       )}

@@ -1,3 +1,4 @@
+
 /**
  * Utility for handling file uploads
  */
@@ -30,7 +31,7 @@ export const validateFile = (file: File, allowedTypes: string[], maxSizeMB: numb
   
   // Check file type
   const fileType = file.type;
-  if (!allowedTypes.includes(fileType)) {
+  if (!allowedTypes.includes(fileType) && !allowedTypes.some(type => fileType.includes(type.split('/')[0]))) {
     console.error(`Invalid file type: ${fileType}. Allowed types: ${allowedTypes.join(', ')}`);
     return `Invalid file type. Allowed types: ${allowedTypes.map(t => t.split('/')[1]).join(', ')}`;
   }
@@ -58,12 +59,13 @@ export const VIDEO_TYPES = [
   'video/mp4', 
   'video/webm', 
   'video/ogg',
-  'video/quicktime'  // Added .mov support
+  'video/quicktime',  // .mov support
+  'video/x-msvideo'   // .avi support
 ];
 
-// Maximum file sizes - increased to 100MB for images and videos
-export const MAX_IMAGE_SIZE_MB = 100;
-export const MAX_VIDEO_SIZE_MB = 100;
+// Maximum file sizes - increased to 500MB for images and videos
+export const MAX_IMAGE_SIZE_MB = 500;
+export const MAX_VIDEO_SIZE_MB = 500;
 
 /**
  * Compress an image to reduce file size if needed
@@ -74,8 +76,8 @@ export const MAX_VIDEO_SIZE_MB = 100;
  */
 export const compressImageIfNeeded = async (
   dataUrl: string, 
-  targetSizeMB: number = 5, // Increased default target size
-  quality: number = 0.9 // Increased initial quality
+  targetSizeMB: number = 5, 
+  quality: number = 0.9 
 ): Promise<string> => {
   // Get the current size of the data URL in MB
   const currentSizeMB = dataUrl.length / (1024 * 1024);
@@ -161,4 +163,14 @@ export const compressImageIfNeeded = async (
   // If we couldn't get it under target size, return the most compressed version
   console.log(`Could not compress image to target size. Final size: ${(compressedDataUrl.length / (1024 * 1024)).toFixed(2)}MB`);
   return compressedDataUrl || dataUrl;
+};
+
+// Helper function to check if a file is an image
+export const isImageFile = (file: File): boolean => {
+  return IMAGE_TYPES.includes(file.type) || file.type.startsWith('image/');
+};
+
+// Helper function to check if a file is a video
+export const isVideoFile = (file: File): boolean => {
+  return VIDEO_TYPES.includes(file.type) || file.type.startsWith('video/');
 };

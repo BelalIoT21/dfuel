@@ -39,6 +39,8 @@ const AdminCourseEdit = () => {
           const course = await courseDatabaseService.getCourseById(id);
           
           if (course) {
+            console.log("Loaded course content:", course.content);
+            
             // Try to parse slides from content
             let slides: Slide[] = [{ 
               id: '1', 
@@ -54,13 +56,16 @@ const AdminCourseEdit = () => {
               try {
                 // First, try to parse as new slide format
                 const parsedContent = JSON.parse(course.content);
+                console.log("Parsed content:", parsedContent);
 
                 if (Array.isArray(parsedContent)) {
                   if (parsedContent.length > 0) {
                     // Check if it's the new format (with elements array) or legacy format
                     if ('elements' in parsedContent[0]) {
+                      console.log("Using new slide format");
                       slides = parsedContent as Slide[];
                     } else {
+                      console.log("Converting legacy slide format");
                       // Convert legacy format to new format
                       slides = (parsedContent as LegacySlide[]).map(legacySlide => ({
                         id: legacySlide.id,
@@ -69,6 +74,7 @@ const AdminCourseEdit = () => {
                     }
                   }
                 } else {
+                  console.log("Content not an array, creating text slide");
                   // If content exists but isn't valid slide array, create a text slide with it
                   slides = [
                     { 
@@ -81,6 +87,7 @@ const AdminCourseEdit = () => {
                   ];
                 }
               } catch (e) {
+                console.error("Error parsing course content:", e);
                 // If content exists but isn't valid JSON, create a text slide with it
                 slides = [
                   { 
@@ -94,6 +101,8 @@ const AdminCourseEdit = () => {
               }
             }
             
+            console.log("Final slides for form:", slides);
+            
             setFormData({
               title: course.title || '',
               description: course.description || '',
@@ -105,6 +114,8 @@ const AdminCourseEdit = () => {
               quizId: course.quizId || '',
               slides,
             });
+          } else {
+            console.error("Course not found");
           }
         } catch (error) {
           console.error('Error loading course:', error);
@@ -142,6 +153,8 @@ const AdminCourseEdit = () => {
         ...formData,
         content: JSON.stringify(formData.slides)
       };
+      
+      console.log("Submitting course data:", submissionData);
       
       if (isEditing && id) {
         // Update existing course

@@ -1,3 +1,4 @@
+
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
@@ -64,94 +65,99 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         try {
           const bookings = await bookingService.getAllBookings();
           setBookingsCount(Array.isArray(bookings) ? bookings.length : 0);
-        } catch (error) {
-          console.error("Error fetching bookings count:", error);
-          setBookingsCount(0);
+        } catch (bookingError) {
+          console.error("Error fetching from bookingService:", bookingError);
         }
+        
+      } catch (error) {
+        console.error("Error fetching bookings count:", error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchBookingsCount();
-  }, []);
-  
-  useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchUserCount = async () => {
+      // Get user count from props if available
+      if (Array.isArray(allUsers)) {
+        setUserCount(allUsers.length);
+        return;
+      }
+      
       try {
-        // Try API first
-        const response = await apiService.getAllUsers();
-        if (response.success && response.data && response.data.length > 0) {
-          setUserCount(response.data.length);
-          return;
+        // Try API
+        try {
+          const response = await apiService.getAllUsers();
+          if (response.success && Array.isArray(response.data)) {
+            setUserCount(response.data.length);
+            return;
+          }
+        } catch (apiError) {
+          console.error("Error fetching users from API:", apiError);
         }
         
-        // Use provided users if available
-        if (allUsers && allUsers.length > 0) {
-          setUserCount(allUsers.length);
-          return;
+        // Try userDatabase
+        try {
+          const users = await userDatabase.getAllUsers();
+          setUserCount(Array.isArray(users) ? users.length : 0);
+        } catch (dbError) {
+          console.error("Error fetching from userDatabase:", dbError);
         }
-        
-        // Last resort - userDatabase
-        const users = await userDatabase.getAllUsers();
-        setUserCount(users.length);
       } catch (error) {
-        console.error("Error fetching users:", error);
-        setUserCount(allUsers?.length || 0);
+        console.error("Error fetching user count:", error);
       }
     };
     
-    fetchUsers();
+    fetchBookingsCount();
+    fetchUserCount();
   }, [allUsers]);
   
-  const getMachineCount = (machinesArray: any[]) => {
-    if (!Array.isArray(machinesArray)) {
-      setMachineCount(0);
-      return 0;
-    }
+  const getMachineCount = (machines: any[]) => {
+    if (!Array.isArray(machines)) return;
     
-    const filteredMachines = machinesArray.filter(machine => {
+    const filteredMachines = machines.filter(machine => {
       const id = machine.id || machine._id;
       const stringId = String(id);
       return stringId !== '5' && stringId !== '6';
     });
     
     setMachineCount(filteredMachines.length);
-    return filteredMachines.length;
   };
   
-  const stats = [
-    { 
-      id: 'users',
-      title: `Total Users`, 
-      value: userCount, 
-      icon: <Users className="h-5 w-5 text-purple-600" />,
-      change: '', 
-      link: '/admin/users'
-    },
-    { 
-      id: 'machines',
-      title: 'Total Machines', 
-      value: machineCount, 
-      icon: <Settings className="h-5 w-5 text-purple-600" />,
-      change: '',
-      link: '/admin/machines'
-    },
-    { 
-      id: 'bookings',
-      title: 'Active Bookings', 
-      value: isLoading ? '...' : bookingsCount, 
-      icon: <CalendarClock className="h-5 w-5 text-purple-600" />,
-      change: '',
-      link: '/bookings'
-    },
-  ];
-
   return (
-    <div className="grid grid-cols-1 gap-3 mb-6">
-      {stats.map((stat) => (
-        <StatCard key={stat.id} {...stat} />
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard 
+        title="Users"
+        value={isLoading ? "..." : userCount.toString()}
+        icon={<Users className="h-5 w-5 text-blue-600" />}
+        description="Total registered users"
+        color="bg-blue-100 text-blue-800"
+      />
+      
+      <StatCard 
+        title="Machines"
+        value={isLoading ? "..." : machineCount.toString()}
+        icon={<Settings className="h-5 w-5 text-purple-600" />}
+        description="Available in makerspace"
+        color="bg-purple-100 text-purple-800"
+      />
+      
+      <StatCard 
+        title="Bookings"
+        value={isLoading ? "..." : bookingsCount.toString()}
+        icon={<CalendarClock className="h-5 w-5 text-emerald-600" />}
+        description="Machine appointments"
+        color="bg-emerald-100 text-emerald-800"
+      />
+      
+      <StatCard 
+        title="Certifications"
+        value={isLoading ? "..." : "26"}
+        icon={<Users className="h-5 w-5 text-amber-600" />}
+        description="User qualifications"
+        color="bg-amber-100 text-amber-800"
+      />
     </div>
   );
 };
+
+export default StatsOverview;

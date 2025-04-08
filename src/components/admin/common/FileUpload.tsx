@@ -29,14 +29,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxSizeMB = MAX_IMAGE_SIZE_MB,
   allowedTypes = IMAGE_TYPES,
   compressImages = true,
-  targetCompressedSizeMB = 5 // Increased from 2MB to 5MB
+  targetCompressedSizeMB = 5 // Keep at 5MB
 }) => {
   // Format existing URL if it's a server path
   const formatExistingUrl = (url?: string) => {
     if (!url) return null;
     
     if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.API_URL 
+      console.log("Converting server path to absolute URL:", url);
+      const apiUrl = import.meta.env.VITE_API_URL || '';
       return `${apiUrl}/api${url}`;
     }
     
@@ -82,7 +83,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       let finalSize = fileSizeMB;
       
       // Compress image if it's an image and compression is enabled
-      const isImage = allowedTypes.every(type => type.startsWith('image/'));
+      const isImage = allowedTypes.some(type => type.startsWith('image/'));
       if (isImage && compressImages && parseFloat(fileSizeMB) > targetCompressedSizeMB) {
         console.log(`Attempting to compress image from ${fileSizeMB} MB to target ${targetCompressedSizeMB} MB`);
         
@@ -135,7 +136,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }
   };
 
-  const isImageType = allowedTypes.every(type => type.startsWith('image/'));
+  const isImageType = allowedTypes.some(type => type.startsWith('image/'));
 
   // Properly display existing images
   const displayPreview = preview || (existingUrl ? formatExistingUrl(existingUrl) : null);
