@@ -1,4 +1,3 @@
-
 /**
  * Utility for handling file uploads
  */
@@ -58,12 +57,13 @@ export const IMAGE_TYPES = [
 export const VIDEO_TYPES = [
   'video/mp4', 
   'video/webm', 
-  'video/ogg'
+  'video/ogg',
+  'video/quicktime'  // Added .mov support
 ];
 
-// Maximum file sizes - increased to 30MB for images
-export const MAX_IMAGE_SIZE_MB = 30;
-export const MAX_VIDEO_SIZE_MB = 50;
+// Maximum file sizes - increased to 100MB for images and videos
+export const MAX_IMAGE_SIZE_MB = 100;
+export const MAX_VIDEO_SIZE_MB = 100;
 
 /**
  * Compress an image to reduce file size if needed

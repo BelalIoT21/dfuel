@@ -8,11 +8,13 @@ class ApiService {
   private currentEndpointIndex: number = 0;
   
   constructor() {
-    this.endpoints = getApiEndpoints();
+    // Force the API URL to use port 4000
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    console.log('API Service initialized with URL:', apiUrl);
     
     // Create axios instance with initial base URL
     this.api = axios.create({
-      baseURL: this.endpoints[this.currentEndpointIndex],
+      baseURL: apiUrl,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -89,7 +91,7 @@ class ApiService {
             }
             break;
           case 'PUT':
-            response = await this.api.post(cleanEndpoint, data);
+            response = await this.api.put(cleanEndpoint, data);
             break;
           case 'DELETE':
             response = await this.api.delete(cleanEndpoint, { data });
@@ -193,6 +195,14 @@ class ApiService {
   async login(email: string, password: string): Promise<any> {
     // Use the server-side path directly matching the auth route in server/src/routes/authRoutes.ts
     return this.request('auth/login', 'POST', { email, password });
+  }
+  
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+    return this.request('auth/change-password', 'POST', { currentPassword, newPassword });
+  }
+  
+  async updateProfile(userId: string, updates: { name?: string; email?: string }): Promise<any> {
+    return this.request('auth/profile', 'PUT', updates);
   }
   
   async register(email: string, password: string, name: string): Promise<any> {

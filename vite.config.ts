@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -16,7 +15,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     host: "::",
-    port: 8080
+    port: 3000
   },
   build: {
     outDir: 'dist',
@@ -30,9 +29,7 @@ export default defineConfig(({ mode }) => ({
   },
   // Define environment variables for different modes
   define: {
-    // Load API URL from environment or default to secure placeholder
-    'import.meta.env.API_URL': mode === 'production' 
-      ? JSON.stringify(process.env.API_URL || '')
-      : JSON.stringify(process.env.API_URL || '')
+    // Force the API URL to use port 4000
+    'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:4000/api')
   }
 }));

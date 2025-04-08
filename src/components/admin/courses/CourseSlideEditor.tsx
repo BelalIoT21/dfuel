@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ const CourseSlideEditor: React.FC<CourseSlideEditorProps> = ({ slides: propSlide
     if (!currentSlide) return;
     
     const newElement: SlideElement = {
-      id: `${Date.now()}-${currentSlide.elements.length + 1}`,
+      id: `${currentSlideIndex + 1}-${currentSlide.elements.length + 1}`,
       type,
       content: '',
       ...(type === 'heading' ? { headingLevel: 1 } : {})

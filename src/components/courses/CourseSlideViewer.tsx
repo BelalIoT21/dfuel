@@ -70,11 +70,24 @@ const CourseSlideViewer: React.FC<CourseSlideViewerProps> = ({ slides: propSlide
         
       case 'video':
         return (
-          <div className="flex justify-center mb-4">
+          <div className="flex flex-col items-center mb-4">
             <video 
               src={element.content} 
               controls 
               className="max-w-full max-h-[400px]"
+              onError={(e) => {
+                console.error(`Failed to load video: ${element.content.substring(0, 50)}...`);
+                const videoElement = e.target as HTMLVideoElement;
+                videoElement.style.display = 'none';
+                
+                // Create a fallback message
+                const fallbackDiv = document.createElement('div');
+                fallbackDiv.className = 'p-4 bg-red-50 text-red-700 rounded-md';
+                fallbackDiv.textContent = 'Video could not be loaded. Please try a different format (MP4 recommended).';
+                
+                // Insert the fallback message after the video element
+                videoElement.parentNode?.insertBefore(fallbackDiv, videoElement.nextSibling);
+              }}
             />
           </div>
         );

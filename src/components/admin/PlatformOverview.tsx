@@ -85,7 +85,7 @@ export const PlatformOverview = ({ allUsers }: PlatformOverviewProps) => {
               <p className="text-sm">No user activity recorded yet.</p>
             </div>
           )}
-        </div>
+    </div>
       </CardContent>
     </Card>
   );
