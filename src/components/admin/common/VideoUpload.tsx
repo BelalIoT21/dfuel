@@ -14,11 +14,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
   onFileChange, 
   existingUrl,
   label = "Upload Video", 
-  maxSize = 250 // Reduced from 500MB to 250MB to prevent timeouts
+  maxSize = 500 // 500MB limit
 }) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [error, setError] = useState<string | null>(null);
-  const [fileType, setFileType] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,9 +34,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
       return;
     }
     
-    // Store and log file type for debugging
-    setFileType(file.type);
-    console.log('File type:', file.type, 'File size:', Math.round(file.size / (1024 * 1024)), 'MB');
+    console.log('File type:', file.type); // Log file type for debugging
     
     const reader = new FileReader();
     
@@ -56,7 +53,6 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
   
   const clearFile = () => {
     setPreview(null);
-    setFileType(null);
     onFileChange(null);
     // Reset the file input
     if (fileInputRef.current) {
@@ -104,20 +100,13 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           {error}
         </div>
       )}
-
-      {fileType && (
-        <div className="text-xs text-gray-500">
-          File type: {fileType}
-        </div>
-      )}
       
       {preview && (
         <div className="mt-2 border rounded-md overflow-hidden bg-gray-50">
           <video 
             src={preview} 
             controls 
-            className="w-full max-h-60" 
-            preload="metadata"
+            className="w-full max-h-80" 
           />
         </div>
       )}
