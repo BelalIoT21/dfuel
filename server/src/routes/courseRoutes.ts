@@ -27,8 +27,6 @@ router.delete('/:id', protect, admin, deleteCourse);
 router.post('/:id/restore', protect, admin, jsonParser, restoreCourse);
 
 // New endpoint to backup a course
-router.post('/:id/backup', protect, admin, jsonParser, [
-  express.json({ limit: '500mb' })
-], backupCourse);
+router.post('/:id/backup', protect, admin, jsonParser, backupCourse);
 
 export default router;

@@ -14,7 +14,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
   onFileChange, 
   existingUrl,
   label = "Upload Video", 
-  maxSize = 500 // Increased to 500MB
+  maxSize = 500 // 500MB limit
 }) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +33,8 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
       setError(`File is too large. Maximum size is ${maxSize}MB.`);
       return;
     }
+    
+    console.log('File type:', file.type); // Log file type for debugging
     
     const reader = new FileReader();
     
@@ -59,7 +61,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Button 
           type="button" 
@@ -67,7 +69,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-2"
         >
-          <Video className="h-4 w-4" />
+          <Video className="h-4 w-4 text-purple-600" />
           {label}
         </Button>
         
@@ -104,7 +106,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           <video 
             src={preview} 
             controls 
-            className="max-h-40 max-w-full" 
+            className="w-full max-h-80" 
           />
         </div>
       )}

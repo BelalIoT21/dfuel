@@ -15,7 +15,7 @@ import { body, param } from 'express-validator';
 const router = express.Router();
 
 // Configure middleware for handling large requests
-const jsonParser = express.json({ limit: '10mb' });
+const jsonParser = express.json({ limit: '500mb' });
 
 // Create booking
 router.post(

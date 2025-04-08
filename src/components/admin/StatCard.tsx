@@ -20,14 +20,13 @@ export const StatCard = ({
   link 
 }: StatCardProps) => {
   return (
-    <Card className="border-purple-100 hover:shadow-md transition-all">
+    <Card className="border-purple-100 hover:shadow-md transition-all mb-4">
       <CardContent className="p-3 md:p-6">
         <div className="flex justify-between items-start">
           <div>
             <div className="text-2xl font-bold text-purple-800">{value}</div>
-            <div className="text-sm text-gray-600">{title}</div>
           </div>
-          <div className="p-2 bg-purple-50 rounded-full">
+          <div className="p-2 bg-purple-50 rounded-full text-purple-600">
             {icon}
           </div>
         </div>
