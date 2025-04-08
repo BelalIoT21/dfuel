@@ -6,7 +6,6 @@ interface StatCardProps {
   title: string;
   value: number | string;
   icon: React.ReactNode;
-  description?: string;
   color?: string;
   change?: string;
   link: string;
@@ -16,7 +15,6 @@ export const StatCard = ({
   title, 
   value, 
   icon, 
-  description, 
   color = "bg-purple-50", 
   change = "", 
   link 
@@ -34,7 +32,6 @@ export const StatCard = ({
           </div>
         </div>
         <div className="mt-2 flex justify-between items-center text-xs md:text-sm">
-          {description && <span className="text-gray-500">{description}</span>}
           <div className="ml-auto">
             <Link to={link} className="text-purple-600 hover:underline">View</Link>
           </div>

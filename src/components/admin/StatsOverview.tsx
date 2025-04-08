@@ -1,4 +1,3 @@
-
 import { Users, Settings, CalendarClock } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { useEffect, useState } from "react";
@@ -129,9 +128,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         title="Users"
         value={isLoading ? "..." : userCount.toString()}
         icon={<Users className="h-5 w-5 text-purple-600" />}
-        description="Total registered users"
-        color="bg-purple-50 text-purple-800"
-        change=""
         link="/admin/users"
       />
       
@@ -139,9 +135,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         title="Machines"
         value={isLoading ? "..." : machineCount.toString()}
         icon={<Settings className="h-5 w-5 text-purple-600" />}
-        description="Available in makerspace"
-        color="bg-purple-50 text-purple-800"
-        change=""
         link="/admin/machines"
       />
       
@@ -149,9 +142,6 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         title="Bookings"
         value={isLoading ? "..." : bookingsCount.toString()}
         icon={<CalendarClock className="h-5 w-5 text-purple-600" />}
-        description="Machine appointments"
-        color="bg-purple-50 text-purple-800"
-        change=""
         link="/admin/bookings"
       />
     </div>

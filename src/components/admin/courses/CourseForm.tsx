@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +34,6 @@ interface CourseFormProps {
   submitLabel: string;
 }
 
-// Required field label component
 const RequiredFieldLabel = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
   <Label htmlFor={htmlFor} className="flex items-center">
     {children}
@@ -57,32 +55,60 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
-  const [slides, setSlides] = useState<Slide[]>([
-    { id: '1', type: 'heading', content: '', headingLevel: 1 }
-  ]);
+  const [slides, setSlides] = useState<Slide[]>([]);
 
   useEffect(() => {
-    // Initialize slides from content if available
-    if (formData.content && !formData.slides) {
+    console.log("FormData slides in CourseForm:", formData.slides);
+    
+    // Initialize slides from formData if available
+    if (formData.slides && Array.isArray(formData.slides) && formData.slides.length > 0) {
+      console.log("Setting slides from formData.slides");
+      setSlides(formData.slides);
+    } else if (formData.content) {
       try {
         // Try to parse slides from content
+        console.log("Trying to parse slides from content");
         const parsedSlides = JSON.parse(formData.content);
-        if (Array.isArray(parsedSlides)) {
+        if (Array.isArray(parsedSlides) && parsedSlides.length > 0) {
+          console.log("Parsed slides from content:", parsedSlides);
           setSlides(parsedSlides);
         } else {
-          // If content exists but isn't valid JSON, create a text slide with it
+          // If content exists but isn't valid slide array, create a text slide with it
+          console.log("Content not a valid slide array, creating default slide");
           setSlides([
-            { id: '1', type: 'heading', content: formData.title || '', headingLevel: 1 },
-            { id: '2', type: 'text', content: formData.content }
+            { 
+              id: '1', 
+              elements: [
+                { id: '1-1', type: 'heading', content: formData.title || '', headingLevel: 1 },
+                { id: '1-2', type: 'text', content: formData.content }
+              ] 
+            }
           ]);
         }
       } catch (e) {
+        console.error("Error parsing course content:", e);
         // If content exists but isn't valid JSON, create a text slide with it
         setSlides([
-          { id: '1', type: 'heading', content: formData.title || '', headingLevel: 1 },
-          { id: '2', type: 'text', content: formData.content }
+          { 
+            id: '1', 
+            elements: [
+              { id: '1-1', type: 'heading', content: formData.title || '', headingLevel: 1 },
+              { id: '1-2', type: 'text', content: formData.content }
+            ] 
+          }
         ]);
       }
+    } else {
+      // Create a default empty slide
+      console.log("Creating default empty slide");
+      setSlides([
+        { 
+          id: '1', 
+          elements: [
+            { id: '1-1', type: 'heading', content: formData.title || '', headingLevel: 1 }
+          ] 
+        }
+      ]);
     }
 
     const fetchData = async () => {
@@ -103,7 +129,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
     };
     
     fetchData();
-  }, [formData.content, formData.title]);
+  }, [formData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -144,6 +170,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
   };
 
   const handleSlidesChange = (newSlides: Slide[]) => {
+    console.log("Slides changed to:", newSlides);
     setSlides(newSlides);
     
     // Convert slides to JSON string and store in content field

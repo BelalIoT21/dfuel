@@ -5,8 +5,8 @@ import { protect, admin } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Configure middleware for handling large uploads (50MB limit)
-const jsonParser = express.json({ limit: '50mb' });
+// Configure middleware for handling large uploads (500MB limit)
+const jsonParser = express.json({ limit: '500mb' });
 
 // Get all courses
 router.get('/', getCourses);
@@ -15,10 +15,10 @@ router.get('/', getCourses);
 router.get('/:id', getCourseById);
 
 // Create new course (admin only)
-router.post('/', protect, admin, createCourse);
+router.post('/', protect, admin, jsonParser, createCourse);
 
 // Update course (admin only)
-router.put('/:id', protect, admin, updateCourse);
+router.put('/:id', protect, admin, jsonParser, updateCourse);
 
 // Delete course (admin only)
 router.delete('/:id', protect, admin, deleteCourse);
@@ -28,7 +28,7 @@ router.post('/:id/restore', protect, admin, jsonParser, restoreCourse);
 
 // New endpoint to backup a course
 router.post('/:id/backup', protect, admin, jsonParser, [
-  express.json({ limit: '50mb' })
+  express.json({ limit: '500mb' })
 ], backupCourse);
 
 export default router;

@@ -14,10 +14,14 @@ import { body, param } from 'express-validator';
 
 const router = express.Router();
 
+// Configure middleware for handling large requests
+const jsonParser = express.json({ limit: '10mb' });
+
 // Create booking
 router.post(
   '/',
   protect,
+  jsonParser,
   [
     body('machineId').notEmpty().withMessage('Machine ID is required'),
     body('date').isISO8601().withMessage('Valid date is required'),
@@ -40,6 +44,7 @@ router.put(
   '/:id/status',
   protect,
   admin,
+  jsonParser,
   [
     param('id').notEmpty().withMessage('Booking ID is required'),
     body('status').isIn(['Pending', 'Approved', 'Completed', 'Canceled', 'Rejected']).withMessage('Valid status is required')
@@ -48,7 +53,7 @@ router.put(
 );
 
 // Cancel booking
-router.put('/:id/cancel', protect, cancelBooking);
+router.put('/:id/cancel', protect, jsonParser, cancelBooking);
 
 // Delete booking (admin only)
 router.delete('/:id', protect, admin, deleteBooking);

@@ -1,149 +1,111 @@
 
-import { ChangeEvent, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Video, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  validateFile, 
-  fileToDataUrl, 
-  VIDEO_TYPES, 
-  MAX_VIDEO_SIZE_MB 
-} from '@/utils/fileUpload';
+import { Upload, X, Video } from 'lucide-react';
 
 interface VideoUploadProps {
   onFileChange: (dataUrl: string | null) => void;
   existingUrl?: string;
-  className?: string;
   label?: string;
-  previewHeight?: string;
+  maxSize?: number; // Size in MB
 }
 
-const VideoUpload = ({
-  onFileChange,
+const VideoUpload: React.FC<VideoUploadProps> = ({ 
+  onFileChange, 
   existingUrl,
-  className = "",
-  label = "Upload Video",
-  previewHeight = "max-h-[300px]"
-}: VideoUploadProps) => {
-  // Format existing URL if it's a server path
-  const formatExistingUrl = (url?: string) => {
-    if (!url) return null;
-    
-    if (url.startsWith('/utils/videos') || url.startsWith('/utils/images')) {
-      console.log("Converting server path to absolute URL:", url);
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      return `${apiUrl}/api${url}`;
-    }
-    
-    return url;
-  };
+  label = "Upload Video", 
+  maxSize = 500 // Increased to 500MB
+}) => {
+  const [preview, setPreview] = useState<string | null>(existingUrl || null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [preview, setPreview] = useState<string | null>(formatExistingUrl(existingUrl) || null);
-  const [loading, setLoading] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const { toast } = useToast();
-  
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setError(null);
     
-    // Validate file
-    const validationError = validateFile(file, VIDEO_TYPES, MAX_VIDEO_SIZE_MB);
-    if (validationError) {
-      toast({
-        title: "Error",
-        description: validationError,
-        variant: "destructive"
-      });
+    if (!file) {
       return;
     }
     
-    setLoading(true);
-    setFileName(file.name);
-    
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      console.log(`Video processed: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-      
-      setPreview(dataUrl);
-      onFileChange(dataUrl);
-      
-      toast({
-        title: "Success",
-        description: "Video uploaded successfully",
-      });
-    } catch (error) {
-      console.error("Error processing file:", error);
-      toast({
-        title: "Error",
-        description: "Failed to process the video",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+    // Check file size (convert maxSize from MB to bytes)
+    if (file.size > maxSize * 1024 * 1024) {
+      setError(`File is too large. Maximum size is ${maxSize}MB.`);
+      return;
     }
+    
+    const reader = new FileReader();
+    
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setPreview(result);
+      onFileChange(result);
+    };
+    
+    reader.onerror = () => {
+      setError('Error reading file');
+    };
+    
+    reader.readAsDataURL(file);
   };
   
   const clearFile = () => {
     setPreview(null);
-    setFileName(null);
     onFileChange(null);
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
-  
+
   return (
-    <div className={`space-y-2 ${className}`}>
-      {preview ? (
-        <div className="relative rounded-md overflow-hidden border border-gray-200">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-2"
+        >
+          <Video className="h-4 w-4" />
+          {label}
+        </Button>
+        
+        {preview && (
+          <Button 
+            type="button" 
+            variant="destructive" 
+            size="sm" 
+            onClick={clearFile}
+            className="flex items-center gap-1"
+          >
+            <X className="h-3 w-3" />
+            Remove
+          </Button>
+        )}
+      </div>
+      
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        onChange={handleFileChange} 
+        className="hidden" 
+        accept="video/mp4,video/webm,video/quicktime,video/avi,video/x-msvideo,.mov"
+      />
+      
+      {error && (
+        <div className="text-sm text-red-500">
+          {error}
+        </div>
+      )}
+      
+      {preview && (
+        <div className="mt-2 border rounded-md overflow-hidden bg-gray-50">
           <video 
             src={preview} 
-            controls
-            className={`w-full h-auto ${previewHeight}`}
-            onError={(e) => {
-              console.error(`Failed to load video: ${preview}`);
-            }}
+            controls 
+            className="max-h-40 max-w-full" 
           />
-          <div className="p-2 bg-gray-50 flex justify-between items-center">
-            <div className="text-sm">
-              {fileName && <p className="font-medium truncate">{fileName}</p>}
-              {!fileName && existingUrl && <p className="text-xs text-gray-500">Existing video</p>}
-            </div>
-            <Button 
-              variant="destructive" 
-              size="icon" 
-              className="h-8 w-8 rounded-full opacity-80"
-              onClick={clearFile}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-2">
-            <Video className="h-5 w-5 text-gray-500" />
-            <span className="text-sm">{label}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
-              className="cursor-pointer"
-              disabled={loading}
-            />
-          </div>
-          <p className="text-xs text-gray-500">
-            Max video size: {MAX_VIDEO_SIZE_MB}MB
-          </p>
-          <p className="text-xs text-gray-500">
-            Supports mp4, webm, ogg, mov formats
-          </p>
-        </>
-      )}
-      {loading && (
-        <div className="flex justify-center">
-          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
         </div>
       )}
     </div>
