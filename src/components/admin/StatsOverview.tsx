@@ -63,7 +63,7 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         link="/admin/users"
       />
       <StatCard
-        title="Active Machines"
+        title="Total Machines"
         value={machineCount}
         icon={<Settings className="h-4 w-4" />}
         link="/admin/machines"
