@@ -124,13 +124,15 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
   };
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <StatCard 
         title="Users"
         value={isLoading ? "..." : userCount.toString()}
-        icon={<Users className="h-5 w-5 text-blue-600" />}
+        icon={<Users className="h-5 w-5 text-purple-600" />}
         description="Total registered users"
-        color="bg-blue-100 text-blue-800"
+        color="bg-purple-50 text-purple-800"
+        change=""
+        link="/admin/users"
       />
       
       <StatCard 
@@ -138,23 +140,19 @@ export const StatsOverview = ({ allUsers = [], machines }: StatsOverviewProps) =
         value={isLoading ? "..." : machineCount.toString()}
         icon={<Settings className="h-5 w-5 text-purple-600" />}
         description="Available in makerspace"
-        color="bg-purple-100 text-purple-800"
+        color="bg-purple-50 text-purple-800"
+        change=""
+        link="/admin/machines"
       />
       
       <StatCard 
         title="Bookings"
         value={isLoading ? "..." : bookingsCount.toString()}
-        icon={<CalendarClock className="h-5 w-5 text-emerald-600" />}
+        icon={<CalendarClock className="h-5 w-5 text-purple-600" />}
         description="Machine appointments"
-        color="bg-emerald-100 text-emerald-800"
-      />
-      
-      <StatCard 
-        title="Certifications"
-        value={isLoading ? "..." : "26"}
-        icon={<Users className="h-5 w-5 text-amber-600" />}
-        description="User qualifications"
-        color="bg-amber-100 text-amber-800"
+        color="bg-purple-50 text-purple-800"
+        change=""
+        link="/admin/bookings"
       />
     </div>
   );
