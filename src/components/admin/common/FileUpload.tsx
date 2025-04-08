@@ -11,6 +11,7 @@ import {
   compressImageIfNeeded 
 } from '@/utils/fileUpload';
 
+
 interface FileUploadProps {
   existingUrl?: string;
   onFileChange: (dataUrl: string | null) => void;
@@ -35,7 +36,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (!url) return null;
     
     if (url.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.API_URL 
       return `${apiUrl}/api${url}`;
     }
     

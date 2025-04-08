@@ -27,9 +27,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  // Define environment variables for different modes
   define: {
-    // Force the API URL to use port 4000
-    'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:4000/api')
+    'process.env': {
+      API_URL: JSON.stringify(process.env.API_URL),
+      NODE_ENV: mode,
+    },
   }
 }));

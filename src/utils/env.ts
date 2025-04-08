@@ -24,7 +24,9 @@ export const loadEnv = (): void => {
   setEnv('CUSTOM_SERVER_IP', 'localhost');
   
   // Set API URL from environment variables if available
-  const apiUrl = import.meta.env.VITE_API_URL || import.meta.env.API_URL || 'http://localhost:4000/api';
+  // For Vite compatibility, we need to check both VITE_API_URL and API_URL
+  // We'll use a server-side environment variable in production
+  const apiUrl = import.meta.env.API_URL;
   setEnv('API_URL', apiUrl);
   console.log('API configuration loaded successfully');
 };
@@ -89,8 +91,6 @@ export const getApiEndpoints = (): string[] => {
   // Make sure only valid URLs are returned
   return [
     configuredApiUrl,
-    'http://localhost:4000/api', // Add this as a fallback
-    '/api' // Relative fallback
   ].filter(Boolean); // Remove empty values
 };
 
@@ -98,13 +98,16 @@ export const getApiEndpoints = (): string[] => {
 export const getApiUrl = (): string => {
   const env = getEnvironment();
   
-  // In a production environment, get from environment variables
-  if (env === 'production') {
-    return getEnv('API_URL', '');
+  // Get API URL from environment variables
+  const apiUrl = getEnv('API_URL', '');
+  
+  // If no API URL is configured, use a default for development only
+  if (!apiUrl && env === 'development') {
+    console.warn('No API URL configured. Using default development URL.');
+    return 'http://localhost:4000/api';
   }
   
-  // For development, use the API_URL from env
-  return getEnv('API_URL', '');
+  return apiUrl;
 };
 
 // Ensure API endpoint always has correct format

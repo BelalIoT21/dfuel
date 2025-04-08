@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { getApiEndpoints } from '../utils/env';
+import { getApiEndpoints, getApiUrl } from '../utils/env';
 
 // Main API service to handle all API requests
 class ApiService {
@@ -8,8 +8,8 @@ class ApiService {
   private currentEndpointIndex: number = 0;
   
   constructor() {
-    // Force the API URL to use port 4000
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    // Get API URL from environment utilities
+    const apiUrl = getApiUrl();
     console.log('API Service initialized with URL:', apiUrl);
     
     // Create axios instance with initial base URL

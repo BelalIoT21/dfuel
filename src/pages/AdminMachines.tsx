@@ -27,7 +27,7 @@ const AdminMachines = () => {
     if (!imageUrl) return '/placeholder.svg';
     
     if (imageUrl.startsWith('/utils/images')) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.API_URL;
       return `${apiUrl}/api${imageUrl}`;
     }
     
