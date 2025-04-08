@@ -22,9 +22,9 @@ export const StatCard = ({
   return (
     <Card className="border-purple-100 hover:shadow-md transition-all mb-4">
       <CardContent className="p-3 md:p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="text-2xl font-bold text-purple-800">{value}</div>
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col items-start">
+            <div className="text-xl md:text-2xl font-bold text-purple-800">{value}</div>
           </div>
           <div className="p-2 bg-purple-50 rounded-full text-purple-600">
             {icon}

@@ -5,8 +5,8 @@ import { protect, admin } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-// Configure middleware for handling large uploads (500MB limit)
-const jsonParser = express.json({ limit: '500mb' });
+// Configure middleware for handling large uploads (250MB limit - reduced from 500MB to prevent timeouts)
+const jsonParser = express.json({ limit: '250mb' });
 
 // Get all courses
 router.get('/', getCourses);
