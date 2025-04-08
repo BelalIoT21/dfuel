@@ -6,8 +6,14 @@ class ApiService {
   private api: AxiosInstance;
   private endpoints: string[];
   private currentEndpointIndex: number = 0;
+  private baseUrl: string;
+  private token: string | null;
   
   constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    this.token = null;
+    this.initializeToken();
+    
     // Get API URL from environment utilities
     const apiUrl = getApiUrl();
     console.log('API Service initialized with URL:', apiUrl);
@@ -36,12 +42,34 @@ class ApiService {
     );
   }
   
+  private initializeToken() {
+    if (typeof window !== 'undefined') {
+      this.token = localStorage.getItem('authToken');
+    }
+  }
+
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    return headers;
+  }
+  
   // Set authorization token for subsequent requests
   setToken(token: string | null): void {
     if (token) {
       this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
       delete this.api.defaults.headers.common['Authorization'];
+    }
+    this.token = token;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('authToken', token || '');
     }
   }
   
@@ -52,13 +80,8 @@ class ApiService {
   
   // Generic request method with improved error handling
   async request(endpoint: string, method: string = 'GET', data?: any, requiresAuth: boolean = false): Promise<any> {
-    // Ensure endpoint doesn't start with a slash or 'api/'
-    let cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    
-    // Remove 'api/' prefix if it exists since it's already in the baseURL
-    if (cleanEndpoint.startsWith('api/')) {
-      cleanEndpoint = cleanEndpoint.substring(4);
-    }
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers = this.getHeaders();
     
     try {
       // Make the request
@@ -68,7 +91,7 @@ class ApiService {
         const options = {
           validateStatus: (status: number) => {
             // For registration endpoint, treat 400 as a valid status
-            if (cleanEndpoint === 'auth/register' && status === 400) {
+            if (endpoint === 'auth/register' && status === 400) {
               return true;
             }
             // For other endpoints, only 2xx and 3xx are valid
@@ -78,23 +101,23 @@ class ApiService {
 
         switch (method.toUpperCase()) {
           case 'GET':
-            response = await this.api.get(cleanEndpoint, { 
+            response = await this.api.get(endpoint, { 
               params: data,
               validateStatus: (status) => status < 500 // Don't reject on 4xx errors
             });
             break;
           case 'POST':
-            if (cleanEndpoint === 'auth/register') {
-              response = await this.api.post(cleanEndpoint, data, options);
+            if (endpoint === 'auth/register') {
+              response = await this.api.post(endpoint, data, options);
             } else {
-              response = await this.api.post(cleanEndpoint, data);
+              response = await this.api.post(endpoint, data);
             }
             break;
           case 'PUT':
-            response = await this.api.put(cleanEndpoint, data);
+            response = await this.api.put(endpoint, data);
             break;
           case 'DELETE':
-            response = await this.api.delete(cleanEndpoint, { data });
+            response = await this.api.delete(endpoint, { data });
             break;
           default:
             throw new Error(`Unsupported method: ${method}`);
@@ -123,7 +146,7 @@ class ApiService {
       }
 
       // Check for 400 Bad Request responses for registration
-      if (response.status === 400 && cleanEndpoint === 'auth/register') {
+      if (response.status === 400 && endpoint === 'auth/register') {
         const errorMsg = response.data?.message || response.data?.error || 'Bad Request';
         
         // For user already exists, don't log anything (already logged in register method)
@@ -144,7 +167,7 @@ class ApiService {
       let errorMsg = 'An error occurred while processing your request';
 
       // Special handling for registration endpoint with 500 error
-      if (cleanEndpoint === 'auth/register' && status === 500) {
+      if (endpoint === 'auth/register' && status === 500) {
         // Check if the error message contains "b.l.mishm" which might indicate a user already exists
         if (error.message && typeof error.message === 'string' && 
             (error.message.includes('b.l.mishm') || 
@@ -257,7 +280,7 @@ class ApiService {
         };
         
         // Open the request
-        xhr.open('POST', `${this.api.defaults.baseURL}/auth/register`, true);
+        xhr.open('POST', `${this.baseUrl}/auth/register`, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.setRequestHeader('Accept', 'application/json');
         
@@ -563,6 +586,13 @@ class ApiService {
     } catch (error) {
       console.error('Error in updateMachineStatus:', error);
       return { success: false, error: 'Failed to update machine status' };
+    }
+  }
+
+  clearToken() {
+    this.token = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
     }
   }
 }

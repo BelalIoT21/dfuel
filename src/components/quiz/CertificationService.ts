@@ -1,16 +1,24 @@
+import { apiService } from '../../services/apiService';
 
-import { certificationService } from '@/services/certificationService';
+export const addUserCertification = async (userId: string, courseId: string, score: number) => {
+  try {
+    const certification = {
+      userId,
+      machineId: courseId,
+      score,
+      dateIssued: new Date().toISOString(),
+      status: 'active'
+    };
 
-export async function addUserCertification(userId: string, machineId: string): Promise<boolean> {
-  console.log(`Adding certification for user ${userId} and machine ${machineId}`);
-  
-  // Ensure IDs are strings
-  const userIdStr = String(userId);
-  const machineIdStr = String(machineId);
-  
-  console.log(`Using string IDs: userID=${userIdStr}, machineID=${machineIdStr}`);
-  
-  // For demo/development purposes, always return true
-  console.log("Demo mode: Returning success for certification in quiz component");
-  return true;
-}
+    const response = await apiService.request('certifications', 'POST', certification, true);
+
+    if (response.error) {
+      throw new Error(response.error || 'Failed to save certification');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Error saving certification:', error);
+    throw error;
+  }
+};

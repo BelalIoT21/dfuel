@@ -249,29 +249,29 @@ const CertificationsCard = () => {
       </CardHeader>
       <CardContent>
         {!hasCompletedSafetyCourse && safetyCourse && (
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-md mb-4">
+          <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4">
             <h3 className="text-amber-800 font-medium mb-2">Safety Course Required</h3>
-            <p className="text-amber-700 text-sm mb-3">
+            <p className="text-amber-700 text-sm mb-2">
               You need to complete the Machine Safety Course to get certified for other machines.
             </p>
             <div className="flex gap-2">
               <Button 
                 variant="outline"
-                size="sm"
-                className="bg-amber-100 border-amber-300 text-amber-800"
+                size="xs"
+                className="bg-amber-100 border-amber-300 text-amber-800 h-7 text-xs px-2 min-w-0"
                 onClick={() => navigateToCourse(safetyCourse.linkedCourseId)}
               >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Take Safety Course
+                <BookOpen className="mr-1 h-3 w-3" />
+                Course
               </Button>
               <Button 
                 variant="outline"
-                size="sm"
-                className="bg-amber-100 border-amber-300 text-amber-800"
+                size="xs"
+                className="bg-amber-100 border-amber-300 text-amber-800 h-7 text-xs px-2 min-w-0"
                 onClick={() => navigateToQuiz(safetyCourse.linkedQuizId)}
               >
-                <Award className="mr-2 h-4 w-4" />
-                Take Safety Quiz
+                <Award className="mr-1 h-3 w-3" />
+                Quiz
               </Button>
             </div>
           </div>
@@ -291,7 +291,7 @@ const CertificationsCard = () => {
                 onClick={() => navigateToCourse(safetyCabinet.linkedCourseId)}
               >
                 <BookOpen className="mr-2 h-4 w-4" />
-                Safety Cabinet Course
+                Course
               </Button>
               <Button 
                 variant="outline"
@@ -300,7 +300,7 @@ const CertificationsCard = () => {
                 onClick={() => navigateToQuiz(safetyCabinet.linkedQuizId)}
               >
                 <Award className="mr-2 h-4 w-4" />
-                Safety Cabinet Quiz
+                Quiz
               </Button>
             </div>
           </div>

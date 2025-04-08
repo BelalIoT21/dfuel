@@ -25,7 +25,7 @@ class MongoDbService {
 
   async getAllUsers() {
     try {
-      return await mongoUserService.getAllUsers();
+      return await mongoUserService.getUsers();
     } catch (error) {
       console.error('Error fetching users from MongoDB:', error);
       return [];
