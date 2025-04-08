@@ -299,7 +299,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
               <FileUpload
                 existingUrl={formData.imageUrl}
                 onFileChange={handleImageChange}
-                label="Upload Course Cover Image"
+                label="Upload Image"
               />
             </div>
           </TabsContent>

@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../ui/button';
 import { Upload, X } from 'lucide-react';
 
 interface FileUploadProps {
@@ -72,7 +71,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Button 
           type="button" 
@@ -113,12 +112,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
       )}
       
       {preview && isImage && (
-        <div className="mt-2 border rounded-md overflow-hidden">
-          <img 
-            src={preview} 
-            alt="Preview" 
-            className="max-h-40 max-w-full object-contain" 
-          />
+        <div className="mt-4 border rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+          <div className="aspect-[16/9] relative w-full flex items-center justify-center p-4">
+            <img 
+              src={preview} 
+              alt="Preview" 
+              className="max-h-[400px] max-w-full w-auto h-auto object-contain rounded-md" 
+            />
+          </div>
         </div>
       )}
       

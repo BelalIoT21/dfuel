@@ -47,18 +47,6 @@ export const StatsOverview = () => {
 
     fetchBookingsCount();
   }, [toast]);
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-sm font-medium text-gray-500">Total Bookings</h3>
-        <p className="text-2xl font-bold mt-1">
-          {isLoading ? "Loading..." : bookingsCount}
-        </p>
-      </div>
-      {/* Add more stat cards as needed */}
-    </div>
-  );
 };
 
 export default StatsOverview;
