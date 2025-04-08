@@ -298,7 +298,17 @@ class ApiService {
 
   // Get all machines
   async getAllMachines(): Promise<any> {
-    return this.request('machines', 'GET');
+    try {
+      const response = await this.request('machines', 'GET');
+      if (response.error) {
+        console.error('Error fetching machines:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in getAllMachines:', error);
+      return { success: false, error: 'Failed to fetch machines' };
+    }
   }
 
   // Get all bookings
@@ -309,6 +319,16 @@ class ApiService {
   // Get user bookings
   async getUserBookings(userId?: string): Promise<any> {
     return this.request('bookings', 'GET', undefined, true);
+  }
+  
+  // Add booking
+  async addBooking(userId: string, machineId: string, date: string, time: string): Promise<any> {
+    return this.request('bookings', 'POST', {
+      userId,
+      machineId,
+      date,
+      time
+    }, true);
   }
   
   // Course related endpoints with improved error handling
@@ -459,6 +479,91 @@ class ApiService {
    
   async delete(endpoint: string): Promise<any> {
     return this.request(endpoint, 'DELETE');
+  }
+
+  // Machine related endpoints with improved error handling
+  async getMachineById(machineId: string): Promise<any> {
+    try {
+      const response = await this.request(`machines/${machineId}`, 'GET');
+      if (response.error) {
+        console.error('Error fetching machine:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in getMachineById:', error);
+      return { success: false, error: 'Failed to fetch machine' };
+    }
+  }
+
+  async searchMachines(query: string): Promise<any> {
+    try {
+      const response = await this.request('machines/search', 'GET', { query });
+      if (response.error) {
+        console.error('Error searching machines:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in searchMachines:', error);
+      return { success: false, error: 'Failed to search machines' };
+    }
+  }
+
+  async addMachine(machineData: any): Promise<any> {
+    try {
+      const response = await this.request('machines', 'POST', machineData, true);
+      if (response.error) {
+        console.error('Error adding machine:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in addMachine:', error);
+      return { success: false, error: 'Failed to add machine' };
+    }
+  }
+
+  async updateMachine(machineId: string, machineData: any): Promise<any> {
+    try {
+      const response = await this.request(`machines/${machineId}`, 'PUT', machineData, true);
+      if (response.error) {
+        console.error('Error updating machine:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in updateMachine:', error);
+      return { success: false, error: 'Failed to update machine' };
+    }
+  }
+
+  async deleteMachine(machineId: string): Promise<any> {
+    try {
+      const response = await this.request(`machines/${machineId}`, 'DELETE', undefined, true);
+      if (response.error) {
+        console.error('Error deleting machine:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in deleteMachine:', error);
+      return { success: false, error: 'Failed to delete machine' };
+    }
+  }
+
+  async updateMachineStatus(machineId: string, status: string): Promise<any> {
+    try {
+      const response = await this.request(`machines/${machineId}/status`, 'PUT', { status }, true);
+      if (response.error) {
+        console.error('Error updating machine status:', response.error);
+        return { success: false, error: response.error };
+      }
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error in updateMachineStatus:', error);
+      return { success: false, error: 'Failed to update machine status' };
+    }
   }
 }
 

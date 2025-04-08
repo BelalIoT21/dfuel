@@ -1,7 +1,6 @@
-
 import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Upload, X, Video } from 'lucide-react';
+import { Button } from '../../ui/button';
+import { Upload, X, Video, Info } from 'lucide-react';
 
 interface VideoUploadProps {
   onFileChange: (dataUrl: string | null) => void;
@@ -14,51 +13,55 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
   onFileChange, 
   existingUrl,
   label = "Upload Video", 
-  maxSize = 250 // Reduced from 500MB to 250MB to prevent timeouts
+  maxSize = 100 // Reduced max size for videos
 }) => {
   const [preview, setPreview] = useState<string | null>(existingUrl || null);
   const [error, setError] = useState<string | null>(null);
-  const [fileType, setFileType] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setError(null);
+    setLoading(true);
     
-    if (!file) {
-      return;
+    try {
+      if (!file) {
+        return;
+      }
+      
+      // Check file size
+      if (file.size > maxSize * 1024 * 1024) {
+        setError(`File is too large. Maximum size is ${maxSize}MB.`);
+        return;
+      }
+
+      // Verify it's a video file
+      if (!file.type.startsWith('video/')) {
+        setError('Please upload a valid video file.');
+        return;
+      }
+
+      // Create a blob URL instead of data URL for videos
+      const blobUrl = URL.createObjectURL(file);
+      setPreview(blobUrl);
+      onFileChange(blobUrl);
+
+    } catch (error) {
+      console.error('Error handling video file:', error);
+      setError('Error processing video. Please try again.');
+      clearFile();
+    } finally {
+      setLoading(false);
     }
-    
-    // Check file size (convert maxSize from MB to bytes)
-    if (file.size > maxSize * 1024 * 1024) {
-      setError(`File is too large. Maximum size is ${maxSize}MB.`);
-      return;
-    }
-    
-    // Store and log file type for debugging
-    setFileType(file.type);
-    console.log('File type:', file.type, 'File size:', Math.round(file.size / (1024 * 1024)), 'MB');
-    
-    const reader = new FileReader();
-    
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setPreview(result);
-      onFileChange(result);
-    };
-    
-    reader.onerror = () => {
-      setError('Error reading file');
-    };
-    
-    reader.readAsDataURL(file);
   };
   
   const clearFile = () => {
+    if (preview) {
+      URL.revokeObjectURL(preview); // Clean up blob URL
+    }
     setPreview(null);
-    setFileType(null);
-    onFileChange(null);
-    // Reset the file input
+    onFileChange(''); // Send empty string instead of null
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -72,9 +75,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           variant="outline" 
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-2"
+          disabled={loading}
         >
-          <Video className="h-4 w-4 text-purple-600" />
-          {label}
+          <Video className="h-4 w-4" />
+          {loading ? 'Processing...' : label}
         </Button>
         
         {preview && (
@@ -84,11 +88,19 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
             size="sm" 
             onClick={clearFile}
             className="flex items-center gap-1"
+            disabled={loading}
           >
             <X className="h-3 w-3" />
             Remove
           </Button>
         )}
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+        <Info className="h-4 w-4" />
+        <span>
+          Supported formats: mp4, webm, mov (Max size: {maxSize}MB)
+        </span>
       </div>
       
       <input 
@@ -96,7 +108,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
         ref={fileInputRef}
         onChange={handleFileChange} 
         className="hidden" 
-        accept="video/mp4,video/webm,video/quicktime,video/avi,video/x-msvideo,.mov"
+        accept="video/mp4,video/webm,video/quicktime"
       />
       
       {error && (
@@ -104,21 +116,17 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
           {error}
         </div>
       )}
-
-      {fileType && (
-        <div className="text-xs text-gray-500">
-          File type: {fileType}
-        </div>
-      )}
       
       {preview && (
-        <div className="mt-2 border rounded-md overflow-hidden bg-gray-50">
-          <video 
-            src={preview} 
-            controls 
-            className="w-full max-h-60" 
-            preload="metadata"
-          />
+        <div className="mt-4 border rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+          <div className="aspect-video relative w-full">
+            <video 
+              src={preview} 
+              controls 
+              className="w-full h-full object-contain" 
+              preload="metadata"
+            />
+          </div>
         </div>
       )}
     </div>

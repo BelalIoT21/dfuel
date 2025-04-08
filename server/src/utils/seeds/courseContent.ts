@@ -1,12 +1,14 @@
 
 // Define course content templates as JSON strings
 
+import { getVideoUrl } from "./videoUtils";
+
 export const laserCutterCourseContent = JSON.stringify([
   {
     id: '1',
     elements: [
       { id: '1-1', type: 'heading', content: 'Laser Cutter Training', headingLevel: 1 },
-      { id: '1-2', type: 'text', content: 'Learn how to safely operate the lab\'s laser cutter' }
+      { id: '1-2', type: 'text', content: 'Learn how to safely operate the lab\'s laser cutter' },
     ]
   },
   {

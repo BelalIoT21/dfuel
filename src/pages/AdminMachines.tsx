@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BackToAdminButton } from '@/components/BackToAdminButton';
 import userDatabase from '../services/userDatabase';
 import { machineDatabaseService } from '@/services/database/machineService';
@@ -15,6 +15,7 @@ import { apiService } from '@/services/apiService';
 const AdminMachines = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,11 @@ const AdminMachines = () => {
   };
   
   useEffect(() => {
+    if (!user?.isAdmin) {
+      navigate('/home');
+      return;
+    }
+
     const fetchMachines = async () => {
       try {
         setInitialLoadComplete(false);
@@ -95,35 +101,16 @@ const AdminMachines = () => {
     fetchMachines();
     fetchUsers();
     fetchCourses();
-  }, []);
+  }, [navigate, user?.isAdmin]);
   
   const getCourseName = (courseId: string) => {
     const course = coursesList.find(c => c.id === courseId || c._id === courseId);
     return course ? course.title : `Course ${courseId}`;
   };
   
-  if (!user?.isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-          <p className="mb-4">You don't have permission to access this page.</p>
-          <Link to="/home">
-            <Button>Return to Home</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const filteredMachines = machinesList
-    .filter(machine =>
-      machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      machine.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
   const handleDeleteMachine = async (id: string) => {
     try {
+      setIsSubmitting(true);
       const success = await machineDatabaseService.deleteMachine(id);
       
       if (!success) {
@@ -143,6 +130,8 @@ const AdminMachines = () => {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,13 +155,46 @@ const AdminMachines = () => {
     return count;
   };
 
+  const filteredMachines = machinesList
+    .filter(machine =>
+      machine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      machine.type?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  if (!user?.isAdmin) {
+    return null;
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <BackToAdminButton />
-      </div>
-      
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 p-6">
+      <div className="max-w-6xl mx-auto page-transition">
+        <div className="mb-6">
+          <BackToAdminButton />
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-6">Machine Management</h1>
+        
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4 justify-between">
+              <div className="w-full md:w-1/3">
+                <Input
+                  placeholder="Search machines..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button asChild className="w-full md:w-auto">
+                <Link to="/admin/machines/new" className="flex items-center justify-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add New Machine
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader>
             <CardTitle>All Machines</CardTitle>
@@ -188,66 +210,55 @@ const AdminMachines = () => {
               ) : filteredMachines.length > 0 ? (
                 filteredMachines.map((machine) => {
                   const machineId = machine.id || machine._id;
-                  const imageUrl = getProperImageUrl(machine.imageUrl || machine.image || '/placeholder.svg');
+                  const linkedCourse = coursesList.find(c => c._id === machine.linkedCourseId);
                   
                   return (
                     <div key={machineId} className="flex flex-col md:flex-row gap-4 border-b pb-6 last:border-0">
                       <div className="flex-shrink-0 w-full md:w-1/4">
                         <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                           <img
-                            src={imageUrl}
+                            src={machine.imageUrl || '/placeholder.svg'}
                             alt={machine.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              console.error(`Failed to load image: ${imageUrl}`);
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
                           />
                         </div>
                       </div>
                       
                       <div className="flex-grow">
-                        <h3 className="text-lg font-medium">{machine.name}</h3>
-                        <p className="text-gray-600 text-sm mt-1">{machine.description}</p>
+                        <h3 className="text-lg font-semibold mb-2">{machine.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{machine.description}</p>
                         
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                            Type: {machine.type || 'Machine'}
-                          </div>
-                          <div className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800">
-                            Difficulty: {machine.difficulty || 'Beginner'}
-                          </div>
-                          <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                            Course: {machine.linkedCourseId ? getCourseName(machine.linkedCourseId) : 'None'}
-                          </div>
-                          <div className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                            Users Certified: {getUsersCertifiedCount(machineId)}
-                          </div>
-                          <div className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                            Bookings: {getBookingsThisMonth(machineId)}
-                          </div>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {machine.type && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {machine.type}
+                            </span>
+                          )}
+                          {machine.status && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {machine.status}
+                            </span>
+                          )}
+                          {linkedCourse && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              Course: {linkedCourse.title}
+                            </span>
+                          )}
                         </div>
                         
-                        <div className="flex gap-2 mt-4">
+                        <div className="flex gap-2">
                           <Button size="sm" variant="outline" asChild>
                             <Link to={`/machine/${machineId}`}>View</Link>
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            asChild
-                            className="text-purple-600 hover:text-purple-700"
-                          >
-                            <Link to={`/admin/machines/edit/${machineId}`} className="flex items-center">
-                              <Edit className="mr-1 h-4 w-4" />
-                              Edit
-                            </Link>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link to={`/admin/machines/edit/${machineId}`}>Edit</Link>
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline" 
                             className="text-red-500 hover:text-red-600"
                             onClick={() => handleDeleteMachine(machineId)}
+                            disabled={isSubmitting}
                           >
                             Delete
                           </Button>
@@ -258,7 +269,28 @@ const AdminMachines = () => {
                 })
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No machines found matching your search criteria.
+                  {searchTerm ? (
+                    <>
+                      <p>No machines found matching your search criteria.</p>
+                      <Button 
+                        className="mt-4" 
+                        variant="outline" 
+                        onClick={() => setSearchTerm('')}
+                      >
+                        Clear Search
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p>No machines have been created yet.</p>
+                      <Button 
+                        className="mt-4" 
+                        onClick={() => navigate('/admin/machines/new')}
+                      >
+                        Create Your First Machine
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

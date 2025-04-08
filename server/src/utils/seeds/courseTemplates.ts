@@ -28,7 +28,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Learn how to use the Ultimaker 3D printer effectively',
     category: 'Equipment',
     content: ultimakerCourseContent,
-    imageUrl: getImageUrl('IMG_7815.jpg'),
+    imageUrl: getImageUrl('IMG_7773.jpg'),
     relatedMachineIds: ['2'],
     quizId: '2',
     difficulty: 'Basic'
@@ -38,7 +38,7 @@ export const ORIGINAL_COURSE_TEMPLATES = {
     description: 'Advanced training for carbon fiber composite printing',
     category: 'Equipment',
     content: x1CarbonCourseContent,
-    imageUrl: getImageUrl('IMG_7773.jpg'),
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['3'],
     quizId: '3',
     difficulty: 'Advanced'
@@ -94,7 +94,7 @@ export const predefinedCourses = [
     description: 'Learn how to use the Ultimaker 3D printer effectively',
     category: 'Equipment',
     content: ultimakerCourseContent,
-    imageUrl: getImageUrl('IMG_7815.jpg'),
+    imageUrl: getImageUrl('IMG_7773.jpg'),
     relatedMachineIds: ['2'],
     quizId: '2',
     difficulty: 'Basic'
@@ -105,7 +105,7 @@ export const predefinedCourses = [
     description: 'Advanced training for carbon fiber composite printing',
     category: 'Equipment',
     content: x1CarbonCourseContent,
-    imageUrl: getImageUrl('IMG_7773.jpg'),
+    imageUrl: getImageUrl('IMG_7815.jpg'),
     relatedMachineIds: ['3'],
     quizId: '3',
     difficulty: 'Advanced'
@@ -116,7 +116,7 @@ export const predefinedCourses = [
     description: 'Learn to use the Bambu Lab printer for high-quality prints',
     category: 'Equipment',
     content: bambuLabCourseContent,
-    imageUrl: getImageUrl('IMG_7815.jpg'),
+    imageUrl: getImageUrl('IMG_7819.jpg'),
     relatedMachineIds: ['4'],
     quizId: '4',
     difficulty: 'Intermediate'
