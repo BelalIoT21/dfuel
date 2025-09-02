@@ -2,6 +2,12 @@
 
 A comprehensive digital learning and booking platform for industrial machines and equipment. Learn, get certified, and book access to 3D printers, CNC machines, laser cutters, and other advanced manufacturing equipment through an integrated educational and reservation system.
 
+![DFuel Platform](https://img.shields.io/badge/DFuel-Industrial%20Learning-blue)
+[![GitHub stars](https://img.shields.io/github/stars/BelalIoT21/dfuel)](https://github.com/BelalIoT21/dfuel/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/BelalIoT21/dfuel)](https://github.com/BelalIoT21/dfuel/network)
+[![License](https://img.shields.io/github/license/BelalIoT21/dfuel)](https://github.com/BelalIoT21/dfuel/blob/main/LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/BelalIoT21/dfuel)
+
 ## 🎯 Overview
 
 DFuel revolutionizes access to industrial equipment by combining education with practical application. Users can learn about various industrial machines through interactive courses, take certification quizzes, and upon passing, gain booking privileges to use the actual equipment. The platform includes comprehensive admin tools for monitoring usage, managing equipment, and tracking user progress.
